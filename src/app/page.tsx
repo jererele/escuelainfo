@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { account } from "@/lib/appwrite";
+import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
@@ -37,6 +37,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
+    client.ping().catch(() => {});
     account.get().then(() => router.push("/dashboard")).catch(() => {});
   }, [router]);
 
