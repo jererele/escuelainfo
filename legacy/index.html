@@ -101,13 +101,13 @@
       <span class="user-name" id="topbar-user"></span>
 
       <span class="role-badge" id="topbar-badge"></span>
-      <div class="lang-switcher" onclick="toggleLang()" id="lang-btn">
+      <div class="lang-switcher" onclick="toggleLang()" id="lang-btn" title="Cambiar idioma / Change language" style="cursor:pointer">
         <span class="lang-flag">🇦🇷</span> <span class="lang-name">ES</span>
       </div>
       <div class="theme-selector">
-        <div class="theme-dot" onclick="setTheme('default')" style="background: #10B981" title="Cosmos"></div>
-        <div class="theme-dot" onclick="setTheme('ocean')" style="background: #0EA5E9" title="Océano"></div>
-        <div class="theme-dot" onclick="setTheme('cyber')" style="background: #F43F5E" title="Cyberpunk"></div>
+        <button class="theme-dot" onclick="setTheme('default')" style="background: #10B981" title="Cosmos" aria-label="Tema Cosmos"></button>
+        <button class="theme-dot" onclick="setTheme('ocean')" style="background: #0EA5E9" title="Océano" aria-label="Tema Océano"></button>
+        <button class="theme-dot" onclick="setTheme('cyber')" style="background: #F43F5E" title="Cyberpunk" aria-label="Tema Cyberpunk"></button>
       </div>
       <button class="btn-logout" onclick="logout()">Salir</button>
 

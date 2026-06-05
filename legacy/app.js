@@ -33,17 +33,14 @@ function toggleLang() {
 const PROFESORES = [
 
   {id:1,nombre:'Ana García',materias:[{m:'Matemáticas',cursos:['3°A','3°B','4°A']},{m:'Álgebra',cursos:['5°A']}]},
-
   {id:2,nombre:'Carlos Pérez',materias:[{m:'Historia',cursos:['1°A','1°B','2°A']},{m:'Geografía',cursos:['2°B']}]},
-
   {id:3,nombre:'Lucía Martínez',materias:[{m:'Lengua',cursos:['3°A','4°B','5°A']},{m:'Literatura',cursos:['6°A']}]},
-
   {id:4,nombre:'Miguel Torres',materias:[{m:'Física',cursos:['4°A','4°B','5°B']},{m:'Química',cursos:['5°A','5°B']}]},
-
   {id:5,nombre:'Sofía Rodríguez',materias:[{m:'Inglés',cursos:['1°A','2°A','3°A','4°A']}]},
-
   {id:6,nombre:'Diego López',materias:[{m:'Ed. Física',cursos:['1°A','1°B','2°A','2°B']}]},
-
+  {id:7,nombre:'Cristina Lauze',materias:[{m:'Inglés',cursos:['3°A']}]},
+  {id:8,nombre:'Vivanco Analía',materias:[{m:'Matemática',cursos:['3°A']}]},
+  {id:9,nombre:'Sosa Lara',materias:[{m:'Lengua y literatura',cursos:['3°A']}]},
 ];
 
 
@@ -59,7 +56,7 @@ let AUSENCIAS = [
   {id:4,profId:3,profNombre:'Lucía Martínez',tipo:'licencia-personal',inicio:'2025-04-14',fin:'2025-04-14',materias:['Lengua — 3°A','Literatura — 6°A'],motivo:'Trámite personal.',cert:false,estado:'pendiente',fechaReg:'2025-04-07'},
 
   {id:5,profId:5,profNombre:'Sofía Rodríguez',tipo:'ausencia',inicio:'2025-04-03',fin:'2025-04-03',materias:['Inglés — 2°A'],motivo:'Gripe.',cert:true,estado:'rechazada',fechaReg:'2025-04-03'},
-
+  {id:6,profId:7,profNombre:'Cristina Lauze',tipo:'ausencia',inicio:'2026-04-01',fin:'2026-04-15',materias:['Inglés — 3°A'],motivo:'Licencia médica.',cert:true,estado:'aprobada',fechaReg:'2026-04-01'},
 ];
 
 
@@ -141,14 +138,22 @@ function showToast(msg, type = 'success') {
 }
 
 // Escuchar movimiento para los bordes brillantes
+// Escuchar movimiento para los bordes brillantes y el fondo global
 document.addEventListener('mousemove', (e) => {
+  const x = e.clientX;
+  const y = e.clientY;
+  
+  // Fondo global
+  updateMousePosition(x, y);
+
+  // Brillo en tarjetas
   const cards = document.querySelectorAll('.card, .stat-card');
   cards.forEach(card => {
     const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty('--m-x', `${x}px`);
-    card.style.setProperty('--m-y', `${y}px`);
+    const cx = x - rect.left;
+    const cy = y - rect.top;
+    card.style.setProperty('--m-x', `${cx}px`);
+    card.style.setProperty('--m-y', `${cy}px`);
   });
 });
 
@@ -246,7 +251,12 @@ window.addEventListener('scroll', () => {
 });
 
 function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('compact');
+  const sidebar = document.getElementById('sidebar');
+  if (window.innerWidth <= 768) {
+    sidebar.classList.toggle('open');
+  } else {
+    sidebar.classList.toggle('compact');
+  }
 }
 
 // Búsqueda con Debounce
@@ -860,7 +870,7 @@ function renderMisAusencias(){
 
   </div>
 
-  <div class="alert alert-info">ℹ️ Las ausencias sin certificado deben ser justificadías dentro de los 2 días hábiles.</div>
+  <div class="alert alert-info">ℹ️ Las ausencias sin certificado deben ser justificadas dentro de los 2 días hábiles.</div>
 
   <div class="card">${renderTablaAusencias(mis,'profesor')}</div>`;
 
@@ -1039,21 +1049,13 @@ function renderSemanaAlumno(){
 
 
   const renderClase = (mat, prof) => {
-
     if(!mat && !prof) return "<td></td>";
-
-    const isAusente = ausNames.some(n => n.includes(prof.split(" ")[0]) || prof.includes(n.split(" ")[0]));
-
+    const isAusente = prof ? isProfesorAusente(prof) : false;
     return `<td class="${isAusente?"ausente":""}"><div class="clase-cell ${isAusente?"ausente":""}">
-
       <span class="materia">${mat}</span>
-
       <span class="profe">${prof}</span>
-
-      ${isAusente?`<div style="font-size:0.65rem;color:var(--rojo);margin-top:4px;font-weight:700">? SIN DOCENTE</div>`:""}
-
+      ${isAusente?`<div style="font-size:0.65rem;color:var(--rojo);margin-top:4px;font-weight:700">⚠️ SIN DOCENTE</div>`:""}
     </div></td>`;
-
   };
 
 
@@ -1084,7 +1086,7 @@ function renderSemanaAlumno(){
 
           <th>Martes</th>
 
-          <th>Miéércoles</th>
+          <th>Miércoles</th>
 
           <th>Jueves</th>
 
@@ -1263,15 +1265,23 @@ function openModalAusencia(){
 
 
 function submitAusencia(){
-
+  const tipo = document.getElementById('tipo-ausencia').value;
+  const inicio = document.getElementById('fecha-inicio').value;
+  const fin = document.getElementById('fecha-fin').value;
+  const motivo = document.getElementById('motivo-texto').value;
   const checks = document.querySelectorAll('#materias-check input:checked');
-
   const materias = [...checks].map(c=>c.parentElement.textContent.trim());
-
   const cert = document.getElementById('file-cert').files.length>0;
+
+  if (!inicio || !fin) {
+    showToast('Por favor, completa las fechas', 'error');
+    return;
+  }
+
   const nueva = {
     id:nextId++,
-    profId:1,profNombre:'Ana García',
+    profId:1,
+    profNombre:'Ana García',
     tipo:tipo,
     inicio:inicio,
     fin:fin,
@@ -1413,6 +1423,16 @@ document.getElementById('fecha-inicio')&&(document.getElementById('fecha-inicio'
 
 document.getElementById('fecha-fin')&&(document.getElementById('fecha-fin').value=hoyFecha);
 
+function isProfesorAusente(nombre) {
+  const hoy = new Date().toISOString().split('T')[0];
+  return AUSENCIAS.some(a => 
+    a.estado === 'aprobada' && 
+    a.inicio <= hoy && a.fin >= hoy && 
+    (a.profNombre.toLowerCase().includes(nombre.toLowerCase().split(' ')[0]) || 
+     nombre.toLowerCase().includes(a.profNombre.toLowerCase().split(' ')[0]))
+  );
+}
+
 
 
 // SEGUIMIENTO DEL SENSOR (MOUSE/TOUCH) PARA EL FONDO INTERACTIVO
@@ -1429,11 +1449,7 @@ function updateMousePosition(x, y) {
 
 // Mouse para web
 
-document.addEventListener('mousemove', (e) => {
 
-  updateMousePosition(e.clientX, e.clientY);
-
-});
 
 
 

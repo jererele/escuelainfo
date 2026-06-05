@@ -92,7 +92,36 @@
 
 
 
+
+/* PERSONALIZACIÓN DE BARRAS DE DESPLAZAMIENTO */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg3);
+  border-radius: 10px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--verde);
+}
+
+/* Soporte para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg3) var(--bg);
+}
+
 html{scroll-behavior:smooth}
+
+
 
 body{
 
@@ -1025,7 +1054,7 @@ tr:hover td{background:rgba(255,255,255,0.03)}
 
 .upload-area{
 
-  border:2px díashed var(--border2);border-radius:var(--radius);
+  border:2px dashed var(--border2);border-radius:var(--radius);
 
   padding:2rem;text-align:center;cursor:pointer;transition:all 0.2s;
 
@@ -1260,6 +1289,7 @@ body.theme-cyber .topbar-logo span {
 @media(max-width:768px){
 
   .sidebar{position:fixed; left:-100%; z-index:100; transition:left 0.3s;}
+  .sidebar.open { left: 0; }
 
   .stats-row{grid-template-columns:1fr 1fr}
 
