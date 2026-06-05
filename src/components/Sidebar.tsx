@@ -72,12 +72,33 @@ export default function Sidebar({
         onClick={handleLogoClick}
         className={`mb-5 flex items-center cursor-pointer select-none active:scale-95 transition-all overflow-hidden ${isCollapsed ? 'justify-center' : 'px-2 gap-3'}`}
       >
-        <div className="w-10 h-10 bg-[var(--verde)] rounded-xl flex items-center justify-center text-black font-black text-lg shadow-sm shrink-0">
-          AI
+        <div className="w-10 h-10 bg-[var(--verde-bg)] border border-[var(--verde-border)] rounded-xl flex items-center justify-center text-[var(--verde)] shadow-sm shrink-0 p-1.5">
+          <svg className="w-full h-full" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 256 80 L 416 160 L 256 240 L 96 160 Z" fill="url(#grad-emerald-sidebar)" />
+            <path d="M 416 160 C 430 200, 440 240, 440 260" stroke="currentColor" strokeWidth="12" strokeLinecap="round" />
+            <circle cx="440" cy="275" r="20" fill="#F59E0B" />
+            <path d="M 160 220 L 160 360 C 160 400, 220 420, 256 420" stroke="url(#grad-blue-sidebar)" strokeWidth="32" strokeLinecap="round" />
+            <path d="M 352 220 L 352 360 C 352 400, 292 420, 256 420" stroke="url(#grad-emerald-sidebar)" strokeWidth="32" strokeLinecap="round" />
+            <line x1="256" y1="200" x2="256" y2="440" stroke="currentColor" strokeWidth="28" strokeLinecap="round" />
+            <circle cx="256" cy="160" r="28" fill="currentColor" />
+            <circle cx="256" cy="160" r="14" fill="var(--bg)" />
+            <circle cx="160" cy="220" r="22" fill="#3B82F6" />
+            <circle cx="352" cy="220" r="22" fill="#10B981" />
+            <defs>
+              <linearGradient id="grad-emerald-sidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10B981" />
+                <stop offset="100%" stopColor="#059669" />
+              </linearGradient>
+              <linearGradient id="grad-blue-sidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#3B82F6" />
+                <stop offset="100%" stopColor="#1D4ED8" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
         {!isCollapsed && (
           <div className="title-font text-2xl font-black whitespace-nowrap">
-            Aula<span className="text-[var(--verde)]">Info</span>
+            Escuela<span className="text-[var(--verde)]">Info</span>
           </div>
         )}
       </div>

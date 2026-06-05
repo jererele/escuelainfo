@@ -159,7 +159,7 @@ export default function SendNoticeModal({
             </div>
             <div>
               <h2 className="text-2xl font-black title-font text-[var(--text)]">Enviar Aviso por Mail</h2>
-              <p className="text-xs text-[var(--text2)]">Envía comunicados a cuentas registradas en AulaInfo.</p>
+              <p className="text-xs text-[var(--text2)]">Envía comunicados a cuentas registradas en EscuelaInfo.</p>
             </div>
           </div>
           <button
@@ -270,7 +270,7 @@ export default function SendNoticeModal({
 
           {/* Privacy Note */}
           <div className="p-3 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-[10px] text-[var(--text3)] font-semibold leading-relaxed">
-            💡 Para proteger la privacidad de los destinatarios, AulaInfo enviará automáticamente todos los correos en **CCO (Copia de Correo Oculta - BCC)**. Nadie podrá ver las direcciones de correo de otros usuarios.
+            💡 Para proteger la privacidad de los destinatarios, EscuelaInfo enviará automáticamente todos los correos en **CCO (Copia de Correo Oculta - BCC)**. Nadie podrá ver las direcciones de correo de otros usuarios.
           </div>
 
           {/* ACTIONS */}

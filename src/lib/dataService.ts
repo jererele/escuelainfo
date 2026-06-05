@@ -4,7 +4,7 @@ import { ID, Query } from "appwrite";
 // ─── Logger solo en desarrollo ───────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
 const devLog = (ctx: string, err?: unknown) => {
-  if (isDev) console.error(`[AulaInfo/${ctx}]`, err ?? "");
+  if (isDev) console.error(`[EscuelaInfo/${ctx}]`, err ?? "");
 };
 
 // ─── Sanitización reforzada ──────────────────────────────────────────────────
@@ -30,7 +30,7 @@ const APPWRITE_CURSOS_COLLECTION_ID  = "cursos";
 const DEFAULT_LIMIT = 200;
 
 // ─── Caché Client-Side para Optimizar Appwrite ─────────────────────────────────
-const CACHE_KEY_PREFIX = "aulainfo_cache_";
+const CACHE_KEY_PREFIX = "escuelainfo_cache_";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos (evita lecturas excesivas en Appwrite)
 
 const getCachedData = <T>(key: string): T | null => {

@@ -890,7 +890,7 @@ export default function Dashboard() {
 
         <div className="glass w-full max-w-[500px] p-10 md:p-12 rounded-[40px] border border-white/40 shadow-2xl relative z-10 text-center animate-zoom-in">
           <div className="text-[2.2rem] font-black tracking-tighter mb-4 title-font leading-none">
-            Aula<span className="text-[var(--verde)]">Info</span>
+            Escuela<span className="text-[var(--verde)]">Info</span>
           </div>
 
           <div className="w-20 h-20 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_10px_30px_rgba(245,158,11,0.2)] animate-pulse">
@@ -1041,7 +1041,7 @@ export default function Dashboard() {
             onClick={handleLogoClick}
             className="title-font text-xl font-black cursor-pointer select-none active:scale-95 transition-transform"
           >
-            Aula<span className="text-[var(--verde)]">Info</span>
+            Escuela<span className="text-[var(--verde)]">Info</span>
           </div>
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-[var(--bg3)] rounded-lg text-[var(--text2)] hover:text-[var(--text)]"><Menu size={24} /></button>
         </header>
@@ -1081,7 +1081,7 @@ export default function Dashboard() {
                 }[activeTab] ?? "Panel"}
               </h1>
               <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[var(--text3)] bg-[var(--bg3)] border border-[var(--border)] px-3 py-1 rounded-full">
-                AulaInfo
+                EscuelaInfo
               </span>
             </header>
           )}

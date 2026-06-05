@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'aulainfo-v2';
+const CACHE_NAME = 'escuelainfo-v2';
 const ASSETS = [
     './',
     './index.html',

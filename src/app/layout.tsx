@@ -19,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AulaInfo — Registro de Ausencias",
+  title: "EscuelaInfo — Registro de Ausencias",
   description: "Sistema de registro de ausencias · La Escuela 713 \"Juan Abdala Chayep\"",
 };
 

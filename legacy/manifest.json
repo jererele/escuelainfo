@@ -1,6 +1,6 @@
 {
-  "name": "AulaInfo - Asistencia Escolar",
-  "short_name": "AulaInfo",
+  "name": "EscuelaInfo - Asistencia Escolar",
+  "short_name": "EscuelaInfo",
   "description": "Sistema de gestión de asistencias para el Instituto San Martín.",
   "start_url": "index.html",
   "display": "standalone",
