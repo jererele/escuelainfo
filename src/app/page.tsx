@@ -75,7 +75,8 @@ export default function LoginPage() {
     }
     setLoading(true); setErrorMsg(""); setSuccessMsg("");
     try {
-      await account.createRecovery(email, `${window.location.origin}/reset-password`);
+      const basePath = process.env.NODE_ENV === 'production' ? '/escuelainfo' : '';
+      await account.createRecovery(email, `${window.location.origin}${basePath}/reset-password`);
       setSuccessMsg("Se ha enviado un enlace para restablecer tu contraseña. Revisá tu casilla de correo.");
     } catch (err: any) {
       setErrorMsg(err.message || "Error al enviar el correo de recuperación. Verificá la dirección.");
