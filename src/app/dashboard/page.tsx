@@ -15,6 +15,8 @@ import NewCourseModal from "@/components/NewCourseModal";
 import CustomSelect from "@/components/CustomSelect";
 import UserProfileModal from "@/components/UserProfileModal";
 import SendNoticeModal from "@/components/SendNoticeModal";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import * as XLSX from "xlsx";
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -95,14 +97,7 @@ export default function Dashboard() {
   };
   const stamp = (key: string) => dataCache.current.set(key, Date.now());
 
-  const handleSidebarEnter = () => {
-    if (sidebarLeaveTimeout.current) clearTimeout(sidebarLeaveTimeout.current);
-    setIsSidebarCollapsed(false);
-  };
 
-  const handleSidebarLeave = () => {
-    sidebarLeaveTimeout.current = setTimeout(() => setIsSidebarCollapsed(true), 200);
-  };
 
   useEffect(() => {
     setHasMounted(true);
@@ -506,63 +501,53 @@ export default function Dashboard() {
 
   const exportToExcel = () => {
     const effectiveCourse = userProfile?.rol === 'alumno' ? (currentAlumno?.curso || "SinCurso") : (selectedCourse || "Todos_Cursos");
-    const fileName = `Cronograma_${effectiveCourse}.xls`;
-
-    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    const fileName = `Cronograma_${effectiveCourse}.xlsx`;
+    const days = ['Lunes', 'Martes', 'Mi\u00e9rcoles', 'Jueves', 'Viernes'];
     const slots = getVisibleSlots();
 
-    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">`;
-    html += `<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Cronograma</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>`;
-    html += `<body><table border="1">`;
-    
-    // Header row
-    html += `<tr style="background-color: #10B981; color: white; font-weight: bold; text-align: center;">`;
-    html += `<th style="padding: 10px;">Horario</th>`;
-    days.forEach(d => {
-      html += `<th style="padding: 10px; min-width: 150px;">${d}</th>`;
-    });
-    html += `</tr>`;
+    // Build rows as plain arrays for xlsx
+    const rows: (string | null)[][] = [];
+    // Header
+    rows.push(['Horario', ...days]);
 
-    // Data rows
     slots.forEach(slot => {
-      if (slot === "RECESO") {
-        html += `<tr style="background-color: #f3f4f6; text-align: center; font-weight: bold; height: 30px;">`;
-        html += `<td colspan="6">CAMBIO DE TURNO / RECESO</td>`;
-        html += `</tr>`;
-      } else if (slot.startsWith("RECREO:")) {
-        html += `<tr style="background-color: #e6f7f0; text-align: center; color: #10B981; font-weight: bold; height: 30px;">`;
-        html += `<td colspan="6">RECREO</td>`;
-        html += `</tr>`;
+      if (slot === 'RECESO') {
+        rows.push(['--- CAMBIO DE TURNO / RECESO ---', null, null, null, null, null]);
+      } else if (slot.startsWith('RECREO:')) {
+        rows.push(['--- RECREO ---', null, null, null, null, null]);
       } else {
-        html += `<tr style="height: 50px;">`;
-        html += `<td style="font-weight: bold; background-color: #f9fafb; text-align: center; padding: 5px;">${slot}</td>`;
+        const row: (string | null)[] = [slot];
         days.forEach(dia => {
-          const h = horarios.find(item => 
-            item.dia === dia && 
-            item.hora === slot && 
-            (effectiveCourse === "" || item.curso === effectiveCourse)
+          const h = horarios.find(item =>
+            item.dia === dia &&
+            item.hora === slot &&
+            (effectiveCourse === '' || item.curso === effectiveCourse)
           );
-          if (h) {
-            html += `<td style="padding: 8px; text-align: center; vertical-align: middle;"><b>${h.materia}</b><br/><font size="2" color="#4b5563">Prof. ${h.profesor}</font><br/><font size="1" color="#9ca3af">${h.curso}</font></td>`;
-          } else {
-            html += `<td style="color: #cbd5e1; font-style: italic; text-align: center; vertical-align: middle;">Hora Libre</td>`;
-          }
+          row.push(h ? `${h.materia}\nProf. ${h.profesor}\n${h.curso}` : '');
         });
-        html += `</tr>`;
+        rows.push(row);
       }
     });
 
-    html += `</table></body></html>`;
+    const ws = XLSX.utils.aoa_to_sheet(rows);
 
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel del cronograma descargado", "success");
+    // Column widths
+    ws['!cols'] = [
+      { wch: 18 },
+      { wch: 28 },
+      { wch: 28 },
+      { wch: 28 },
+      { wch: 28 },
+      { wch: 28 },
+    ];
+
+    // Row height for data rows (header + slot rows)
+    ws['!rows'] = rows.map((_, i) => i === 0 ? { hpt: 22 } : { hpt: 54 });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cronograma');
+    XLSX.writeFile(wb, fileName);
+    showToast('Excel del cronograma descargado', 'success');
   };
 
   const renderFreeHoursWidget = (isStudent = false) => {
@@ -977,46 +962,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-transparent text-[var(--text)]">
-      {/* SIDEBAR DESKTOP */}
-      <div
-        className={`hidden lg:block shrink-0 h-screen z-50 transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-[90px]' : 'w-[280px]'
-        }`}
-        onMouseEnter={handleSidebarEnter}
-        onMouseLeave={handleSidebarLeave}
-      >
-        <aside
-          className={`sidebar-glass flex flex-col h-full transition-all duration-300 ${
-            isSidebarCollapsed ? 'w-[90px] px-4 py-8' : 'w-[280px] px-8 py-8'
-          }`}
-        >
-          <Sidebar
-            isCollapsed={isSidebarCollapsed}
-            user={user}
-            userProfile={userProfile}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            showSecretAdmin={showSecretAdmin}
-            handleLogoClick={handleLogoClick}
-            handleLogout={handleLogout}
-            onProfileOpen={() => setIsProfileModalOpen(true)}
-            onTabChange={(tabId) => {
-              if (tabId === 'auditoria') getLogs().then(setLogs);
-            }}
-            pendingAccessCount={usuarios.filter(u => u.rol.startsWith("pendiente_") && u.rol !== "pendiente_alumno").length}
-            pendingAlumnosCount={usuarios.filter(u => u.rol === "pendiente_alumno").length}
-          />
-        </aside>
-      </div>
-
-      {/* MOBILE NAV OVERLAY */}
-      <div className={`mobile-nav-overlay lg:hidden ${isMobileMenuOpen ? "open" : ""}`} onClick={() => setIsMobileMenuOpen(false)}></div>
-      <div 
-        className={`mobile-sidebar sidebar-glass lg:hidden flex flex-col ${isMobileMenuOpen ? "open" : ""}`} 
-      >
+    <SidebarProvider>
+      <div className="flex w-full h-screen overflow-hidden bg-transparent text-[var(--text)]">
         <Sidebar
-          isCollapsed={false}
           user={user}
           userProfile={userProfile}
           activeTab={activeTab}
@@ -1028,10 +976,12 @@ export default function Dashboard() {
           handleLogoClick={handleLogoClick}
           handleLogout={handleLogout}
           onProfileOpen={() => setIsProfileModalOpen(true)}
+          onTabChange={(tabId) => {
+            if (tabId === 'auditoria') getLogs().then(setLogs);
+          }}
           pendingAccessCount={usuarios.filter(u => u.rol.startsWith("pendiente_") && u.rol !== "pendiente_alumno").length}
           pendingAlumnosCount={usuarios.filter(u => u.rol === "pendiente_alumno").length}
         />
-      </div>
 
       {/* MAIN CONTENT */}
       <main className="flex-1 min-w-0 h-screen overflow-y-auto relative">
@@ -1043,7 +993,7 @@ export default function Dashboard() {
           >
             Escuela<span className="text-[var(--verde)]">Info</span>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-[var(--bg3)] rounded-lg text-[var(--text2)] hover:text-[var(--text)]"><Menu size={24} /></button>
+          <SidebarTrigger />
         </header>
 
         <div className="p-6 md:p-12 max-w-[1400px] mx-auto">
@@ -2451,7 +2401,18 @@ export default function Dashboard() {
           }}
         />
       )}
+      {toast.show && (
+        <div className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold border transition-all ${
+          toast.type === 'success'
+            ? 'bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]'
+            : 'bg-[var(--rojo-bg)] text-[var(--rojo)] border-[var(--rojo-border)]'
+        }`}>
+          <span>{toast.type === 'success' ? '✓' : '✕'}</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
+    </SidebarProvider>
   );
 }
 

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
+import { Inter, Outfit, JetBrains_Mono, Geist } from "next/font/google";
 import "./globals.css";
 import CosmosBackground from "@/components/CosmosBackground";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({
   variable: "--font-text",
@@ -29,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full" suppressHydrationWarning>
+    <html lang="es" className={cn("h-full", "font-sans", geist.variable)} suppressHydrationWarning>
       <head>
         <script id="theme-initializer" suppressHydrationWarning dangerouslySetInnerHTML={{__html: `
           (function() {

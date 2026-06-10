@@ -119,9 +119,10 @@ export default function CosmosBackground() {
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
     let stars: Star[] = [];
-    const mouse = { x: -1000, y: -1000 };
+    const virtualMouse = { x: width / 2, y: height / 2 };
     let animationFrameId: number;
     let isPaused = false;
+    let time = 0;
 
     function init() {
       if (!canvas) return;
@@ -135,56 +136,23 @@ export default function CosmosBackground() {
       }
     }
 
-    function drawLines() {
-      if (!ctx || mouse.x <= -500) return;
-      
-      const nearbyStars = stars.filter(s => {
-        const dx = mouse.x - s.x;
-        const dy = mouse.y - s.y;
-        return (dx*dx + dy*dy) < 60000;
-      });
-
-      ctx.save();
-      for (let i = 0; i < nearbyStars.length; i++) {
-        for (let j = i + 1; j < nearbyStars.length; j++) {
-          const dx = nearbyStars[i].x - nearbyStars[j].x;
-          const dy = nearbyStars[i].y - nearbyStars[j].y;
-          const distSq = dx * dx + dy * dy;
-
-          if (distSq < 18000) {
-            const dist = Math.sqrt(distSq);
-            const alpha = Math.min(nearbyStars[i].opacity, nearbyStars[j].opacity) * 0.6;
-            ctx.strokeStyle = `rgba(16, 185, 129, ${(1 - dist/130) * alpha})`;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(nearbyStars[i].x, nearbyStars[i].y);
-            ctx.lineTo(nearbyStars[j].x, nearbyStars[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-      ctx.restore();
-    }
-
     function animate() {
       if (!ctx || isPaused) return;
       ctx.clearRect(0, 0, width, height);
-      drawLines();
+      
+      time += 0.002;
+      virtualMouse.x = width / 2 + Math.cos(time) * (width / 3);
+      virtualMouse.y = height / 2 + Math.sin(time * 0.8) * (height / 3);
+
+      if (nebulaRef.current) {
+        nebulaRef.current.style.transform = `translate3d(${virtualMouse.x - 450}px, ${virtualMouse.y - 450}px, 0)`;
+      }
+
       stars.forEach((star) => {
-        star.update(mouse);
+        star.update(virtualMouse);
         star.draw(ctx);
       });
       animationFrameId = requestAnimationFrame(animate);
-    }
-
-    function handleMouseMove(e: MouseEvent) {
-      if (window.innerWidth < 768) return;
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      if (nebulaRef.current) {
-        // Hardware accelerated mouse follow
-        nebulaRef.current.style.transform = `translate3d(${e.clientX - 450}px, ${e.clientY - 450}px, 0)`;
-      }
     }
 
     function handleResize() {
@@ -203,7 +171,6 @@ export default function CosmosBackground() {
       }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("resize", handleResize);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -211,7 +178,6 @@ export default function CosmosBackground() {
     animate();
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
