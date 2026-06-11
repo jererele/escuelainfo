@@ -1,25 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, JetBrains_Mono, Geist } from "next/font/google";
 import "./globals.css";
 import CosmosBackground from "@/components/CosmosBackground";
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
-const inter = Inter({
-  variable: "--font-text",
-  subsets: ["latin"],
-});
-
-const outfit = Outfit({
-  variable: "--font-title",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "EscuelaInfo — Registro de Ausencias",
@@ -32,8 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={cn("h-full", "font-sans", geist.variable)} suppressHydrationWarning>
+    <html lang="es" className={cn("h-full", "font-sans")} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
         <script id="theme-initializer" suppressHydrationWarning dangerouslySetInnerHTML={{__html: `
           (function() {
             try {
@@ -48,7 +33,7 @@ export default function RootLayout({
         `}} />
       </head>
       <body
-        className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable} antialiased min-h-screen relative`}
+        className="antialiased min-h-screen relative"
         suppressHydrationWarning
       >
         <CosmosBackground />
