@@ -1,8 +1,14 @@
 const { Client, Databases, ID } = require('node-appwrite');
+require('dotenv').config({ path: '.env.local' });
 
-const ENDPOINT = 'https://cloud.appwrite.io/v1';
-const PROJECT_ID = '6a2af00d002d86d3dd20';
-const API_KEY = 'standard_3bcdc539c1a8313e03b5f4cedc374c7161bfef8a64ae2a24f9e7d821e8655c47fdb6708e179572685c5072efd2058e1a041fb34fd2f29f600db6ccedc95fbf01d1f53873defdd197c91e1cf1888b7830f42eaf987995564c001ff18dccefdb05a9eef985f87eba7937092bc1907b3c57715a8df157fd62e1ba59187b89c286f4';
+const ENDPOINT   = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT   || 'https://cloud.appwrite.io/v1';
+const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
+const API_KEY    = process.env.APPWRITE_API_KEY || '';
+
+if (!PROJECT_ID || !API_KEY) {
+    console.error('❌ Faltan credenciales en .env.local. Corré node configure-env.js primero.');
+    process.exit(1);
+}
 
 const client = new Client()
     .setEndpoint(ENDPOINT)
