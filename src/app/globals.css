@@ -171,11 +171,7 @@
     0 10px 20px -5px rgba(0, 0, 0, 0.3) !important;
 }
 
-.dark body::after {
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) !important;
-}
+/* Cuadrícula desactivada */
 
 @theme inline {
   --color-background: var(--bg);
@@ -259,18 +255,7 @@ body {
 
 /* EFECTO INTERACTIVO DE FONDO MOUSE - Eliminado por problemas de rendimiento (ahora se maneja en React con translate3d) */
 
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 1;
-}
+/* Cuadrícula desactivada */
 
 /* UTILITIES FROM LEGACY */
 .glass {
