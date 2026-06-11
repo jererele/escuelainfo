@@ -5,11 +5,11 @@
 
 import { Client, Databases, Query } from 'node-appwrite';
 
-const ENDPOINT = process.env.APPWRITE_ENDPOINT || '';
-const PROJECT_ID = process.env.APPWRITE_PROJECT_ID || '';
+const ENDPOINT = process.env.APPWRITE_ENDPOINT || process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '';
+const PROJECT_ID = process.env.APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
 const API_KEY = process.env.APPWRITE_API_KEY || '';
-const DB_ID = process.env.APPWRITE_DATABASE_ID || '';
-const AUSENCIAS_COL_ID = process.env.APPWRITE_COLLECTION_ID || '';
+const DB_ID = process.env.APPWRITE_DATABASE_ID || process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
+const AUSENCIAS_COL_ID = process.env.APPWRITE_COLLECTION_ID || process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID || '';
 
 if (!ENDPOINT || !PROJECT_ID || !API_KEY || !DB_ID) {
   console.error('❌ Faltan variables en .env.setup. Asegúrate de configurar una API Key activa primero.');
