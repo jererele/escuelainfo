@@ -17,6 +17,7 @@ const ENDPOINT   = 'https://cloud.appwrite.io/v1';
 const PROJECT_ID = '6a2af00d002d86d3dd20';
 const DB_ID      = 'escuelainfodb';
 const COL_ID     = 'ausencias';
+// NOTA: La API Key se pide por consola para no exponerla en el código.
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
