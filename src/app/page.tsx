@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter } from "next/navigation";
@@ -264,8 +265,8 @@ export default function LoginPage() {
           <>
             {/* Header */}
             <div className="text-center mb-8 flex flex-col items-center">
-              <div className="w-16 h-16 flex items-center justify-center mb-4 shrink-0">
-                <img src="/logo.png" alt="EscuelaInfo Logo" className="w-full h-full object-contain rounded-xl" />
+              <div className="flex items-center justify-center mb-4 shrink-0">
+                <EscuelaInfoLogo size={64} />
               </div>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-[10px] font-black uppercase tracking-wider mb-4">
                 Escuela N° 713 &quot;Juan Abdala Chayep&quot;

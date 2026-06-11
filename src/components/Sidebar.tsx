@@ -32,6 +32,7 @@ import {
   SidebarGroupContent,
   SidebarMenuBadge
 } from "@/components/ui/sidebar";
+import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -104,8 +105,8 @@ export default function Sidebar({
           onClick={handleLogoClick}
           className={`flex items-center cursor-pointer select-none active:scale-95 transition-all overflow-hidden ${isCollapsed ? 'justify-center p-2' : 'px-2 gap-3'}`}
         >
-          <div className="w-10 h-10 flex items-center justify-center shrink-0">
-            <img src="/logo.png" alt="EscuelaInfo Logo" className="w-full h-full object-contain rounded-lg" />
+          <div className="flex items-center justify-center shrink-0">
+            <EscuelaInfoLogo size={40} />
           </div>
           {!isCollapsed && (
             <div className="title-font text-2xl font-black whitespace-nowrap">
@@ -239,13 +240,6 @@ export default function Sidebar({
       </SidebarFooter>
     </ShadcnSidebar>
 
-    {/* Floating Toggle Button */}
-    <button
-      onClick={toggleSidebar}
-      className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[var(--bg)] text-[var(--text)] rounded-full flex items-center justify-center shadow-md border border-[var(--border)] hover:bg-[var(--bg3)] hover:scale-110 active:scale-95 transition-all z-50 hidden lg:flex group"
-    >
-      {isCollapsed ? <ChevronRight size={18} className="group-hover:text-[var(--verde)] transition-colors" /> : <ChevronLeft size={18} className="group-hover:text-[var(--verde)] transition-colors" />}
-    </button>
     </>
   );
 }
