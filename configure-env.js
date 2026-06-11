@@ -5,7 +5,15 @@ const ENDPOINT = 'https://cloud.appwrite.io/v1';
 const PROJECT_ID = '6a2af00d002d86d3dd20';
 const DB_ID = 'escuelainfodb';
 const AUSENCIAS_COL_ID = 'ausencias';
-const API_KEY = 'standard_3bcdc539c1a8313e03b5f4cedc374c7161bfef8a64ae2a24f9e7d821e8655c47fdb6708e179572685c5072efd2058e1a041fb34fd2f29f600db6ccedc95fbf01d1f53873defdd197c91e1cf1888b7830f42eaf987995564c001ff18dccefdb05a9eef985f87eba7937092bc1907b3c57715a8df157fd62e1ba59187b89c286f4';
+
+// Read API Key from command-line arguments to keep it secure
+const API_KEY = process.argv[2];
+
+if (!API_KEY) {
+    console.error('❌ Error: Debes pasar la API Key de Appwrite como argumento.');
+    console.log('Uso: node configure-env.js <TU_API_KEY>');
+    process.exit(1);
+}
 
 const localEnvPath = path.join(__dirname, '.env.local');
 const setupEnvPath = path.join(__dirname, '.env.setup');
