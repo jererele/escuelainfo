@@ -35,7 +35,23 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
     client.ping().catch(() => {});
-    account.get().then(() => router.push("/dashboard")).catch(() => {});
+    // Auto-redirect only if session AND database profile are both valid
+    account.get().then(async (user) => {
+      try {
+        const profile = await getUserProfile(user.$id);
+        if (profile) {
+          router.push("/dashboard");
+        } else {
+          // Session exists but user was deleted from DB — clean up the orphaned session
+          await account.deleteSession("current").catch(() => {});
+        }
+      } catch {
+        // Profile check failed — don't redirect, just stay on login
+        await account.deleteSession("current").catch(() => {});
+      }
+    }).catch(() => {
+      // No active session — normal, stay on login page
+    });
   }, [router]);
 
   const resetRegisterForm = () => {
