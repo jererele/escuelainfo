@@ -141,6 +141,8 @@ export default function LoginPage() {
 
       // Check if there is already a profile in the 'usuarios' collection
       let preProfile = await getUserProfileByEmail(cleanEmail);
+      console.debug("[REGISTRO] Email buscado:", cleanEmail);
+      console.debug("[REGISTRO] Perfil pre-existente encontrado:", preProfile);
 
       if (isTeacher) {
         // Teachers go in directly and get the active 'profesor' role
@@ -345,7 +347,7 @@ export default function LoginPage() {
                   <div>📚 Registro General de la Institución</div>
                   <div className="text-[10px] opacity-90 font-semibold">
                     Los alumnos quedan en espera de aprobación del preceptor. 
-                    Los docentes pre-registrados por administración ingresan directamente con su email institucional.
+                    Si fuiste pre-autorizado por la administración (como administrador, directivo, preceptor o docente), regístrate con tu correo y tu rol se activará automáticamente.
                   </div>
                 </div>
 
