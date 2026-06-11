@@ -1,9 +1,9 @@
 // Script para vaciar todos los datos de prueba de Appwrite (Alumnos, Profesores, Horarios, Cursos, Logs, Ausencias)
-// Preservando la cuenta de administrador principal.
+// Y también todas las cuentas de Autenticación (Auth Users), preservando la cuenta de administrador principal.
 //
-// Ejecutar con: node --env-file=.env.setup clear-all-data.js
+// Ejecutar con: node --env-file=.env.local clear-all-data.js
 
-import { Client, Databases, Query } from 'node-appwrite';
+import { Client, Databases, Users, Query } from 'node-appwrite';
 
 const ENDPOINT = process.env.APPWRITE_ENDPOINT || process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '';
 const PROJECT_ID = process.env.APPWRITE_PROJECT_ID || process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
@@ -12,13 +12,15 @@ const DB_ID = process.env.APPWRITE_DATABASE_ID || process.env.NEXT_PUBLIC_APPWRI
 const AUSENCIAS_COL_ID = process.env.APPWRITE_COLLECTION_ID || process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID || '';
 
 if (!ENDPOINT || !PROJECT_ID || !API_KEY || !DB_ID) {
-  console.error('❌ Faltan variables en .env.setup. Asegúrate de configurar una API Key activa primero.');
+  console.error('❌ Faltan variables en la configuración. Asegúrate de tener tu API Key activa.');
   process.exit(1);
 }
 
 const client = new Client();
 client.setEndpoint(ENDPOINT).setProject(PROJECT_ID).setKey(API_KEY);
+
 const databases = new Databases(client);
+const usersService = new Users(client);
 
 const COLLECTIONS = [
   { id: 'alumnos', name: 'Alumnos' },
@@ -38,8 +40,6 @@ const ADMIN_EMAIL = 'jeree.castroo10@gmail.com';
 async function clearCollection(colId, colName) {
   try {
     console.log(`\n⏳ Vaciando colección: ${colName} (${colId})...`);
-    
-    // Obtener documentos de la colección (límite 100 por lote)
     let hasMore = true;
     let totalDeleted = 0;
 
@@ -57,7 +57,6 @@ async function clearCollection(colId, colName) {
         totalDeleted++;
       }
       
-      // Si la respuesta tiene menos de 100, terminamos
       if (docs.length < 100) {
         hasMore = false;
       }
@@ -78,13 +77,12 @@ async function clearUsuarios() {
   const colName = 'Usuarios/Perfiles';
   try {
     console.log(`\n⏳ Vaciando colección: ${colName} (${colId}) [Preservando Administrador]...`);
-    
     const response = await databases.listDocuments(DB_ID, colId, [Query.limit(100)]);
     let totalDeleted = 0;
 
     for (const doc of response.documents) {
       if (doc.email && doc.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        console.log(`  ~ Preservando perfil de administrador: ${doc.email}`);
+        console.log(`  ~ Preservando perfil de base de datos del administrador: ${doc.email}`);
         continue;
       }
       await databases.deleteDocument(DB_ID, colId, doc.$id);
@@ -101,19 +99,50 @@ async function clearUsuarios() {
   }
 }
 
+async function clearAuthUsers() {
+  try {
+    console.log('\n⏳ Vaciando cuentas de Autenticación (Auth Users)...');
+    let totalDeleted = 0;
+    
+    // Obtener los usuarios registrados en Auth (límite máximo 100 por consulta)
+    const response = await usersService.list();
+    const authUsers = response.users;
+
+    for (const authUser of authUsers) {
+      const email = authUser.email || '';
+      // Preservar la cuenta principal del admin
+      if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        console.log(`  ~ Preservando cuenta de autenticación del administrador: ${email}`);
+        continue;
+      }
+      
+      await usersService.delete(authUser.$id);
+      totalDeleted++;
+    }
+    
+    console.log(`✅ Cuentas de Autenticación limpias. Se eliminaron ${totalDeleted} usuarios.`);
+  } catch (err) {
+    console.error('❌ Error al limpiar cuentas de Autenticación:', err.message);
+    console.log('💡 Recuerda marcar "users.read" y "users.write" en los Scopes de tu API Key en la consola.');
+  }
+}
+
 async function main() {
-  console.log('🧹 INICIANDO LIMPIEZA DE DATOS DE PRUEBA EN APPWRITE...');
+  console.log('🧹 INICIANDO LIMPIEZA DE DATOS Y CUENTAS DE PRUEBA EN APPWRITE...');
   console.log(`Database ID: ${DB_ID}`);
   
-  // Limpiar las colecciones normales
+  // 1. Limpiar colecciones de base de datos
   for (const col of COLLECTIONS) {
     await clearCollection(col.id, col.name);
   }
 
-  // Limpiar usuarios con filtro especial
+  // 2. Limpiar usuarios en base de datos
   await clearUsuarios();
 
-  console.log('\n🎉 ¡Limpieza completa! La base de datos está lista para producción.');
+  // 3. Limpiar cuentas de autenticación (Auth)
+  await clearAuthUsers();
+
+  console.log('\n🎉 ¡Limpieza completa! La base de datos y Auth están listos para producción.');
 }
 
 main();
