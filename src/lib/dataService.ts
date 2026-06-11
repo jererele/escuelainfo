@@ -445,6 +445,41 @@ export const createUserProfile = async (profile: UserProfile) => {
   } catch (err) { devLog("createUserProfile", err); throw err; }
 };
 
+export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) => {
+  clearCache("usuarios");
+  const cleanEmail = email.toLowerCase().trim();
+
+  // 1. Check if user profile already exists
+  const existingProfile = await getUserProfileByEmail(cleanEmail);
+  if (existingProfile?.id) {
+    await updateUserProfile(existingProfile.id, { rol });
+  } else {
+    await createUserProfile({
+      uid: "PENDING_" + ID.unique(),
+      email: cleanEmail,
+      nombre: "Pendiente",
+      rol
+    });
+  }
+
+  // 2. If promoted to a non-student role, remove from student list
+  if (rol !== "alumno" && rol !== "pendiente_alumno") {
+    clearCache("alumnos");
+    try {
+      const response = await databases.listDocuments(
+        APPWRITE_DB_ID,
+        APPWRITE_ALUMNOS_COLLECTION_ID,
+        [Query.equal("email", cleanEmail)]
+      );
+      for (const doc of response.documents) {
+        await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, doc.$id);
+      }
+    } catch (err) {
+      devLog("promoteUserToRole - deleteAlumno", err);
+    }
+  }
+};
+
 // ─── AUSENCIAS ───────────────────────────────────────────────────────────────
 export const saveAusencia = async (ausencia: Ausencia) => {
   try {

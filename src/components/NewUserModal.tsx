@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { account } from "@/lib/appwrite";
-import { createUserProfile, logAction } from "@/lib/dataService";
+import { promoteUserToRole, logAction } from "@/lib/dataService";
 import { UserProfile } from "@/lib/dataService";
 import { X, AlertCircle } from "lucide-react";
 
@@ -38,12 +38,7 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
 
     setLoading(true);
     try {
-      await createUserProfile({
-        uid: "PENDING_" + crypto.randomUUID(),
-        email: email.toLowerCase().trim(),
-        nombre: "Pendiente",
-        rol
-      });
+      await promoteUserToRole(email, rol);
 
       let userEmail = "desconocido";
       try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
