@@ -8,7 +8,7 @@ import { Eye, EyeOff } from "lucide-react";
 import {
   getUserProfile, createUserProfile,
   getUserProfileByEmail, updateUserProfile,
-  saveAlumno, checkAlumnoDNI
+  saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor
 } from "@/lib/dataService";
 
 export default function LoginPage() {
@@ -21,9 +21,6 @@ export default function LoginPage() {
   const [successRole, setSuccessRole] = useState<"alumno" | "profesor">("alumno");
   const [activeMode, setActiveMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
-
-  // Register type
-  const [registerType, setRegisterType] = useState<"alumno" | "profesor">("alumno");
 
   // Login
   const [email, setEmail] = useState("");
@@ -86,7 +83,6 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isAlumno = registerType === "alumno";
 
     // Shared validations
     if (!nombres || !apellidos || !email || !telefono || !dni || !password) {
@@ -98,52 +94,78 @@ export default function LoginPage() {
     if (password.length < 8) {
       setErrorMsg("La contraseña debe tener al menos 8 caracteres."); return;
     }
-    // Basic email format check
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setErrorMsg("El correo electrónico no tiene un formato válido."); return;
     }
 
     setLoading(true); setErrorMsg("");
     try {
-      if (isAlumno) {
+      const cleanEmail = email.toLowerCase().trim();
+      const fullName = `${nombres.trim()} ${apellidos.trim()}`;
+
+      // Check if this email is a pre-registered teacher in the 'profesores' list
+      const teachersList = await getProfesores();
+      const preRegisteredTeacher = teachersList.find(
+        t => t.email.toLowerCase() === cleanEmail
+      );
+
+      const isTeacher = !!preRegisteredTeacher;
+
+      if (!isTeacher) {
         const exists = await checkAlumnoDNI(dni);
-        if (exists) { setErrorMsg("Ya existe un alumno con ese DNI. Si ya te registraste, iniciá sesión."); setLoading(false); return; }
+        if (exists) {
+          setErrorMsg("Ya existe un alumno con ese DNI. Si ya te registraste, iniciá sesión.");
+          setLoading(false);
+          return;
+        }
       }
 
-      const fullName = `${nombres.trim()} ${apellidos.trim()}`;
-      const pendingRole = isAlumno ? "pendiente_alumno" : "pendiente_profesor";
+      const user = await account.create(ID.unique(), cleanEmail, password, fullName);
+      await account.createEmailPasswordSession(cleanEmail, password);
 
-      const user = await account.create(ID.unique(), email, password, fullName);
-      await account.createEmailPasswordSession(email, password);
+      // Check if there is already a profile in the 'usuarios' collection
+      let preProfile = await getUserProfileByEmail(cleanEmail);
 
-      // Check if there is already a pre-authorized profile for this email
-      const preProfile = await getUserProfileByEmail(email);
+      if (isTeacher) {
+        // Teachers go in directly and get the active 'profesor' role
+        if (preProfile?.id) {
+          await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName, rol: "profesor" });
+        } else {
+          await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "profesor" });
+        }
 
+        // Auto-update DNI and Name in the profesores collection
+        if (preRegisteredTeacher && preRegisteredTeacher.id) {
+          await updateProfesor(preRegisteredTeacher.id, { nombre: fullName, dni });
+        }
+
+        setSuccessMsg("¡Registro docente exitoso! Ingresando al panel...");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
+        return;
+      }
+
+      // Standard workflow for students/pre-authorized users
       if (preProfile?.id) {
-        // Link the existing pre-authorized profile (directivo, preceptor, admin, etc.)
         await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName });
-
-        // If the pre-authorized role is already active (not pending), enter directly!
         if (!preProfile.rol.startsWith("pendiente_")) {
-          setSuccessMsg("¡Registro exitoso! Vinculando tu cuenta con tu rol autorizado...");
+          setSuccessMsg("¡Registro exitoso! Ingresando al panel...");
           setTimeout(() => {
             router.push("/dashboard");
           }, 2000);
           return;
         }
       } else {
-        // Create a standard pending profile
-        await createUserProfile({ uid: user.$id, email, nombre: fullName, rol: pendingRole as any });
+        await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "pendiente_alumno" as any });
       }
 
-      // Create alumno record in standby (no course assigned — preceptor will assign later)
-      if (isAlumno) {
-        await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email });
-      }
+      // Save student record in standby
+      await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
 
       await account.deleteSession("current");
 
-      setSuccessRole(isAlumno ? "alumno" : "profesor");
+      setSuccessRole("alumno");
       setRequestSuccess(true);
       setTimeout(() => {
         setActiveMode("login");
@@ -289,34 +311,14 @@ export default function LoginPage() {
               /* REGISTRO — Alumno o Profesor */
               <form onSubmit={handleRegister} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar animate-fade-in">
 
-                {/* Role type selector */}
-                <div className="bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)] flex">
-                  {(["alumno", "profesor"] as const).map(type => (
-                    <button key={type} type="button"
-                      onClick={() => { setRegisterType(type); setErrorMsg(""); }}
-                      className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                        registerType === type
-                          ? type === "alumno"
-                            ? "bg-[var(--azul)] text-white shadow-sm"
-                            : "bg-[var(--verde)] text-black shadow-sm"
-                          : "text-[var(--text3)] hover:text-[var(--text2)]"
-                      }`}>
-                      {type === "alumno" ? "📚 Alumno" : "🎓 Docente"}
-                    </button>
-                  ))}
-                </div>
-
                 {/* Info banner */}
-                {registerType === "alumno" ? (
-                  <div className="bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-4 py-3 rounded-xl text-xs font-bold space-y-1">
-                    <div>📚 Registrate como alumno para acceder al sistema.</div>
-                    <div className="text-[10px] opacity-80 font-semibold">⏳ El preceptor te asignará a un curso luego de verificar tu matrícula. No necesitás elegir curso ahora.</div>
+                <div className="bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-4 py-3 rounded-xl text-xs font-bold space-y-1">
+                  <div>📚 Registro General de la Institución</div>
+                  <div className="text-[10px] opacity-90 font-semibold">
+                    Los alumnos quedan en espera de aprobación del preceptor. 
+                    Los docentes pre-registrados por administración ingresan directamente con su email institucional.
                   </div>
-                ) : (
-                  <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-4 py-3 rounded-xl text-xs font-bold">
-                    🎓 Registro docente. La dirección verificará tus datos antes de habilitarte.
-                  </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -374,7 +376,7 @@ export default function LoginPage() {
                   className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2">
                   {loading
                     ? <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
-                    : registerType === "alumno" ? "Enviar Solicitud como Alumno" : "Enviar Solicitud como Docente"}
+                    : "Crear Cuenta / Registrarse"}
                 </button>
               </form>
             )}
