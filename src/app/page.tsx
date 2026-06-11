@@ -165,20 +165,33 @@ export default function LoginPage() {
       // Standard workflow for students/pre-authorized users
       if (preProfile?.id) {
         await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName });
+
         if (!preProfile.rol.startsWith("pendiente_")) {
-          setSuccessMsg("¡Registro exitoso! Ingresando al panel...");
+          // Pre-authorized role (admin, directivo, preceptor, etc.) — enter directly
+          setSuccessMsg(`¡Registro exitoso! Ingresando al panel como ${preProfile.rol}...`);
           setTimeout(() => {
             router.push("/dashboard");
           }, 2000);
           return;
         }
-      } else {
-        await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "pendiente_alumno" as any });
+
+        // Pre-existing but still pending — treat as student standby
+        await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
+        await account.deleteSession("current");
+        setSuccessRole("alumno");
+        setRequestSuccess(true);
+        setTimeout(() => {
+          setActiveMode("login");
+          setRequestSuccess(false);
+          resetRegisterForm();
+          setLoading(false);
+        }, 3500);
+        return;
       }
 
-      // Save student record in standby
+      // No pre-existing profile — register as pending student
+      await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "pendiente_alumno" as any });
       await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
-
       await account.deleteSession("current");
 
       setSuccessRole("alumno");
