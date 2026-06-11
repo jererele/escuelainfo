@@ -35,23 +35,44 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
     client.ping().catch(() => {});
+
     // Auto-redirect only if session AND database profile are both valid
-    account.get().then(async (user) => {
+    const checkSession = async () => {
+      let user;
       try {
-        const profile = await getUserProfile(user.$id);
+        user = await account.get();
+      } catch {
+        // No active session — normal, stay on login page
+        return;
+      }
+
+      try {
+        // Add timeout so a slow/down Appwrite doesn't block the page forever
+        const profilePromise = getUserProfile(user.$id);
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 5000)
+        );
+        const profile = await Promise.race([profilePromise, timeoutPromise]);
+
         if (profile) {
           router.push("/dashboard");
         } else {
-          // Session exists but user was deleted from DB — clean up the orphaned session
+          // Profile truly doesn't exist — clean up orphaned session
           await account.deleteSession("current").catch(() => {});
         }
-      } catch {
-        // Profile check failed — don't redirect, just stay on login
-        await account.deleteSession("current").catch(() => {});
+      } catch (err: any) {
+        if (err?.message === "timeout" || err?.code === 500) {
+          // Transient server error or slow response — DO NOT delete session
+          // Just stay on login page so user can try manually
+          console.warn("[EscuelaInfo] Profile check failed temporarily, keeping session.");
+        } else {
+          // Other error (401, network) — session is invalid, clean up
+          await account.deleteSession("current").catch(() => {});
+        }
       }
-    }).catch(() => {
-      // No active session — normal, stay on login page
-    });
+    };
+
+    checkSession();
   }, [router]);
 
   const resetRegisterForm = () => {
