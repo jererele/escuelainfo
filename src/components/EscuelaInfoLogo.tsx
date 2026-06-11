@@ -1,6 +1,6 @@
 /**
  * EscuelaInfoLogo — Componente React del logo vectorial.
- * Carga el diseño abstracto de la copa de graduación y el monograma 'E' & 'I'.
+ * Representa el logo institucional oficial de la Escuela N° 713 "Juan Abdala Chayep".
  */
 import React from 'react';
 
@@ -13,8 +13,10 @@ export default function EscuelaInfoLogo({
 }) {
   return (
     <svg
+      id="Capa_2"
+      data-name="Capa 2"
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 512 512"
+      viewBox="0 0 364.96 352.11"
       width={size}
       height={size}
       className={className}
@@ -22,41 +24,30 @@ export default function EscuelaInfoLogo({
       role="img"
       fill="none"
     >
-      <defs>
-        {/* Accent Gradient Emerald */}
-        <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#10B981" />
-          <stop offset="100%" stopColor="#059669" />
-        </linearGradient>
-
-        {/* Blue Gradient */}
-        <linearGradient id="grad-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#3B82F6" />
-          <stop offset="100%" stopColor="#1D4ED8" />
-        </linearGradient>
-      </defs>
-
-      {/* Abstract Monogram E & I with Graduation Cap and Technology Nodes */}
-      <g>
-        {/* Graduation Cap / Diamond top shape */}
-        <path d="M 256 80 L 416 160 L 256 240 L 96 160 Z" fill="url(#grad-emerald)" />
-        
-        {/* Cap's tassel */}
-        <path d="M 416 160 C 430 200, 440 240, 440 260" fill="none" stroke="currentColor" strokeWidth={8} strokeLinecap="round" />
-        <circle cx={440} cy={275} r={15} fill="#F59E0B" />
-
-        {/* Stylized 'E' pages curves */}
-        <path d="M 160 220 L 160 360 C 160 400, 220 420, 256 420" fill="none" stroke="url(#grad-blue)" strokeWidth={28} strokeLinecap="round" />
-        <path d="M 352 220 L 352 360 C 352 400, 292 420, 256 420" fill="none" stroke="url(#grad-emerald)" strokeWidth={28} strokeLinecap="round" />
-        
-        {/* Center Line representing 'I' / Cap post */}
-        <line x1={256} y1={200} x2={256} y2={440} stroke="currentColor" strokeWidth={24} strokeLinecap="round" />
-        
-        {/* Connection Nodes */}
-        <circle cx={256} cy={160} r={24} fill="currentColor" />
-        <circle cx={256} cy={160} r={12} fill="#090d16" />
-        <circle cx={160} cy={220} r={18} fill="#3B82F6" />
-        <circle cx={352} cy={220} r={18} fill="#10B981" />
+      <g id="Layer_1" data-name="Layer 1">
+        <g>
+          <g>
+            <path
+              fill="#3b7d59"
+              d="M364.49,269.57c-28.84.05-51,1.73-78.66,9.71-12.36,3.56-23.65,8.39-35.02,14.35-19.14,10.03-35.72,25.08-45.83,44.34l-5.46,14.14-33.91-.05c-3.69-24.43-2.34-48.72,2.92-72.58,1.75-7.93,3.58-15.01,6.32-22.59,14.14-39.09,31.41-64.59,59.44-95.05,10.56-11.29,21.29-21.76,32.92-31.92l23.29-19.71-22.86-25.2,97.33-16.8-29.8,93-14.33-15.76-9.85-11.01c-16.25,12.97-31.44,26.45-45.9,41.22-25.29,25.82-50.06,59.63-61.27,94.18-2.4,7.38-3.8,14.56-5.17,22.47,6.59-6.81,13.23-12.05,20.86-17.12,22.94-15.11,48.48-25.4,75.44-31.06,12.65-2.65,24.78-4.68,37.59-5.32l.04-63.75,7.69,8.02,24.12-74.29.1,160.78Z"
+            />
+            <path
+              fill="#3b7d59"
+              d="M279.6,42.34c-26.56,8.94-48.21,20.13-65.72,42.42-3.11,3.97-5.4,7.87-8.01,12.53-3.97-12.25-9.55-23.1-16.7-33.95,12.6-14.58,27.7-26.23,44.65-35.37C274.24,6.26,318.8-1.16,364.56.14v56.15s-31.82,6.1-31.82,6.1l-.28-30.21c-18.17,1.34-35.59,4.76-52.87,10.15Z"
+            />
+          </g>
+          <g>
+            <path
+              fill="#153659"
+              d="M32.04,238.83c43.57,3.22,88.85,16.07,123.62,43.7-2.53,12.99-4.06,25.78-4.32,38.99-.02.84-.26,1.03-.7,1.08-.65.08-.72-.31-.94-.89-.81-2.03-2.94-2.97-4.12-4.57s-2.33-2.71-3.8-4.01l-4.69-4.16c-2.41-2.14-4.81-3.87-7.5-5.8-12.11-8.67-25.15-15.1-39.29-20.12-29.6-10.52-58.66-13.64-90.2-13.49L0,.22c47.25-1.54,94.58,6.64,135.72,30.09,8.74,5.07,16.67,10.42,24.28,16.98,9.48,8.31,17.47,17.56,23.94,28.44,7.13,12.76,11.64,26.5,13.68,41.15-10.6-3.98-21.3-4.21-31.18.4-3.15-14.89-9.75-27.76-19.86-38.61-8.92-9.77-19.26-17.35-30.89-23.69-24.84-13.38-55.51-20.95-83.65-22.82v206.68Z"
+            />
+            <circle fill="#153659" cx="182.46" cy="148.43" r="22.14" />
+            <path
+              fill="#153659"
+              d="M198.26,186.51c-9.45,13.43-17.57,27.13-24.83,41.66-2.64,5.29-4.43,10.34-6.56,15.78l-.05-64.02c10.1,4.51,20.87,4.28,31.17-.18.58,2.13.17,4.04.27,6.75Z"
+            />
+          </g>
+        </g>
       </g>
     </svg>
   );
