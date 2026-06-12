@@ -147,13 +147,45 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
                 ))}
               </div>
             </div>
-            <div className="space-y-2">
+
+            {formData.tipo === "Artículo" && (
+              <div className="space-y-2 animate-fade-in">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Artículo de Licencia</label>
+                <select
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold text-sm"
+                  value={formData.motivo}
+                  onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
+                >
+                  <option value="">Seleccionar Artículo...</option>
+                  <option value="Art. 14 - Familiar Enfermo (Max 20 días/año)">Art. 14 - Familiar Enfermo (Max 20 días/año)</option>
+                  <option value="Art. 15 - Razones Particulares (Max 6 días/año)">Art. 15 - Razones Particulares (Max 6 días/año)</option>
+                  <option value="Art. 16 - Donación de Sangre (1 día)">Art. 16 - Donación de Sangre (1 día)</option>
+                  <option value="Art. 17 - Mudanza (Max 2 días)">Art. 17 - Mudanza (Max 2 días)</option>
+                  <option value="Otro">Otro Artículo</option>
+                </select>
+                <p className="text-[10px] font-semibold text-[var(--amarillo)] mt-1 ml-1">Atención: Verificar cupo límite en el sistema de liquidaciones.</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="flex items-center gap-3 cursor-pointer select-none py-3 px-4 bg-[var(--bg3)] border border-[var(--border)] rounded-xl w-full">
                 <input type="checkbox"
                   className="w-5 h-5 rounded border-[var(--border)] bg-[var(--bg)] checked:bg-[var(--verde)] transition-all cursor-pointer"
                   checked={formData.cert} onChange={(e) => setFormData({ ...formData, cert: e.target.checked })} />
-                <span className="text-sm font-medium">¿Certificado presentado?</span>
+                <span className="text-sm font-medium">¿Certificado adjunto?</span>
               </label>
+
+              {formData.cert && (
+                <div className="flex flex-col justify-center animate-fade-in">
+                  <label className="cursor-pointer bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black py-3 px-4 rounded-xl text-center text-sm font-bold transition-all truncate">
+                    <span>Subir Imagen / PDF</span>
+                    <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => {
+                       // Lógica futura para subir a Appwrite Storage
+                       alert("Foto cargada localmente (Simulación). En producción se sube a Appwrite Storage.");
+                    }} />
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 

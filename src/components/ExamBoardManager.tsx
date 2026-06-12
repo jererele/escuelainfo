@@ -28,6 +28,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   // Campos del formulario
   const [fecha, setFecha] = useState("");
   const [hora, setHora] = useState("");
+  const [horaFin, setHoraFin] = useState("");
   const [materia, setMateria] = useState("");
   const [aula, setAula] = useState("");
   const [presidenteId, setPresidenteId] = useState("");
@@ -66,6 +67,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setEditingMesa(null);
     setFecha(new Date().toISOString().split("T")[0]);
     setHora("08:00");
+    setHoraFin("10:00");
     setMateria("");
     setAula("");
     setPresidenteId("");
@@ -82,6 +84,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setEditingMesa(m);
     setFecha(m.fecha);
     setHora(m.hora);
+    setHoraFin("10:00"); // Asignar horaFin o un valor por defecto
     setMateria(m.materia);
     setAula(m.aula);
     setPresidenteId(m.presidenteId);
@@ -346,9 +349,9 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
       {/* Modal para Crear/Editar Mesa */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        <div className="fixed inset-0 z-[200] flex items-center lg:items-start lg:pt-[10vh] justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-[32px] p-8 border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-[32px] p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto lg:my-0 lg:mb-[10vh]">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h2 className="text-2xl font-black title-font text-[var(--text)]">{editingMesa ? "Editar Mesa de Examen" : "Crear Mesa de Examen"}</h2>
@@ -365,7 +368,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Fecha *</label>
                   <input
@@ -377,13 +380,23 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Hora *</label>
+                  <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Hora Inicio *</label>
                   <input
                     type="time"
                     required
                     className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] text-sm"
                     value={hora}
                     onChange={(e) => setHora(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Hora Fin *</label>
+                  <input
+                    type="time"
+                    required
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] text-sm"
+                    value={horaFin}
+                    onChange={(e) => setHoraFin(e.target.value)}
                   />
                 </div>
               </div>

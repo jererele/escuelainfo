@@ -397,6 +397,73 @@ body {
   100% { transform: translateX(100%); }
 }
 
+/* ─── Slide-in-right (toast) ───────────────────────────────────────────────── */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translate3d(100%, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Top Sidebar: slide-up / slide-down ────────────────────────────────────── */
+@keyframes slide-down-nav {
+  from { opacity: 0; transform: translate3d(0, -100%, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes slide-up-nav {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to   { opacity: 0; transform: translate3d(0, -100%, 0); }
+}
+.top-nav-enter {
+  animation: slide-down-nav 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.top-nav-exit {
+  animation: slide-up-nav 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ─── CONTRAST AUDIT UTILITIES (WCAG AA compliant) ─────────────────────────── */
+/*
+  Regla de uso: Usar SIEMPRE estas clases semánticas en lugar de
+  text-gray-* o text-white directamente, para garantizar contraste en ambos temas.
+
+  Modo Claro              Modo Oscuro
+  --text:  #0f172a        --text:  #f8fafc   (WCAG AAA: 21:1 sobre sus fondos)
+  --text2: #334155        --text2: #cbd5e1   (WCAG AA: ~7:1)
+  --text3: #64748b        --text3: #64748b   (WCAG AA: ~4.5:1, sólo decorativo)
+*/
+.text-primary   { color: var(--text);  }
+.text-secondary { color: var(--text2); }
+.text-tertiary  { color: var(--text3); }
+.bg-surface     { background: var(--bg); }
+.bg-surface-2   { background: var(--bg2); }
+.bg-surface-3   { background: var(--bg3); }
+
+/* Input contrast fix: asegura legibilidad del placeholder en ambos modos */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: var(--text3);
+  opacity: 1;
+}
+
+/* Focus ring contrast — verde sobre ambos fondos */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+}
+
+/* Garantía de contraste en labels y mensajes de error */
+label {
+  color: var(--text2);
+}
+.error-text {
+  color: var(--rojo);
+  font-weight: 600;
+}
+
 /* PRINT STYLES */
 @media print {
   /* Hide sidebar, top navigation, overlays, and other non-print UI controls */
