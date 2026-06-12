@@ -111,7 +111,7 @@ export default function LoginPage() {
     }
     setLoading(true); setErrorMsg(""); setSuccessMsg("");
     try {
-      const basePath = process.env.NODE_ENV === 'production' ? '/escuelainfo' : '';
+      const basePath = process.env.NODE_ENV === 'production' ? '/escuela1nfo' : '';
       await account.createRecovery(email, `${window.location.origin}${basePath}/reset-password`);
       setSuccessMsg("Se ha enviado un enlace para restablecer tu contraseña. Revisá tu casilla de correo.");
     } catch (err: any) {

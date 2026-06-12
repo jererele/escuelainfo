@@ -12,6 +12,7 @@ import NewStudentModal from "@/components/NewStudentModal";
 import NewUserModal from "@/components/NewUserModal";
 import NewScheduleModal from "@/components/NewScheduleModal";
 import NewCourseModal from "@/components/NewCourseModal";
+import AssignStudentsModal from "@/components/AssignStudentsModal";
 import CustomSelect from "@/components/CustomSelect";
 import UserProfileModal from "@/components/UserProfileModal";
 import SendNoticeModal from "@/components/SendNoticeModal";
@@ -68,6 +69,8 @@ export default function Dashboard() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [assigningCurso, setAssigningCurso] = useState<Curso | null>(null);
   const [isSendNoticeModalOpen, setIsSendNoticeModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [selectedCourse, setSelectedCourse] = useState("");
@@ -142,10 +145,11 @@ export default function Dashboard() {
   }, [router]);
 
   useEffect(() => {
-    if (activeTab === "configuracion" || activeTab === "alumnos") {
+    if (activeTab === "configuracion" || activeTab === "alumnos" || activeTab === "profesores") {
       if (!isFresh('usuarios')) getUsuarios().then(d => { setUsuarios(d); stamp('usuarios'); });
     } else if (activeTab === "cursos") {
       if (!isFresh('cursos')) getCursos().then(d => { setCursos(d); stamp('cursos'); });
+      if (!isFresh('alumnos')) getAlumnos().then(d => { setAlumnos(d); stamp('alumnos'); });
     } else if (activeTab === "ciclo-lectivo") {
       if (!isFresh('alumnos')) getAlumnos().then(d => { setAlumnos(d); stamp('alumnos'); });
       if (!isFresh('cursos'))  getCursos().then(d => { setCursos(d); stamp('cursos'); });
@@ -1343,6 +1347,12 @@ export default function Dashboard() {
                               onClick={() => askConfirm("¿Borrar profesor?", async () => {
                                 try {
                                   await deleteProfesor(p.id!);
+                                  // Cascade: delete from usuarios collection too
+                                  const userRecord = usuarios.find(u => u.email.toLowerCase() === p.email.toLowerCase());
+                                  if (userRecord?.id) {
+                                    await deleteUserProfile(userRecord.id);
+                                    setUsuarios(prev => prev.filter(u => u.id !== userRecord.id));
+                                  }
                                   await logAction(user?.email || "desconocido", "ELIMINAR_DOCENTE", `Nombre: ${p.nombre}, DNI: ${p.dni}`);
                                   await getProfesores().then(setProfesores);
                                   showToast("Docente eliminado", "success");
@@ -1508,6 +1518,12 @@ export default function Dashboard() {
                                     onClick={() => askConfirm("¿Borrar alumno?", async () => {
                                       try {
                                         await deleteAlumno(al.id!);
+                                        // Cascade: delete from usuarios collection too
+                                        const userRecord = usuarios.find(u => u.email.toLowerCase() === al.email.toLowerCase());
+                                        if (userRecord?.id) {
+                                          await deleteUserProfile(userRecord.id);
+                                          setUsuarios(prev => prev.filter(u => u.id !== userRecord.id));
+                                        }
                                         await logAction(user?.email || "desconocido", "ELIMINAR_ALUMNO", `Nombre: ${al.nombre}, DNI: ${al.dni}, Curso: ${al.curso}`);
                                         await getAlumnos().then(setAlumnos);
                                         showToast("Alumno eliminado", "success");
@@ -1710,29 +1726,29 @@ export default function Dashboard() {
                                       isDimmed ? "opacity-15 grayscale scale-95 blur-[0.5px]" : ""
                                     } ${
                                       isAbsent 
-                                        ? "bg-gradient-to-br from-[var(--rojo-bg)] to-red-950/20 border-[var(--rojo-border)] shadow-[0_8px_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/20" 
+                                        ? "bg-[var(--rojo-bg)] border-[var(--rojo-border)] shadow-[0_8px_20px_rgba(239,68,68,0.15)] ring-1 ring-[var(--rojo-border)]" 
                                         : "bg-[var(--bg3)] border-[var(--border)] shadow-sm hover:shadow-md group-hover:border-[var(--verde)]"
                                     }`}>
                                       {isAbsent && (
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 blur-xl pointer-events-none rounded-full" />
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--rojo)]/5 blur-xl pointer-events-none rounded-full" />
                                       )}
                                       <div className="flex justify-between items-start mb-1 pr-6">
-                                        <div className={`font-black text-xs sm:text-sm leading-tight ${isAbsent ? "text-red-400 line-through decoration-red-500/80 decoration-2" : "text-white"}`}>{h.materia}</div>
+                                        <div className={`font-black text-xs sm:text-sm leading-tight ${isAbsent ? "text-[var(--rojo)] line-through decoration-[var(--rojo)]/80 decoration-2 opacity-80" : "text-[var(--text)]"}`}>{h.materia}</div>
                                         {isAbsent && (
                                           <span className="text-[var(--rojo)] animate-bounce shrink-0 ml-1">
                                             <Ban size={12} />
                                           </span>
                                         )}
                                       </div>
-                                      <div className={`text-[10px] sm:text-xs font-bold ${isAbsent ? "text-red-300/70" : "text-[var(--text2)]"}`}>
+                                      <div className={`text-[10px] sm:text-xs font-bold ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}>
                                         {h.profesor}
                                       </div>
                                       <div className="flex items-center justify-between mt-2.5 gap-2">
-                                        <div className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${isAbsent ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}>
+                                        <div className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}>
                                           {h.curso}
                                         </div>
                                         {isAbsent && (
-                                          <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 animate-pulse shrink-0">
+                                          <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0">
                                             🎉 Hora Libre
                                           </span>
                                         )}
@@ -2003,6 +2019,7 @@ export default function Dashboard() {
                   <thead className="bg-[var(--bg3)]/50">
                     <tr>
                       <th className="p-4 sm:p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Nombre del Curso</th>
+                      <th className="p-4 sm:p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Alumnos</th>
                       <th className="p-4 sm:p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
                     </tr>
                   </thead>
@@ -2010,29 +2027,53 @@ export default function Dashboard() {
                     {cursos.length === 0 ? (
                       <tr><td colSpan={2} className="p-16 sm:p-20 text-center text-[var(--text3)] italic">No hay cursos creados. Presiona "+ Agregar Nuevo Curso" para empezar.</td></tr>
                     ) : (
-                      cursos.map(c => (
-                        <tr key={c.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
-                          <td className="p-4 sm:p-6 font-bold text-[var(--text)]">{c.nombre}</td>
-                          <td className="p-4 sm:p-6 text-right">
-                            <button 
-                              onClick={() => askConfirm(`¿Eliminar el curso ${c.nombre}? Los alumnos asignados seguirán existiendo pero no tendrán un curso válido asignado.`, async () => {
-                                try {
-                                  await deleteCurso(c.id!);
-                                  await logAction(user?.email || "desconocido", "ELIMINAR_CURSO", `Curso: ${c.nombre}`);
-                                  await getCursos().then(setCursos);
-                                  showToast("Curso eliminado con éxito", "success");
-                                } catch (err) {
-                                  showToast("Error al eliminar curso", "error");
-                                }
-                              })} 
-                              className="text-[var(--rojo)] hover:scale-125 transition-transform"
-                              title="Eliminar Curso"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      cursos.map(c => {
+                        const alumnosEnCurso = alumnos.filter(a => a.curso === c.nombre).length;
+                        return (
+                          <tr key={c.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
+                            <td className="p-4 sm:p-6">
+                              <div className="font-bold text-[var(--text)]">{c.nombre}</div>
+                            </td>
+                            <td className="p-4 sm:p-6">
+                              <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border ${
+                                alumnosEnCurso > 0
+                                  ? 'bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]'
+                                  : 'bg-[var(--bg3)] text-[var(--text3)] border-[var(--border)]'
+                              }`}>
+                                {alumnosEnCurso} {alumnosEnCurso === 1 ? 'alumno' : 'alumnos'}
+                              </span>
+                            </td>
+                            <td className="p-4 sm:p-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => { setAssigningCurso(c); setIsAssignModalOpen(true); }}
+                                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase bg-[var(--azul-bg)] text-[var(--azul)] border border-[var(--azul-border)] rounded-xl hover:bg-[var(--azul)] hover:text-white transition-all active:scale-95"
+                                  title="Asignar alumnos a este curso"
+                                >
+                                  <Users size={12} />
+                                  Gestionar Alumnos
+                                </button>
+                                <button
+                                  onClick={() => askConfirm(`¿Eliminar el curso ${c.nombre}? Los alumnos asignados seguirán existiendo pero no tendrán un curso válido asignado.`, async () => {
+                                    try {
+                                      await deleteCurso(c.id!);
+                                      await logAction(user?.email || "desconocido", "ELIMINAR_CURSO", `Curso: ${c.nombre}`);
+                                      await getCursos().then(setCursos);
+                                      showToast("Curso eliminado con éxito", "success");
+                                    } catch (err) {
+                                      showToast("Error al eliminar curso", "error");
+                                    }
+                                  })}
+                                  className="text-[var(--rojo)] hover:scale-125 transition-transform p-2"
+                                  title="Eliminar Curso"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -2359,6 +2400,18 @@ export default function Dashboard() {
           onSuccess={() => { subscribeToAusencias(setAusencias); showToast("Reporte registrado correctamente", "success"); }}
         />
       )}
+
+      <AssignStudentsModal
+        isOpen={isAssignModalOpen}
+        onClose={() => { setIsAssignModalOpen(false); setAssigningCurso(null); }}
+        onSuccess={() => {
+          getAlumnos(true).then(d => { setAlumnos(d); stamp('alumnos'); });
+          showToast("Alumnos asignados con éxito", "success");
+        }}
+        curso={assigningCurso}
+        alumnos={alumnos}
+        cursos={cursos}
+      />
 
       {/* CONFIRM MODAL */}
       {confirmDialog.isOpen && (

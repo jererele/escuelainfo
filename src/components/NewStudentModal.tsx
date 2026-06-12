@@ -219,24 +219,37 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           {/* Selector de curso */}
           <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Curso a Asignar</label>
+            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">
+              Curso a Asignar
+              <span className="text-[var(--rojo)] ml-1">*</span>
+            </label>
             <select
-              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
+              required
+              className={`w-full bg-[var(--bg3)] border rounded-2xl p-4 outline-none font-bold transition-all ${
+                !curso
+                  ? "border-[var(--rojo-border)] focus:border-[var(--rojo)] text-[var(--text3)]"
+                  : "border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)]"
+              }`}
               value={curso}
               onChange={(e) => setCurso(e.target.value)}
             >
-              <option value="">Seleccionar Curso</option>
+              <option value="" disabled>— Seleccionar Curso Obligatorio —</option>
               {cursos.length === 0
                 ? <option disabled>No hay cursos — agregalos primero.</option>
                 : cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
               }
             </select>
+            {!curso && (
+              <p className="text-[10px] text-[var(--rojo)] font-bold mt-1.5 ml-2 flex items-center gap-1">
+                <span>⚠</span> Este campo es obligatorio para asignar al alumno.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-4 pt-2">
             <button type="button" onClick={onClose}
               className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95">Cancelar</button>
-            <button type="submit" disabled={loading || !selectedAlumno}
+            <button type="submit" disabled={loading || !selectedAlumno || !curso}
               className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
               {loading ? "Guardando..." : "Asignar Curso"}
             </button>

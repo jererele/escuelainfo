@@ -6,7 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  basePath: isProd ? '/escuelainfo' : '',
+  basePath: isProd ? '/escuela1nfo' : '',
   // Only include headers when not exporting statically
   ...(isProd ? {} : {
     async headers() {
