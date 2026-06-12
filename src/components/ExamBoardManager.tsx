@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserProfile, Profesor, Alumno, MesaExamen, getProfesores, getAlumnos, getMesasExamen, saveMesaExamen, deleteMesaExamen, logAction } from "@/lib/dataService";
+import { UserProfile, Profesor, Alumno, MesaExamen, getProfesores, getAlumnos, getMesasExamen, saveMesaExamen, deleteMesaExamen, logAction, subscribeToMesasExamen } from "@/lib/dataService";
 import { ClipboardCheck, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Search, Check, Trash2, Edit } from "lucide-react";
 
 interface Props {
@@ -46,14 +46,12 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const refreshData = async () => {
     setLoading(true);
     try {
-      const ms = await getMesasExamen(true);
-      setMesas(ms);
       const profs = await getProfesores();
       setProfesores(profs);
       const als = await getAlumnos();
       setAlumnos(als);
     } catch {
-      setErrorMsg("Error cargando mesas de examen.");
+      setErrorMsg("Error cargando profesores/alumnos.");
     } finally {
       setLoading(false);
     }
@@ -61,6 +59,14 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
   useEffect(() => {
     refreshData();
+
+    const unsubscribe = subscribeToMesasExamen((data) => {
+      setMesas(data);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const openCreateModal = () => {

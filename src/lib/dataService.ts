@@ -566,6 +566,56 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
   return () => unsubscribe();
 };
 
+export const subscribeToMesasExamen = (callback: (data: MesaExamen[]) => void) => {
+  const fetchAll = () => getMesasExamen(true).then(callback);
+  fetchAll();
+  const unsubscribe = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_MESAS_EXAMEN_COLLECTION_ID}.documents`,
+    () => fetchAll()
+  );
+  return () => unsubscribe();
+};
+
+export const subscribeToUsuarios = (callback: (data: UserProfile[]) => void) => {
+  const fetchAll = () => getUsuarios(true).then(callback);
+  fetchAll();
+  const unsubscribe = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_USERS_COLLECTION_ID}.documents`,
+    () => fetchAll()
+  );
+  return () => unsubscribe();
+};
+
+export const subscribeToAlumnos = (callback: (data: Alumno[]) => void) => {
+  const fetchAll = () => getAlumnos(true).then(callback);
+  fetchAll();
+  const unsubscribe = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_ALUMNOS_COLLECTION_ID}.documents`,
+    () => fetchAll()
+  );
+  return () => unsubscribe();
+};
+
+export const subscribeToProfesores = (callback: (data: Profesor[]) => void) => {
+  const fetchAll = () => getProfesores(true).then(callback);
+  fetchAll();
+  const unsubscribe = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_PROFS_COLLECTION_ID}.documents`,
+    () => fetchAll()
+  );
+  return () => unsubscribe();
+};
+
+export const subscribeToCursos = (callback: (data: Curso[]) => void) => {
+  const fetchAll = () => getCursos(true).then(callback);
+  fetchAll();
+  const unsubscribe = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_CURSOS_COLLECTION_ID}.documents`,
+    () => fetchAll()
+  );
+  return () => unsubscribe();
+};
+
 export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "aprobada" | "rechazada") => {
   try {
     await databases.updateDocument(

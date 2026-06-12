@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopNavSidebar from "@/components/TopNavSidebar";
@@ -113,6 +113,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     setHasMounted(true);
+    let unsubscribes: (() => void)[] = [];
+
     const checkSession = async () => {
       try {
         const currentUser = await account.get();
@@ -121,17 +123,20 @@ export default function Dashboard() {
         const profile = await getUserProfile(currentUser.$id);
         if (profile) {
           setUserProfile(profile);
-          // Cargar datos condicionalmente según el rol para optimizar rendimiento
+          // Cargar datos condicionalmente según el rol con suscripciones en tiempo real
           if (profile.rol === 'admin' || profile.rol === 'directivo' || profile.rol === 'preceptor') {
-            getProfesores().then(d => { setProfesores(d); stamp('profesores'); });
-            getAlumnos().then(d => { setAlumnos(d); stamp('alumnos'); });
+            unsubscribes.push(subscribeToUsuarios(setUsuarios));
+            unsubscribes.push(subscribeToProfesores(setProfesores));
+            unsubscribes.push(subscribeToAlumnos(setAlumnos));
           } else if (profile.rol === 'profesor') {
-            getProfesores().then(d => { setProfesores(d); stamp('profesores'); });
+            unsubscribes.push(subscribeToProfesores(setProfesores));
           } else if (profile.rol === 'alumno') {
-            getAlumnos().then(d => { setAlumnos(d); stamp('alumnos'); });
+            unsubscribes.push(subscribeToAlumnos(setAlumnos));
           }
+          
+          unsubscribes.push(subscribeToCursos(setCursos));
+
           getHorarios().then(d => { setHorarios(d); stamp('horarios'); });
-          getCursos().then(d => { setCursos(d); stamp('cursos'); });
           if (profile.rol === 'admin') getLogs().then(d => { setLogs(d); stamp('logs'); });
         } else {
           // Si no hay perfil, algo salió mal en el login, redirigir
@@ -155,22 +160,9 @@ export default function Dashboard() {
 
     return () => {
       unsubscribeData();
+      unsubscribes.forEach(unsub => unsub());
     };
   }, [router]);
-
-  useEffect(() => {
-    if (activeTab === "configuracion" || activeTab === "alumnos" || activeTab === "profesores") {
-      if (!isFresh('usuarios')) getUsuarios().then(d => { setUsuarios(d); stamp('usuarios'); });
-    } else if (activeTab === "cursos") {
-      if (!isFresh('cursos')) getCursos().then(d => { setCursos(d); stamp('cursos'); });
-      if (!isFresh('alumnos')) getAlumnos().then(d => { setAlumnos(d); stamp('alumnos'); });
-    } else if (activeTab === "ciclo-lectivo") {
-      if (!isFresh('alumnos')) getAlumnos().then(d => { setAlumnos(d); stamp('alumnos'); });
-      if (!isFresh('cursos'))  getCursos().then(d => { setCursos(d); stamp('cursos'); });
-    } else if (activeTab === "auditoria") {
-      if (!isFresh('logs')) getLogs().then(d => { setLogs(d); stamp('logs'); });
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === "ciclo-lectivo") {
