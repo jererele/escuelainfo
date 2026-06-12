@@ -17,6 +17,8 @@ import CustomSelect from "@/components/CustomSelect";
 import UserProfileModal from "@/components/UserProfileModal";
 import SendNoticeModal from "@/components/SendNoticeModal";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import StudentAttendanceManager from "@/components/StudentAttendanceManager";
+import ExamBoardManager from "@/components/ExamBoardManager";
 import * as XLSX from "xlsx";
 import { 
   LayoutDashboard, 
@@ -1024,7 +1026,9 @@ export default function Dashboard() {
             <header className="hidden lg:flex items-center gap-3 mb-10">
               <h1 className="text-2xl font-black title-font tracking-tight">
                 {{
+                  asistencia: "Asistencia",
                   ausencias: "Ausencias",
+                  "mesas-examen": "Mesas de Examen",
                   horarios: "Horarios",
                   alumnos: "Alumnos",
                   profesores: "Profesores",
@@ -1041,6 +1045,18 @@ export default function Dashboard() {
           )}
 
           {/* CONTENIDO SEGÚN PESTAÑA */}
+          {activeTab === "asistencia" && (
+            <div className="animate-fade-in">
+              <StudentAttendanceManager user={user} userProfile={userProfile} />
+            </div>
+          )}
+
+          {activeTab === "mesas-examen" && (
+            <div className="animate-fade-in">
+              <ExamBoardManager user={user} userProfile={userProfile} />
+            </div>
+          )}
+
           {activeTab === "general" && userProfile?.rol !== "alumno" && (
             <div className="space-y-10 animate-fade-in">
               {/* STATS */}

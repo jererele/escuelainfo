@@ -16,7 +16,9 @@ import {
   Moon,
   BookOpen,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  ClipboardCheck
 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import {
@@ -86,7 +88,9 @@ export default function Sidebar({
 
   const tabs = [
     { id: "general", label: "Inicio", icon: <LayoutDashboard size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "asistencia", label: "Asistencia", icon: <UserCheck size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "ausencias", label: "Ausencias", icon: <ClipboardList size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "mesas-examen", label: "Mesas Examen", icon: <ClipboardCheck size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "horarios", label: "Horarios", icon: <CalendarDays size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "profesores", label: "Profesores", icon: <GraduationCap size={20} />, roles: ["admin", "directivo"] },
     { id: "alumnos", label: "Alumnos", icon: <Users size={20} />, roles: ["admin", "directivo", "preceptor"] },

@@ -26,6 +26,9 @@ const APPWRITE_PROFS_COLLECTION_ID   = "profesores";
 const APPWRITE_HORARIOS_COLLECTION_ID = "horarios";
 const APPWRITE_ALUMNOS_COLLECTION_ID = "alumnos";
 const APPWRITE_CURSOS_COLLECTION_ID  = "cursos";
+const APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID = "asistencias_alumnos_jornada";
+const APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID = "asistencias_alumnos_materia";
+const APPWRITE_MESAS_EXAMEN_COLLECTION_ID = "mesas_examen";
 
 const DEFAULT_LIMIT = 200;
 
@@ -140,6 +143,42 @@ export interface Alumno {
   dni: string;
   curso: string;
   email: string;
+}
+
+export interface AsistenciaJornada {
+  id?: string;
+  alumnoId: string;
+  alumnoNombre: string;
+  fecha: string;
+  estado: "P" | "A" | "M" | "T"; // P=Presente, A=Ausente, M=Media Falta, T=Tarde
+  preceptorId: string;
+}
+
+export interface AsistenciaMateria {
+  id?: string;
+  alumnoId: string;
+  alumnoNombre: string;
+  fecha: string;
+  materia: string;
+  curso: string;
+  estado: "P" | "A" | "T"; // P=Presente, A=Ausente, T=Tarde
+  profesorId: string;
+}
+
+export interface MesaExamen {
+  id?: string;
+  fecha: string;
+  hora: string;
+  materia: string;
+  aula: string;
+  presidenteId: string;
+  presidenteNombre: string;
+  vocal1Id?: string;
+  vocal1Nombre?: string;
+  vocal2Id?: string;
+  vocal2Nombre?: string;
+  alumnosInscriptos: string[]; // Nombres o DNI/IDs de inscriptos
+  estado: "borrador" | "confirmada" | "evaluada";
 }
 
 // ─── HORARIOS ────────────────────────────────────────────────────────────────
@@ -659,4 +698,291 @@ export const migrateToCompactFormat = async (): Promise<MigrationResult> => {
   clearCache("ausencias");
 
   return result;
+};
+
+// ─── LOCALSTORAGE HELPERS PARA FALLBACK ──────────────────────────────────────
+const getLocalStorageData = <T>(key: string, defaultVal: T): T => {
+  if (typeof window === "undefined") return defaultVal;
+  try {
+    const val = localStorage.getItem("escuelainfo_db_" + key);
+    return val ? JSON.parse(val) : defaultVal;
+  } catch {
+    return defaultVal;
+  }
+};
+
+const setLocalStorageData = (key: string, data: any) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("escuelainfo_db_" + key, JSON.stringify(data));
+  } catch {}
+};
+
+// ─── NUEVO: ASISTENCIAS JORNADA (PRECEPTOR) ──────────────────────────────────
+export const getAsistenciasJornada = async (fecha: string): Promise<AsistenciaJornada[]> => {
+  try {
+    const response = await databases.listDocuments(
+      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+      [Query.equal("fecha", fecha), Query.limit(DEFAULT_LIMIT)]
+    );
+    return response.documents.map(doc => ({
+      id: doc.$id,
+      alumnoId: doc.alumnoId,
+      alumnoNombre: doc.alumnoNombre,
+      fecha: doc.fecha,
+      estado: doc.estado as any,
+      preceptorId: doc.preceptorId
+    }));
+  } catch (err: any) {
+    devLog("getAsistenciasJornada (LocalStorage fallback)", err);
+    const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+    return local.filter(a => a.fecha === fecha);
+  }
+};
+
+export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) => {
+  for (const a of asistencias) {
+    try {
+      if (a.id && !a.id.startsWith("LOCAL_")) {
+        await databases.updateDocument(
+          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, a.id,
+          {
+            alumnoId: a.alumnoId,
+            alumnoNombre: a.alumnoNombre,
+            fecha: a.fecha,
+            estado: a.estado,
+            preceptorId: a.preceptorId
+          }
+        );
+      } else {
+        await databases.createDocument(
+          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, ID.unique(),
+          {
+            alumnoId: a.alumnoId,
+            alumnoNombre: a.alumnoNombre,
+            fecha: a.fecha,
+            estado: a.estado,
+            preceptorId: a.preceptorId
+          }
+        );
+      }
+    } catch (err: any) {
+      devLog("saveAsistenciaJornada/item (LocalStorage fallback)", err);
+      const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+      if (a.id) {
+        const idx = local.findIndex(item => item.id === a.id);
+        if (idx !== -1) {
+          local[idx] = a;
+        } else {
+          local.push(a);
+        }
+      } else {
+        const newRecord = { ...a, id: "LOCAL_" + Math.random().toString(36).substr(2, 9) };
+        local.push(newRecord);
+        a.id = newRecord.id;
+      }
+      setLocalStorageData("asistencias_jornada", local);
+    }
+  }
+};
+
+// ─── NUEVO: ASISTENCIAS MATERIA (PROFESOR) ───────────────────────────────────
+export const getAsistenciasMateria = async (fecha: string, materia: string, curso: string): Promise<AsistenciaMateria[]> => {
+  try {
+    const response = await databases.listDocuments(
+      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+      [Query.equal("fecha", fecha), Query.equal("materia", materia), Query.equal("curso", curso), Query.limit(DEFAULT_LIMIT)]
+    );
+    return response.documents.map(doc => ({
+      id: doc.$id,
+      alumnoId: doc.alumnoId,
+      alumnoNombre: doc.alumnoNombre,
+      fecha: doc.fecha,
+      materia: doc.materia,
+      curso: doc.curso,
+      estado: doc.estado as any,
+      profesorId: doc.profesorId
+    }));
+  } catch (err: any) {
+    devLog("getAsistenciasMateria (LocalStorage fallback)", err);
+    const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", []);
+    return local.filter(a => a.fecha === fecha && a.materia === materia && a.curso === curso);
+  }
+};
+
+export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[]) => {
+  for (const a of asistencias) {
+    try {
+      if (a.id && !a.id.startsWith("LOCAL_")) {
+        await databases.updateDocument(
+          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, a.id,
+          {
+            alumnoId: a.alumnoId,
+            alumnoNombre: a.alumnoNombre,
+            fecha: a.fecha,
+            materia: a.materia,
+            curso: a.curso,
+            estado: a.estado,
+            profesorId: a.profesorId
+          }
+        );
+      } else {
+        await databases.createDocument(
+          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, ID.unique(),
+          {
+            alumnoId: a.alumnoId,
+            alumnoNombre: a.alumnoNombre,
+            fecha: a.fecha,
+            materia: a.materia,
+            curso: a.curso,
+            estado: a.estado,
+            profesorId: a.profesorId
+          }
+        );
+      }
+    } catch (err: any) {
+      devLog("saveAsistenciasMateria/item (LocalStorage fallback)", err);
+      const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", []);
+      if (a.id) {
+        const idx = local.findIndex(item => item.id === a.id);
+        if (idx !== -1) {
+          local[idx] = a;
+        } else {
+          local.push(a);
+        }
+      } else {
+        const newRecord = { ...a, id: "LOCAL_" + Math.random().toString(36).substr(2, 9) };
+        local.push(newRecord);
+        a.id = newRecord.id;
+      }
+      setLocalStorageData("asistencias_materia", local);
+    }
+  }
+};
+
+// ─── NUEVO: GET ALUMNO HISTORIAL (VISTA ALUMNO) ──────────────────────────────
+export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ jornada: AsistenciaJornada[], materia: AsistenciaMateria[] }> => {
+  let jornada: AsistenciaJornada[] = [];
+  let materia: AsistenciaMateria[] = [];
+
+  try {
+    const resJornada = await databases.listDocuments(
+      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+      [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)]
+    );
+    jornada = resJornada.documents.map(doc => ({
+      id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
+      fecha: doc.fecha, estado: doc.estado as any, preceptorId: doc.preceptorId
+    }));
+  } catch (err) {
+    devLog("getAlumnoHistorialAsistencia/jornada (LocalStorage fallback)", err);
+    const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+    jornada = local.filter(a => a.alumnoId === alumnoId);
+  }
+
+  try {
+    const resMateria = await databases.listDocuments(
+      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+      [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)]
+    );
+    materia = resMateria.documents.map(doc => ({
+      id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
+      fecha: doc.fecha, materia: doc.materia, curso: doc.curso,
+      estado: doc.estado as any, profesorId: doc.profesorId
+    }));
+  } catch (err) {
+    devLog("getAlumnoHistorialAsistencia/materia (LocalStorage fallback)", err);
+    const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", []);
+    materia = local.filter(a => a.alumnoId === alumnoId);
+  }
+
+  return { jornada, materia };
+};
+
+// ─── NUEVO: GESTIÓN DE MESAS DE EXAMEN ────────────────────────────────────────
+export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]> => {
+  try {
+    const response = await databases.listDocuments(
+      APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
+      [Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)]
+    );
+    return response.documents.map(doc => ({
+      id: doc.$id,
+      fecha: doc.fecha,
+      hora: doc.hora,
+      materia: doc.materia,
+      aula: doc.aula,
+      presidenteId: doc.presidenteId,
+      presidenteNombre: doc.presidenteNombre,
+      vocal1Id: doc.vocal1Id,
+      vocal1Nombre: doc.vocal1Nombre,
+      vocal2Id: doc.vocal2Id,
+      vocal2Nombre: doc.vocal2Nombre,
+      alumnosInscriptos: doc.alumnosInscriptos,
+      estado: doc.estado as any
+    }));
+  } catch (err: any) {
+    devLog("getMesasExamen (LocalStorage fallback)", err);
+    return getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+  }
+};
+
+export const saveMesaExamen = async (m: MesaExamen) => {
+  try {
+    const payload = {
+      fecha: m.fecha,
+      hora: m.hora,
+      materia: m.materia,
+      aula: m.aula,
+      presidenteId: m.presidenteId,
+      presidenteNombre: m.presidenteNombre,
+      vocal1Id: m.vocal1Id || "",
+      vocal1Nombre: m.vocal1Nombre || "",
+      vocal2Id: m.vocal2Id || "",
+      vocal2Nombre: m.vocal2Nombre || "",
+      alumnosInscriptos: m.alumnosInscriptos || [],
+      estado: m.estado
+    };
+
+    if (m.id && !m.id.startsWith("LOCAL_")) {
+      return await databases.updateDocument(
+        APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, m.id, payload
+      );
+    } else {
+      return await databases.createDocument(
+        APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, ID.unique(), payload
+      );
+    }
+  } catch (err: any) {
+    devLog("saveMesaExamen (LocalStorage fallback)", err);
+    const local = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+    if (m.id) {
+      const idx = local.findIndex(item => item.id === m.id);
+      if (idx !== -1) {
+        local[idx] = m;
+      } else {
+        local.push(m);
+      }
+    } else {
+      const newRecord = { ...m, id: "LOCAL_" + Math.random().toString(36).substr(2, 9) };
+      local.push(newRecord);
+      m.id = newRecord.id;
+    }
+    setLocalStorageData("mesas_examen", local);
+    return { $id: m.id };
+  }
+};
+
+export const deleteMesaExamen = async (id: string) => {
+  try {
+    if (!id.startsWith("LOCAL_")) {
+      await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, id);
+    }
+  } catch (err: any) {
+    devLog("deleteMesaExamen (LocalStorage fallback)", err);
+  } finally {
+    const local = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+    const filtered = local.filter(m => m.id !== id);
+    setLocalStorageData("mesas_examen", filtered);
+  }
 };
