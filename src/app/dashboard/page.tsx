@@ -21,6 +21,7 @@ import SendNoticeModal from "@/components/SendNoticeModal";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import StudentAttendanceManager from "@/components/StudentAttendanceManager";
 import ExamBoardManager from "@/components/ExamBoardManager";
+import ContactForm from "@/components/ContactForm";
 import * as XLSX from "xlsx";
 import { 
   LayoutDashboard, 
@@ -1130,52 +1131,19 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* INTERACTIVE INSTITUTIONAL PORTAL & LEGAL SECTION */}
+              {/* SECCIÓN LEGAL + FORMULARIO DE CONSULTAS */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12 animate-fade-in">
-                {/* 1. Landing/Home Widget */}
-                <div className="card glass p-8 rounded-[32px] border border-[var(--border)] relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--verde)]/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                  <div className="relative z-10 space-y-5">
-                    <div className="w-12 h-12 rounded-2xl bg-[var(--verde)] text-black flex items-center justify-center font-black shadow-lg shadow-[var(--verde)]/20 mb-4 transform group-hover:rotate-12 transition-transform">
-                      <GraduationCap size={24} />
-                    </div>
-                    <h2 className="title-font font-black text-2xl tracking-tight text-[var(--text)]">Portal Institucional 2.0</h2>
-                    <p className="text-sm font-semibold text-[var(--text2)] leading-relaxed">
-                      Bienvenido al nuevo sistema unificado. Aquí tienes acceso centralizado a las herramientas de gestión. Optimiza tu tiempo con nuestras nuevas funciones rápidas.
-                    </p>
-                    <div className="flex gap-3 pt-4">
-                      <button className="bg-[var(--text)] text-[var(--bg)] font-bold text-xs px-5 py-2.5 rounded-xl hover:scale-105 transition-transform">Ver Guía de Uso</button>
-                      <button className="border border-[var(--border)] text-[var(--text)] font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-[var(--bg3)] transition-colors">Soporte Técnico</button>
-                    </div>
-                  </div>
-                </div>
 
-                {/* 2. Contact Form */}
+                {/* FORMULARIO DE CONSULTAS CONTROLADO */}
+                <ContactForm showToast={showToast} />
+
+                {/* NORMATIVA Y TÉRMINOS LEGALES */}
                 <div className="card glass p-8 rounded-[32px] border border-[var(--border)]">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Mail className="text-[var(--verde)]" size={20} />
-                    <h2 className="title-font font-black text-xl">Email de Consultas</h2>
-                  </div>
-                  <p className="text-xs font-bold text-[var(--text2)] mb-5">Envíanos tus sugerencias, reportes de bugs o consultas administrativas directamente al equipo directivo.</p>
-                  <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert("Mensaje enviado exitosamente. ¡Gracias por contactarnos!"); }}>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="text" placeholder="Tu Nombre" required className="bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-2 text-xs font-semibold focus:border-[var(--verde)] outline-none transition-colors w-full" />
-                      <input type="email" placeholder="Tu Correo" required className="bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-2 text-xs font-semibold focus:border-[var(--verde)] outline-none transition-colors w-full" />
-                    </div>
-                    <textarea placeholder="¿En qué te podemos ayudar?" required rows={3} className="bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 text-xs font-semibold focus:border-[var(--verde)] outline-none transition-colors w-full resize-none"></textarea>
-                    <button type="submit" className="w-full bg-[var(--verde)] text-black font-black text-xs px-4 py-3 rounded-xl hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all">Enviar Mensaje Seguro</button>
-                  </form>
-                </div>
-
-                {/* 3. Legal & Copywriting */}
-                <div className="lg:col-span-2 card glass p-8 rounded-[32px] border border-[var(--border)]">
                   <div className="flex items-center gap-2 mb-6">
                     <FileText className="text-[var(--verde)]" size={20} />
                     <h2 className="title-font font-black text-xl">Normativa y Términos Legales</h2>
                   </div>
-                  
                   <div className="space-y-4">
-                    {/* Términos y Condiciones */}
                     <details className="group bg-[var(--bg3)] border border-[var(--border)] rounded-2xl overflow-hidden">
                       <summary className="font-black text-sm px-6 py-4 cursor-pointer select-none flex justify-between items-center hover:bg-[var(--border)]/30 transition-colors">
                         Términos y Condiciones del Servicio Escolar
@@ -1184,12 +1152,10 @@ export default function Dashboard() {
                       <div className="px-6 pb-6 pt-2 text-xs font-medium text-[var(--text2)] leading-relaxed space-y-3">
                         <p><strong>1. Aceptación:</strong> Al utilizar la plataforma EscuelaInfo, la institución, personal docente y alumnado aceptan las presentes normativas establecidas por el Ministerio de Educación y la administración escolar.</p>
                         <p><strong>2. Uso de la Plataforma:</strong> Las credenciales son personales e intransferibles. Todo registro, modificación de notas, inasistencias o mesas de examen es auditado bajo un esquema de códigos estrictos. Cualquier alteración indebida de la información académica será sujeta a sanciones severas.</p>
-                        <p><strong>3. Privacidad de Datos (Habeas Data):</strong> La plataforma procesa información sensible (DNI, correos, ausencias médicas). Nos comprometemos a resguardar la identidad digital según las normativas vigentes. El personal directivo es el único con nivel de autorización para visualización de certificados médicos adjuntos.</p>
+                        <p><strong>3. Privacidad de Datos (Habeas Data):</strong> La plataforma procesa información sensible (DNI, correos, ausencias médicas). Nos comprometemos a resguardar la identidad digital según las normativas vigentes.</p>
                         <p><strong>4. Disponibilidad:</strong> EscuelaInfo se compromete a una disponibilidad (SLA) del 99.9%. Las tareas de mantenimiento serán notificadas vía "Novedades Recientes".</p>
                       </div>
                     </details>
-
-                    {/* Copyright */}
                     <details className="group bg-[var(--bg3)] border border-[var(--border)] rounded-2xl overflow-hidden">
                       <summary className="font-black text-sm px-6 py-4 cursor-pointer select-none flex justify-between items-center hover:bg-[var(--border)]/30 transition-colors">
                         Política de Propiedad Intelectual y Copyright
@@ -1197,13 +1163,14 @@ export default function Dashboard() {
                       </summary>
                       <div className="px-6 pb-6 pt-2 text-xs font-medium text-[var(--text2)] leading-relaxed space-y-3">
                         <p><strong>© 2026 EscuelaInfo. Todos los derechos reservados.</strong></p>
-                        <p><strong>1. Titularidad:</strong> El software base, interfaz de usuario (UI), esquemas de base de datos, algoritmos de asignación y código fuente (frontend Next.js/backend) son propiedad exclusiva de EscuelaInfo y sus desarrolladores.</p>
-                        <p><strong>2. Contenido Institucional:</strong> Los datos cargados (listados de alumnos, notas, circulares y mallas curriculares) pertenecen exclusivamente a la Institución Educativa licenciataria. EscuelaInfo actúa únicamente como procesador de datos.</p>
-                        <p><strong>3. Restricciones:</strong> Queda estrictamente prohibida la ingeniería inversa, copia, distribución o venta comercial no autorizada del framework subyacente. El logotipo e isotipo de EscuelaInfo son marcas registradas.</p>
+                        <p><strong>1. Titularidad:</strong> El software base, interfaz de usuario (UI), esquemas de base de datos, algoritmos de asignación y código fuente son propiedad exclusiva de EscuelaInfo y sus desarrolladores.</p>
+                        <p><strong>2. Contenido Institucional:</strong> Los datos cargados pertenecen exclusivamente a la Institución Educativa licenciataria. EscuelaInfo actúa únicamente como procesador de datos.</p>
+                        <p><strong>3. Restricciones:</strong> Queda estrictamente prohibida la ingeniería inversa, copia o distribución no autorizada del framework subyacente.</p>
                       </div>
                     </details>
                   </div>
                 </div>
+
               </div>
             </div>
           )}

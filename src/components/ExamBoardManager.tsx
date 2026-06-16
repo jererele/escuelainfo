@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppwriteException } from "appwrite";
 import { UserProfile, Profesor, Alumno, MesaExamen, getProfesores, getAlumnos, getMesasExamen, saveMesaExamen, deleteMesaExamen, logAction, subscribeToMesasExamen } from "@/lib/dataService";
 import { ClipboardCheck, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Search, Check, Trash2, Edit } from "lucide-react";
 
@@ -16,10 +17,8 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Estados para búsqueda y filtrado
+  // Estado para búsqueda y filtrado
   const [searchQuery, setSearchQuery] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
 
   // Control del formulario/modal de creación y edición
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,6 +36,12 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const [alumnosInput, setAlumnosInput] = useState(""); // Comma separated DNI or names
   const [estado, setEstado] = useState<"borrador" | "confirmada" | "evaluada">("borrador");
 
+  // Estados de feedback SEPARADOS: panel exterior vs. modal interior
+  const [panelError, setPanelError] = useState("");
+  const [panelSuccess, setPanelSuccess] = useState("");
+  const [modalError, setModalError] = useState("");
+  const [modalLoading, setModalLoading] = useState(false);
+
   useEffect(() => {
     if (userProfile) {
       setRole(userProfile.rol);
@@ -51,7 +56,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       const als = await getAlumnos();
       setAlumnos(als);
     } catch {
-      setErrorMsg("Error cargando profesores/alumnos.");
+      setPanelError("Error cargando profesores/alumnos.");
     } finally {
       setLoading(false);
     }
@@ -81,8 +86,9 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setVocal2Id("");
     setAlumnosInput("");
     setEstado("borrador");
-    setErrorMsg("");
-    setSuccessMsg("");
+    // ✅ Limpieza explícita del estado interno del modal
+    setModalError("");
+    setModalLoading(false);
     setIsModalOpen(true);
   };
 
@@ -90,7 +96,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setEditingMesa(m);
     setFecha(m.fecha);
     setHora(m.hora);
-    setHoraFin("10:00"); // Asignar horaFin o un valor por defecto
+    setHoraFin("10:00");
     setMateria(m.materia);
     setAula(m.aula);
     setPresidenteId(m.presidenteId);
@@ -98,21 +104,28 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setVocal2Id(m.vocal2Id || "");
     setAlumnosInput(m.alumnosInscriptos.join(", "));
     setEstado(m.estado);
-    setErrorMsg("");
-    setSuccessMsg("");
+    // ✅ Limpieza explícita del estado interno del modal
+    setModalError("");
+    setModalLoading(false);
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Estás seguro de eliminar esta mesa de examen?")) return;
     setLoading(true);
+    setPanelError("");
+    setPanelSuccess("");
     try {
       await deleteMesaExamen(id);
-      setSuccessMsg("Mesa de examen eliminada con éxito.");
+      setPanelSuccess("Mesa de examen eliminada con éxito.");
       await logAction(userProfile?.email || "admin", "ELIMINAR_MESA_EXAMEN", `ID: ${id}`);
       refreshData();
-    } catch {
-      setErrorMsg("Error al eliminar la mesa de examen.");
+    } catch (err) {
+      if (err instanceof AppwriteException) {
+        setPanelError(`Error Appwrite (${err.code}): ${err.message}`);
+      } else {
+        setPanelError("Error al eliminar la mesa de examen.");
+      }
     } finally {
       setLoading(false);
     }
@@ -120,28 +133,24 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
+    setModalError("");
 
     if (!fecha || !hora || !materia || !aula || !presidenteId) {
-      setErrorMsg("Completá todos los campos obligatorios (Fecha, Hora, Materia, Aula, Presidente).");
+      setModalError("Completá todos los campos obligatorios (Fecha, Hora, Materia, Aula, Presidente).");
       return;
     }
 
-    // Regla de Negocio: En estado Confirmada o Evaluada, debe haber por lo menos Vocal 1
     if ((estado === "confirmada" || estado === "evaluada") && !vocal1Id) {
-      setErrorMsg("Una mesa confirmada o evaluada debe tener asignado al menos al Vocal 1 (Mínimo 2 profesores).");
+      setModalError("Una mesa confirmada o evaluada debe tener asignado al menos al Vocal 1 (Mínimo 2 profesores).");
       return;
     }
 
-    // Regla de Negocio: No se puede asignar el mismo profesor como Presidente y Vocal en la misma mesa
     if (presidenteId === vocal1Id || presidenteId === vocal2Id || (vocal1Id && vocal1Id === vocal2Id)) {
-      setErrorMsg("Un profesor no puede cumplir más de un rol en la misma mesa de examen.");
+      setModalError("Un profesor no puede cumplir más de un rol en la misma mesa de examen.");
       return;
     }
 
-    // Regla de Negocio: Colisión de horarios para los profesores asignados
-    const collisionPresidente = mesas.find(m => 
+    const collisionPresidente = mesas.find(m =>
       m.id !== editingMesa?.id &&
       m.fecha === fecha &&
       m.hora === hora &&
@@ -149,12 +158,12 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     );
     if (collisionPresidente) {
       const profName = profesores.find(p => p.id === presidenteId || p.dni === presidenteId)?.nombre || "Presidente";
-      setErrorMsg(`Conflicto de horario: El Prof. ${profName} ya está asignado a otra mesa el día ${fecha} a las ${hora}.`);
+      setModalError(`Conflicto de horario: El Prof. ${profName} ya está asignado a otra mesa el día ${fecha} a las ${hora}.`);
       return;
     }
 
     if (vocal1Id) {
-      const collisionVocal1 = mesas.find(m => 
+      const collisionVocal1 = mesas.find(m =>
         m.id !== editingMesa?.id &&
         m.fecha === fecha &&
         m.hora === hora &&
@@ -162,7 +171,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       );
       if (collisionVocal1) {
         const profName = profesores.find(p => p.id === vocal1Id || p.dni === vocal1Id)?.nombre || "Vocal 1";
-        setErrorMsg(`Conflicto de horario: El Prof. ${profName} ya está asignado a otra mesa el día ${fecha} a las ${hora}.`);
+        setModalError(`Conflicto de horario: El Prof. ${profName} ya está asignado a otra mesa el día ${fecha} a las ${hora}.`);
         return;
       }
     }
@@ -191,17 +200,35 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       estado
     };
 
-    setLoading(true);
+    // ✅ Usar estado de loading PROPIO del modal, no el global
+    setModalLoading(true);
     try {
       await saveMesaExamen(payload);
-      setSuccessMsg(editingMesa ? "Mesa de examen actualizada." : "Mesa de examen creada con éxito.");
-      await logAction(userProfile?.email || "admin", editingMesa ? "EDITAR_MESA_EXAMEN" : "CREAR_MESA_EXAMEN", `Materia: ${materia}, Aula: ${aula}, Fecha: ${fecha}`);
+      await logAction(
+        userProfile?.email || "admin",
+        editingMesa ? "EDITAR_MESA_EXAMEN" : "CREAR_MESA_EXAMEN",
+        `Materia: ${materia}, Aula: ${aula}, Fecha: ${fecha}`
+      );
+      // ✅ Cerramos el modal ANTES de refrescar para evitar estado visual congelado
       setIsModalOpen(false);
+      setPanelSuccess(editingMesa ? "Mesa de examen actualizada." : "Mesa de examen creada con éxito.");
       refreshData();
-    } catch {
-      setErrorMsg("Ocurrió un error al guardar la mesa de examen.");
+    } catch (err: unknown) {
+      // ✅ Captura específica de AppwriteException sin congelar la UI
+      if (err instanceof AppwriteException) {
+        setModalError(
+          err.code === 401
+            ? "Sin permisos para realizar esta acción. Verificá tu sesión."
+            : err.code === 409
+            ? "Conflicto en la base de datos. Ya existe un registro con esos datos."
+            : `Error de Appwrite (${err.code}): ${err.message}`
+        );
+      } else {
+        setModalError("Ocurrió un error inesperado al guardar. Intentá de nuevo.");
+      }
     } finally {
-      setLoading(false);
+      // ✅ Siempre liberamos el estado de loading del modal
+      setModalLoading(false);
     }
   };
 
@@ -221,17 +248,17 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Feedback alerts */}
-      {successMsg && (
+      {/* Feedback alerts del PANEL EXTERIOR */}
+      {panelSuccess && (
         <div className="flex items-center gap-2 bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-4 py-3 rounded-2xl text-sm font-semibold animate-fade-in">
           <Check size={18} className="shrink-0" />
-          <span>{successMsg}</span>
+          <span>{panelSuccess}</span>
         </div>
       )}
-      {errorMsg && (
+      {panelError && (
         <div className="flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-2xl text-sm font-semibold animate-fade-in">
           <AlertCircle size={18} className="shrink-0" />
-          <span>{errorMsg}</span>
+          <span>{panelError}</span>
         </div>
       )}
 
@@ -366,10 +393,11 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
               <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all"><X size={18} /></button>
             </div>
 
-            {errorMsg && (
+            {/* Error del MODAL (separado del panel exterior) */}
+            {modalError && (
               <div className="flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-semibold mt-4">
                 <AlertCircle size={14} className="shrink-0" />
-                <span>{errorMsg}</span>
+                <span>{modalError}</span>
               </div>
             )}
 
@@ -494,11 +522,11 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
               </div>
 
               <div className="flex gap-4 pt-2">
-                <button type="button" onClick={() => setIsModalOpen(false)}
+                <button type="button" onClick={() => { setIsModalOpen(false); setModalError(""); }}
                   className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95 text-sm">Cancelar</button>
-                <button type="submit" disabled={loading}
+                <button type="submit" disabled={modalLoading}
                   className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-sm">
-                  {loading ? "Guardando..." : (editingMesa ? "Actualizar Mesa" : "Crear Mesa")}
+                  {modalLoading ? "Guardando..." : (editingMesa ? "Actualizar Mesa" : "Crear Mesa")}
                 </button>
               </div>
             </form>

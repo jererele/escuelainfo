@@ -568,3 +568,44 @@ label {
     @apply font-sans;
   }
 }
+
+/* ─── MOBILE-FIRST: Safe area inset (iPhone notch / Dynamic Island) ────────── */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-x      { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+/* ─── TOUCH: Mejorar respuesta táctil en elementos interactivos ─────────────── */
+button, a, [role="button"] {
+  touch-action: manipulation;  /* Elimina el delay de 300ms en tap en iOS/Android */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── GPU-SAFE SKELETON PULSE ───────────────────────────────────────────────── */
+/* Sobreescribe el animate-pulse de Tailwind para que use SOLO opacity.
+   Evita usar "brightness()" que fuerza compositing layer en Android de gama baja. */
+@keyframes safe-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.animate-pulse {
+  animation: safe-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity;
+}
+
+/* ─── REDUCED MOTION (Accesibilidad: usuarios con vértigo/epilepsia) ──────────
+   Desactiva TODAS las animaciones si el sistema operativo lo pide.
+   Esto incluye animate-zoom-in, animate-fade-in, skeleton, etc. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── FOCUS VISIBLE MOBILE: Anillo de foco accesible para navegación con teclado ─ */
+:focus-visible {
+  outline: 2px solid var(--verde);
+  outline-offset: 3px;
+  border-radius: 8px;
+}

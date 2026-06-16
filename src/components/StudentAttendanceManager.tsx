@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { UserProfile, Alumno, Curso, AsistenciaJornada, AsistenciaMateria, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAsistenciasMateria, saveAsistenciasMateria, getAlumnoHistorialAsistencia, getProfesores, logAction } from "@/lib/dataService";
 import { UserCheck, Check, X, AlertCircle, Calendar, BookOpen, Clock, Award, ShieldAlert, Search } from "lucide-react";
+import AttendanceTableResponsive from "@/components/AttendanceTableResponsive";
+import { SkeletonAttendanceTable } from "@/components/SkeletonLoaders";
 
 interface Props {
   user: any;
@@ -289,58 +291,24 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
           {Object.keys(asistenciasJornada).length > 0 ? (
             <div className="space-y-4">
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border)]">
-                <table className="w-full text-left border-collapse bg-white/50 dark:bg-slate-950/20">
-                  <thead>
-                    <tr className="bg-[var(--bg3)] border-b border-[var(--border)] text-[10px] font-black uppercase text-[var(--text3)] tracking-wider">
-                      <th className="p-4">DNI</th>
-                      <th className="p-4">Nombre del Alumno</th>
-                      <th className="p-4 text-center">Estado de Asistencia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {alumnos.filter(a => a.curso === selectedCurso).map((alumno) => {
-                      const alId = alumno.id || alumno.dni;
-                      const currentEstado = asistenciasJornada[alId] || "P";
-                      
-                      return (
-                        <tr key={alId} className="border-b border-[var(--border)] last:border-none hover:bg-slate-500/5 transition-colors">
-                          <td className="p-4 font-mono text-xs font-semibold text-[var(--text2)]">{alumno.dni}</td>
-                          <td className="p-4 font-bold text-sm text-[var(--text)]">{alumno.nombre}</td>
-                          <td className="p-4">
-                            <div className="flex justify-center items-center gap-2">
-                              {/* Botones de Estado */}
-                              {[
-                                { val: "P", label: "Presente", bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", activeBg: "bg-emerald-500 text-white" },
-                                { val: "A", label: "Ausente", bg: "bg-rose-500/10 text-rose-500 border-rose-500/20", activeBg: "bg-rose-500 text-white" },
-                                { val: "M", label: "Media Falta", bg: "bg-amber-500/10 text-amber-500 border-amber-500/20", activeBg: "bg-amber-500 text-white" },
-                                { val: "T", label: "Tarde", bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", activeBg: "bg-indigo-500 text-white" }
-                              ].map(btn => (
-                                <button
-                                  key={btn.val}
-                                  type="button"
-                                  onClick={() => setAsistenciasJornada(prev => ({ ...prev, [alId]: btn.val as any }))}
-                                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
-                                    currentEstado === btn.val ? btn.activeBg + " shadow-sm scale-105" : btn.bg + " hover:bg-slate-500/10"
-                                  }`}
-                                >
-                                  {btn.label}
-                                </button>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {loading ? (
+                <SkeletonAttendanceTable rows={alumnos.filter(a => a.curso === selectedCurso).length || 5} />
+              ) : (
+                <AttendanceTableResponsive
+                  alumnos={alumnos.filter(a => a.curso === selectedCurso)}
+                  asistencias={asistenciasJornada}
+                  modo="jornada"
+                  onChangeEstado={(alId, estado) =>
+                    setAsistenciasJornada(prev => ({ ...prev, [alId]: estado as any }))
+                  }
+                />
+              )}
 
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleSaveJornada}
                   disabled={loading}
-                  className="bg-[var(--verde)] text-black font-black px-6 py-3 rounded-2xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all"
+                  className="min-h-[44px] bg-[var(--verde)] text-black font-black px-6 py-3 rounded-2xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {loading ? "Guardando..." : "Guardar Asistencias"}
                 </button>
@@ -423,56 +391,24 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
           {Object.keys(asistenciasMateria).length > 0 ? (
             <div className="space-y-4">
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border)]">
-                <table className="w-full text-left border-collapse bg-white/50 dark:bg-slate-950/20">
-                  <thead>
-                    <tr className="bg-[var(--bg3)] border-b border-[var(--border)] text-[10px] font-black uppercase text-[var(--text3)] tracking-wider">
-                      <th className="p-4">DNI</th>
-                      <th className="p-4">Nombre del Alumno</th>
-                      <th className="p-4 text-center">Estado en Materia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {alumnos.filter(a => a.curso === selectedCurso).map((alumno) => {
-                      const alId = alumno.id || alumno.dni;
-                      const currentEstado = asistenciasMateria[alId] || "P";
-                      
-                      return (
-                        <tr key={alId} className="border-b border-[var(--border)] last:border-none hover:bg-slate-500/5 transition-colors">
-                          <td className="p-4 font-mono text-xs font-semibold text-[var(--text2)]">{alumno.dni}</td>
-                          <td className="p-4 font-bold text-sm text-[var(--text)]">{alumno.nombre}</td>
-                          <td className="p-4">
-                            <div className="flex justify-center items-center gap-2">
-                              {[
-                                { val: "P", label: "Presente", bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", activeBg: "bg-emerald-500 text-white" },
-                                { val: "A", label: "Ausente", bg: "bg-rose-500/10 text-rose-500 border-rose-500/20", activeBg: "bg-rose-500 text-white" },
-                                { val: "T", label: "Tarde", bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", activeBg: "bg-indigo-500 text-white" }
-                              ].map(btn => (
-                                <button
-                                  key={btn.val}
-                                  type="button"
-                                  onClick={() => setAsistenciasMateria(prev => ({ ...prev, [alId]: btn.val as any }))}
-                                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
-                                    currentEstado === btn.val ? btn.activeBg + " shadow-sm scale-105" : btn.bg + " hover:bg-slate-500/10"
-                                  }`}
-                                >
-                                  {btn.label}
-                                </button>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {loading ? (
+                <SkeletonAttendanceTable rows={alumnos.filter(a => a.curso === selectedCurso).length || 5} />
+              ) : (
+                <AttendanceTableResponsive
+                  alumnos={alumnos.filter(a => a.curso === selectedCurso)}
+                  asistencias={asistenciasMateria}
+                  modo="materia"
+                  onChangeEstado={(alId, estado) =>
+                    setAsistenciasMateria(prev => ({ ...prev, [alId]: estado as any }))
+                  }
+                />
+              )}
 
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleSaveMateria}
                   disabled={loading}
-                  className="bg-[var(--verde)] text-black font-black px-6 py-3 rounded-2xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all"
+                  className="min-h-[44px] bg-[var(--verde)] text-black font-black px-6 py-3 rounded-2xl shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {loading ? "Guardando..." : "Guardar Planilla de Materia"}
                 </button>

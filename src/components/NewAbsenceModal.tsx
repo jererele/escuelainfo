@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { account } from "@/lib/appwrite";
 import { saveAusencia, Ausencia, getProfesores, Profesor, logAction } from "@/lib/dataService";
-import { X, AlertCircle } from "lucide-react";
+import { X, AlertCircle, Search, ChevronDown } from "lucide-react";
 
 interface NewAbsenceModalProps {
   isOpen: boolean;
@@ -11,6 +11,23 @@ interface NewAbsenceModalProps {
   onSuccess: () => void;
   lockedProfesor?: Profesor;
 }
+
+// ——— Catálogo local de artículos (fácilmente reemplazable por consulta a Appwrite) ———
+const ARTICULOS_LICENCIA = [
+  { codigo: "Art. 14", detalle: "Familiar Enfermo", limite: "Máx. 20 días/año" },
+  { codigo: "Art. 15", detalle: "Razones Particulares", limite: "Máx. 6 días/año" },
+  { codigo: "Art. 16", detalle: "Donación de Sangre", limite: "1 día" },
+  { codigo: "Art. 17", detalle: "Mudanza", limite: "Máx. 2 días" },
+  { codigo: "Art. 18", detalle: "Examen Universitario", limite: "Máx. 10 días/año" },
+  { codigo: "Art. 19", detalle: "Fallecimiento Familiar Directo", limite: "Máx. 5 días" },
+  { codigo: "Art. 20", detalle: "Fallecimiento Familiar Indirecto", limite: "Máx. 2 días" },
+  { codigo: "Art. 21", detalle: "Casamiento", limite: "Máx. 10 días" },
+  { codigo: "Art. 43", detalle: "Licencia Gremial", limite: "Según acuerdo sindical" },
+  { codigo: "Art. 50", detalle: "Enfermedad Corta Duración", limite: "Máx. 30 días c/goce" },
+  { codigo: "Art. 51", detalle: "Enfermedad Larga Duración", limite: "Máx. 2 años" },
+  { codigo: "Art. 55", detalle: "Maternidad / Paternidad", limite: "Según normativa vigente" },
+  { codigo: "Otro", detalle: "Otro Tipo de Artículo", limite: "" },
+];
 
 export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProfesor }: NewAbsenceModalProps) {
   const [loading, setLoading] = useState(false);
@@ -26,6 +43,22 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
     cert: false
   });
 
+  // — Estados para el buscador de artículos —
+  const [articuloQuery, setArticuloQuery] = useState("");
+  const [showArticuloDropdown, setShowArticuloDropdown] = useState(false);
+  const articuloRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (articuloRef.current && !articuloRef.current.contains(e.target as Node)) {
+        setShowArticuloDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       if (lockedProfesor) {
@@ -34,8 +67,27 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
       } else {
         getProfesores().then(setProfesores);
       }
+      // Resetear buscador al abrir
+      setArticuloQuery("");
+      setShowArticuloDropdown(false);
     }
   }, [isOpen, lockedProfesor]);
+
+  // Artículos filtrados por búsqueda
+  const articulosFiltrados = ARTICULOS_LICENCIA.filter(a =>
+    articuloQuery.trim() === ""
+      ? true
+      : `${a.codigo} ${a.detalle}`.toLowerCase().includes(articuloQuery.toLowerCase())
+  );
+
+  const handleSelectArticulo = (art: typeof ARTICULOS_LICENCIA[0]) => {
+    const label = art.limite
+      ? `${art.codigo} - ${art.detalle} (${art.limite})`
+      : `${art.codigo} - ${art.detalle}`;
+    setFormData(prev => ({ ...prev, motivo: label }));
+    setArticuloQuery(art.codigo + " - " + art.detalle);
+    setShowArticuloDropdown(false);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -149,21 +201,70 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
             </div>
 
             {formData.tipo === "Artículo" && (
-              <div className="space-y-2 animate-fade-in">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Artículo de Licencia</label>
-                <select
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold text-sm"
-                  value={formData.motivo}
-                  onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-                >
-                  <option value="">Seleccionar Artículo...</option>
-                  <option value="Art. 14 - Familiar Enfermo (Max 20 días/año)">Art. 14 - Familiar Enfermo (Max 20 días/año)</option>
-                  <option value="Art. 15 - Razones Particulares (Max 6 días/año)">Art. 15 - Razones Particulares (Max 6 días/año)</option>
-                  <option value="Art. 16 - Donación de Sangre (1 día)">Art. 16 - Donación de Sangre (1 día)</option>
-                  <option value="Art. 17 - Mudanza (Max 2 días)">Art. 17 - Mudanza (Max 2 días)</option>
-                  <option value="Otro">Otro Artículo</option>
-                </select>
-                <p className="text-[10px] font-semibold text-[var(--amarillo)] mt-1 ml-1">Atención: Verificar cupo límite en el sistema de liquidaciones.</p>
+              <div className="space-y-2 animate-fade-in" ref={articuloRef}>
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Buscar Artículo de Licencia</label>
+                {/* ✅ Barra de búsqueda única */}
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Ej: Art. 14, Art. 43, Gremial..."
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-10 py-3 outline-none focus:border-[var(--verde)] transition-all font-semibold text-sm text-[var(--text)]"
+                    value={articuloQuery}
+                    onChange={(e) => {
+                      setArticuloQuery(e.target.value);
+                      setShowArticuloDropdown(true);
+                      // Si borra el campo, limpia la selección
+                      if (!e.target.value) setFormData(prev => ({ ...prev, motivo: "" }));
+                    }}
+                    onFocus={() => setShowArticuloDropdown(true)}
+                  />
+                  <ChevronDown
+                    size={14}
+                    className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] transition-transform ${showArticuloDropdown ? "rotate-180" : ""}`}
+                  />
+
+                  {/* Dropdown filtrado */}
+                  {showArticuloDropdown && articulosFiltrados.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden animate-fade-in max-h-56 overflow-y-auto custom-scrollbar">
+                      {articulosFiltrados.map((art) => (
+                        <button
+                          key={art.codigo}
+                          type="button"
+                          onClick={() => handleSelectArticulo(art)}
+                          className="w-full text-left px-4 py-3 hover:bg-[var(--verde-bg)] hover:text-[var(--verde)] transition-colors border-b border-[var(--border)] last:border-none flex items-start justify-between gap-3 group"
+                        >
+                          <div>
+                            <span className="font-black text-xs text-[var(--text)] group-hover:text-[var(--verde)]">{art.codigo}</span>
+                            <span className="mx-2 text-[var(--text3)]">·</span>
+                            <span className="text-xs font-semibold text-[var(--text2)] group-hover:text-[var(--verde)]">{art.detalle}</span>
+                          </div>
+                          {art.limite && (
+                            <span className="text-[9px] font-black uppercase text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] px-2 py-0.5 rounded-lg shrink-0">
+                              {art.limite}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sin resultados */}
+                  {showArticuloDropdown && articulosFiltrados.length === 0 && (
+                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl p-4 text-center animate-fade-in">
+                      <p className="text-xs text-[var(--text3)] font-semibold">No se encontraron artículos para «ela {articuloQuery}»</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Artículo seleccionado */}
+                {formData.motivo && (
+                  <div className="flex items-center gap-2 bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-3 py-2 rounded-xl text-[10px] font-black animate-fade-in">
+                    <span className="shrink-0">✓ Seleccionado:</span>
+                    <span className="truncate">{formData.motivo}</span>
+                  </div>
+                )}
+                <p className="text-[10px] font-semibold text-[var(--amarillo)] ml-1">Atención: Verificar cupo límite en el sistema de liquidaciones.</p>
               </div>
             )}
 
