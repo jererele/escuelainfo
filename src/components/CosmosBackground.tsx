@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * CosmosBackground
  * ─────────────────────────────────────────────────────────────────────────────
- * OPTIMIZACIÓN MOBILE:
- * - En pantallas < 768px el canvas NO se crea ni anima → 0% GPU
- * - CSS `hidden md:block` es la primera línea de defensa (sin JS)
- * - JS es la segunda: matchMedia() cancela el RAF antes de que empiece
- * - IntersectionObserver pausa el RAF cuando el canvas no es visible
+ * OPTIMIZACIÓN MOBILE EXTREMA:
+ * - Si es móvil (< 768px), el componente retorna NULL en el render (se destruye del DOM).
+ * - Cero consumo de GPU/CPU, cero Canvas, cero animaciones en móviles.
+ * - En PC (>= 768px), se inicializa y anima con hardware acceleration (will-change y translate3d).
  */
 
 const STAR_COUNT = 150;
@@ -100,13 +99,19 @@ class Star {
 export default function CosmosBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nebulaRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // ✅ MOBILE GUARD (doble capa):
-    // 1. CSS 'hidden md:block' ya oculta el canvas en el DOM
-    // 2. Este guard evita que el RAF se registre en absoluto → 0% CPU/GPU en móvil
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    if (isMobile) return;
+    // Detectar si es móvil de forma estricta al montar en cliente
+    const checkMobile = () => {
+      setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    };
+    checkMobile();
+  }, []);
+
+  useEffect(() => {
+    // Si todavía no se monta o si es móvil, no ejecutamos nada de canvas
+    if (isMobile === null || isMobile === true) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -148,7 +153,6 @@ export default function CosmosBackground() {
       animationFrameId = requestAnimationFrame(animate);
     }
 
-    // ✅ INTERSECTION OBSERVER: pausa el RAF cuando el canvas está fuera de la vista
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && isPaused) {
@@ -163,7 +167,6 @@ export default function CosmosBackground() {
     );
     observer.observe(canvas);
 
-    // Pausa cuando la pestaña está en background
     const handleVisibilityChange = () => {
       if (document.hidden) {
         isPaused = true;
@@ -173,7 +176,6 @@ export default function CosmosBackground() {
       }
     };
 
-    // Debounced resize (evita recalcular en cada pixel al arrastrar ventana)
     let resizeTimer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
       clearTimeout(resizeTimer);
@@ -193,15 +195,29 @@ export default function CosmosBackground() {
       clearTimeout(resizeTimer);
       observer.disconnect();
     };
-  }, []);
+  }, [isMobile]);
 
+  // Durante la carga inicial (SSR), renderizamos el fallback que Tailwind oculta en móviles
+  if (isMobile === null) {
+    return (
+      <>
+        <div className="hidden md:block fixed top-0 left-0 w-[900px] h-[900px] rounded-full pointer-events-none z-0" />
+        <canvas className="hidden md:block fixed inset-0 z-0 pointer-events-none" />
+      </>
+    );
+  }
+
+  // Si es móvil, destruimos completamente del DOM
+  if (isMobile === true) {
+    return null;
+  }
+
+  // En PC se renderiza y anima
   return (
     <>
-      {/* Nebula: CSS oculta en móvil, JS guard evita animación */}
       <div
         ref={nebulaRef}
-        suppressHydrationWarning
-        className="hidden md:block fixed top-0 left-0 w-[900px] h-[900px] rounded-full pointer-events-none z-0"
+        className="fixed top-0 left-0 w-[900px] h-[900px] rounded-full pointer-events-none z-0"
         style={{
           background:
             "radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.04) 40%, transparent 70%)",
@@ -209,10 +225,9 @@ export default function CosmosBackground() {
           willChange: "transform",
         }}
       />
-      {/* Canvas: CSS oculta en móvil, JS guard evita el RAF */}
       <canvas
         ref={canvasRef}
-        className="hidden md:block fixed inset-0 z-0 pointer-events-none"
+        className="fixed inset-0 z-0 pointer-events-none"
         style={{ background: "transparent" }}
       />
     </>
