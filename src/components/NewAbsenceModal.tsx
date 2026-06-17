@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { account } from "@/lib/appwrite";
 import { saveAusencia, Ausencia, getProfesores, Profesor, logAction, uploadCertificateFile, deleteCertificateFile } from "@/lib/dataService";
-import { X, AlertCircle, Search, ChevronDown } from "lucide-react";
+import { X, AlertCircle, Search, ChevronDown, Upload, Check } from "lucide-react";
 
 interface NewAbsenceModalProps {
   isOpen: boolean;
@@ -247,125 +247,155 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Tipo de Ausencia</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {["Licencia Médica", "Artículo", "Capacitación", "Otro"].map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, tipo: t })}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all active:scale-95 text-center ${
-                      formData.tipo === t
-                        ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm font-black scale-[1.02]"
-                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Tipo de Ausencia</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {["Licencia Médica", "Artículo", "Capacitación", "Otro"].map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, tipo: t })}
+                  className={`p-3 rounded-xl border text-xs font-bold transition-all active:scale-95 text-center ${
+                    formData.tipo === t
+                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm font-black scale-[1.02]"
+                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
+          </div>
 
-            {formData.tipo === "Artículo" && (
-              <div className="space-y-2 animate-fade-in" ref={articuloRef}>
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Buscar Artículo de Licencia</label>
-                {/* ✅ Barra de búsqueda única */}
-                <div className="relative">
-                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Ej: Art. 14, Art. 43, Gremial..."
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-10 py-3 outline-none focus:border-[var(--verde)] transition-all font-semibold text-sm text-[var(--text)]"
-                    value={articuloQuery}
-                    onChange={(e) => {
-                      setArticuloQuery(e.target.value);
-                      setShowArticuloDropdown(true);
-                      // Si borra el campo, limpia la selección
-                      if (!e.target.value) setFormData(prev => ({ ...prev, motivo: "" }));
-                    }}
-                    onFocus={() => setShowArticuloDropdown(true)}
+          {formData.tipo === "Artículo" && (
+            <div className="relative space-y-2 animate-fade-in z-20" ref={articuloRef}>
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Buscar Artículo de Licencia</label>
+              {/* ✅ Barra de búsqueda única y aislada con relative */}
+              <div className="relative">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Ej: Art. 14, Art. 43, Gremial..."
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-10 py-3 outline-none focus:border-[var(--verde)] transition-all font-semibold text-sm text-[var(--text)]"
+                  value={articuloQuery}
+                  onChange={(e) => {
+                    setArticuloQuery(e.target.value);
+                    setShowArticuloDropdown(true);
+                    if (!e.target.value) setFormData(prev => ({ ...prev, motivo: "" }));
+                  }}
+                  onFocus={() => setShowArticuloDropdown(true)}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowArticuloDropdown(prev => !prev);
+                  }}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1"
+                >
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${showArticuloDropdown ? "rotate-180" : ""}`}
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowArticuloDropdown(prev => !prev);
-                    }}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1"
-                  >
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform duration-200 ${showArticuloDropdown ? "rotate-180" : ""}`}
-                    />
-                  </button>
+                </button>
 
-                  {/* Dropdown filtrado */}
-                  {showArticuloDropdown && articulosFiltrados.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden animate-fade-in max-h-56 overflow-y-auto custom-scrollbar">
-                      {articulosFiltrados.map((art) => (
-                        <button
-                          key={art.codigo}
-                          type="button"
-                          onClick={() => handleSelectArticulo(art)}
-                          className="w-full text-left px-4 py-3 hover:bg-[var(--verde-bg)] hover:text-[var(--verde)] transition-colors border-b border-[var(--border)] last:border-none flex items-start justify-between gap-3 group"
-                        >
-                          <div>
-                            <span className="font-black text-xs text-[var(--text)] group-hover:text-[var(--verde)]">{art.codigo}</span>
-                            <span className="mx-2 text-[var(--text3)]">·</span>
-                            <span className="text-xs font-semibold text-[var(--text2)] group-hover:text-[var(--verde)]">{art.detalle}</span>
-                          </div>
-                          {art.limite && (
-                            <span className="text-[9px] font-black uppercase text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] px-2 py-0.5 rounded-lg shrink-0">
-                              {art.limite}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Sin resultados */}
-                  {showArticuloDropdown && articulosFiltrados.length === 0 && (
-                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl p-4 text-center animate-fade-in">
-                      <p className="text-xs text-[var(--text3)] font-semibold">No se encontraron artículos para «ela {articuloQuery}»</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Artículo seleccionado */}
-                {formData.motivo && (
-                  <div className="flex items-center gap-2 bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-3 py-2 rounded-xl text-[10px] font-black animate-fade-in">
-                    <span className="shrink-0">✓ Seleccionado:</span>
-                    <span className="truncate">{formData.motivo}</span>
+                {/* Dropdown filtrado absoluto flotante */}
+                {showArticuloDropdown && articulosFiltrados.length > 0 && (
+                  <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden animate-fade-in max-h-56 overflow-y-auto custom-scrollbar">
+                    {articulosFiltrados.map((art) => (
+                      <button
+                        key={art.codigo}
+                        type="button"
+                        onClick={() => handleSelectArticulo(art)}
+                        className="w-full text-left px-4 py-3 hover:bg-[var(--verde-bg)] hover:text-[var(--verde)] transition-colors border-b border-[var(--border)] last:border-none flex items-start justify-between gap-3 group"
+                      >
+                        <div>
+                          <span className="font-black text-xs text-[var(--text)] group-hover:text-[var(--verde)]">{art.codigo}</span>
+                          <span className="mx-2 text-[var(--text3)]">·</span>
+                          <span className="text-xs font-semibold text-[var(--text2)] group-hover:text-[var(--verde)]">{art.detalle}</span>
+                        </div>
+                        {art.limite && (
+                          <span className="text-[9px] font-black uppercase text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] px-2 py-0.5 rounded-lg shrink-0">
+                            {art.limite}
+                          </span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 )}
-                <p className="text-[10px] font-semibold text-[var(--amarillo)] ml-1">Atención: Verificar cupo límite en el sistema de liquidaciones.</p>
+
+                {/* Sin resultados absoluto flotante */}
+                {showArticuloDropdown && articulosFiltrados.length === 0 && (
+                  <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl p-4 text-center animate-fade-in">
+                    <p className="text-xs text-[var(--text3)] font-semibold">No se encontraron artículos para «{articuloQuery}»</p>
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="flex items-center gap-3 cursor-pointer select-none py-3 px-4 bg-[var(--bg3)] border border-[var(--border)] rounded-xl w-full">
-                <input type="checkbox"
-                  className="w-5 h-5 rounded border-[var(--border)] bg-[var(--bg)] checked:bg-[var(--verde)] transition-all cursor-pointer"
-                  checked={formData.cert} onChange={(e) => setFormData({ ...formData, cert: e.target.checked })} />
-                <span className="text-sm font-medium">¿Certificado adjunto?</span>
-              </label>
+              {/* Artículo seleccionado */}
+              {formData.motivo && (
+                <div className="flex items-center gap-2 bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-3 py-2 rounded-xl text-[10px] font-black animate-fade-in">
+                  <span className="shrink-0">✓ Seleccionado:</span>
+                  <span className="truncate">{formData.motivo}</span>
+                </div>
+              )}
+              <p className="text-[10px] font-semibold text-[var(--amarillo)] ml-1">Atención: Verificar cupo límite en el sistema de liquidaciones.</p>
+            </div>
+          )}
 
-              {formData.cert && (
-                <div className="flex flex-col justify-center animate-fade-in">
-                  <label className="cursor-pointer bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black py-3 px-4 rounded-xl text-center text-sm font-bold transition-all truncate block">
-                    <span>{selectedFile ? `✓ ${selectedFile.name}` : "Subir Imagen / PDF"}</span>
-                    <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => {
+          {/* SECCIÓN DE CARGA DE CERTIFICADO (Aislado físicamente abajo y estilizado como Dropzone) */}
+          <div className="space-y-3 z-10">
+            <label className="flex items-center gap-3 cursor-pointer select-none py-3.5 px-4 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl w-full hover:bg-[var(--bg4)]/40 transition-colors">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded border-[var(--border)] bg-[var(--bg)] checked:bg-[var(--verde)] checked:border-[var(--verde)] transition-all cursor-pointer accent-[var(--verde)]"
+                checked={formData.cert}
+                onChange={(e) => setFormData({ ...formData, cert: e.target.checked })}
+              />
+              <span className="text-sm font-bold text-[var(--text2)]">¿Adjuntar Certificado Médico / Justificativo?</span>
+            </label>
+
+            {formData.cert && (
+              <div className="animate-fade-in">
+                <label className="group relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[var(--border)] hover:border-[var(--verde-border)] bg-[var(--bg3)] hover:bg-[var(--verde-bg)]/10 rounded-2xl cursor-pointer transition-all duration-300 p-4 text-center">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setSelectedFile(e.target.files[0]);
                       }
-                    }} />
-                  </label>
-                </div>
-              )}
-            </div>
+                    }}
+                  />
+                  {selectedFile ? (
+                    <div className="space-y-1">
+                      <div className="mx-auto w-10 h-10 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] group-hover:scale-110 transition-transform">
+                        <Check size={18} />
+                      </div>
+                      <p className="text-xs font-bold text-[var(--text)] truncate max-w-[280px] mt-1">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-[9px] font-semibold text-[var(--text3)] uppercase tracking-wider">
+                        Hacé clic para cambiar el archivo
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="mx-auto w-10 h-10 rounded-full bg-[var(--bg4)] border border-[var(--border)] flex items-center justify-center text-[var(--text2)] group-hover:scale-110 group-hover:border-[var(--verde-border)] group-hover:text-[var(--verde)] transition-all">
+                        <Upload size={18} />
+                      </div>
+                      <p className="text-xs font-bold text-[var(--text2)] group-hover:text-[var(--text)] transition-colors mt-1">
+                        Subir certificado (Imagen o PDF)
+                      </p>
+                      <p className="text-[9px] text-[var(--text3)]">
+                        Arrastrá el archivo o hacé clic para explorar
+                      </p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
