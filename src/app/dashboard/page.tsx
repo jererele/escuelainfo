@@ -145,9 +145,7 @@ export default function Dashboard() {
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
   
-  // Scroll-driven header state
-  const [showMobileHeader, setShowMobileHeader] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+
 
   const sidebarLeaveTimeout = useRef<NodeJS.Timeout | null>(null);
   // Cache TTL: evita re-fetchear si el dato tiene menos de 60 segundos
@@ -1047,18 +1045,7 @@ export default function Dashboard() {
         />
 
       {/* MAIN CONTENT */}
-      <main 
-        className="flex-1 min-w-0 h-screen overflow-y-auto relative pt-14"
-        onScroll={(e) => {
-          const currentScrollY = e.currentTarget.scrollTop;
-          if (currentScrollY > lastScrollY && currentScrollY > 50) {
-            setShowMobileHeader(false);
-          } else if (currentScrollY < lastScrollY) {
-            setShowMobileHeader(true);
-          }
-          setLastScrollY(currentScrollY);
-        }}
-      >
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto relative pt-14">
 
         <div className="p-6 md:p-12 max-w-[1400px] mx-auto">
           {/* HEADER: saludo solo en inicio, título de sección en el resto */}

@@ -432,9 +432,9 @@ body {
   --text2: #334155        --text2: #cbd5e1   (WCAG AA: ~7:1)
   --text3: #64748b        --text3: #64748b   (WCAG AA: ~4.5:1, sólo decorativo)
 */
-.text-primary   { color: var(--text);  }
-.text-secondary { color: var(--text2); }
-.text-tertiary  { color: var(--text3); }
+.text-contrast-primary   { color: var(--text);  }
+.text-contrast-secondary { color: var(--text2); }
+.text-contrast-tertiary  { color: var(--text3); }
 .bg-surface     { background: var(--bg); }
 .bg-surface-2   { background: var(--bg2); }
 .bg-surface-3   { background: var(--bg3); }
