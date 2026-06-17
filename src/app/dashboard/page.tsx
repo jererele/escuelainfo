@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
@@ -1359,6 +1359,19 @@ export default function Dashboard() {
                           <td className="p-5">
                             <div className="text-sm font-medium">{a.tipo}</div>
                             <div className="text-xs text-[var(--text2)] italic">{a.motivo || "Sin motivo especificado"}</div>
+                            {a.certFileId && (
+                              <div className="mt-1.5">
+                                <a 
+                                  href={getCertificateFileUrl(a.certFileId)} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[9px] font-black uppercase text-[var(--verde)] hover:bg-[var(--verde)] hover:text-black transition-all"
+                                  title="Ver archivo adjunto"
+                                >
+                                  <span>📎 Ver Certificado</span>
+                                </a>
+                              </div>
+                            )}
                           </td>
                           <td className="p-5">
                             <div className="text-xs font-bold text-[var(--text2)]">Del {a.inicio}</div>

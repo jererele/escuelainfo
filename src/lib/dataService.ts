@@ -1038,3 +1038,39 @@ export const deleteMesaExamen = async (id: string) => {
     setLocalStorageData("mesas_examen", filtered);
   }
 };
+
+// ─── STORAGE CERTIFICADOS ───────────────────────────────────────────────────
+export const uploadCertificateFile = async (file: File): Promise<string> => {
+  try {
+    const response = await storage.createFile(
+      APPWRITE_BUCKET_ID,
+      ID.unique(),
+      file
+    );
+    return response.$id;
+  } catch (err) {
+    devLog("uploadCertificateFile", err);
+    throw err;
+  }
+};
+
+export const deleteCertificateFile = async (fileId: string): Promise<boolean> => {
+  try {
+    await storage.deleteFile(APPWRITE_BUCKET_ID, fileId);
+    return true;
+  } catch (err) {
+    devLog("deleteCertificateFile", err);
+    return false;
+  }
+};
+
+export const getCertificateFileUrl = (fileId: string): string => {
+  if (!fileId) return "";
+  try {
+    const res = storage.getFileView(APPWRITE_BUCKET_ID, fileId);
+    return typeof res === "string" ? res : (res as any).href || String(res);
+  } catch (err) {
+    devLog("getCertificateFileUrl", err);
+    return "";
+  }
+};

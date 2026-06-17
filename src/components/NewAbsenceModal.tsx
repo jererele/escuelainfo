@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { account } from "@/lib/appwrite";
-import { saveAusencia, Ausencia, getProfesores, Profesor, logAction } from "@/lib/dataService";
+import { saveAusencia, Ausencia, getProfesores, Profesor, logAction, uploadCertificateFile, deleteCertificateFile } from "@/lib/dataService";
 import { X, AlertCircle, Search, ChevronDown } from "lucide-react";
 
 interface NewAbsenceModalProps {
@@ -50,6 +50,7 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
   }
 
   const [feriados, setFeriados] = useState<Feriado[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const currentHoliday = (() => {
     if (!formData.inicio || !formData.fin) return null;
@@ -142,6 +143,18 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
     setLoading(true);
     const prof = lockedProfesor || profesores.find(p => p.id === selectedProfId);
+    
+    let uploadedFileId = "";
+    if (formData.cert && selectedFile) {
+      try {
+        uploadedFileId = await uploadCertificateFile(selectedFile);
+      } catch (err) {
+        setError("Error al subir el archivo del certificado. Por favor, intentá de nuevo.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const newAusencia: Ausencia = {
         profId: selectedProfId,
@@ -152,6 +165,7 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
         materias: formData.materias.split(",").map(m => m.trim()).filter(Boolean),
         motivo: formData.motivo,
         cert: formData.cert,
+        certFileId: uploadedFileId,
         estado: "pendiente",
         fechaReg: new Date().toISOString()
       };
@@ -167,8 +181,15 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
       onSuccess();
       onClose();
-    } catch { setError("Error al guardar la ausencia. Intentá de nuevo."); }
-    finally { setLoading(false); }
+    } catch (saveErr) {
+      // Rollback: delete uploaded file if database document creation fails
+      if (uploadedFileId) {
+        await deleteCertificateFile(uploadedFileId);
+      }
+      setError("Error al guardar el registro de ausencia. Intentá de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -316,11 +337,12 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
               {formData.cert && (
                 <div className="flex flex-col justify-center animate-fade-in">
-                  <label className="cursor-pointer bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black py-3 px-4 rounded-xl text-center text-sm font-bold transition-all truncate">
-                    <span>Subir Imagen / PDF</span>
+                  <label className="cursor-pointer bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black py-3 px-4 rounded-xl text-center text-sm font-bold transition-all truncate block">
+                    <span>{selectedFile ? `✓ ${selectedFile.name}` : "Subir Imagen / PDF"}</span>
                     <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => {
-                       // Lógica futura para subir a Appwrite Storage
-                       alert("Foto cargada localmente (Simulación). En producción se sube a Appwrite Storage.");
+                      if (e.target.files && e.target.files[0]) {
+                        setSelectedFile(e.target.files[0]);
+                      }
                     }} />
                   </label>
                 </div>
