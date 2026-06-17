@@ -1,4 +1,4 @@
-import { databases, appwriteClient, APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, storage } from "./appwrite";
+import { databases, appwriteClient, APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, storage, account } from "./appwrite";
 import { ID, Query } from "appwrite";
 
 // ─── Logger solo en desarrollo ───────────────────────────────────────────────
@@ -1042,6 +1042,14 @@ export const deleteMesaExamen = async (id: string) => {
 // ─── STORAGE CERTIFICADOS ───────────────────────────────────────────────────
 export const uploadCertificateFile = async (file: File): Promise<string> => {
   try {
+    // Verificar si hay sesión activa, de lo contrario crear una anónima para evitar 401
+    try {
+      await account.get();
+    } catch {
+      console.log("[dataService] No active Appwrite session found. Creating anonymous session...");
+      await account.createAnonymousSession();
+    }
+
     const response = await storage.createFile(
       APPWRITE_BUCKET_ID,
       ID.unique(),
