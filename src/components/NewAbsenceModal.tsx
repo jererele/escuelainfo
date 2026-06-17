@@ -194,12 +194,17 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
       onSuccess();
       onClose();
-    } catch (saveErr) {
+    } catch (saveErr: any) {
+      console.error("Error detallado al guardar documento en Appwrite:", saveErr);
+      const code = saveErr?.code || saveErr?.status || "Desconocido";
+      const type = saveErr?.type || "UnknownError";
+      const msg = saveErr?.message || "Error sin detalle";
+      
       // Rollback: delete uploaded file if database document creation fails
       if (uploadedFileId) {
         await deleteCertificateFile(uploadedFileId);
       }
-      setError("Error al guardar el registro de ausencia. Intentá de nuevo.");
+      setError(`Error al guardar el registro (Código: ${code} - ${type}). Detalle: ${msg}`);
     } finally {
       setLoading(false);
     }
