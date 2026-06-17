@@ -609,3 +609,16 @@ button, a, [role="button"] {
   outline-offset: 3px;
   border-radius: 8px;
 }
+
+/* ─── RENDERING & GPU PERFORMANCE OPTIMIZATIONS ─────────────────────────────── */
+/* Evita renderizar elementos fuera del viewport, ahorrando ciclos de CPU/GPU en móviles. */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
+}
+
+/* Fuerza al navegador a subir a capa GPU (Compositing Layer) antes de que empiece la animación. */
+.will-change-gpu {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0); /* Aceleración por hardware activa */
+}

@@ -2,30 +2,30 @@
 
 import { useEffect, useRef } from "react";
 
-const STAR_COUNT = 150; // Reducido para máximo rendimiento (240hz)
+/**
+ * CosmosBackground
+ * ─────────────────────────────────────────────────────────────────────────────
+ * OPTIMIZACIÓN MOBILE:
+ * - En pantallas < 768px el canvas NO se crea ni anima → 0% GPU
+ * - CSS `hidden md:block` es la primera línea de defensa (sin JS)
+ * - JS es la segunda: matchMedia() cancela el RAF antes de que empiece
+ * - IntersectionObserver pausa el RAF cuando el canvas no es visible
+ */
+
+const STAR_COUNT = 150;
 const COLORS = [
-  "rgba(5, 150, 105, opacity)",  // Esmeralda Intenso
-  "rgba(37, 99, 235, opacity)",  // Azul Intenso
-  "rgba(124, 58, 237, opacity)", // Violeta Intenso
-  "rgba(8, 145, 178, opacity)",  // Cyan Intenso
-  "rgba(239, 68, 68, opacity)",  // Rojo (un toque)
+  "rgba(5, 150, 105, opacity)",
+  "rgba(37, 99, 235, opacity)",
+  "rgba(124, 58, 237, opacity)",
+  "rgba(8, 145, 178, opacity)",
+  "rgba(239, 68, 68, opacity)",
 ];
 
 class Star {
-  x!: number;
-  y!: number;
-  size!: number;
-  opacity!: number;
-  vX!: number;
-  vY!: number;
-  life!: number;
-  maxLife!: number;
-  fadeIn!: number;
-  color!: string;
-  pulse!: number;
-  pulseSpeed!: number;
-  width: number;
-  height: number;
+  x!: number; y!: number; size!: number; opacity!: number;
+  vX!: number; vY!: number; life!: number; maxLife!: number;
+  fadeIn!: number; color!: string; pulse!: number; pulseSpeed!: number;
+  width: number; height: number;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -39,7 +39,6 @@ class Star {
     this.size = Math.random() * 3.2 + 0.6;
     this.vX = (Math.random() - 0.5) * 0.18;
     this.vY = (Math.random() - 0.5) * 0.18;
-    
     this.maxLife = Math.random() * 400 + 200;
     this.life = firstLoad ? Math.random() * this.maxLife : this.maxLife;
     this.fadeIn = 0;
@@ -51,11 +50,8 @@ class Star {
 
   draw(ctx: CanvasRenderingContext2D) {
     let currentOpacity = this.opacity;
-    if (this.fadeIn < 60) {
-      currentOpacity *= (this.fadeIn / 60);
-    } else if (this.life < 60) {
-      currentOpacity *= (this.life / 60);
-    }
+    if (this.fadeIn < 60) currentOpacity *= this.fadeIn / 60;
+    else if (this.life < 60) currentOpacity *= this.life / 60;
 
     const twinkle = Math.sin(this.pulse) * 0.4 + 0.6;
     const finalOpacity = currentOpacity * twinkle;
@@ -76,17 +72,14 @@ class Star {
     }
   }
 
-  update(mouse: { x: number, y: number }) {
+  update(mouse: { x: number; y: number }) {
     this.x += this.vX;
     this.y += this.vY;
     this.life--;
     this.fadeIn++;
     this.pulse += this.pulseSpeed;
 
-    if (this.life <= 0) {
-      this.init();
-    }
-
+    if (this.life <= 0) this.init();
     if (this.x < -50) this.x = this.width + 50;
     if (this.x > this.width + 50) this.x = -50;
     if (this.y < -50) this.y = this.height + 50;
@@ -96,7 +89,6 @@ class Star {
     const dy = mouse.y - this.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const maxDistance = 300;
-
     if (distance < maxDistance) {
       const force = (maxDistance - distance) / maxDistance;
       this.x += (dx / distance) * force * 1.8;
@@ -110,14 +102,19 @@ export default function CosmosBackground() {
   const nebulaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // ✅ MOBILE GUARD (doble capa):
+    // 1. CSS 'hidden md:block' ya oculta el canvas en el DOM
+    // 2. Este guard evita que el RAF se registre en absoluto → 0% CPU/GPU en móvil
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    if (isMobile) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
     let stars: Star[] = [];
     const virtualMouse = { x: width / 2, y: height / 2 };
     let animationFrameId: number;
@@ -128,18 +125,13 @@ export default function CosmosBackground() {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      stars = [];
-      const isMobile = window.innerWidth < 768;
-      const count = isMobile ? 50 : 150; // Menor cantidad en móvil para máximo rendimiento
-      for (let i = 0; i < count; i++) {
-        stars.push(new Star(width, height));
-      }
+      stars = Array.from({ length: STAR_COUNT }, () => new Star(width, height));
     }
 
     function animate() {
       if (!ctx || isPaused) return;
       ctx.clearRect(0, 0, width, height);
-      
+
       time += 0.002;
       virtualMouse.x = width / 2 + Math.cos(time) * (width / 3);
       virtualMouse.y = height / 2 + Math.sin(time * 0.8) * (height / 3);
@@ -152,26 +144,43 @@ export default function CosmosBackground() {
         star.update(virtualMouse);
         star.draw(ctx);
       });
+
       animationFrameId = requestAnimationFrame(animate);
     }
 
-    function handleResize() {
-      init();
-    }
+    // ✅ INTERSECTION OBSERVER: pausa el RAF cuando el canvas está fuera de la vista
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && isPaused) {
+          isPaused = false;
+          animate();
+        } else if (!entry.isIntersecting) {
+          isPaused = true;
+          cancelAnimationFrame(animationFrameId);
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
 
+    // Pausa cuando la pestaña está en background
     const handleVisibilityChange = () => {
       if (document.hidden) {
         isPaused = true;
         cancelAnimationFrame(animationFrameId);
-      } else {
-        if (isPaused) {
-          isPaused = false;
-          animate();
-        }
+      } else if (!isPaused) {
+        animate();
       }
     };
 
-    window.addEventListener("resize", handleResize);
+    // Debounced resize (evita recalcular en cada pixel al arrastrar ventana)
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(init, 150);
+    };
+
+    window.addEventListener("resize", handleResize, { passive: true });
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     init();
@@ -181,24 +190,29 @@ export default function CosmosBackground() {
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
+      clearTimeout(resizeTimer);
+      observer.disconnect();
     };
   }, []);
 
   return (
     <>
-      <div 
+      {/* Nebula: CSS oculta en móvil, JS guard evita animación */}
+      <div
         ref={nebulaRef}
         suppressHydrationWarning
-        className="fixed top-0 left-0 w-[900px] h-[900px] rounded-full pointer-events-none z-0"
-        style={{ 
-          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.04) 40%, transparent 70%)',
-          transform: 'translate3d(-1000px, -1000px, 0)',
-          willChange: 'transform'
+        className="hidden md:block fixed top-0 left-0 w-[900px] h-[900px] rounded-full pointer-events-none z-0"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.04) 40%, transparent 70%)",
+          transform: "translate3d(-1000px, -1000px, 0)",
+          willChange: "transform",
         }}
       />
+      {/* Canvas: CSS oculta en móvil, JS guard evita el RAF */}
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 z-0 pointer-events-none"
+        className="hidden md:block fixed inset-0 z-0 pointer-events-none"
         style={{ background: "transparent" }}
       />
     </>
