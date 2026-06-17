@@ -1,4 +1,4 @@
-import { databases, appwriteClient, APPWRITE_DB_ID, APPWRITE_COLLECTION_ID } from "./appwrite";
+import { databases, appwriteClient, APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, storage } from "./appwrite";
 import { ID, Query } from "appwrite";
 
 // ─── Logger solo en desarrollo ───────────────────────────────────────────────
@@ -101,6 +101,7 @@ export interface Ausencia {
   materias: string[];
   motivo: string;
   cert: boolean;
+  certFileId?: string;
   estado: "pendiente" | "aprobada" | "rechazada";
   fechaReg: string;
 }
@@ -533,6 +534,7 @@ export const saveAusencia = async (ausencia: Ausencia) => {
         materias: ausencia.materias.map(m => sanitize(m, 100)),
         motivo: sanitize(ausencia.motivo, 500),
         cert: ausencia.cert,
+        certFileId: ausencia.certFileId || "",
         estado: toDbEstado(ausencia.estado),
         fechaReg: new Date().toISOString()
       }
@@ -551,7 +553,7 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
         id: doc.$id, profId: doc.profId, profNombre: doc.profNombre,
         tipo: doc.tipo, inicio: doc.inicio, fin: doc.fin,
         materias: doc.materias, motivo: doc.motivo,
-        cert: doc.cert, estado: fromDbEstado(doc.estado), fechaReg: doc.fechaReg
+        cert: doc.cert, certFileId: doc.certFileId, estado: fromDbEstado(doc.estado), fechaReg: doc.fechaReg
       })) as Ausencia[];
       callback(ausencias);
     }).catch(err => devLog("subscribeToAusencias/fetch", err));

@@ -43,6 +43,19 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
     cert: false
   });
 
+  interface Feriado {
+    fecha: string;
+    tipo: string;
+    nombre: string;
+  }
+
+  const [feriados, setFeriados] = useState<Feriado[]>([]);
+
+  const currentHoliday = (() => {
+    if (!formData.inicio || !formData.fin) return null;
+    return feriados.find(f => f.fecha >= formData.inicio && f.fecha <= formData.fin) || null;
+  })();
+
   // — Estados para el buscador de artículos —
   const [articuloQuery, setArticuloQuery] = useState("");
   const [showArticuloDropdown, setShowArticuloDropdown] = useState(false);
@@ -70,6 +83,19 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
       // Resetear buscador al abrir
       setArticuloQuery("");
       setShowArticuloDropdown(false);
+
+      // Fetch feriados nacionales
+      fetch("/api/feriados")
+        .then((res) => {
+          if (!res.ok) throw new Error("Error loading holidays");
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setFeriados(data);
+          }
+        })
+        .catch((err) => console.error("Error al cargar feriados:", err));
     }
   }, [isOpen, lockedProfesor]);
 
@@ -108,6 +134,11 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
     e.preventDefault();
     setError("");
     if (!selectedProfId) { setError("Seleccioná un profesor antes de continuar."); return; }
+
+    if (currentHoliday) {
+      setError(`No se puede registrar ausencias que contengan un día feriado: ${currentHoliday.nombre}`);
+      return;
+    }
 
     setLoading(true);
     const prof = lockedProfesor || profesores.find(p => p.id === selectedProfId);
@@ -156,6 +187,13 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
         {error && (
           <div className="mx-6 mt-5 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-semibold">
             <AlertCircle size={14} className="shrink-0" />{error}
+          </div>
+        )}
+
+        {currentHoliday && (
+          <div className="mx-6 mt-5 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-bold animate-fade-in">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>El rango seleccionado contiene un día feriado: <span className="underline">{currentHoliday.nombre}</span> ({currentHoliday.tipo})</span>
           </div>
         )}
 
@@ -316,7 +354,7 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
           <div className="pt-2 flex gap-4 border-t border-[var(--border)]">
             <button type="button" onClick={onClose}
               className="flex-1 px-6 py-3 rounded-xl border border-[var(--border)] hover:bg-[var(--bg3)] transition-all font-bold active:scale-95">Cancelar</button>
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || !!currentHoliday}
               className="flex-1 px-6 py-3 rounded-xl bg-[var(--verde)] text-black font-bold shadow-[0_4px_15px_-4px_rgba(16,185,129,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50">
               {loading ? "Guardando..." : "Confirmar Registro"}
             </button>

@@ -42,6 +42,19 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const [modalError, setModalError] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
 
+  interface Feriado {
+    fecha: string;
+    tipo: string;
+    nombre: string;
+  }
+
+  const [feriados, setFeriados] = useState<Feriado[]>([]);
+
+  const currentHoliday = (() => {
+    if (!fecha) return null;
+    return feriados.find(f => f.fecha === fecha) || null;
+  })();
+
   useEffect(() => {
     if (userProfile) {
       setRole(userProfile.rol);
@@ -68,6 +81,18 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     const unsubscribe = subscribeToMesasExamen((data) => {
       setMesas(data);
     });
+
+    fetch("/api/feriados")
+      .then((res) => {
+        if (!res.ok) throw new Error("Error cargando feriados");
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setFeriados(data);
+        }
+      })
+      .catch((err) => console.error("Error al cargar feriados:", err));
 
     return () => {
       unsubscribe();
@@ -137,6 +162,11 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
     if (!fecha || !hora || !materia || !aula || !presidenteId) {
       setModalError("Completá todos los campos obligatorios (Fecha, Hora, Materia, Aula, Presidente).");
+      return;
+    }
+
+    if (currentHoliday) {
+      setModalError(`No se puede programar en un día feriado: ${currentHoliday.nombre}`);
       return;
     }
 
@@ -401,6 +431,14 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
               </div>
             )}
 
+            {/* Alerta de Feriado */}
+            {currentHoliday && (
+              <div className="flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-bold mt-4 animate-fade-in">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>Es día feriado: <span className="underline">{currentHoliday.nombre}</span> ({currentHoliday.tipo})</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4 mt-5">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -524,7 +562,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
               <div className="flex gap-4 pt-2">
                 <button type="button" onClick={() => { setIsModalOpen(false); setModalError(""); }}
                   className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95 text-sm">Cancelar</button>
-                <button type="submit" disabled={modalLoading}
+                <button type="submit" disabled={modalLoading || !!currentHoliday}
                   className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-sm">
                   {modalLoading ? "Guardando..." : (editingMesa ? "Actualizar Mesa" : "Crear Mesa")}
                 </button>
