@@ -157,9 +157,12 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
     if (formData.cert && selectedFile) {
       try {
         uploadedFileId = await uploadCertificateFile(selectedFile);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error detallado al subir archivo a Appwrite:", err);
-        setError("Error al subir el archivo del certificado. Por favor, intentá de nuevo.");
+        const code = err?.code || err?.status || "Desconocido";
+        const type = err?.type || "UnknownError";
+        const msg = err?.message || "Error sin mensaje";
+        setError(`Error al subir certificado (Código: ${code} - ${type}). Detalle: ${msg}`);
         setLoading(false);
         return;
       }
