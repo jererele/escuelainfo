@@ -158,6 +158,7 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
       try {
         uploadedFileId = await uploadCertificateFile(selectedFile);
       } catch (err) {
+        console.error("Error detallado al subir archivo a Appwrite:", err);
         setError("Error al subir el archivo del certificado. Por favor, intentá de nuevo.");
         setLoading(false);
         return;

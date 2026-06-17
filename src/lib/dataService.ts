@@ -1049,6 +1049,7 @@ export const uploadCertificateFile = async (file: File): Promise<string> => {
     );
     return response.$id;
   } catch (err) {
+    console.error("[dataService] uploadCertificateFile failed:", err);
     devLog("uploadCertificateFile", err);
     throw err;
   }
