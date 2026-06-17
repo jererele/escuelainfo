@@ -42,7 +42,7 @@ export default function ContactForm({ showToast }: Props) {
     setSending(true);
     try {
       // Abre Gmail Compose con los datos pre-completados
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com&su=${encodeURIComponent(
         `Consulta de ${form.nombre} (${form.email})`
       )}&body=${encodeURIComponent(
         `De: ${form.nombre} <${form.email}>\n\n${form.mensaje}`
