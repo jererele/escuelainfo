@@ -412,9 +412,9 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
       {/* Modal para Crear/Editar Mesa */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center lg:items-start lg:pt-[10vh] justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-[32px] p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto lg:my-0 lg:mb-[10vh]">
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-[32px] p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h2 className="text-2xl font-black title-font text-[var(--text)]">{editingMesa ? "Editar Mesa de Examen" : "Crear Mesa de Examen"}</h2>

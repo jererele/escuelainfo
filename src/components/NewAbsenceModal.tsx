@@ -62,15 +62,24 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
   const [showArticuloDropdown, setShowArticuloDropdown] = useState(false);
   const articuloRef = useRef<HTMLDivElement>(null);
 
-  // Cerrar dropdown al hacer click fuera
+  // Cerrar dropdown al hacer click fuera o presionar Escape
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (articuloRef.current && !articuloRef.current.contains(e.target as Node)) {
         setShowArticuloDropdown(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowArticuloDropdown(false);
+      }
+    };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   useEffect(() => {
@@ -197,8 +206,8 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="glass w-full max-w-lg rounded-[24px] border border-[var(--border)] overflow-hidden shadow-2xl animate-zoom-in">
-        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg2)]">
+      <div className="glass w-full max-w-lg rounded-[24px] border border-[var(--border)] flex flex-col max-h-[90vh] overflow-hidden shadow-2xl animate-zoom-in">
+        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg2)] flex-shrink-0">
           <h2 className="title-font font-bold text-xl">Registrar Nueva Ausencia</h2>
           <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all">
             <X size={18} />
@@ -206,19 +215,19 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
         </div>
 
         {error && (
-          <div className="mx-6 mt-5 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-semibold">
+          <div className="mx-6 mt-4 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-semibold flex-shrink-0">
             <AlertCircle size={14} className="shrink-0" />{error}
           </div>
         )}
 
         {currentHoliday && (
-          <div className="mx-6 mt-5 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-bold animate-fade-in">
+          <div className="mx-6 mt-4 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-bold animate-fade-in flex-shrink-0">
             <AlertCircle size={14} className="shrink-0" />
             <span>El rango seleccionado contiene un día feriado: <span className="underline">{currentHoliday.nombre}</span> ({currentHoliday.tipo})</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-5">
           {!lockedProfesor ? (
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Seleccionar Profesor</label>
@@ -278,10 +287,19 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
                     }}
                     onFocus={() => setShowArticuloDropdown(true)}
                   />
-                  <ChevronDown
-                    size={14}
-                    className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] transition-transform ${showArticuloDropdown ? "rotate-180" : ""}`}
-                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowArticuloDropdown(prev => !prev);
+                    }}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1"
+                  >
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform duration-200 ${showArticuloDropdown ? "rotate-180" : ""}`}
+                    />
+                  </button>
 
                   {/* Dropdown filtrado */}
                   {showArticuloDropdown && articulosFiltrados.length > 0 && (
@@ -350,7 +368,7 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Desde</label>
               <input required type="date"

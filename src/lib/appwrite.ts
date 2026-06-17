@@ -15,6 +15,6 @@ const storage = new Storage(client);
 export const appwriteClient = client;
 export const APPWRITE_DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'escuelainfodb';
 export const APPWRITE_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID || 'ausencias';
-export const APPWRITE_BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID || 'certificados';
+export const APPWRITE_BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID || '6a32eed7000e4f7bb39e';
 
 export { client, account, databases, storage };
