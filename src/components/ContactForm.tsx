@@ -64,10 +64,10 @@ export default function ContactForm({ showToast }: Props) {
   };
 
   return (
-    <div className="card glass p-8 rounded-[32px] border border-[var(--border)]">
+    <div className="bg-[var(--bg3)]/80 backdrop-blur-md p-8 rounded-[32px] border border-[var(--border)] shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="text-[var(--verde)]" size={20} />
-        <h2 className="title-font font-black text-xl">Email de Consultas</h2>
+        <h2 className="title-font font-black text-xl text-[var(--text)]">Email de Consultas</h2>
       </div>
       <p className="text-xs font-bold text-[var(--text2)] mb-5">
         Envianos tus sugerencias, reportes o consultas administrativas.

@@ -90,6 +90,134 @@ export const fromDbRol = (r: string) => ROL_MAP[r] || r;
 export const toDbEstado = (e: string) => ESTADO_REVERSE[e] || e;
 export const fromDbEstado = (e: string) => ESTADO_MAP[e] || e;
 
+// ─── MÓDULOS HORARIOS: Almacenado como número entero (1–16) en Appwrite ───────
+// Appwrite attribute type: INTEGER (size: 2)
+// El campo `hora` en la colección `horarios` guarda el número de módulo.
+// Este mapa es la fuente de verdad única para la UI y el formulario.
+export const MODULO_MAP: Record<number, string> = {
+  1:  "07:40 - 08:20",
+  2:  "08:20 - 09:00",
+  3:  "09:10 - 09:50",
+  4:  "09:50 - 10:30",
+  5:  "10:40 - 11:20",
+  6:  "11:20 - 12:00",
+  7:  "12:00 - 12:40",
+  8:  "12:50 - 13:30",
+  9:  "13:30 - 14:10",
+  10: "14:20 - 15:00",
+  11: "15:00 - 15:40",
+  12: "15:50 - 16:30",
+  13: "16:30 - 17:10",
+  14: "17:20 - 18:00",
+  15: "18:00 - 18:40",
+  16: "18:40 - 19:20",
+};
+// Mapa inverso: texto -> número (para guardar en Appwrite)
+export const MODULO_REVERSE: Record<string, number> = Object.fromEntries(
+  Object.entries(MODULO_MAP).map(([k, v]) => [v, Number(k)])
+);
+/** Convierte texto de módulo ("07:40 - 08:20") al número compacto para Appwrite */
+export const toDbHora = (display: string): number => MODULO_REVERSE[display] ?? 0;
+/** Convierte el número compacto guardado en Appwrite al texto legible */
+export const fromDbHora = (code: number | string): string => MODULO_MAP[Number(code)] ?? String(code);
+
+// ─── LOGS DE AUDITORÍA: Acciones comprimidas a códigos 2–4 chars ─────────────
+// Appwrite attribute type: STRING (size: 6)
+// El campo `accion` en la colección `logs` guarda el código compacto.
+export const LOG_CODE_MAP: Record<string, string> = {
+  // Ausencias
+  "C_A":  "Registró una nueva ausencia docente",
+  "E_A":  "Eliminó un registro de ausencia",
+  "M_EA": "Cambió el estado de una ausencia",
+  // Docentes
+  "C_D":  "Registró un nuevo docente",
+  "M_D":  "Editó los datos de un docente",
+  "E_D":  "Eliminó un docente del sistema",
+  // Alumnos
+  "C_AL": "Inscribió un alumno al sistema",
+  "E_AL": "Eliminó un alumno del sistema",
+  "M_AL": "Asignó o cambió el curso de un alumno",
+  // Cursos
+  "C_CU": "Creó un nuevo curso",
+  "E_CU": "Eliminó un curso del sistema",
+  // Horarios
+  "C_H":  "Programó una nueva clase en el horario",
+  "E_H":  "Eliminó una clase del horario",
+  "RE_H": "Reinició todos los horarios del ciclo lectivo",
+  // Mesas de Examen
+  "C_M":  "Creó una nueva mesa de examen",
+  "E_M":  "Eliminó una mesa de examen",
+  // Asistencias
+  "C_AJ": "Registró asistencia general (jornada)",
+  "C_AM": "Registró asistencia de materia",
+  // Usuarios / Acceso
+  "AP_C": "Aprobó un colaborador del sistema",
+  "AP_A": "Aprobó la matriculación de un alumno",
+  "RC_C": "Rechazó una solicitud de acceso",
+  "RC_A": "Rechazó la matriculación de un alumno",
+  "AU_C": "Autorizó un nuevo colaborador",
+  "RV_A": "Revocó el acceso de un usuario",
+  // Notificaciones
+  "EN_N": "Envió una notificación a usuarios",
+  // Paridad / Sistema
+  "RP_D": "Registró adhesión a paro docente",
+  "RE_A": "Reinició todas las ausencias del ciclo lectivo",
+  "MI_D": "Ejecutó migración de base de datos",
+  "AC_T": "Aceptó los Términos y Condiciones",
+};
+// Mapa inverso: texto largo -> código compacto (para guardar en Appwrite)
+const LOG_CODE_REVERSE: Record<string, string> = Object.fromEntries(
+  Object.entries(LOG_CODE_MAP).map(([k, v]) => [v, k])
+);
+// Mapa de acciones legacy (SNAKE_UPPER) -> código compacto para retrocompatibilidad
+const LEGACY_LOG_MAP: Record<string, string> = {
+  "BORRAR_AUSENCIA":           "E_A",
+  "CAMBIO_ESTADO":             "M_EA",
+  "APROBAR_COLABORADOR":       "AP_C",
+  "RECHAZAR_SOLICITUD":        "RC_C",
+  "APROBAR_ALUMNO":            "AP_A",
+  "RECHAZAR_ALUMNO":           "RC_A",
+  "AUTORIZAR_COLABORADOR":     "AU_C",
+  "REVOCAR_ACCESO":            "RV_A",
+  "EDITAR_DOCENTE":            "M_D",
+  "REGISTRAR_DOCENTE":         "C_D",
+  "ELIMINAR_DOCENTE":          "E_D",
+  "ASIGNAR_CURSO_ALUMNO":      "M_AL",
+  "ASIGNAR_ALUMNOS_CURSO":     "M_AL",
+  "ELIMINAR_ALUMNO":           "E_AL",
+  "CREAR_CURSO":               "C_CU",
+  "ELIMINAR_CURSO":            "E_CU",
+  "PROGRAMAR_CLASE":           "C_H",
+  "ELIMINAR_HORARIO":          "E_H",
+  "REINICIAR_HORARIOS":        "RE_H",
+  "CREAR_MESA_EXAMEN":         "C_M",
+  "ELIMINAR_MESA_EXAMEN":      "E_M",
+  "REGISTRAR_ASISTENCIA_JORNADA": "C_AJ",
+  "REGISTRAR_ASISTENCIA_MATERIA": "C_AM",
+  "REGISTRAR_PARO_DOCENTE":    "RP_D",
+  "REINICIAR_AUSENCIAS":       "RE_A",
+  "MIGRAR_BASE_DATOS":         "MI_D",
+  "ACEPTAR_TERMINOS":          "AC_T",
+  "ENVIAR_NOTIFICACION":       "EN_N",
+};
+/**
+ * Convierte cualquier acción (legacy SNAKE_UPPER o código compacto) al código
+ * compacto para almacenar en Appwrite. Máx 6 chars.
+ */
+export const toDbAccion = (accion: string): string => {
+  // Si ya es un código compacto conocido, devolver tal cual
+  if (LOG_CODE_MAP[accion]) return accion;
+  // Si es legacy, convertir
+  if (LEGACY_LOG_MAP[accion]) return LEGACY_LOG_MAP[accion];
+  // Si por alguna razón no se reconoce, truncar a 6 chars (failsafe)
+  return accion.slice(0, 6);
+};
+/**
+ * Traduce un código compacto de log al texto legible para la UI del Administrador.
+ * Si el código no se reconoce (por datos legacy), lo devuelve tal cual.
+ */
+export const fromDbAccion = (code: string): string => LOG_CODE_MAP[code] ?? LEGACY_LOG_MAP[code] ?? code;
+
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 export interface Ausencia {
   id?: string;
@@ -203,7 +331,9 @@ export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
       else if (doc.dia === "5") dayName = "Viernes";
 
       return {
-        id: doc.$id, dia: dayName, hora: doc.hora,
+        id: doc.$id, dia: dayName,
+        // hora: convertir código numérico almacenado en Appwrite a texto legible
+        hora: fromDbHora(doc.hora),
         materia: doc.materia, profesor: doc.profesor, curso: doc.curso
       };
     });
@@ -223,10 +353,13 @@ export const saveHorario = async (h: Horario) => {
   else if (h.dia === "Jueves") dayCode = "4";
   else if (h.dia === "Viernes") dayCode = "5";
 
+  // Convertir texto de hora a código numérico de módulo antes de guardar
+  const horaCode = toDbHora(h.hora);
+
   return await databases.createDocument(
     APPWRITE_DB_ID, APPWRITE_HORARIOS_COLLECTION_ID, ID.unique(), {
       dia: dayCode,
-      hora: h.hora,
+      hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
       materia: h.materia,
       profesor: h.profesor,
       curso: h.curso
@@ -352,11 +485,13 @@ export const updateProfesor = async (id: string, data: Partial<Profesor>) => {
 export const logAction = async (usuarioEmail: string, accion: string, detalles: string) => {
   clearCache("logs");
   try {
+    // Comprimir acción a código compacto antes de guardar en Appwrite
+    const accionCode = toDbAccion(accion);
     await databases.createDocument(
       APPWRITE_DB_ID, APPWRITE_LOGS_COLLECTION_ID, ID.unique(),
       {
         usuarioEmail: sanitize(usuarioEmail, 200),
-        accion: sanitize(accion, 100),
+        accion: sanitize(accionCode, 6),
         detalles: sanitize(detalles, 500),
         fecha: new Date().toISOString()
       }

@@ -235,7 +235,7 @@ export default function LoginPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 bg-transparent py-10">
+    <div className="flex-1 flex items-center justify-center relative overflow-hidden px-4 bg-transparent py-10">
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
 

@@ -61,8 +61,11 @@ export default function TopNavSidebar({
   // Restore theme on mount
   useEffect(() => {
     const saved = localStorage.getItem("theme");
-    const active = saved ?? (document.documentElement.classList.contains("dark") ? "dark" : "light");
+    const isSystemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const active = saved ?? (isSystemDark ? "dark" : "light");
     setTheme(active as "light" | "dark");
+    document.documentElement.classList.toggle("dark", active === "dark");
+    document.documentElement.classList.toggle("light", active === "light");
   }, []);
 
   // Close on outside click
@@ -106,6 +109,7 @@ export default function TopNavSidebar({
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");
+    document.documentElement.classList.toggle("light", next === "light");
     localStorage.setItem("theme", next);
   };
 

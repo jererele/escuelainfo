@@ -2,17 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { account } from "@/lib/appwrite";
-import { saveHorario, getProfesores, Profesor, getHorarios, logAction, getCursos } from "@/lib/dataService";
+import { saveHorario, getProfesores, Profesor, getHorarios, logAction, getCursos, MODULO_MAP } from "@/lib/dataService";
 import { X, AlertCircle } from "lucide-react";
 
 interface Props { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
 
-const TIME_SLOTS = [
-  "07:40 - 08:20", "08:20 - 09:00", "09:10 - 09:50", "09:50 - 10:30",
-  "10:40 - 11:20", "11:20 - 12:00", "12:00 - 12:40",
-  "12:50 - 13:30", "13:30 - 14:10", "14:20 - 15:00", "15:00 - 15:40",
-  "15:50 - 16:30", "16:30 - 17:10", "17:20 - 18:00", "18:00 - 18:40", "18:40 - 19:20"
-];
+// TIME_SLOTS generado dinámicamente desde MODULO_MAP (fuente única de verdad)
+const TIME_SLOTS = Object.values(MODULO_MAP);
 
 export default function NewScheduleModal({ isOpen, onClose, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);

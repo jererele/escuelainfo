@@ -904,7 +904,7 @@ export default function Dashboard() {
 
   if (!hasMounted || loading || !userProfile) {
     return (
-      <div suppressHydrationWarning className="min-h-screen flex items-center justify-center bg-transparent text-[var(--text)]">
+      <div suppressHydrationWarning className="flex-1 flex items-center justify-center bg-transparent text-[var(--text)]">
         <div suppressHydrationWarning className="w-10 h-10 border-4 border-[var(--border)] border-t-[var(--verde)] rounded-full animate-spin"></div>
       </div>
     );
@@ -1022,7 +1022,10 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider>
-      <div className="flex flex-col w-full h-screen overflow-hidden bg-transparent text-[var(--text)]">
+      {/* flex-1: ocupa el espacio restante dejado por el Footer del layout raíz.
+          overflow-hidden solo en el eje X para evitar scroll horizontal.
+          NO usar h-screen aquí para no cortar el Footer global. */}
+      <div className="flex flex-col w-full flex-1 overflow-x-hidden bg-transparent text-[var(--text)]">
 
         {/* ── TOP NAV SIDEBAR (retráctil hacia arriba) ── */}
         <TopNavSidebar
@@ -1044,10 +1047,12 @@ export default function Dashboard() {
           pendingAlumnosCount={usuarios.filter(u => u.rol === "pendiente_alumno").length}
         />
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 min-w-0 h-screen overflow-y-auto relative pt-14">
+      {/* MAIN CONTENT: flex-1 para ocupar el ancho disponible.
+          overflow-y-auto aquí para scroll interno del contenido (sin atrapar el Footer).
+          pt-14 para compensar el TopNav fijo. */}
+      <main className="flex-1 min-w-0 overflow-y-auto relative pt-14">
 
-        <div className="p-6 md:p-12 max-w-[1400px] mx-auto">
+        <div className="p-6 md:p-12 pb-16 max-w-[1400px] mx-auto">
           {/* HEADER: saludo solo en inicio, título de sección en el resto */}
           {activeTab === "general" ? (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
@@ -1111,9 +1116,9 @@ export default function Dashboard() {
                   { label: "Pendientes", value: stats.pendientes, color: "var(--amarillo)", bg: "var(--amarillo-bg)" },
                   { label: "Total Registros", value: stats.total, color: "var(--verde)", bg: "var(--verde-bg)" },
                 ].map((stat, i) => (
-                  <div key={i} className="stat-card glass p-3 sm:p-6 rounded-2xl sm:rounded-[28px] border border-[var(--border)] group cursor-default text-center sm:text-left">
+                  <div key={i} className="p-3 sm:p-6 rounded-2xl sm:rounded-[28px] border border-[var(--border)] bg-[var(--bg3)]/80 backdrop-blur-md group cursor-default text-center sm:text-left shadow-sm">
                     <div className="text-xl sm:text-4xl font-black mb-0.5 sm:mb-1 transition-transform group-hover:scale-110 origin-left" style={{ color: stat.color }}>{stat.value}</div>
-                    <div className="text-[7px] sm:text-[11px] uppercase tracking-widest font-black text-[var(--text2)] leading-tight">{stat.label}</div>
+                    <div className="text-[7px] sm:text-[11px] uppercase tracking-widest font-black text-[var(--text3)] leading-tight">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -1122,9 +1127,9 @@ export default function Dashboard() {
               {renderFreeHoursWidget(false)}
 
               {/* LISTA COMPACTA */}
-              <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden shadow-sm content-visibility-auto will-change-gpu">
+              <div className="bg-[var(--bg3)]/80 backdrop-blur-md rounded-[32px] border border-[var(--border)] overflow-hidden shadow-sm content-visibility-auto will-change-gpu">
                 <div className="p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
-                  <h2 className="title-font font-black text-xl">Novedades Recientes</h2>
+                  <h2 className="title-font font-black text-xl text-[var(--text)]">Novedades Recientes</h2>
                   {canManageAusencias && (
                     <button 
                       onClick={() => setIsModalOpen(true)}
@@ -1136,11 +1141,11 @@ export default function Dashboard() {
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-[var(--bg3)]/50">
+                    <thead className="bg-[var(--bg2)]">
                       <tr>
-                        <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Profesor</th>
-                        <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Tipo</th>
-                        <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Estado</th>
+                        <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Profesor</th>
+                        <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Tipo</th>
+                        <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1148,8 +1153,8 @@ export default function Dashboard() {
                         <tr><td colSpan={3} className="p-20 text-center text-[var(--text3)] italic">No hay registros recientes.</td></tr>
                       ) : (
                         ausencias.slice(0, 5).map((a) => (
-                          <tr key={a.id} className="hover:bg-[var(--bg3)]/30 transition-colors border-b border-[var(--border)] last:border-none">
-                            <td className="p-6 font-bold">{a.profNombre}</td>
+                          <tr key={a.id} className="hover:bg-[var(--bg2)] transition-colors border-b border-[var(--border)] last:border-none">
+                            <td className="p-6 font-bold text-[var(--text)]">{a.profNombre}</td>
                             <td className="p-6 text-sm text-[var(--text2)]">{a.tipo}</td>
                             <td className="p-6">
                               <span className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full border ${
@@ -1168,46 +1173,9 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* SECCIÓN LEGAL + FORMULARIO DE CONSULTAS */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12 animate-fade-in content-visibility-auto will-change-gpu">
-
-                {/* FORMULARIO DE CONSULTAS CONTROLADO */}
+              {/* FORMULARIO DE CONSULTAS CONTROLADO */}
+              <div className="mt-12 max-w-2xl mx-auto animate-fade-in content-visibility-auto will-change-gpu">
                 <ContactForm showToast={showToast} />
-
-                {/* NORMATIVA Y TÉRMINOS LEGALES */}
-                <div className="card glass p-8 rounded-[32px] border border-[var(--border)]">
-                  <div className="flex items-center gap-2 mb-6">
-                    <FileText className="text-[var(--verde)]" size={20} />
-                    <h2 className="title-font font-black text-xl">Normativa y Términos Legales</h2>
-                  </div>
-                  <div className="space-y-4">
-                    <details className="group bg-[var(--bg3)] border border-[var(--border)] rounded-2xl overflow-hidden">
-                      <summary className="font-black text-sm px-6 py-4 cursor-pointer select-none flex justify-between items-center hover:bg-[var(--border)]/30 transition-colors">
-                        Términos y Condiciones del Servicio Escolar
-                        <ChevronRight size={16} className="transition-transform group-open:rotate-90 text-[var(--text3)]" />
-                      </summary>
-                      <div className="px-6 pb-6 pt-2 text-xs font-medium text-[var(--text2)] leading-relaxed space-y-3">
-                        <p><strong>1. Aceptación:</strong> Al utilizar la plataforma EscuelaInfo, la institución, personal docente y alumnado aceptan las presentes normativas establecidas por el Ministerio de Educación y la administración escolar.</p>
-                        <p><strong>2. Uso de la Plataforma:</strong> Las credenciales son personales e intransferibles. Todo registro, modificación de notas, inasistencias o mesas de examen es auditado bajo un esquema de códigos estrictos. Cualquier alteración indebida de la información académica será sujeta a sanciones severas.</p>
-                        <p><strong>3. Privacidad de Datos (Habeas Data):</strong> La plataforma procesa información sensible (DNI, correos, ausencias médicas). Nos comprometemos a resguardar la identidad digital según las normativas vigentes.</p>
-                        <p><strong>4. Disponibilidad:</strong> EscuelaInfo se compromete a una disponibilidad (SLA) del 99.9%. Las tareas de mantenimiento serán notificadas vía "Novedades Recientes".</p>
-                      </div>
-                    </details>
-                    <details className="group bg-[var(--bg3)] border border-[var(--border)] rounded-2xl overflow-hidden">
-                      <summary className="font-black text-sm px-6 py-4 cursor-pointer select-none flex justify-between items-center hover:bg-[var(--border)]/30 transition-colors">
-                        Política de Propiedad Intelectual y Copyright
-                        <ChevronRight size={16} className="transition-transform group-open:rotate-90 text-[var(--text3)]" />
-                      </summary>
-                      <div className="px-6 pb-6 pt-2 text-xs font-medium text-[var(--text2)] leading-relaxed space-y-3">
-                        <p><strong>© 2026 EscuelaInfo. Todos los derechos reservados.</strong></p>
-                        <p><strong>1. Titularidad:</strong> El software base, interfaz de usuario (UI), esquemas de base de datos, algoritmos de asignación y código fuente son propiedad exclusiva de EscuelaInfo y sus desarrolladores.</p>
-                        <p><strong>2. Contenido Institucional:</strong> Los datos cargados pertenecen exclusivamente a la Institución Educativa licenciataria. EscuelaInfo actúa únicamente como procesador de datos.</p>
-                        <p><strong>3. Restricciones:</strong> Queda estrictamente prohibida la ingeniería inversa, copia o distribución no autorizada del framework subyacente.</p>
-                      </div>
-                    </details>
-                  </div>
-                </div>
-
               </div>
             </div>
           )}

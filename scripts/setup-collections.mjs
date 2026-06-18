@@ -95,14 +95,11 @@ async function createAsistenciasJornada() {
   const created = await ensureCollection("asistencias_alumnos_jornada", "Asistencias Alumnos Jornada");
   if (!created) return;
 
-  await addStr("asistencias_alumnos_jornada", "fecha",      20,  true);
-  await addStr("asistencias_alumnos_jornada", "cursoId",    50,  true);
-  await addStr("asistencias_alumnos_jornada", "cursoNombre",100, false);
-  await addStr("asistencias_alumnos_jornada", "turno",      5,   false, "M");
-  await addStr("asistencias_alumnos_jornada", "registradoPor",    80, false);
-  await addStr("asistencias_alumnos_jornada", "registradoPorNombre", 120, false);
-  // registros: JSON serializado de los estados de asistencia por alumno
-  await addStr("asistencias_alumnos_jornada", "registros",  65000, false);
+  await addStr("asistencias_alumnos_jornada", "alumnoId",     50,  true);
+  await addStr("asistencias_alumnos_jornada", "alumnoNombre", 150, false);
+  await addStr("asistencias_alumnos_jornada", "fecha",        20,  true);
+  await addStr("asistencias_alumnos_jornada", "estado",       5,   true);
+  await addStr("asistencias_alumnos_jornada", "preceptorId",  50,  false);
 
   console.log("  ✓ Atributos de asistencias_alumnos_jornada creados.");
 }
@@ -112,15 +109,13 @@ async function createAsistenciasMateria() {
   const created = await ensureCollection("asistencias_alumnos_materia", "Asistencias Alumnos Materia");
   if (!created) return;
 
+  await addStr("asistencias_alumnos_materia", "alumnoId",       50,  true);
+  await addStr("asistencias_alumnos_materia", "alumnoNombre",   150, false);
   await addStr("asistencias_alumnos_materia", "fecha",          20,  true);
-  await addStr("asistencias_alumnos_materia", "cursoId",        50,  true);
-  await addStr("asistencias_alumnos_materia", "cursoNombre",    100, false);
-  await addStr("asistencias_alumnos_materia", "materia",        120, true);
-  await addStr("asistencias_alumnos_materia", "profesorId",     50,  true);
-  await addStr("asistencias_alumnos_materia", "profesorNombre", 120, false);
-  await addStr("asistencias_alumnos_materia", "moduloHorario",  20,  false);
-  // registros: JSON serializado de los estados de asistencia por alumno
-  await addStr("asistencias_alumnos_materia", "registros",      65000, false);
+  await addStr("asistencias_alumnos_materia", "materia",        150, true);
+  await addStr("asistencias_alumnos_materia", "curso",          50,  true);
+  await addStr("asistencias_alumnos_materia", "estado",         5,   true);
+  await addStr("asistencias_alumnos_materia", "profesorId",     50,  false);
 
   console.log("  ✓ Atributos de asistencias_alumnos_materia creados.");
 }
