@@ -2426,7 +2426,7 @@ export default function Dashboard() {
       <NewAbsenceModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSuccess={() => { subscribeToAusencias(setAusencias); showToast("Ausencia registrada con éxito", "success"); }}
+        onSuccess={() => { showToast("Ausencia registrada con éxito", "success"); }}
         lockedProfesor={userProfile?.rol === 'profesor' ? currentProfesor : undefined}
       />
 
@@ -2481,7 +2481,7 @@ export default function Dashboard() {
           initialTipo={reportModalInitialTipo}
           onClose={() => setIsTeacherReportModalOpen(false)}
           currentProfesor={currentProfesor}
-          onSuccess={() => { subscribeToAusencias(setAusencias); showToast("Reporte registrado correctamente", "success"); }}
+          onSuccess={() => { showToast("Reporte registrado correctamente", "success"); }}
         />
       )}
 
