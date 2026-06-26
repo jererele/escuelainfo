@@ -437,6 +437,22 @@ export const checkProfesorDNI = async (dni: string): Promise<boolean> => {
   } catch { return false; }
 };
 
+// 🛡️ SECURITY AUDIT REF: Prevención de Descarga Masiva (Information Leakage)
+// En lugar de obtener todos los profesores y filtrar en cliente, consultamos 1 solo registro.
+export const getProfesorByEmail = async (email: string): Promise<Profesor | null> => {
+  try {
+    const response = await databases.listDocuments(
+      APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID,
+      [Query.equal("email", sanitize(email, 200)), Query.limit(1)]
+    );
+    if (response.documents.length > 0) {
+      const doc = response.documents[0];
+      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email };
+    }
+    return null;
+  } catch { return null; }
+};
+
 // ─── PROFESORES ──────────────────────────────────────────────────────────────
 export const getProfesores = async (forceRefresh = false): Promise<Profesor[]> => {
   if (!forceRefresh) {

@@ -9,7 +9,7 @@ import { Eye, EyeOff } from "lucide-react";
 import {
   getUserProfile, createUserProfile,
   getUserProfileByEmail, updateUserProfile,
-  saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor
+  saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor, getProfesorByEmail
 } from "@/lib/dataService";
 
 export default function LoginPage() {
@@ -141,11 +141,9 @@ export default function LoginPage() {
       const cleanEmail = email.toLowerCase().trim();
       const fullName = `${nombres.trim()} ${apellidos.trim()}`;
 
-      // Check if this email is a pre-registered teacher in the 'profesores' list
-      const teachersList = await getProfesores();
-      const preRegisteredTeacher = teachersList.find(
-        t => t.email.toLowerCase() === cleanEmail
-      );
+      // 🛡️ SECURITY AUDIT REF: Information Leakage Mitigation
+      // Eliminada la descarga masiva de la colección 'profesores'. Se consulta un único registro.
+      const preRegisteredTeacher = await getProfesorByEmail(cleanEmail);
 
       const isTeacher = !!preRegisteredTeacher;
 
