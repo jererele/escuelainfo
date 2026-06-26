@@ -414,7 +414,12 @@ export const deleteAlumno = async (id: string) => {
 
 export const updateAlumno = async (id: string, data: Partial<Alumno>) => {
   clearCache("alumnos");
-  return await databases.updateDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, id, data);
+  const updateData = { ...data };
+  if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
+  if (updateData.dni) updateData.dni = sanitize(updateData.dni, 20);
+  if (updateData.curso) updateData.curso = sanitize(updateData.curso, 100);
+  if (updateData.email) updateData.email = sanitize(updateData.email, 200);
+  return await databases.updateDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, id, updateData);
 };
 
 export const checkAlumnoDNI = async (dni: string): Promise<boolean> => {
@@ -586,6 +591,9 @@ export const updateUserProfile = async (id: string, data: Partial<UserProfile>) 
   clearCache("usuarios");
   const updateData = { ...data };
   if (updateData.rol) updateData.rol = toDbRol(updateData.rol);
+  if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
+  if (updateData.email) updateData.email = sanitize(updateData.email, 200);
+  if (updateData.uid) updateData.uid = sanitize(updateData.uid, 50);
   return await databases.updateDocument(APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, id, updateData);
 };
 
@@ -633,7 +641,12 @@ export const deleteUserProfile = async (id: string) => {
 export const createUserProfile = async (profile: UserProfile) => {
   clearCache("usuarios");
   try {
-    const dataToSave = { ...profile, rol: toDbRol(profile.rol) };
+    const dataToSave = { 
+      uid: sanitize(profile.uid, 50),
+      nombre: sanitize(profile.nombre, 200),
+      email: sanitize(profile.email, 200),
+      rol: toDbRol(profile.rol) 
+    };
     await databases.createDocument(
       APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, ID.unique(), dataToSave
     );
@@ -782,6 +795,14 @@ export const subscribeToCursos = (callback: (data: Curso[]) => void) => {
 };
 
 export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "aprobada" | "rechazada") => {
+  // 🛡️ SECURITY AUDIT REF: Broken Access Control (Manipulación de Estado)
+  try {
+    const session = await account.get();
+    if (!session) throw new Error("SECURITY_BLOCK: Unauthenticated status update attempt.");
+  } catch {
+    throw new Error("SECURITY_BLOCK: Unauthenticated status update attempt.");
+  }
+
   try {
     await databases.updateDocument(
       APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, id, { estado: toDbEstado(estado) }
@@ -790,6 +811,14 @@ export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "ap
 };
 
 export const deleteAusencia = async (id: string) => {
+  // 🛡️ SECURITY AUDIT REF: Broken Access Control (Borrados no autorizados)
+  try {
+    const session = await account.get();
+    if (!session) throw new Error("SECURITY_BLOCK: Unauthenticated delete attempt.");
+  } catch {
+    throw new Error("SECURITY_BLOCK: Unauthenticated delete attempt.");
+  }
+
   try {
     await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, id);
   } catch (err) { devLog("deleteAusencia", err); throw err; }
