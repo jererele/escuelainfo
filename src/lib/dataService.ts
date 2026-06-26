@@ -347,6 +347,7 @@ export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
 };
 
 export const saveHorario = async (h: Horario) => {
+  await requireAuth();
   clearCache("horarios");
   
   // Map day name to digit string for saving space in database
@@ -372,6 +373,7 @@ export const saveHorario = async (h: Horario) => {
 };
 
 export const deleteHorario = async (id: string) => {
+  await requireAuth();
   clearCache("horarios");
   return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_HORARIOS_COLLECTION_ID, id);
 };
@@ -396,6 +398,7 @@ export const getAlumnos = async (forceRefresh = false): Promise<Alumno[]> => {
 };
 
 export const saveAlumno = async (a: Alumno) => {
+  await requireAuth();
   clearCache("alumnos");
   return await databases.createDocument(
     APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, ID.unique(), {
@@ -408,11 +411,13 @@ export const saveAlumno = async (a: Alumno) => {
 };
 
 export const deleteAlumno = async (id: string) => {
+  await requireAuth();
   clearCache("alumnos");
   return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, id);
 };
 
 export const updateAlumno = async (id: string, data: Partial<Alumno>) => {
+  await requireAuth();
   clearCache("alumnos");
   const updateData = { ...data };
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
@@ -478,6 +483,7 @@ export const getProfesores = async (forceRefresh = false): Promise<Profesor[]> =
 };
 
 export const saveProfesor = async (p: Profesor) => {
+  await requireAuth();
   clearCache("profesores");
   return await databases.createDocument(
     APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID, ID.unique(), {
@@ -490,11 +496,13 @@ export const saveProfesor = async (p: Profesor) => {
 };
 
 export const deleteProfesor = async (id: string) => {
+  await requireAuth();
   clearCache("profesores");
   return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID, id);
 };
 
 export const updateProfesor = async (id: string, data: Partial<Profesor>) => {
+  await requireAuth();
   clearCache("profesores");
   const updateData = { ...data };
   if (updateData.materias) {
@@ -588,6 +596,7 @@ export const getUsuarios = async (forceRefresh = false): Promise<UserProfile[]> 
 };
 
 export const updateUserProfile = async (id: string, data: Partial<UserProfile>) => {
+  await requireAuth();
   clearCache("usuarios");
   const updateData = { ...data };
   if (updateData.rol) updateData.rol = toDbRol(updateData.rol);
@@ -639,6 +648,7 @@ export const deleteUserProfile = async (id: string) => {
 };
 
 export const createUserProfile = async (profile: UserProfile) => {
+  await requireAuth();
   clearCache("usuarios");
   try {
     const dataToSave = { 
@@ -698,6 +708,7 @@ export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) 
 
 // ─── AUSENCIAS ───────────────────────────────────────────────────────────────
 export const saveAusencia = async (ausencia: Ausencia) => {
+  await requireAuth();
   try {
     const response = await databases.createDocument(
       APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, ID.unique(),
@@ -842,6 +853,7 @@ export const getCursos = async (forceRefresh = false): Promise<Curso[]> => {
 };
 
 export const saveCurso = async (curso: Omit<Curso, "id">) => {
+  await requireAuth();
   clearCache("cursos");
   try {
     await databases.createDocument(
@@ -852,6 +864,7 @@ export const saveCurso = async (curso: Omit<Curso, "id">) => {
 };
 
 export const deleteCurso = async (id: string) => {
+  await requireAuth();
   clearCache("cursos");
   try {
     await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_CURSOS_COLLECTION_ID, id);
@@ -869,6 +882,18 @@ export const checkCursoExists = async (nombre: string): Promise<boolean> => {
 };
 
 // ─── Migración de datos a formato compacto ───────────────────────────────────
+
+// ??? SECURITY AUDIT REF: Global Session Enforcer
+const requireAuth = async () => {
+  try {
+    const session = await account.get();
+    if (!session) throw new Error("SECURITY_BLOCK: Unauthenticated operation.");
+    return session;
+  } catch {
+    throw new Error("SECURITY_BLOCK: Unauthenticated operation.");
+  }
+};
+
 export interface MigrationResult {
   usuariosMigrated: number;
   ausenciasMigrated: number;
@@ -985,6 +1010,7 @@ export const getAsistenciasJornada = async (fecha: string): Promise<AsistenciaJo
 };
 
 export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) => {
+  await requireAuth();
   for (const a of asistencias) {
     try {
       if (a.id && !a.id.startsWith("LOCAL_")) {
@@ -1055,6 +1081,7 @@ export const getAsistenciasMateria = async (fecha: string, materia: string, curs
 };
 
 export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[]) => {
+  await requireAuth();
   for (const a of asistencias) {
     try {
       if (a.id && !a.id.startsWith("LOCAL_")) {
@@ -1172,6 +1199,7 @@ export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]
 };
 
 export const saveMesaExamen = async (m: MesaExamen) => {
+  await requireAuth();
   try {
     const payload = {
       fecha: sanitize(m.fecha, 20),
@@ -1218,6 +1246,7 @@ export const saveMesaExamen = async (m: MesaExamen) => {
 };
 
 export const deleteMesaExamen = async (id: string) => {
+  await requireAuth();
   try {
     if (!id.startsWith("LOCAL_")) {
       await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, id);
