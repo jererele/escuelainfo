@@ -152,7 +152,7 @@ export default function TopNavSidebar({
     <div ref={navRef} className="relative z-[500]">
       {/* ── BARRA SUPERIOR FIJA ───────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 md:px-6
-        bg-[var(--bg)]/95 backdrop-blur-xl border-b border-[var(--border)]
+        bg-[var(--bg)]/95 border-b border-[var(--border)]
         shadow-[0_2px_20px_-8px_rgba(0,0,0,0.12)] z-[500]">
 
         {/* Left: hamburger + logo */}
@@ -236,7 +236,7 @@ export default function TopNavSidebar({
       {/* ── OVERLAY ────────────────────────────────────────────────────────── */}
       {isOpen && (
         <div
-          className={`fixed inset-0 top-14 bg-black/40 backdrop-blur-[2px] z-[490] transition-opacity duration-300 ${isExiting ? "opacity-0" : "opacity-100"}`}
+          className={`fixed inset-0 top-14 bg-black/60 z-[490] transition-opacity duration-300 ${isExiting ? "opacity-0" : "opacity-100"}`}
           onClick={closeSidebar}
         />
       )}
@@ -245,7 +245,7 @@ export default function TopNavSidebar({
       {isOpen && (
         <div
           className={`fixed top-14 left-0 right-0 z-[499] will-change-gpu
-            bg-[var(--bg)]/98 backdrop-blur-xl border-b border-[var(--border)]
+            bg-[var(--bg)] border-b border-[var(--border)]
             shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)]
             ${isExiting ? "top-nav-exit" : "top-nav-enter"}`}
         >

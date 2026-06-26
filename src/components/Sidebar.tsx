@@ -201,7 +201,7 @@ export default function Sidebar({
           <button
             onClick={onProfileOpen}
             title="Ver mi perfil"
-            className="w-full p-3 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl flex items-center gap-3 border border-[var(--border)] shadow-sm hover:border-[var(--verde-border)] hover:bg-[var(--verde-bg)] transition-all hover:scale-105 active:scale-98 group text-left">
+            className="w-full p-3 bg-[var(--bg2)] rounded-2xl flex items-center gap-3 border border-[var(--border)] shadow-sm hover:border-[var(--verde-border)] hover:bg-[var(--verde-bg)] transition-all hover:scale-105 active:scale-98 group text-left">
             {user?.photoURL && user.photoURL.startsWith('https://') ? (
               <img src={user.photoURL} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white shadow-sm shrink-0" />
             ) : (
