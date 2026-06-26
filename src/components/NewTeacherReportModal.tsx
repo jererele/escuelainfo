@@ -120,7 +120,7 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in no-print"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="glass w-full max-w-lg rounded-[28px] border border-[var(--border)] overflow-hidden shadow-2xl animate-zoom-in">
+      <div className="glass w-full max-w-lg rounded-[28px] border border-[var(--border)] overflow-hidden shadow-2xl animate-zoom-in will-change-gpu">
 
         {/* HEADER */}
         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg2)]">

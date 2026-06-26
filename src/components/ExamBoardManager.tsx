@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppwriteException } from "appwrite";
 import { UserProfile, Profesor, Alumno, MesaExamen, getProfesores, getAlumnos, getMesasExamen, saveMesaExamen, deleteMesaExamen, logAction, subscribeToMesasExamen } from "@/lib/dataService";
-import { ClipboardCheck, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Search, Check, Trash2, Edit } from "lucide-react";
+import { ClipboardCheck, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Search, Check, Trash2, Edit, Printer } from "lucide-react";
 
 interface Props {
   user: any;
@@ -293,7 +293,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       )}
 
       {/* Header and filters */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-xl font-black text-[var(--text)] flex items-center gap-2">
@@ -317,11 +317,17 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
             {canManage && (
               <button
                 onClick={openCreateModal}
-                className="bg-[var(--verde)] text-black font-black text-xs px-4 py-2.5 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
+                className="bg-[var(--verde)] text-black font-black text-xs px-4 py-2.5 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all shadow-md flex items-center gap-1.5 no-print"
               >
                 <Plus size={16} /> Crear Mesa
               </button>
             )}
+            <button
+              onClick={() => window.print()}
+              className="bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[var(--bg4)] transition-all shadow-sm active:scale-95 flex items-center gap-1.5 no-print"
+            >
+              <Printer size={16} /> Imprimir
+            </button>
           </div>
         </div>
 

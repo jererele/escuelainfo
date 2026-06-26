@@ -56,7 +56,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {/* Fondo animado — pointer-events:none, no interfiere con el flujo */}
-        <CosmosBackground />
+        <div className="hidden md:block absolute inset-0 pointer-events-none z-0">
+          <CosmosBackground />
+        </div>
 
         {/*
           TermsModal: fixed + inset-0 + z-[9999]

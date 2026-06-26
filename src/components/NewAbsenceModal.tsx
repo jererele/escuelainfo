@@ -252,7 +252,7 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
         className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
-        <div className="glass w-full max-w-lg rounded-[24px] border border-[var(--border)] flex flex-col max-h-[90vh] overflow-hidden shadow-2xl animate-zoom-in">
+        <div className="glass w-full max-w-lg rounded-[24px] border border-[var(--border)] flex flex-col max-h-[90vh] overflow-hidden shadow-2xl animate-zoom-in will-change-gpu">
           <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg2)] flex-shrink-0">
             <h2 className="title-font font-bold text-xl">Registrar Nueva Ausencia</h2>
             <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all">

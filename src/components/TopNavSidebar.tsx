@@ -244,7 +244,7 @@ export default function TopNavSidebar({
       {/* ── PANEL RETRÁCTIL (aparece debajo de la barra, se oculta hacia arriba) */}
       {isOpen && (
         <div
-          className={`fixed top-14 left-0 right-0 z-[499]
+          className={`fixed top-14 left-0 right-0 z-[499] will-change-gpu
             bg-[var(--bg)]/98 backdrop-blur-xl border-b border-[var(--border)]
             shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)]
             ${isExiting ? "top-nav-exit" : "top-nav-enter"}`}

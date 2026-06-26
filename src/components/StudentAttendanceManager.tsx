@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UserProfile, Alumno, Curso, AsistenciaJornada, AsistenciaMateria, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAsistenciasMateria, saveAsistenciasMateria, getAlumnoHistorialAsistencia, getProfesores, logAction } from "@/lib/dataService";
-import { UserCheck, Check, X, AlertCircle, Calendar, BookOpen, Clock, Award, ShieldAlert, Search } from "lucide-react";
+import { UserCheck, Check, X, AlertCircle, Calendar, BookOpen, Clock, Award, ShieldAlert, Search, Printer } from "lucide-react";
 import AttendanceTableResponsive from "@/components/AttendanceTableResponsive";
 import { SkeletonAttendanceTable } from "@/components/SkeletonLoaders";
 
@@ -22,6 +22,8 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [searchJornada, setSearchJornada] = useState("");
+  const [searchMateria, setSearchMateria] = useState("");
 
   // Planillas de asistencias en edición
   const [asistenciasJornada, setAsistenciasJornada] = useState<Record<string, "P" | "A" | "M" | "T">>({});
@@ -245,7 +247,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
       {/* VISTA 1: PRECEPTOR / ADMIN (Control General de Jornada) */}
       {(role === "admin" || role === "directivo" || role === "preceptor") && (
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-5">
             <div>
               <h3 className="text-xl font-black text-[var(--text)] flex items-center gap-2">
@@ -291,11 +293,30 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
           {Object.keys(asistenciasJornada).length > 0 ? (
             <div className="space-y-4">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--bg2)] p-3 rounded-2xl border border-[var(--border)] no-print">
+                <div className="relative w-full md:w-72">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]" />
+                  <input
+                    type="text"
+                    placeholder="Buscar alumno por nombre o DNI..."
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2 text-sm font-semibold outline-none text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                    value={searchJornada}
+                    onChange={(e) => setSearchJornada(e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={() => window.print()}
+                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[var(--bg4)] transition-all active:scale-95"
+                >
+                  <Printer size={16} /> Imprimir Planilla
+                </button>
+              </div>
+
               {loading ? (
                 <SkeletonAttendanceTable rows={alumnos.filter(a => a.curso === selectedCurso).length || 5} />
               ) : (
                 <AttendanceTableResponsive
-                  alumnos={alumnos.filter(a => a.curso === selectedCurso)}
+                  alumnos={alumnos.filter(a => a.curso === selectedCurso).filter(a => (a.nombre + a.dni).toLowerCase().includes(searchJornada.toLowerCase()))}
                   asistencias={asistenciasJornada}
                   modo="jornada"
                   onChangeEstado={(alId, estado) =>
@@ -325,7 +346,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
       {/* VISTA 2: PROFESOR (Control por Materia) */}
       {(role === "admin" || role === "directivo" || role === "profesor") && (
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-5">
             <div>
               <h3 className="text-xl font-black text-[var(--text)] flex items-center gap-2">
@@ -391,11 +412,30 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
           {Object.keys(asistenciasMateria).length > 0 ? (
             <div className="space-y-4">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--bg2)] p-3 rounded-2xl border border-[var(--border)] no-print">
+                <div className="relative w-full md:w-72">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]" />
+                  <input
+                    type="text"
+                    placeholder="Buscar alumno por nombre o DNI..."
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2 text-sm font-semibold outline-none text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                    value={searchMateria}
+                    onChange={(e) => setSearchMateria(e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={() => window.print()}
+                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[var(--bg4)] transition-all active:scale-95"
+                >
+                  <Printer size={16} /> Imprimir Planilla
+                </button>
+              </div>
+
               {loading ? (
                 <SkeletonAttendanceTable rows={alumnos.filter(a => a.curso === selectedCurso).length || 5} />
               ) : (
                 <AttendanceTableResponsive
-                  alumnos={alumnos.filter(a => a.curso === selectedCurso)}
+                  alumnos={alumnos.filter(a => a.curso === selectedCurso).filter(a => (a.nombre + a.dni).toLowerCase().includes(searchMateria.toLowerCase()))}
                   asistencias={asistenciasMateria}
                   modo="materia"
                   onChangeEstado={(alId, estado) =>
@@ -428,25 +468,25 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
         <div className="space-y-6">
           {/* Tarjeta de Resumen */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
               <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)]">Inasistencias Totales</p>
               <p className="text-4xl font-black text-[var(--text)] mt-2">{totalFaltasJornada.toFixed(2)}</p>
               <p className="text-[10px] text-[var(--text3)] font-bold mt-1">Cómputo acumulado de inasistencias</p>
             </div>
             
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
               <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)]">Ausentes Completos</p>
               <p className="text-4xl font-black text-[var(--rojo)] mt-2">{totalAusentesJornada}</p>
               <p className="text-[10px] text-[var(--text3)] font-bold mt-1">1.0 falta por cada falta diaria</p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
               <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)]">Medias Faltas</p>
               <p className="text-4xl font-black text-[var(--amarillo)] mt-2">{totalMediaFaltaJornada}</p>
               <p className="text-[10px] text-[var(--text3)] font-bold mt-1">0.5 faltas por inasistencia parcial</p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-5 shadow-sm text-center">
               <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)]">Llegadas Tarde</p>
               <p className="text-4xl font-black text-[var(--azul)] mt-2">{totalTardesJornada}</p>
               <p className="text-[10px] text-[var(--text3)] font-bold mt-1">0.25 faltas por llegada tarde</p>
@@ -455,7 +495,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Detalle Asistencia General */}
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-4">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-4">
               <div>
                 <h4 className="text-lg font-black text-[var(--text)] flex items-center gap-2">
                   <Clock size={18} className="text-[var(--verde)]" /> Historial de Asistencia General
@@ -488,7 +528,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
             </div>
 
             {/* Detalle Asistencia por Materias */}
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-4">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-4">
               <div>
                 <h4 className="text-lg font-black text-[var(--text)] flex items-center gap-2">
                   <BookOpen size={18} className="text-[var(--verde)]" /> Registro de Asistencias por Materias

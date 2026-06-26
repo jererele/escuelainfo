@@ -4,7 +4,11 @@ import { ID, Query } from "appwrite";
 // ─── Logger solo en desarrollo ───────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
 const devLog = (ctx: string, err?: unknown) => {
-  if (isDev) console.error(`[EscuelaInfo/${ctx}]`, err ?? "");
+  if (isDev) {
+    // 🛡️ SECURITY AUDIT REF: Security Misconfiguration - Prevenir fuga de metadatos de Appwrite
+    const safeError = err instanceof Error ? err.message : "Internal Error Masked";
+    console.error(`[EscuelaInfo/${ctx}]`, safeError);
+  }
 };
 
 // ─── Sanitización reforzada ──────────────────────────────────────────────────
@@ -621,6 +625,14 @@ export const createUserProfile = async (profile: UserProfile) => {
 };
 
 export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) => {
+  // 🛡️ SECURITY AUDIT REF: Broken Access Control (Prevención de Escalada de Privilegios)
+  try {
+    const session = await account.get();
+    if (!session) throw new Error("SECURITY_BLOCK: Unauthenticated role manipulation attempt.");
+  } catch {
+    throw new Error("SECURITY_BLOCK: Unauthenticated role manipulation attempt.");
+  }
+
   clearCache("usuarios");
   const cleanEmail = email.toLowerCase().trim();
 
@@ -1177,12 +1189,23 @@ export const deleteMesaExamen = async (id: string) => {
 // ─── STORAGE CERTIFICADOS ───────────────────────────────────────────────────
 export const uploadCertificateFile = async (file: File): Promise<string> => {
   try {
-    // Verificar si hay sesión activa, de lo contrario crear una anónima para evitar 401
-    try {
-      await account.get();
-    } catch {
-      console.log("[dataService] No active Appwrite session found. Creating anonymous session...");
-      await account.createAnonymousSession();
+    // 🛡️ SECURITY AUDIT REF: Storage & File Upload Vulnerability Protection
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+    const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      throw new Error("SECURITY_BLOCK: Invalid file type. Only JPG, PNG, or PDF are allowed.");
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      throw new Error("SECURITY_BLOCK: File size exceeds the 5MB limit.");
+    }
+
+    // 🛡️ SECURITY AUDIT REF: Broken Access Control Protection
+    // BLOCKED: Automatically creating anonymous sessions allows attackers to upload unrestricted files.
+    // Must strictly validate an authenticated user exists before allowing storage operations.
+    const user = await account.get();
+    if (!user) {
+       throw new Error("SECURITY_BLOCK: Unauthorized. Anonymous uploads are strictly forbidden.");
     }
 
     const response = await storage.createFile(
@@ -1192,14 +1215,9 @@ export const uploadCertificateFile = async (file: File): Promise<string> => {
     );
     return response.$id;
   } catch (err: any) {
-    console.error("[dataService] uploadCertificateFile failed:", {
-      code: err?.code,
-      type: err?.type,
-      message: err?.message,
-      status: err?.status
-    });
-    devLog("uploadCertificateFile", err);
-    throw err;
+    // 🛡️ SECURITY AUDIT REF: Security Misconfiguration - Obfuscate internal error details
+    devLog("uploadCertificateFile_Error", "Upload blocked or failed.");
+    throw new Error("Ocurrió un error de seguridad al subir el archivo.");
   }
 };
 

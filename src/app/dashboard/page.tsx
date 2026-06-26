@@ -658,7 +658,7 @@ export default function Dashboard() {
         local: "Feriado Local (Esquel)"
       };
       return (
-        <div className="p-6 rounded-3xl border bg-[var(--azul-bg)]/20 border-[var(--azul-border)] shadow-[0_10px_30px_rgba(59,130,246,0.08)] flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in no-print">
+        <div className="p-6 rounded-3xl border bg-[var(--azul-bg)]/20 border-[var(--azul-border)] shadow-[0_10px_30px_rgba(59,130,246,0.08)] flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in will-change-gpu no-print">
           <div className="flex items-center gap-4 text-left">
             <div className="w-12 h-12 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center text-2xl shrink-0">
               🎉
@@ -706,7 +706,7 @@ export default function Dashboard() {
     const hasFreeHours = freeHoursToday.length > 0;
 
     return (
-      <div className={`p-6 rounded-3xl border transition-all duration-300 ${
+      <div className={`p-6 rounded-3xl border transition-all duration-300 will-change-gpu ${
         hasFreeHours 
           ? "bg-[var(--amarillo-bg)]/20 border-[var(--amarillo-border)] shadow-[0_10px_30px_rgba(245,158,11,0.05)]" 
           : "bg-[var(--verde-bg)]/10 border-[var(--verde-border)]/40 shadow-[0_10px_30px_rgba(16,185,129,0.02)]"

@@ -236,10 +236,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex-1 flex items-center justify-center relative overflow-hidden px-4 bg-transparent py-10">
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
+      <div className="hidden md:block absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
+      <div className="hidden md:block absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
 
-      <div className="login-box glass animate-zoom-in w-full max-w-[480px] p-8 md:p-12 rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
+      <div className="login-box glass animate-zoom-in will-change-gpu w-full max-w-[480px] p-8 md:p-12 rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
         {requestSuccess ? (
           <div className="text-center py-6 animate-fade-in">
             <div className="w-16 h-16 bg-[var(--verde-bg)] text-[var(--verde)] rounded-full flex items-center justify-center mx-auto mb-6 border border-[var(--verde-border)] shadow-lg animate-bounce">
