@@ -364,9 +364,9 @@ export const saveHorario = async (h: Horario) => {
     APPWRITE_DB_ID, APPWRITE_HORARIOS_COLLECTION_ID, ID.unique(), {
       dia: dayCode,
       hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
-      materia: h.materia,
-      profesor: h.profesor,
-      curso: h.curso
+      materia: sanitize(h.materia, 100),
+      profesor: sanitize(h.profesor, 200),
+      curso: sanitize(h.curso, 50)
     }
   );
 };
@@ -962,22 +962,22 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
         await databases.updateDocument(
           APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, a.id,
           {
-            alumnoId: a.alumnoId,
-            alumnoNombre: a.alumnoNombre,
-            fecha: a.fecha,
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
             estado: a.estado,
-            preceptorId: a.preceptorId
+            preceptorId: sanitize(a.preceptorId, 50)
           }
         );
       } else {
         await databases.createDocument(
           APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, ID.unique(),
           {
-            alumnoId: a.alumnoId,
-            alumnoNombre: a.alumnoNombre,
-            fecha: a.fecha,
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
             estado: a.estado,
-            preceptorId: a.preceptorId
+            preceptorId: sanitize(a.preceptorId, 50)
           }
         );
       }
@@ -1032,26 +1032,26 @@ export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[]) =
         await databases.updateDocument(
           APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, a.id,
           {
-            alumnoId: a.alumnoId,
-            alumnoNombre: a.alumnoNombre,
-            fecha: a.fecha,
-            materia: a.materia,
-            curso: a.curso,
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
+            materia: sanitize(a.materia, 100),
+            curso: sanitize(a.curso, 50),
             estado: a.estado,
-            profesorId: a.profesorId
+            profesorId: sanitize(a.profesorId, 50)
           }
         );
       } else {
         await databases.createDocument(
           APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, ID.unique(),
           {
-            alumnoId: a.alumnoId,
-            alumnoNombre: a.alumnoNombre,
-            fecha: a.fecha,
-            materia: a.materia,
-            curso: a.curso,
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
+            materia: sanitize(a.materia, 100),
+            curso: sanitize(a.curso, 50),
             estado: a.estado,
-            profesorId: a.profesorId
+            profesorId: sanitize(a.profesorId, 50)
           }
         );
       }
@@ -1145,17 +1145,17 @@ export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]
 export const saveMesaExamen = async (m: MesaExamen) => {
   try {
     const payload = {
-      fecha: m.fecha,
-      hora: m.hora,
-      materia: m.materia,
-      aula: m.aula,
-      presidenteId: m.presidenteId,
-      presidenteNombre: m.presidenteNombre,
-      vocal1Id: m.vocal1Id || "",
-      vocal1Nombre: m.vocal1Nombre || "",
-      vocal2Id: m.vocal2Id || "",
-      vocal2Nombre: m.vocal2Nombre || "",
-      alumnosInscriptos: m.alumnosInscriptos || [],
+      fecha: sanitize(m.fecha, 20),
+      hora: sanitize(m.hora, 10),
+      materia: sanitize(m.materia, 100),
+      aula: sanitize(m.aula, 50),
+      presidenteId: sanitize(m.presidenteId, 50),
+      presidenteNombre: sanitize(m.presidenteNombre, 200),
+      vocal1Id: sanitize(m.vocal1Id || "", 50),
+      vocal1Nombre: sanitize(m.vocal1Nombre || "", 200),
+      vocal2Id: sanitize(m.vocal2Id || "", 50),
+      vocal2Nombre: sanitize(m.vocal2Nombre || "", 200),
+      alumnosInscriptos: (m.alumnosInscriptos || []).map(a => sanitize(a, 100)),
       estado: m.estado
     };
 
