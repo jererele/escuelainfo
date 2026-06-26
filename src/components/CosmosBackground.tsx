@@ -62,10 +62,9 @@ class Star {
 
     if (this.size > 2.2) {
       ctx.save();
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = this.color.replace("opacity", "0.5");
+      ctx.fillStyle = this.color.replace("opacity", "0.2");
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size * 0.3, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, this.size * 2.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }

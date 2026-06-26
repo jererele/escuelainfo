@@ -161,14 +161,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     setHasMounted(true);
+    let isMounted = true;
     let unsubscribes: (() => void)[] = [];
 
     const checkSession = async () => {
       try {
         const currentUser = await account.get();
+        if (!isMounted) return;
         setUser(currentUser as any);
         // Cargar perfil de Appwrite
         const profile = await getUserProfile(currentUser.$id);
+        if (!isMounted) return;
+
         if (profile) {
           setUserProfile(profile);
           // Cargar datos condicionalmente según el rol con suscripciones en tiempo real
@@ -184,14 +188,14 @@ export default function Dashboard() {
           
           unsubscribes.push(subscribeToCursos(setCursos));
 
-          getHorarios().then(d => { setHorarios(d); stamp('horarios'); });
-          if (profile.rol === 'admin') getLogs().then(d => { setLogs(d); stamp('logs'); });
+          getHorarios().then(d => { if (isMounted) { setHorarios(d); stamp('horarios'); }});
+          if (profile.rol === 'admin') getLogs().then(d => { if (isMounted) { setLogs(d); stamp('logs'); }});
         } else {
           // Si no hay perfil, algo salió mal en el login, redirigir
-          router.push("/");
+          if (isMounted) router.push("/");
         }
       } catch (err) {
-        router.push("/");
+        if (isMounted) router.push("/");
       }
     };
     checkSession();
@@ -202,11 +206,13 @@ export default function Dashboard() {
     }
 
     const unsubscribeData = subscribeToAusencias((data) => {
+      if (!isMounted) return;
       setAusencias(data);
       setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       unsubscribeData();
       unsubscribes.forEach(unsub => unsub());
     };
