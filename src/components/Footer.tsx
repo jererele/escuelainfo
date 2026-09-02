@@ -41,7 +41,7 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
 
           {/* ── Bloque izquierdo: Copyright ──────────────────────────────────── */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <EscuelaInfoLogo size={24} />
             <p
               className="text-xs"
@@ -52,6 +52,9 @@ export default function Footer() {
               </span>
               {' '}Todos los derechos reservados.
             </p>
+            <span className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+              v2.5.0
+            </span>
           </div>
 
           {/* ── Bloque derecho: Links legales ────────────────────────────────── */}

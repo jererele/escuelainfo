@@ -300,9 +300,14 @@ export default function TopNavSidebar({
                   <p className="text-sm font-bold text-[var(--text)] group-hover:text-[var(--verde)] transition-colors truncate max-w-[140px]">
                     {userName}
                   </p>
-                  <p className="text-[10px] uppercase tracking-widest font-black text-[var(--text3)]">
-                    {rolLabel}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] uppercase tracking-widest font-black text-[var(--text3)]">
+                      {rolLabel}
+                    </p>
+                    <span className="px-1.5 py-0.2 text-[8px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                      {APP_VERSION}
+                    </span>
+                  </div>
                 </div>
                 <Pencil size={13} className="text-[var(--text3)] group-hover:text-[var(--verde)] transition-colors ml-1" />
               </button>
