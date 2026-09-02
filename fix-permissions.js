@@ -10,12 +10,25 @@ const databases = new Databases(client);
 
 async function fixPermissions() {
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-    const collections = ['horarios', 'alumnos', 'profesores', 'logs', 'usuarios', 'cursos'];
+    const collections = [
+        'horarios',
+        'alumnos',
+        'profesores',
+        'logs',
+        'usuarios',
+        'cursos',
+        'ausencias',
+        'mesas_examen',
+        'consultas',
+        'asistencias_alumnos_jornada',
+        'asistencias_alumnos_materia'
+    ];
 
     for (const colId of collections) {
         try {
             console.log(`Actualizando permisos de la colección: ${colId}...`);
-            await databases.updateCollection(dbId, colId, colId, [
+            const col = await databases.getCollection(dbId, colId);
+            await databases.updateCollection(dbId, colId, col.name, [
                 'read("any")',
                 'create("any")',
                 'update("any")',

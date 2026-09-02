@@ -28,11 +28,11 @@ const db = new Databases(client);
 
 // ─── Permisos estándar ────────────────────────────────────────────────────────
 const STD_PERMISSIONS = [
-  Permission.read(Role.users()),
-  Permission.write(Role.users()),
-  Permission.create(Role.users()),
-  Permission.update(Role.users()),
-  Permission.delete(Role.users()),
+  Permission.read(Role.any()),
+  Permission.write(Role.any()),
+  Permission.create(Role.any()),
+  Permission.update(Role.any()),
+  Permission.delete(Role.any()),
 ];
 
 // ─── Helper: crear colección de forma idempotente ────────────────────────────
