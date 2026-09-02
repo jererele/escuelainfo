@@ -184,11 +184,9 @@ export default function TopNavSidebar({
               Escuela<span className="text-[var(--verde)]">Info</span>
             </span>
           </button>
-          {userProfile?.rol === "admin" && (
-            <span className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs" title="Versión activa del sistema (Solo Admin)">
-              {APP_VERSION}
-            </span>
-          )}
+          <span className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs" title="Versión activa del sistema (Entorno de Desarrollo)">
+            {APP_VERSION}
+          </span>
         </div>
 
         {/* Center: active tab label */}
