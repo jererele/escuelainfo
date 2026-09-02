@@ -35,6 +35,7 @@ import {
   SidebarMenuBadge
 } from "@/components/ui/sidebar";
 import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
+import { APP_VERSION } from "@/lib/version";
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -113,8 +114,15 @@ export default function Sidebar({
             <EscuelaInfoLogo size={40} />
           </div>
           {!isCollapsed && (
-            <div className="title-font text-2xl font-black whitespace-nowrap">
-              Escuela<span className="text-[var(--verde)]">Info</span>
+            <div className="flex items-center gap-2">
+              <div className="title-font text-2xl font-black whitespace-nowrap">
+                Escuela<span className="text-[var(--verde)]">Info</span>
+              </div>
+              {userProfile?.rol === "admin" && (
+                <span className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                  {APP_VERSION}
+                </span>
+              )}
             </div>
           )}
         </div>

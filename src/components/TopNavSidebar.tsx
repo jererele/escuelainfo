@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
+import { APP_VERSION } from "@/lib/version";
 
 interface TopNavSidebarProps {
   user: any;
@@ -183,6 +184,11 @@ export default function TopNavSidebar({
               Escuela<span className="text-[var(--verde)]">Info</span>
             </span>
           </button>
+          {userProfile?.rol === "admin" && (
+            <span className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs" title="Versión activa del sistema (Solo Admin)">
+              {APP_VERSION}
+            </span>
+          )}
         </div>
 
         {/* Center: active tab label */}

@@ -12,6 +12,7 @@ import CustomSelect from "@/components/CustomSelect";
 import ContactForm from "@/components/ContactForm";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/SkeletonLoaders";
+import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 
 // ─── Spinner inline para managers que renderizan en el dashboard ─────────────
 const ManagerSkeleton = ({ rows }: { rows?: number }) => (
@@ -2074,6 +2075,31 @@ export default function Dashboard() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* FICHA DE VERSIÓN Y ESTADO DEL SISTEMA (Solo Admin) */}
+              {userProfile?.rol === 'admin' && (
+                <div className="card glass rounded-[28px] p-6 border border-[var(--border)] bg-[var(--bg2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] flex items-center justify-center font-mono font-black text-sm shrink-0">
+                      ⚡
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-base text-[var(--text)]">Versión del Sistema EscuelaInfo</h4>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                          {APP_VERSION}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--text2)] font-semibold mt-0.5">
+                        Estado: <span className="text-[var(--verde)] font-bold">✓ Sistema Actualizado</span> · Compilación: {APP_BUILD_DATE}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text3)] bg-[var(--bg3)] px-3 py-1.5 rounded-xl border border-[var(--border)]">
+                    Solo Administrador
                   </div>
                 </div>
               )}
