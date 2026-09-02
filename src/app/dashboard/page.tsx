@@ -1539,7 +1539,8 @@ export default function Dashboard() {
                       </table>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
                 <div>
                   <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
@@ -1638,7 +1639,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
             {activeTab === 'horarios' && (
               <div className="animate-fade-in">
