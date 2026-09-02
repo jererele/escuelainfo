@@ -87,21 +87,33 @@ export default function LoginPage() {
     if (!email || !password) { setErrorMsg("Completá todos los campos."); return; }
     setLoading(true); setErrorMsg("");
     try {
-      await account.createEmailPasswordSession(email, password);
+      const cleanEmail = email.trim().toLowerCase();
+      // Eliminar sesión activa previa si existiera para evitar colisión de sesiones
+      try { await account.deleteSession("current"); } catch {}
+
+      await account.createEmailPasswordSession(cleanEmail, password);
       const user = await account.get();
       const profile = await getUserProfile(user.$id);
       if (!profile) {
-        const pre = await getUserProfileByEmail(email);
+        const pre = await getUserProfileByEmail(cleanEmail);
         if (pre?.id) {
           await updateUserProfile(pre.id, { uid: user.$id, nombre: user.name || "Usuario" });
         } else {
-          setErrorMsg("Tu cuenta no tiene perfil. Contactá al administrador.");
+          setErrorMsg("Tu cuenta no tiene perfil asignado. Contactá al administrador.");
           await account.deleteSession("current");
           setLoading(false); return;
         }
       }
       router.push("/dashboard");
-    } catch { setErrorMsg("Correo o contraseña incorrectos."); setLoading(false); }
+    } catch (err: any) {
+      console.error("[EscuelaInfo Login Error]:", err);
+      if (err?.code === 401 || err?.status === 401) {
+        setErrorMsg("Correo o contraseña incorrectos. Verificá tus datos o mayúsculas.");
+      } else {
+        setErrorMsg(err?.message || "Error al iniciar sesión. Intentá nuevamente.");
+      }
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = async () => {
