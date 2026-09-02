@@ -296,7 +296,12 @@ body {
   margin: 0;
 }
 
-/* SCROLLBAR */
+/* SCROLLBAR & TOUCH SCROLLING */
+.overflow-x-auto, .overflow-y-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

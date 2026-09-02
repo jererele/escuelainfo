@@ -1490,7 +1490,8 @@ export default function Dashboard() {
                       Solicitudes de Inscripción Pendientes
                     </h3>
                     <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
-                      <table className="w-full text-left">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left min-w-[600px]">
                         <thead className="bg-[var(--bg3)]/50">
                           <tr>
                             <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Alumno</th>
@@ -1571,7 +1572,8 @@ export default function Dashboard() {
                   </div>
 
                   <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
-                    <table className="w-full text-left">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left min-w-[550px]">
                       <thead className="bg-[var(--bg3)]/50">
                         <tr>
                           <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Nombre</th>
@@ -1728,18 +1730,140 @@ export default function Dashboard() {
                   })}
                 </div>
 
-                <div className="card glass rounded-[40px] border border-[var(--border)] overflow-x-auto shadow-2xl">
+                {/* VISTA MÓVIL (< lg): Listado Timeline Vertical por Módulo (Legible, 0% amontonado, dinámico) */}
+                <div className="lg:hidden space-y-3">
+                  {getVisibleSlots().map((slot, idx) => {
+                    if (slot === "RECESO") {
+                      return (
+                        <div key={idx} className="p-3.5 rounded-2xl bg-[var(--bg3)] border border-[var(--border)] text-center text-xs font-black uppercase tracking-widest text-[var(--text2)] flex items-center justify-center gap-2">
+                          <RefreshCw size={14} className="animate-spin-slow text-[var(--text3)] shrink-0" />
+                          Cambio de Hora / Turno
+                        </div>
+                      );
+                    }
+                    if (slot.startsWith("RECREO:")) {
+                      return (
+                        <div key={idx} className="p-3.5 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] text-center text-xs font-black uppercase tracking-widest text-[var(--verde)] flex items-center justify-center gap-2">
+                          <Coffee size={14} className="shrink-0" />
+                          Recreo ({slot.replace("RECREO:", "")})
+                        </div>
+                      );
+                    }
+
+                    const effectiveCourse = userProfile?.rol === 'alumno' ? (currentAlumno?.curso || "___NO_COURSE___") : selectedCourse;
+                    const h = horarios.find(item => 
+                      item.dia === selectedMobileDay && 
+                      item.hora === slot && 
+                      (effectiveCourse === "" || item.curso === effectiveCourse)
+                    );
+
+                    // Calcular ausencia
+                    const daysMap: {[key: string]: number} = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
+                    const now = new Date();
+                    const currentDay = now.getDay();
+                    const diff = now.getDate() - currentDay + daysMap[selectedMobileDay];
+                    const targetDate = new Date(new Date().setDate(diff)).toISOString().split('T')[0];
+
+                    const isAbsent = h && ausencias.some(a => 
+                      a.profNombre === h.profesor && 
+                      targetDate >= a.inicio && 
+                      targetDate <= a.fin &&
+                      a.estado === 'aprobada'
+                    );
+
+                    const hasSearch = scheduleQuery.trim() !== "";
+                    const matchesSearch = h && (
+                      h.materia.toLowerCase().includes(scheduleQuery.toLowerCase()) || 
+                      h.profesor.toLowerCase().includes(scheduleQuery.toLowerCase()) ||
+                      h.curso.toLowerCase().includes(scheduleQuery.toLowerCase())
+                    );
+                    const isDimmed = hasSearch && h && !matchesSearch;
+
+                    return (
+                      <div 
+                        key={idx}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col gap-2 ${
+                          isDimmed ? "opacity-30 grayscale" : ""
+                        } ${
+                          !h 
+                            ? "bg-[var(--bg3)]/40 border-[var(--border)]" 
+                            : isAbsent 
+                            ? "bg-[var(--rojo-bg)] border-[var(--rojo-border)] shadow-sm" 
+                            : "bg-[var(--bg2)] border-[var(--border)] shadow-sm"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center text-xs font-black text-[var(--text3)] pb-2 border-b border-[var(--border)]/50">
+                          <span className="flex items-center gap-1.5 text-[var(--verde)] font-mono">
+                            <Clock size={13} /> {slot}
+                          </span>
+                          {h && (
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
+                              isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"
+                            }`}>
+                              {h.curso}
+                            </span>
+                          )}
+                        </div>
+
+                        {h ? (
+                          <div className="space-y-1 relative">
+                            <div className="flex justify-between items-start">
+                              <h4 className={`font-black text-sm ${isAbsent ? "text-[var(--rojo)] line-through decoration-2" : "text-[var(--text)]"}`}>
+                                {h.materia}
+                              </h4>
+                              {isAbsent && (
+                                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0">
+                                  🎉 Hora Libre
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-xs font-bold ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}>
+                              Prof. {h.profesor}
+                            </p>
+                            {isAdmin && (
+                              <button 
+                                onClick={() => askConfirm("¿Eliminar clase?", async () => {
+                                  try {
+                                    await deleteHorario(h.id!);
+                                    await logAction(user?.email || "desconocido", "ELIMINAR_HORARIO", `Materia: ${h.materia}, Profesor: ${h.profesor}, Curso: ${h.curso}, Día: ${h.dia}, Hora: ${h.hora}`);
+                                    await getHorarios().then(setHorarios);
+                                    showToast("Clase eliminada", "success");
+                                  } catch (err) {
+                                    showToast("Error al eliminar clase", "error");
+                                  }
+                                })}
+                                className="mt-2 text-xs text-[var(--rojo)] font-bold flex items-center gap-1 hover:underline"
+                              >
+                                <Trash2 size={13} /> Eliminar clase
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center py-1">
+                            <span className="text-xs font-bold text-[var(--text3)] italic">Sin clase programada</span>
+                            {isAdmin && (
+                              <button 
+                                onClick={() => setIsScheduleModalOpen(true)}
+                                className="text-xs font-black text-[var(--verde)] bg-[var(--verde-bg)] px-3 py-1 rounded-xl border border-[var(--verde-border)]"
+                              >
+                                + Asignar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* VISTA ESCRITORIO (lg+): Grilla semanal completa en tabla */}
+                <div className="hidden lg:block card glass rounded-[40px] border border-[var(--border)] overflow-x-auto shadow-2xl">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-[var(--bg3)]/80">
                         <th className="p-5 border-b border-r border-[var(--border)] text-[10px] font-black uppercase text-[var(--verde)] sticky left-0 bg-[var(--bg)] z-20 w-32">Horario</th>
                         {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].map(dia => (
-                          <th 
-                            key={dia} 
-                            className={`p-5 border-b border-[var(--border)] text-[11px] font-black uppercase tracking-widest text-[var(--text)] min-w-[180px] ${
-                              selectedMobileDay === dia ? "table-cell" : "hidden lg:table-cell"
-                            }`}
-                          >
+                          <th key={dia} className="p-5 border-b border-[var(--border)] text-[11px] font-black uppercase tracking-widest text-[var(--text)] min-w-[180px]">
                             {dia}
                           </th>
                         ))}
@@ -1807,9 +1931,7 @@ export default function Dashboard() {
                               return (
                                 <td 
                                   key={dia} 
-                                  className={`p-2 border-r border-[var(--border)] last:border-r-0 relative group min-h-[80px] ${
-                                    selectedMobileDay === dia ? "table-cell" : "hidden lg:table-cell"
-                                  }`}
+                                  className="p-2 border-r border-[var(--border)] last:border-r-0 relative group min-h-[80px]"
                                 >
                                   {h ? (
                                     <div className={`p-3 sm:p-4 rounded-[18px] sm:rounded-[22px] border transition-all duration-300 relative overflow-hidden ${
