@@ -26,6 +26,7 @@ import {
 import { UserProfile } from "@/lib/dataService";
 import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
+import VersionModal from "@/components/VersionModal";
 
 interface TopNavSidebarProps {
   user: any;
@@ -57,6 +58,7 @@ export default function TopNavSidebar({
   const [isOpen, setIsOpen]       = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [theme, setTheme]         = useState<"light" | "dark">("light");
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
 
   // Restore theme on mount
@@ -184,9 +186,13 @@ export default function TopNavSidebar({
               Escuela<span className="text-[var(--verde)]">Info</span>
             </span>
           </button>
-          <span className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs" title="Versión activa del sistema (Entorno de Desarrollo)">
+          <button
+            onClick={() => setIsVersionModalOpen(true)}
+            className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            title="Ver novedades de la versión"
+          >
             {APP_VERSION}
-          </span>
+          </button>
         </div>
 
         {/* Center: active tab label */}
@@ -326,6 +332,7 @@ export default function TopNavSidebar({
           </div>
         </div>
       )}
+      <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
     </div>
   );
 }

@@ -63,6 +63,10 @@ const SendNoticeModal = dynamic(() => import("@/components/SendNoticeModal"), {
   ssr: false,
   loading: () => null,
 });
+const VersionModal = dynamic(() => import("@/components/VersionModal"), {
+  ssr: false,
+  loading: () => null,
+});
 
 // ─── Managers inline (renderizan en el dashboard, muestran skeleton) ─────────
 const StudentAttendanceManager = dynamic(
@@ -127,6 +131,7 @@ export default function Dashboard() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assigningCurso, setAssigningCurso] = useState<Curso | null>(null);
   const [isSendNoticeModalOpen, setIsSendNoticeModalOpen] = useState(false);
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -747,19 +752,36 @@ export default function Dashboard() {
             {freeHoursToday.map((free, idx) => (
               <div 
                 key={idx} 
-                className="bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-[var(--border)]/40 shadow-sm flex flex-col justify-between hover:border-[var(--border)] transition-all"
+                className="bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-[var(--border)]/40 shadow-sm flex flex-col justify-between hover:border-[var(--verde)] hover:scale-[1.02] transition-all cursor-pointer group"
+                onClick={() => {
+                  setActiveTab("ausencias");
+                  setSearchQuery(free.profesor);
+                }}
+                title={`Ver ausencias de ${free.profesor}`}
               >
                 <div className="flex justify-between items-start gap-2 mb-2">
-                  <span className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] tracking-wider">
-                    {free.curso}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab("horarios");
+                      setSelectedCourse(free.curso);
+                    }}
+                    className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black transition-all px-2 py-0.5 rounded-md border border-[var(--verde-border)] tracking-wider cursor-pointer"
+                    title="Ver horarios de este curso"
+                  >
+                    {free.curso} ↗
+                  </button>
                   <span className="text-[10px] font-black bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] px-2.5 py-0.5 rounded-lg uppercase">
                     {free.hora}
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-[var(--text)] line-clamp-1">{free.materia}</h4>
-                  <p className="text-[11px] text-[var(--text3)] font-semibold mt-0.5">Prof: {free.profesor}</p>
+                  <h4 className="font-extrabold text-sm text-[var(--text)] line-clamp-1 group-hover:text-[var(--verde)] transition-colors">{free.materia}</h4>
+                  <p className="text-[11px] text-[var(--text3)] font-semibold mt-0.5 flex items-center justify-between">
+                    <span>Prof: {free.profesor}</span>
+                    <span className="text-[10px] font-black text-[var(--verde)] opacity-0 group-hover:opacity-100 transition-opacity">Ver ausencias →</span>
+                  </p>
                 </div>
               </div>
             ))}
@@ -1119,14 +1141,23 @@ export default function Dashboard() {
               {/* STATS */}
               <div className="grid grid-cols-3 gap-3 md:gap-8">
                  {[
-                  { label: "Ausentes Hoy", value: stats.hoy, color: "var(--rojo)", bg: "var(--rojo-bg)" },
-                  { label: "Pendientes", value: stats.pendientes, color: "var(--amarillo)", bg: "var(--amarillo-bg)" },
-                  { label: "Total Registros", value: stats.total, color: "var(--verde)", bg: "var(--verde-bg)" },
+                  { label: "Ausentes Hoy", value: stats.hoy, color: "var(--rojo)", bg: "var(--rojo-bg)", action: () => { setActiveTab("ausencias"); setSearchQuery(""); } },
+                  { label: "Pendientes", value: stats.pendientes, color: "var(--amarillo)", bg: "var(--amarillo-bg)", action: () => { setActiveTab("ausencias"); setSearchQuery(""); } },
+                  { label: "Total Registros", value: stats.total, color: "var(--verde)", bg: "var(--verde-bg)", action: () => { setActiveTab("ausencias"); setSearchQuery(""); } },
                 ].map((stat, i) => (
-                  <div key={i} className="p-3 sm:p-6 rounded-2xl sm:rounded-[28px] border border-[var(--border)] bg-[var(--bg3)]/80 backdrop-blur-md group cursor-default text-center sm:text-left shadow-sm">
+                  <button 
+                    key={i} 
+                    type="button"
+                    onClick={stat.action}
+                    className="p-3 sm:p-6 rounded-2xl sm:rounded-[28px] border border-[var(--border)] bg-[var(--bg3)]/80 backdrop-blur-md group cursor-pointer text-center sm:text-left shadow-sm hover:scale-[1.02] hover:border-[var(--verde)] transition-all duration-300 active:scale-95"
+                    title={`Ver ${stat.label} en ausencias`}
+                  >
                     <div className="text-xl sm:text-4xl font-black mb-0.5 sm:mb-1 transition-transform group-hover:scale-110 origin-left" style={{ color: stat.color }}>{stat.value}</div>
-                    <div className="text-[7px] sm:text-[11px] uppercase tracking-widest font-black text-[var(--text3)] leading-tight">{stat.label}</div>
-                  </div>
+                    <div className="text-[7px] sm:text-[11px] uppercase tracking-widest font-black text-[var(--text3)] leading-tight flex items-center justify-between">
+                      <span>{stat.label}</span>
+                      <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block text-[var(--verde)]" />
+                    </div>
+                  </button>
                 ))}
               </div>
 
@@ -1160,8 +1191,19 @@ export default function Dashboard() {
                         <tr><td colSpan={3} className="p-20 text-center text-[var(--text3)] italic">No hay registros recientes.</td></tr>
                       ) : (
                         ausencias.slice(0, 5).map((a) => (
-                          <tr key={a.id} className="hover:bg-[var(--bg2)] transition-colors border-b border-[var(--border)] last:border-none">
-                            <td className="p-6 font-bold text-[var(--text)]">{a.profNombre}</td>
+                          <tr 
+                            key={a.id} 
+                            onClick={() => {
+                              setActiveTab("ausencias");
+                              setSearchQuery(a.profNombre);
+                            }}
+                            className="hover:bg-[var(--bg3)] transition-colors border-b border-[var(--border)] last:border-none cursor-pointer group"
+                            title={`Ver ausencias de ${a.profNombre}`}
+                          >
+                            <td className="p-6 font-bold text-[var(--text)] group-hover:text-[var(--verde)] transition-colors flex items-center gap-2">
+                              <span>{a.profNombre}</span>
+                              <span className="text-[10px] text-[var(--text3)] font-normal group-hover:translate-x-1 transition-transform">→</span>
+                            </td>
                             <td className="p-6 text-sm text-[var(--text2)]">{a.tipo}</td>
                             <td className="p-6">
                               <span className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full border ${
@@ -1328,7 +1370,14 @@ export default function Dashboard() {
                       {filteredAusencias.map((a) => (
                         <tr key={a.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)]">
                           <td className="p-5">
-                            <div className="font-bold">{a.profNombre}</div>
+                            <button
+                              type="button"
+                              onClick={() => setSearchQuery(a.profNombre)}
+                              className="font-bold text-[var(--text)] hover:text-[var(--verde)] hover:underline transition-colors text-left"
+                              title={`Filtrar por ${a.profNombre}`}
+                            >
+                              {a.profNombre}
+                            </button>
                             <div className="text-[10px] text-[var(--text3)] uppercase font-bold tracking-tighter">{a.materias.join(", ")}</div>
                           </td>
                           <td className="p-5">
@@ -1424,9 +1473,20 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     profesores.map(p => (
-                      <div key={p.id} className="glass p-8 rounded-[32px] border border-[var(--border)] hover:border-[var(--verde)] transition-all group relative">
+                      <div 
+                        key={p.id} 
+                        onClick={() => {
+                          setActiveTab("ausencias");
+                          setSearchQuery(p.nombre);
+                        }}
+                        className="glass p-8 rounded-[32px] border border-[var(--border)] hover:border-[var(--verde)] transition-all group relative cursor-pointer"
+                        title={`Ver ausencias de ${p.nombre}`}
+                      >
                         {isAdmin && (
-                          <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div 
+                            className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button 
                               onClick={() => { setEditingProfesor(p); setIsTeacherModalOpen(true); }}
                               className="text-[var(--verde)] p-2 bg-[var(--verde-bg)] rounded-xl hover:scale-110 transition-transform"
@@ -1464,7 +1524,7 @@ export default function Dashboard() {
                           </div>
                           <div className="text-[10px] font-black uppercase text-[var(--text3)]">DNI: {p.dni}</div>
                         </div>
-                        <h3 className="text-xl font-bold mb-2">{p.nombre}</h3>
+                        <h3 className="text-xl font-bold mb-2 group-hover:text-[var(--verde)] transition-colors">{p.nombre}</h3>
                         <div className="flex flex-wrap gap-2 mb-4">
                           {p.materias.map(m => (
                             <span key={m} className="text-[9px] font-black uppercase px-2 py-1 bg-[var(--bg3)] rounded-lg text-[var(--text2)] border border-[var(--border)]">
@@ -1472,7 +1532,12 @@ export default function Dashboard() {
                             </span>
                           ))}
                         </div>
-                        <p className="text-xs text-[var(--text3)]">{p.email}</p>
+                        <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]/50">
+                          <p className="text-xs text-[var(--text3)] truncate max-w-[170px]">{p.email}</p>
+                          <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-xl border border-[var(--verde-border)] opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all">
+                            Ausencias →
+                          </span>
+                        </div>
                       </div>
                     ))
                   )}
@@ -1800,11 +1865,19 @@ export default function Dashboard() {
                             <Clock size={13} /> {slot}
                           </span>
                           {h && (
-                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
-                              isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"
-                            }`}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCourse(h.curso);
+                              }}
+                              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md hover:scale-105 transition-all cursor-pointer ${
+                                isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"
+                              }`}
+                              title="Filtrar por este curso"
+                            >
                               {h.curso}
-                            </span>
+                            </button>
                           )}
                         </div>
 
@@ -1820,9 +1893,18 @@ export default function Dashboard() {
                                 </span>
                               )}
                             </div>
-                            <p className={`text-xs font-bold ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveTab("ausencias");
+                                setSearchQuery(h.profesor);
+                              }}
+                              className={`text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
+                              title={`Ver ausencias de ${h.profesor}`}
+                            >
                               Prof. {h.profesor}
-                            </p>
+                            </button>
                             {isAdmin && (
                               <button 
                                 onClick={() => askConfirm("¿Eliminar clase?", async () => {
@@ -1955,13 +2037,30 @@ export default function Dashboard() {
                                           </span>
                                         )}
                                       </div>
-                                      <div className={`text-[10px] sm:text-xs font-bold ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}>
-                                        {h.profesor}
-                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveTab("ausencias");
+                                          setSearchQuery(h.profesor);
+                                        }}
+                                        className={`text-[10px] sm:text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors block ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
+                                        title={`Ver ausencias de ${h.profesor}`}
+                                      >
+                                        Prof. {h.profesor}
+                                      </button>
                                       <div className="flex items-center justify-between mt-2.5 gap-2">
-                                        <div className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedCourse(h.curso);
+                                          }}
+                                          className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md hover:scale-105 transition-all cursor-pointer ${isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}
+                                          title={`Filtrar por ${h.curso}`}
+                                        >
                                           {h.curso}
-                                        </div>
+                                        </button>
                                         {isAbsent && (
                                           <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0">
                                             🎉 Hora Libre
@@ -2091,18 +2190,25 @@ export default function Dashboard() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-black text-base text-[var(--text)]">Versión del Sistema EscuelaInfo</h4>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                        <button
+                          onClick={() => setIsVersionModalOpen(true)}
+                          className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:scale-105 transition-all cursor-pointer"
+                          title="Ver novedades de la versión"
+                        >
                           {APP_VERSION}
-                        </span>
+                        </button>
                       </div>
                       <p className="text-xs text-[var(--text2)] font-semibold mt-0.5">
                         Estado: <span className="text-[var(--verde)] font-bold">✓ Sistema Actualizado</span> · Compilación: {APP_BUILD_DATE}
                       </p>
                     </div>
                   </div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text3)] bg-[var(--bg3)] px-3 py-1.5 rounded-xl border border-[var(--border)]">
-                    Solo Administrador
-                  </div>
+                  <button
+                    onClick={() => setIsVersionModalOpen(true)}
+                    className="text-xs font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black px-4 py-2 rounded-xl border border-[var(--verde-border)] transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    Ver Novedades →
+                  </button>
                 </div>
               )}
 
@@ -2694,6 +2800,10 @@ export default function Dashboard() {
           }}
         />
       )}
+      <VersionModal
+        isOpen={isVersionModalOpen}
+        onClose={() => setIsVersionModalOpen(false)}
+      />
       {toast.show && (
         <div className={`fixed top-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold border transition-all animate-slide-in-right ${
           toast.type === 'success'

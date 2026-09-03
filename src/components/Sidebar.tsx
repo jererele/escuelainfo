@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sidebar";
 import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
+import VersionModal from "@/components/VersionModal";
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -67,6 +68,7 @@ export default function Sidebar({
   pendingAlumnosCount = 0,
 }: SidebarProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const { state, isMobile, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -118,9 +120,17 @@ export default function Sidebar({
               <div className="title-font text-2xl font-black whitespace-nowrap">
                 Escuela<span className="text-[var(--verde)]">Info</span>
               </div>
-              <span className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsVersionModalOpen(true);
+                }}
+                className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Ver novedades de la versión"
+              >
                 {APP_VERSION}
-              </span>
+              </button>
             </div>
           )}
         </div>
@@ -250,6 +260,7 @@ export default function Sidebar({
       </SidebarFooter>
     </ShadcnSidebar>
 
+    <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
     </>
   );
 }
