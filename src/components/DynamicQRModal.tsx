@@ -79,7 +79,7 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
   if (!isOpen) return null;
 
   const qrUrl = typeof window !== "undefined" 
-    ? window.location.href.split('?')[0].replace(/\/dashboard\/?$/, "/scan") + `?token=${token}` 
+    ? window.location.href.split('?')[0].replace(/\/dashboard\/?$/, "/scan/") + `?token=${token}` 
     : "";
   const canSelectJornada = userProfile?.rol === "admin" || userProfile?.rol === "directivo" || userProfile?.rol === "preceptor";
 
