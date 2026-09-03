@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import {
   getUserProfile, createUserProfile,
@@ -12,8 +12,9 @@ import {
   saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor, getProfesorByEmail
 } from "@/lib/dataService";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -56,7 +57,12 @@ export default function LoginPage() {
         const profile = await Promise.race([profilePromise, timeoutPromise]);
 
         if (profile) {
-          router.push("/dashboard");
+          const redirectTo = searchParams.get("redirect");
+          if (redirectTo) {
+            router.push(redirectTo);
+          } else {
+            router.push("/dashboard");
+          }
         } else {
           // Profile truly doesn't exist — clean up orphaned session
           await account.deleteSession("current").catch(() => {});
@@ -104,7 +110,12 @@ export default function LoginPage() {
           setLoading(false); return;
         }
       }
-      router.push("/dashboard");
+      const redirectTo = searchParams.get("redirect");
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       console.error("[EscuelaInfo Login Error]:", err);
       if (err?.code === 401 || err?.status === 401) {
@@ -426,5 +437,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

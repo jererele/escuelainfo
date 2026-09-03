@@ -47,7 +47,7 @@ function ScanContent() {
         try {
           session = await account.get();
         } catch {
-          router.push("/login?redirect=/scan?token=" + token);
+          router.push("/?redirect=" + encodeURIComponent(`/scan/?token=${token}`));
           return;
         }
 
