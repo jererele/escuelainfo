@@ -67,6 +67,10 @@ const VersionModal = dynamic(() => import("@/components/VersionModal"), {
   ssr: false,
   loading: () => null,
 });
+const DynamicQRModal = dynamic(() => import("@/components/DynamicQRModal"), {
+  ssr: false,
+  loading: () => null,
+});
 
 // ─── Managers inline (renderizan en el dashboard, muestran skeleton) ─────────
 const StudentAttendanceManager = dynamic(
@@ -102,7 +106,8 @@ import {
   FileText,
   FileSpreadsheet,
   Pencil,
-  Clock
+  Clock,
+  QrCode
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -132,6 +137,7 @@ export default function Dashboard() {
   const [assigningCurso, setAssigningCurso] = useState<Curso | null>(null);
   const [isSendNoticeModalOpen, setIsSendNoticeModalOpen] = useState(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -1447,14 +1453,21 @@ export default function Dashboard() {
             </div>
           )}
 
-            {activeTab === 'profesores' && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') && (
+            {activeTab === 'profesores' && userProfile?.rol !== 'alumno' && (
               <div className="animate-fade-in">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
                   <div>
                     <h2 className="text-3xl font-black title-font">Cuerpo Docente</h2>
                     <p className="text-[var(--text2)]">Gestión de profesores y sus materias asignadas.</p>
                   </div>
-                  <div className="flex gap-2 w-full md:w-auto">
+                  <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
+                    <button 
+                      onClick={() => setIsQRModalOpen(true)}
+                      className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-bold px-6 py-4 rounded-2xl hover:bg-[var(--verde)] hover:text-black transition-all shadow-md flex items-center gap-2"
+                    >
+                      <QrCode size={18} />
+                      QR Asistencia
+                    </button>
                     {isAdmin && (
                       <button 
                         onClick={() => setIsTeacherModalOpen(true)}
@@ -2803,6 +2816,11 @@ export default function Dashboard() {
       <VersionModal
         isOpen={isVersionModalOpen}
         onClose={() => setIsVersionModalOpen(false)}
+      />
+      <DynamicQRModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        userProfile={userProfile}
       />
       {toast.show && (
         <div className={`fixed top-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold border transition-all animate-slide-in-right ${
