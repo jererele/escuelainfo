@@ -197,18 +197,8 @@ export default function CosmosBackground() {
     };
   }, [isMobile]);
 
-  // Durante la carga inicial (SSR), renderizamos el fallback que Tailwind oculta en móviles
-  if (isMobile === null) {
-    return (
-      <>
-        <div className="hidden md:block fixed top-0 left-0 w-[900px] h-[900px] rounded-full pointer-events-none z-0" />
-        <canvas className="hidden md:block fixed inset-0 z-0 pointer-events-none" />
-      </>
-    );
-  }
-
-  // Si es móvil, destruimos completamente del DOM
-  if (isMobile === true) {
+  // Durante SSR e hidratación inicial, retornamos null para garantizar 0 mismatch de hidratación con extensiones
+  if (isMobile === null || isMobile === true) {
     return null;
   }
 

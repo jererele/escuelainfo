@@ -25,6 +25,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
           rel="stylesheet"
         />
+        {/* Script de tema */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -35,6 +36,51 @@ export default function RootLayout({
                 }
                 document.documentElement.classList.add(t);
               } catch (e) {}
+            `,
+          }}
+        />
+        {/* Script preventivo: limpia atributos inyectados por extensiones del navegador (como Bitdefender bis_skin_checked) antes de la hidratación de React */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var attrs = ['bis_skin_checked', 'bis_register', 'bis_size', 'bis_id', 'data-bis-skin-checked'];
+                function cleanNode(node) {
+                  if (!node || node.nodeType !== 1) return;
+                  for (var i = 0; i < attrs.length; i++) {
+                    if (node.hasAttribute(attrs[i])) node.removeAttribute(attrs[i]);
+                  }
+                  var children = node.children;
+                  if (children) {
+                    for (var c = 0; c < children.length; c++) {
+                      cleanNode(children[c]);
+                    }
+                  }
+                }
+                if (typeof MutationObserver !== 'undefined') {
+                  var observer = new MutationObserver(function(mutations) {
+                    for (var i = 0; i < mutations.length; i++) {
+                      var m = mutations[i];
+                      if (m.type === 'attributes' && m.attributeName && m.attributeName.indexOf('bis_') === 0) {
+                        m.target.removeAttribute(m.attributeName);
+                      } else if (m.type === 'childList') {
+                        for (var j = 0; j < m.addedNodes.length; j++) {
+                          cleanNode(m.addedNodes[j]);
+                        }
+                      }
+                    }
+                  });
+                  observer.observe(document.documentElement, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true,
+                    attributeFilter: attrs
+                  });
+                }
+                document.addEventListener('DOMContentLoaded', function() {
+                  cleanNode(document.documentElement);
+                });
+              })();
             `,
           }}
         />
