@@ -25,4 +25,13 @@ This project has strict architectural, performance, and styling rules. Please re
 * **Realtime Sync**: Implement Appwrite Realtime subscriptions across collections where instant UI updates are needed.
 * **Storage Optimization**: Minimize database footprint. For example, compress class schedules using numeric module IDs instead of verbose strings, and use compact 2-6 character codes for log descriptions.
 * **Cascade Deletes**: Ensure data integrity when deleting users, students, teachers, or courses (e.g. removing corresponding records from lists like `usuarios`).
+
+## 5. Registro Obligatorio de Versiones y Novedades (CRÍTICO)
+* En **CADA ACTUALIZACIÓN** o cambio que se realice (por mínimo que sea):
+  1. Incrementar el número de versión en `src/lib/version.ts` (semver: patch o minor según corresponda).
+  2. Actualizar la fecha y hora exacta del cambio en `APP_BUILD_DATE`.
+  3. Describir detalladamente todas las modificaciones y novedades introducidas en `APP_RELEASE_NOTES`.
+  4. Archivar siempre la versión anterior dentro del array histórico `APP_VERSION_HISTORY` en `src/lib/version.ts` para que nunca se pierda el historial.
+  5. Asegurar que el modal de versiones (`VersionModal.tsx`) muestre tanto las novedades actuales como el apartado navegable de versiones anteriores.
+  6. Utilizar siempre la constante `APP_VERSION` en badges y pies de página (e.g. `Footer.tsx`), evitando números de versión hardcodeados.
 <!-- END:nextjs-agent-rules -->

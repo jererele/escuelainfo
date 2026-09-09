@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import EscuelaInfoLogo from '@/components/EscuelaInfoLogo';
+import { APP_VERSION } from '@/lib/version';
 
 // ─── Footer global de EscuelaInfo — SKBCraft ─────────────────────────────────
 
@@ -75,7 +76,7 @@ export default function Footer() {
               {' '}Todos los derechos reservados.
             </p>
             <span className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
-              v2.5.0
+              {APP_VERSION}
             </span>
           </div>
 
