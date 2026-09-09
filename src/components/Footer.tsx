@@ -25,6 +25,7 @@ export default function Footer() {
       {/* Línea decorativa superior con gradiente */}
       <div
         aria-hidden="true"
+        suppressHydrationWarning
         style={{
           position: 'absolute',
           top: 0,
@@ -37,8 +38,8 @@ export default function Footer() {
         }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5" suppressHydrationWarning>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3" suppressHydrationWarning>
 
           {/* ── Bloque izquierdo: Copyright ──────────────────────────────────── */}
           <div className="flex items-center gap-2.5 flex-wrap">

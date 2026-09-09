@@ -43,3 +43,4 @@ next-env.d.ts
 
 # local scripts
 auto-git-push.ps1
+scratch/
