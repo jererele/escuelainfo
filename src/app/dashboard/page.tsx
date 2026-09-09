@@ -6,12 +6,12 @@ import { account } from "@/lib/appwrite";
 import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import Sidebar from "@/components/Sidebar";
-import TopNavSidebar from "@/components/TopNavSidebar";
-import CustomSelect from "@/components/CustomSelect";
+import Sidebar from "@/components/layout/Sidebar";
+import TopNavSidebar from "@/components/layout/TopNavSidebar";
+import CustomSelect from "@/components/shared/CustomSelect";
 import ContactForm from "@/components/ContactForm";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/SkeletonLoaders";
+import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 
 // ─── Spinner inline para managers que renderizan en el dashboard ─────────────
@@ -23,62 +23,62 @@ const ManagerSkeleton = ({ rows }: { rows?: number }) => (
 
 // ─── LAZY LOADING: Modales pesados (solo se descargan al abrir) ──────────────
 // Esto reduce el bundle inicial en ~400KB y elimina el lag al presionar botones.
-const NewAbsenceModal = dynamic(() => import("@/components/NewAbsenceModal"), {
+const NewAbsenceModal = dynamic(() => import("@/components/modals/NewAbsenceModal"), {
   ssr: false,
   loading: () => null,
 });
-const NewTeacherReportModal = dynamic(() => import("@/components/NewTeacherReportModal"), {
+const NewTeacherReportModal = dynamic(() => import("@/components/modals/NewTeacherReportModal"), {
   ssr: false,
   loading: () => null,
 });
-const NewTeacherModal = dynamic(() => import("@/components/NewTeacherModal"), {
+const NewTeacherModal = dynamic(() => import("@/components/modals/NewTeacherModal"), {
   ssr: false,
   loading: () => null,
 });
-const NewStudentModal = dynamic(() => import("@/components/NewStudentModal"), {
+const NewStudentModal = dynamic(() => import("@/components/modals/NewStudentModal"), {
   ssr: false,
   loading: () => null,
 });
-const NewUserModal = dynamic(() => import("@/components/NewUserModal"), {
+const NewUserModal = dynamic(() => import("@/components/modals/NewUserModal"), {
   ssr: false,
   loading: () => null,
 });
-const NewScheduleModal = dynamic(() => import("@/components/NewScheduleModal"), {
+const NewScheduleModal = dynamic(() => import("@/components/modals/NewScheduleModal"), {
   ssr: false,
   loading: () => null,
 });
-const NewCourseModal = dynamic(() => import("@/components/NewCourseModal"), {
+const NewCourseModal = dynamic(() => import("@/components/modals/NewCourseModal"), {
   ssr: false,
   loading: () => null,
 });
-const AssignStudentsModal = dynamic(() => import("@/components/AssignStudentsModal"), {
+const AssignStudentsModal = dynamic(() => import("@/components/modals/AssignStudentsModal"), {
   ssr: false,
   loading: () => null,
 });
-const UserProfileModal = dynamic(() => import("@/components/UserProfileModal"), {
+const UserProfileModal = dynamic(() => import("@/components/modals/UserProfileModal"), {
   ssr: false,
   loading: () => null,
 });
-const SendNoticeModal = dynamic(() => import("@/components/SendNoticeModal"), {
+const SendNoticeModal = dynamic(() => import("@/components/modals/SendNoticeModal"), {
   ssr: false,
   loading: () => null,
 });
-const VersionModal = dynamic(() => import("@/components/VersionModal"), {
+const VersionModal = dynamic(() => import("@/components/modals/VersionModal"), {
   ssr: false,
   loading: () => null,
 });
-const DynamicQRModal = dynamic(() => import("@/components/DynamicQRModal"), {
+const DynamicQRModal = dynamic(() => import("@/components/modals/DynamicQRModal"), {
   ssr: false,
   loading: () => null,
 });
 
 // ─── Managers inline (renderizan en el dashboard, muestran skeleton) ─────────
 const StudentAttendanceManager = dynamic(
-  () => import("@/components/StudentAttendanceManager"),
+  () => import("@/features/attendance/StudentAttendanceManager"),
   { ssr: false, loading: () => <ManagerSkeleton rows={6} /> }
 );
 const ExamBoardManager = dynamic(
-  () => import("@/components/ExamBoardManager"),
+  () => import("@/features/exams/ExamBoardManager"),
   { ssr: false, loading: () => <SkeletonExamGrid count={3} /> }
 );
 import { 

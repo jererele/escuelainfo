@@ -233,7 +233,7 @@ APPWRITE_COLLECTION_ID=${AUSENCIAS_COL_ID}
     fs.writeFileSync(localEnvPath, localEnvContent, 'utf8');
     fs.writeFileSync(setupEnvPath, setupEnvContent, 'utf8');
     console.log('✅ .env.local y .env.setup actualizados con las nuevas credenciales.');
-    console.log('\n🎉 ¡Configuración de base de datos finalizada con éxito! Podés recargar la web ahora.');
+    console.log('\n ¡Configuración de base de datos finalizada con éxito! Podés recargar la web ahora.');
 }
 
 runSetup();

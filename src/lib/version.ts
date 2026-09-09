@@ -4,19 +4,38 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.7.0";
-export const APP_BUILD_DATE = "09/09/2026 15:50 hs";
+export const APP_VERSION = "v2.8.1";
+export const APP_BUILD_DATE = "09/09/2026 16:52 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Unificación del sistema de asistencias: Ahora la pestaña 'Asistencias' incluye tanto el sistema de QR dinámico como la toma manual de asistencia en el aula para alumnos sin celular.",
-  "Nuevo diseño del botón de Asistencias: Se reemplazó el icono de QR por el icono de asistencia de alumnos (UserCheck), unificando visualmente ambas modalidades.",
-  "Validadores de seguridad estrictos: Verificación en tiempo real de formato de correo electrónico y números de teléfono celular en perfiles y registros.",
-  "Refactor integral de Appwrite SDK v24: Adaptación de la API a las últimas convenciones de Appwrite, eliminando advertencias de métodos deprecados.",
-  "Compatibilidad y robustez de renderizado: Corrección de advertencias de hidratación provocadas por extensiones del navegador y aislamiento de elementos dinámicos.",
-  "Historial de Versiones Anteriores: Nuevo apartado interactivo en la ventana de novedades para consultar todas las actualizaciones históricas del sistema."
+  "Capa de Compatibilidad y Puentes de Enrutamiento: Implementación de archivos puente en `src/components/` para los 23 componentes reestructurados (`modals`, `layout`, `shared`, `features`).",
+  "Resolución Total de Módulos: Garantía de que cualquier importación existente (`@/components/...`) resuelva de forma inmediata tanto en compilación como en el editor e IDE sin errores de 'Cannot find module'.",
+  "Doble Compatibilidad de Rutas: Soporte transparente tanto para rutas modulares profundas (`@/components/modals/...`) como para rutas planas clásicas."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.8.0",
+    date: "09/09/2026 16:15 hs",
+    notes: [
+      "Refactorización Arquitectónica Profunda: Reestructuración masiva del código fuente separando los archivos monolíticos en directorios específicos (`components/modals`, `components/layout`, `components/shared`, `features`).",
+      "Optimización de Importaciones: Actualización automática y segura de cientos de rutas de importación en el sistema para garantizar la estabilidad del proyecto.",
+      "Estandarización de Directorios: Nueva carpeta de `features` dedicada a encapsular la lógica de negocio compleja (ej. Manejador de Asistencia y Panel de Exámenes), mejorando significativamente la mantenibilidad a largo plazo.",
+      "Desacoplamiento de UI: Separación total de componentes de Layout y Modales en toda la base de código Next.js."
+    ]
+  },
+  {
+    version: "v2.7.0",
+    date: "09/09/2026 15:50 hs",
+    notes: [
+      "Unificación del sistema de asistencias: Ahora la pestaña 'Asistencias' incluye tanto el sistema de QR dinámico como la toma manual de asistencia en el aula para alumnos sin celular.",
+      "Nuevo diseño del botón de Asistencias: Se reemplazó el icono de QR por el icono de asistencia de alumnos (UserCheck), unificando visualmente ambas modalidades.",
+      "Validadores de seguridad estrictos: Verificación en tiempo real de formato de correo electrónico y números de teléfono celular en perfiles y registros.",
+      "Refactor integral de Appwrite SDK v24: Adaptación de la API a las últimas convenciones de Appwrite, eliminando advertencias de métodos deprecados.",
+      "Compatibilidad y robustez de renderizado: Corrección de advertencias de hidratación provocadas por extensiones del navegador y aislamiento de elementos dinámicos.",
+      "Historial de Versiones Anteriores: Nuevo apartado interactivo en la ventana de novedades para consultar todas las actualizaciones históricas del sistema."
+    ]
+  },
   {
     version: "v2.6.1",
     date: "03/09/2026 17:36 hs",

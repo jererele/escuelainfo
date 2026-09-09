@@ -142,7 +142,7 @@ async function main() {
   // 3. Limpiar cuentas de autenticación (Auth)
   await clearAuthUsers();
 
-  console.log('\n🎉 ¡Limpieza completa! La base de datos y Auth están listos para producción.');
+  console.log('\n ¡Limpieza completa! La base de datos y Auth están listos para producción.');
 }
 
 main();

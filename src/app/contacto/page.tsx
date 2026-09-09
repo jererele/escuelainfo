@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import EscuelaInfoLogo from '@/components/EscuelaInfoLogo';
+import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
 import ContactForm from '@/components/ContactForm';
 
 export default function ContactoPage() {

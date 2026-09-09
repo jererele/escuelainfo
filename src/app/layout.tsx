@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import CosmosBackground from "@/components/CosmosBackground";
-import TermsModal from "@/components/TermsModal";
-import Footer from "@/components/Footer";
+import CosmosBackground from "@/components/layout/CosmosBackground";
+import TermsModal from "@/components/modals/TermsModal";
+import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "EscuelaInfo — Registro de Ausencias",

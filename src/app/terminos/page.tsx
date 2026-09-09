@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import EscuelaInfoLogo from '@/components/EscuelaInfoLogo';
+import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
 
 export default function TerminosPage() {
   return (

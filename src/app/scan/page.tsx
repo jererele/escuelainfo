@@ -11,7 +11,7 @@ import {
   logAction 
 } from "@/lib/dataService";
 import { CheckCircle2, XCircle, Loader2, QrCode } from "lucide-react";
-import EscuelaInfoLogo from "@/components/EscuelaInfoLogo";
+import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 
 function ScanContent() {
   const searchParams = useSearchParams();

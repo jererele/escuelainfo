@@ -67,7 +67,7 @@ NEXT_PUBLIC_APPWRITE_COLLECTION_ID=${COL_ID}
 `;
     fs.writeFileSync(path.join(process.cwd(), '.env.local'), envContent, { flag: 'w' });
     console.log('\n✅ .env.local actualizado (sin credenciales de admin).');
-    console.log('\n🎉 ¡Listo! Revisá los permisos de cada colección en la consola de Appwrite.');
+    console.log('\n ¡Listo! Revisá los permisos de cada colección en la consola de Appwrite.');
 
   } catch (error) {
     console.error('❌ Error general:', error);
