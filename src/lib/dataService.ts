@@ -321,10 +321,7 @@ export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_HORARIOS_COLLECTION_ID,
-      [Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, queries: [Query.limit(DEFAULT_LIMIT)] });
     const data = response.documents.map(doc => {
       // Map numeric day values to display strings
       let dayName = doc.dia;
@@ -361,21 +358,19 @@ export const saveHorario = async (h: Horario) => {
   // Convertir texto de hora a código numérico de módulo antes de guardar
   const horaCode = toDbHora(h.hora);
 
-  return await databases.createDocument(
-    APPWRITE_DB_ID, APPWRITE_HORARIOS_COLLECTION_ID, ID.unique(), {
-      dia: dayCode,
-      hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
-      materia: sanitize(h.materia, 100),
-      profesor: sanitize(h.profesor, 200),
-      curso: sanitize(h.curso, 50)
-    }
-  );
+  return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: ID.unique(), data: {
+            dia: dayCode,
+            hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
+            materia: sanitize(h.materia, 100),
+            profesor: sanitize(h.profesor, 200),
+            curso: sanitize(h.curso, 50)
+          } });
 };
 
 export const deleteHorario = async (id: string) => {
   await requireAuth();
   clearCache("horarios");
-  return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_HORARIOS_COLLECTION_ID, id);
+  return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: id });
 };
 
 // ─── ALUMNOS ─────────────────────────────────────────────────────────────────
@@ -385,10 +380,7 @@ export const getAlumnos = async (forceRefresh = false): Promise<Alumno[]> => {
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID,
-      [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
     const data = response.documents.map(doc => ({
       id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email
     }));
@@ -400,20 +392,18 @@ export const getAlumnos = async (forceRefresh = false): Promise<Alumno[]> => {
 export const saveAlumno = async (a: Alumno) => {
   await requireAuth();
   clearCache("alumnos");
-  return await databases.createDocument(
-    APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, ID.unique(), {
-      nombre: sanitize(a.nombre, 200),
-      dni: sanitize(a.dni, 20),
-      curso: sanitize(a.curso, 100),
-      email: sanitize(a.email, 200),
-    }
-  );
+  return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: ID.unique(), data: {
+            nombre: sanitize(a.nombre, 200),
+            dni: sanitize(a.dni, 20),
+            curso: sanitize(a.curso, 100),
+            email: sanitize(a.email, 200),
+          } });
 };
 
 export const deleteAlumno = async (id: string) => {
   await requireAuth();
   clearCache("alumnos");
-  return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, id);
+  return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: id });
 };
 
 export const updateAlumno = async (id: string, data: Partial<Alumno>) => {
@@ -424,25 +414,19 @@ export const updateAlumno = async (id: string, data: Partial<Alumno>) => {
   if (updateData.dni) updateData.dni = sanitize(updateData.dni, 20);
   if (updateData.curso) updateData.curso = sanitize(updateData.curso, 100);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
-  return await databases.updateDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, id, updateData);
+  return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: id, data: updateData });
 };
 
 export const checkAlumnoDNI = async (dni: string): Promise<boolean> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID,
-      [Query.equal("dni", sanitize(dni, 20))]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("dni", sanitize(dni, 20))] });
     return response.documents.length > 0;
   } catch { return false; }
 };
 
 export const checkProfesorDNI = async (dni: string): Promise<boolean> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID,
-      [Query.equal("dni", sanitize(dni, 20))]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("dni", sanitize(dni, 20))] });
     return response.documents.length > 0;
   } catch { return false; }
 };
@@ -451,10 +435,7 @@ export const checkProfesorDNI = async (dni: string): Promise<boolean> => {
 // En lugar de obtener todos los profesores y filtrar en cliente, consultamos 1 solo registro.
 export const getProfesorByEmail = async (email: string): Promise<Profesor | null> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID,
-      [Query.equal("email", sanitize(email, 200)), Query.limit(1)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("email", sanitize(email, 200)), Query.limit(1)] });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
       return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email };
@@ -470,10 +451,7 @@ export const getProfesores = async (forceRefresh = false): Promise<Profesor[]> =
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID,
-      [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
     const data = response.documents.map(doc => ({
       id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email
     }));
@@ -485,20 +463,18 @@ export const getProfesores = async (forceRefresh = false): Promise<Profesor[]> =
 export const saveProfesor = async (p: Profesor) => {
   await requireAuth();
   clearCache("profesores");
-  return await databases.createDocument(
-    APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID, ID.unique(), {
-      nombre: sanitize(p.nombre, 200),
-      dni: sanitize(p.dni, 20),
-      materias: p.materias.map(m => sanitize(m, 100)),
-      email: sanitize(p.email, 200),
-    }
-  );
+  return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: ID.unique(), data: {
+            nombre: sanitize(p.nombre, 200),
+            dni: sanitize(p.dni, 20),
+            materias: p.materias.map(m => sanitize(m, 100)),
+            email: sanitize(p.email, 200),
+          } });
 };
 
 export const deleteProfesor = async (id: string) => {
   await requireAuth();
   clearCache("profesores");
-  return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID, id);
+  return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: id });
 };
 
 export const updateProfesor = async (id: string, data: Partial<Profesor>) => {
@@ -511,7 +487,7 @@ export const updateProfesor = async (id: string, data: Partial<Profesor>) => {
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.dni) updateData.dni = sanitize(updateData.dni, 20);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
-  return await databases.updateDocument(APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID, id, updateData);
+  return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: id, data: updateData });
 };
 
 // ─── AUDITORÍA ───────────────────────────────────────────────────────────────
@@ -520,15 +496,12 @@ export const logAction = async (usuarioEmail: string, accion: string, detalles: 
   try {
     // Comprimir acción a código compacto antes de guardar en Appwrite
     const accionCode = toDbAccion(accion);
-    await databases.createDocument(
-      APPWRITE_DB_ID, APPWRITE_LOGS_COLLECTION_ID, ID.unique(),
-      {
-        usuarioEmail: sanitize(usuarioEmail, 200),
-        accion: sanitize(accionCode, 6),
-        detalles: sanitize(detalles, 500),
-        fecha: new Date().toISOString()
-      }
-    );
+    await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_LOGS_COLLECTION_ID, documentId: ID.unique(), data: {
+                usuarioEmail: sanitize(usuarioEmail, 200),
+                accion: sanitize(accionCode, 6),
+                detalles: sanitize(detalles, 500),
+                fecha: new Date().toISOString()
+              } });
   } catch (err) { devLog("logAction", err); }
 };
 
@@ -538,10 +511,7 @@ export const getLogs = async (forceRefresh = false) => {
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_LOGS_COLLECTION_ID,
-      [Query.orderDesc("fecha"), Query.limit(100)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_LOGS_COLLECTION_ID, queries: [Query.orderDesc("fecha"), Query.limit(100)] });
     const data = response.documents;
     setCachedData("logs", data);
     return data;
@@ -551,10 +521,7 @@ export const getLogs = async (forceRefresh = false) => {
 // ─── USUARIOS / PERFILES ─────────────────────────────────────────────────────
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID,
-      [Query.equal("uid", uid)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.equal("uid", uid)] });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
       return { ...doc, id: doc.$id, rol: fromDbRol(doc.rol) } as unknown as UserProfile;
@@ -565,10 +532,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
 export const getUserProfileByEmail = async (email: string): Promise<UserProfile | null> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID,
-      [Query.equal("email", sanitize(email, 200))]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.equal("email", sanitize(email, 200))] });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
       return { ...doc, id: doc.$id, rol: fromDbRol(doc.rol) } as unknown as UserProfile;
@@ -583,10 +547,7 @@ export const getUsuarios = async (forceRefresh = false): Promise<UserProfile[]> 
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID,
-      [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
     const data = response.documents.map(doc => ({
       id: doc.$id, uid: doc.uid, email: doc.email, nombre: doc.nombre, rol: fromDbRol(doc.rol)
     })) as unknown as UserProfile[];
@@ -603,20 +564,15 @@ export const updateUserProfile = async (id: string, data: Partial<UserProfile>) 
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
   if (updateData.uid) updateData.uid = sanitize(updateData.uid, 50);
-  return await databases.updateDocument(APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, id, updateData);
+  return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: id, data: updateData });
 };
 
 export const syncUserEmailChange = async (oldEmail: string, newEmail: string, rol: string) => {
   if (rol === "profesor") {
     try {
-      const response = await databases.listDocuments(
-        APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID,
-        [Query.equal("email", sanitize(oldEmail, 200))]
-      );
+      const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("email", sanitize(oldEmail, 200))] });
       for (const doc of response.documents) {
-        await databases.updateDocument(
-          APPWRITE_DB_ID, APPWRITE_PROFS_COLLECTION_ID, doc.$id, { email: sanitize(newEmail, 200) }
-        );
+        await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: doc.$id, data: { email: sanitize(newEmail, 200) } });
       }
       clearCache("profesores");
     } catch (err) {
@@ -626,14 +582,9 @@ export const syncUserEmailChange = async (oldEmail: string, newEmail: string, ro
 
   if (rol === "alumno") {
     try {
-      const response = await databases.listDocuments(
-        APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID,
-        [Query.equal("email", sanitize(oldEmail, 200))]
-      );
+      const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("email", sanitize(oldEmail, 200))] });
       for (const doc of response.documents) {
-        await databases.updateDocument(
-          APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, doc.$id, { email: sanitize(newEmail, 200) }
-        );
+        await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: doc.$id, data: { email: sanitize(newEmail, 200) } });
       }
       clearCache("alumnos");
     } catch (err) {
@@ -644,7 +595,7 @@ export const syncUserEmailChange = async (oldEmail: string, newEmail: string, ro
 
 export const deleteUserProfile = async (id: string) => {
   clearCache("usuarios");
-  return await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, id);
+  return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: id });
 };
 
 export const createUserProfile = async (profile: UserProfile) => {
@@ -657,9 +608,7 @@ export const createUserProfile = async (profile: UserProfile) => {
       email: sanitize(profile.email, 200),
       rol: toDbRol(profile.rol) 
     };
-    await databases.createDocument(
-      APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, ID.unique(), dataToSave
-    );
+    await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: ID.unique(), data: dataToSave });
   } catch (err) { devLog("createUserProfile", err); throw err; }
 };
 
@@ -692,13 +641,9 @@ export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) 
   if (rol !== "alumno" && rol !== "pendiente_alumno") {
     clearCache("alumnos");
     try {
-      const response = await databases.listDocuments(
-        APPWRITE_DB_ID,
-        APPWRITE_ALUMNOS_COLLECTION_ID,
-        [Query.equal("email", cleanEmail)]
-      );
+      const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("email", cleanEmail)] });
       for (const doc of response.documents) {
-        await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_ALUMNOS_COLLECTION_ID, doc.$id);
+        await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: doc.$id });
       }
     } catch (err) {
       devLog("promoteUserToRole - deleteAlumno", err);
@@ -710,32 +655,29 @@ export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) 
 export const saveAusencia = async (ausencia: Ausencia) => {
   await requireAuth();
   try {
-    const response = await databases.createDocument(
-      APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, ID.unique(),
-      {
-        profId: String(ausencia.profId),
-        profNombre: sanitize(ausencia.profNombre, 200),
-        tipo: sanitize(ausencia.tipo, 80),
-        inicio: ausencia.inicio,
-        fin: ausencia.fin,
-        materias: ausencia.materias.map(m => sanitize(m, 100)),
-        motivo: sanitize(ausencia.motivo, 500),
-        cert: ausencia.cert,
-        certFileId: ausencia.certFileId || "",
-        estado: toDbEstado(ausencia.estado),
-        fechaReg: new Date().toISOString()
-      }
-    );
+    const response = await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: ID.unique(), data: {
+                profId: String(ausencia.profId),
+                profNombre: sanitize(ausencia.profNombre, 200),
+                tipo: sanitize(ausencia.tipo, 80),
+                inicio: ausencia.inicio,
+                fin: ausencia.fin,
+                materias: ausencia.materias.map(m => sanitize(m, 100)),
+                motivo: sanitize(ausencia.motivo, 500),
+                cert: ausencia.cert,
+                certFileId: ausencia.certFileId || "",
+                estado: toDbEstado(ausencia.estado),
+                fechaReg: new Date().toISOString()
+              } });
     return response.$id;
   } catch (err) { devLog("saveAusencia", err); throw err; }
 };
 
 export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
   const fetchAll = () =>
-    databases.listDocuments(APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, [
-      Query.orderDesc("inicio"),
-      Query.limit(100)
-    ]).then(response => {
+    databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, queries: [
+                Query.orderDesc("inicio"),
+                Query.limit(100)
+              ] }).then(response => {
       const ausencias = response.documents.map(doc => ({
         id: doc.$id, profId: doc.profId, profNombre: doc.profNombre,
         tipo: doc.tipo, inicio: doc.inicio, fin: doc.fin,
@@ -815,9 +757,7 @@ export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "ap
   }
 
   try {
-    await databases.updateDocument(
-      APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, id, { estado: toDbEstado(estado) }
-    );
+    await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id, data: { estado: toDbEstado(estado) } });
   } catch (err) { devLog("updateAusenciaStatus", err); throw err; }
 };
 
@@ -831,7 +771,7 @@ export const deleteAusencia = async (id: string) => {
   }
 
   try {
-    await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, id);
+    await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id });
   } catch (err) { devLog("deleteAusencia", err); throw err; }
 };
 
@@ -842,10 +782,7 @@ export const getCursos = async (forceRefresh = false): Promise<Curso[]> => {
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_CURSOS_COLLECTION_ID,
-      [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
     const data = response.documents.map(doc => ({ id: doc.$id, nombre: doc.nombre })) as Curso[];
     setCachedData("cursos", data);
     return data;
@@ -856,10 +793,7 @@ export const saveCurso = async (curso: Omit<Curso, "id">) => {
   await requireAuth();
   clearCache("cursos");
   try {
-    await databases.createDocument(
-      APPWRITE_DB_ID, APPWRITE_CURSOS_COLLECTION_ID, ID.unique(),
-      { nombre: sanitize(curso.nombre, 100) }
-    );
+    await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, documentId: ID.unique(), data: { nombre: sanitize(curso.nombre, 100) } });
   } catch (err) { devLog("saveCurso", err); throw err; }
 };
 
@@ -867,16 +801,13 @@ export const deleteCurso = async (id: string) => {
   await requireAuth();
   clearCache("cursos");
   try {
-    await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_CURSOS_COLLECTION_ID, id);
+    await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, documentId: id });
   } catch (err) { devLog("deleteCurso", err); throw err; }
 };
 
 export const checkCursoExists = async (nombre: string): Promise<boolean> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_CURSOS_COLLECTION_ID,
-      [Query.equal("nombre", sanitize(nombre, 100))]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, queries: [Query.equal("nombre", sanitize(nombre, 100))] });
     return response.documents.length > 0;
   } catch { return false; }
 };
@@ -905,10 +836,7 @@ export const migrateToCompactFormat = async (): Promise<MigrationResult> => {
 
   // 1. Migrar roles en colección usuarios
   try {
-    const allUsers = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID,
-      [Query.limit(500)]
-    );
+    const allUsers = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.limit(500)] });
 
     for (const doc of allUsers.documents) {
       const currentRol: string = doc.rol || "";
@@ -918,10 +846,7 @@ export const migrateToCompactFormat = async (): Promise<MigrationResult> => {
         const compact = ROL_REVERSE[currentRol];
         if (compact && compact !== currentRol) {
           try {
-            await databases.updateDocument(
-              APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, doc.$id,
-              { rol: compact }
-            );
+            await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: doc.$id, data: { rol: compact } });
             result.usuariosMigrated++;
           } catch (err) {
             result.errors.push(`Usuario ${doc.$id} (${currentRol}): ${String(err)}`);
@@ -935,10 +860,7 @@ export const migrateToCompactFormat = async (): Promise<MigrationResult> => {
 
   // 2. Migrar estados en colección ausencias
   try {
-    const allAusencias = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_COLLECTION_ID,
-      [Query.limit(500)]
-    );
+    const allAusencias = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, queries: [Query.limit(500)] });
 
     for (const doc of allAusencias.documents) {
       const currentEstado: string = doc.estado || "";
@@ -947,10 +869,7 @@ export const migrateToCompactFormat = async (): Promise<MigrationResult> => {
         const compact = ESTADO_REVERSE[currentEstado];
         if (compact && compact !== currentEstado) {
           try {
-            await databases.updateDocument(
-              APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, doc.$id,
-              { estado: compact }
-            );
+            await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: doc.$id, data: { estado: compact } });
             result.ausenciasMigrated++;
           } catch (err) {
             result.errors.push(`Ausencia ${doc.$id} (${currentEstado}): ${String(err)}`);
@@ -990,10 +909,7 @@ const setLocalStorageData = (key: string, data: any) => {
 // ─── NUEVO: ASISTENCIAS JORNADA (PRECEPTOR) ──────────────────────────────────
 export const getAsistenciasJornada = async (fecha: string): Promise<AsistenciaJornada[]> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
-      [Query.equal("fecha", fecha), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, queries: [Query.equal("fecha", fecha), Query.limit(DEFAULT_LIMIT)] });
     return response.documents.map(doc => ({
       id: doc.$id,
       alumnoId: doc.alumnoId,
@@ -1014,27 +930,21 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
   for (const a of asistencias) {
     try {
       if (a.id && !a.id.startsWith("LOCAL_")) {
-        await databases.updateDocument(
-          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, a.id,
-          {
-            alumnoId: sanitize(a.alumnoId, 50),
-            alumnoNombre: sanitize(a.alumnoNombre, 200),
-            fecha: sanitize(a.fecha, 20),
-            estado: a.estado,
-            preceptorId: sanitize(a.preceptorId, 50)
-          }
-        );
+        await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, documentId: a.id, data: {
+                        alumnoId: sanitize(a.alumnoId, 50),
+                        alumnoNombre: sanitize(a.alumnoNombre, 200),
+                        fecha: sanitize(a.fecha, 20),
+                        estado: a.estado,
+                        preceptorId: sanitize(a.preceptorId, 50)
+                      } });
       } else {
-        await databases.createDocument(
-          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, ID.unique(),
-          {
-            alumnoId: sanitize(a.alumnoId, 50),
-            alumnoNombre: sanitize(a.alumnoNombre, 200),
-            fecha: sanitize(a.fecha, 20),
-            estado: a.estado,
-            preceptorId: sanitize(a.preceptorId, 50)
-          }
-        );
+        await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, documentId: ID.unique(), data: {
+                        alumnoId: sanitize(a.alumnoId, 50),
+                        alumnoNombre: sanitize(a.alumnoNombre, 200),
+                        fecha: sanitize(a.fecha, 20),
+                        estado: a.estado,
+                        preceptorId: sanitize(a.preceptorId, 50)
+                      } });
       }
     } catch (err: any) {
       devLog("saveAsistenciaJornada/item (LocalStorage fallback)", err);
@@ -1059,10 +969,7 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
 // ─── NUEVO: ASISTENCIAS MATERIA (PROFESOR) ───────────────────────────────────
 export const getAsistenciasMateria = async (fecha: string, materia: string, curso: string): Promise<AsistenciaMateria[]> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
-      [Query.equal("fecha", fecha), Query.equal("materia", materia), Query.equal("curso", curso), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, queries: [Query.equal("fecha", fecha), Query.equal("materia", materia), Query.equal("curso", curso), Query.limit(DEFAULT_LIMIT)] });
     return response.documents.map(doc => ({
       id: doc.$id,
       alumnoId: doc.alumnoId,
@@ -1085,31 +992,25 @@ export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[]) =
   for (const a of asistencias) {
     try {
       if (a.id && !a.id.startsWith("LOCAL_")) {
-        await databases.updateDocument(
-          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, a.id,
-          {
-            alumnoId: sanitize(a.alumnoId, 50),
-            alumnoNombre: sanitize(a.alumnoNombre, 200),
-            fecha: sanitize(a.fecha, 20),
-            materia: sanitize(a.materia, 100),
-            curso: sanitize(a.curso, 50),
-            estado: a.estado,
-            profesorId: sanitize(a.profesorId, 50)
-          }
-        );
+        await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, documentId: a.id, data: {
+                        alumnoId: sanitize(a.alumnoId, 50),
+                        alumnoNombre: sanitize(a.alumnoNombre, 200),
+                        fecha: sanitize(a.fecha, 20),
+                        materia: sanitize(a.materia, 100),
+                        curso: sanitize(a.curso, 50),
+                        estado: a.estado,
+                        profesorId: sanitize(a.profesorId, 50)
+                      } });
       } else {
-        await databases.createDocument(
-          APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, ID.unique(),
-          {
-            alumnoId: sanitize(a.alumnoId, 50),
-            alumnoNombre: sanitize(a.alumnoNombre, 200),
-            fecha: sanitize(a.fecha, 20),
-            materia: sanitize(a.materia, 100),
-            curso: sanitize(a.curso, 50),
-            estado: a.estado,
-            profesorId: sanitize(a.profesorId, 50)
-          }
-        );
+        await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, documentId: ID.unique(), data: {
+                        alumnoId: sanitize(a.alumnoId, 50),
+                        alumnoNombre: sanitize(a.alumnoNombre, 200),
+                        fecha: sanitize(a.fecha, 20),
+                        materia: sanitize(a.materia, 100),
+                        curso: sanitize(a.curso, 50),
+                        estado: a.estado,
+                        profesorId: sanitize(a.profesorId, 50)
+                      } });
       }
     } catch (err: any) {
       devLog("saveAsistenciasMateria/item (LocalStorage fallback)", err);
@@ -1137,10 +1038,7 @@ export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ 
   let materia: AsistenciaMateria[] = [];
 
   try {
-    const resJornada = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
-      [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)]
-    );
+    const resJornada = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, queries: [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)] });
     jornada = resJornada.documents.map(doc => ({
       id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
       fecha: doc.fecha, estado: doc.estado as any, preceptorId: doc.preceptorId
@@ -1152,10 +1050,7 @@ export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ 
   }
 
   try {
-    const resMateria = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
-      [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)]
-    );
+    const resMateria = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, queries: [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)] });
     materia = resMateria.documents.map(doc => ({
       id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
       fecha: doc.fecha, materia: doc.materia, curso: doc.curso,
@@ -1173,10 +1068,7 @@ export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ 
 // ─── NUEVO: GESTIÓN DE MESAS DE EXAMEN ────────────────────────────────────────
 export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]> => {
   try {
-    const response = await databases.listDocuments(
-      APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
-      [Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)]
-    );
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, queries: [Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)] });
     return response.documents.map(doc => ({
       id: doc.$id,
       fecha: doc.fecha,
@@ -1217,13 +1109,9 @@ export const saveMesaExamen = async (m: MesaExamen) => {
     };
 
     if (m.id && !m.id.startsWith("LOCAL_")) {
-      return await databases.updateDocument(
-        APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, m.id, payload
-      );
+      return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, documentId: m.id, data: payload });
     } else {
-      return await databases.createDocument(
-        APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, ID.unique(), payload
-      );
+      return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, documentId: ID.unique(), data: payload });
     }
   } catch (err: any) {
     devLog("saveMesaExamen (LocalStorage fallback)", err);
@@ -1249,7 +1137,7 @@ export const deleteMesaExamen = async (id: string) => {
   await requireAuth();
   try {
     if (!id.startsWith("LOCAL_")) {
-      await databases.deleteDocument(APPWRITE_DB_ID, APPWRITE_MESAS_EXAMEN_COLLECTION_ID, id);
+      await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, documentId: id });
     }
   } catch (err: any) {
     devLog("deleteMesaExamen (LocalStorage fallback)", err);
@@ -1282,11 +1170,7 @@ export const uploadCertificateFile = async (file: File): Promise<string> => {
        throw new Error("SECURITY_BLOCK: Unauthorized. Anonymous uploads are strictly forbidden.");
     }
 
-    const response = await storage.createFile(
-      APPWRITE_BUCKET_ID,
-      ID.unique(),
-      file
-    );
+    const response = await storage.createFile({ bucketId: APPWRITE_BUCKET_ID, fileId: ID.unique(), file: file });
     return response.$id;
   } catch (err: any) {
     // 🛡️ SECURITY AUDIT REF: Security Misconfiguration - Obfuscate internal error details
@@ -1308,7 +1192,7 @@ export const deleteCertificateFile = async (fileId: string): Promise<boolean> =>
 export const getCertificateFileUrl = (fileId: string): string => {
   if (!fileId) return "";
   try {
-    const res = storage.getFileView(APPWRITE_BUCKET_ID, fileId);
+    const res = storage.getFileView({ bucketId: APPWRITE_BUCKET_ID, fileId: fileId });
     return typeof res === "string" ? res : (res as any).href || String(res);
   } catch (err) {
     devLog("getCertificateFileUrl", err);

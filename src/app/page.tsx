@@ -135,7 +135,7 @@ function LoginContent() {
     setLoading(true); setErrorMsg(""); setSuccessMsg("");
     try {
       const basePath = process.env.NODE_ENV === 'production' ? '/escuelainfo' : '';
-      await account.createRecovery(email, `${window.location.origin}${basePath}/reset-password`);
+      await account.createRecovery({ email: email, url: `${window.location.origin}${basePath}/reset-password` });
       setSuccessMsg("Se ha enviado un enlace para restablecer tu contraseña. Revisá tu casilla de correo.");
     } catch (err: any) {
       setErrorMsg(err.message || "Error al enviar el correo de recuperación. Verificá la dirección.");
@@ -155,8 +155,11 @@ function LoginContent() {
     if (password.length < 8) {
       setErrorMsg("La contraseña debe tener al menos 8 caracteres."); return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrorMsg("El correo electrónico no tiene un formato válido."); return;
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      setErrorMsg("El correo electrónico no tiene un formato válido (ej: usuario@dominio.com)."); return;
+    }
+    if (!/^\+?[0-9\s\-]{10,15}$/.test(telefono.trim())) {
+      setErrorMsg("El teléfono debe tener entre 10 y 15 números válidos."); return;
     }
 
     setLoading(true); setErrorMsg("");
@@ -179,7 +182,7 @@ function LoginContent() {
         }
       }
 
-      const user = await account.create(ID.unique(), cleanEmail, password, fullName);
+      const user = await account.create({ userId: ID.unique(), email: cleanEmail, password: password, name: fullName });
       await account.createEmailPasswordSession(cleanEmail, password);
 
       // Check if there is already a profile in the 'usuarios' collection

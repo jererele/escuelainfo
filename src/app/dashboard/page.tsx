@@ -1131,7 +1131,16 @@ export default function Dashboard() {
 
           {/* CONTENIDO SEGÚN PESTAÑA */}
           {activeTab === "asistencia" && (
-            <div className="animate-fade-in">
+            <div className="animate-fade-in space-y-6">
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setIsQRModalOpen(true)}
+                  className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-bold px-6 py-4 rounded-2xl hover:bg-[var(--verde)] hover:text-black transition-all shadow-md flex items-center gap-2 w-full md:w-auto justify-center"
+                >
+                  <QrCode size={18} />
+                  Asistencias
+                </button>
+              </div>
               <StudentAttendanceManager user={user} userProfile={userProfile} />
             </div>
           )}
@@ -1461,13 +1470,6 @@ export default function Dashboard() {
                     <p className="text-[var(--text2)]">Gestión de profesores y sus materias asignadas.</p>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
-                    <button 
-                      onClick={() => setIsQRModalOpen(true)}
-                      className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-bold px-6 py-4 rounded-2xl hover:bg-[var(--verde)] hover:text-black transition-all shadow-md flex items-center gap-2"
-                    >
-                      <QrCode size={18} />
-                      QR Asistencia
-                    </button>
                     {isAdmin && (
                       <button 
                         onClick={() => setIsTeacherModalOpen(true)}

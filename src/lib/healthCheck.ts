@@ -47,7 +47,7 @@ export async function runAppwriteHealthCheck(): Promise<AppwriteHealthSummary> {
     try {
       // listDocuments con limit implícito mínimo — sólo verifica conectividad
       // NO trae documentos reales para no impactar performance ni cuota de lectura
-      await databases.listDocuments(APPWRITE_DB_ID, col.id, []);
+      await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: col.id, queries: [] });
       results.push({ collectionId: col.id, label: col.label, status: "ok" });
     } catch (err: any) {
       const code: number = err?.code ?? 0;

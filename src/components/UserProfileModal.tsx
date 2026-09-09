@@ -86,6 +86,9 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
 
   const handleSaveInfo = async () => {
     if (!profile.id) return;
+    if (telefono && !/^\+?[0-9\s\-]{10,15}$/.test(telefono.trim())) {
+      showToast("El teléfono debe tener entre 10 y 15 números válidos.", "error"); return;
+    }
     setLoading(true);
     try {
       await updateUserProfile(profile.id, { telefono, direccion });
@@ -101,7 +104,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
     if (newPass !== confirmPass) { showToast("Las contraseñas no coinciden.", "error"); return; }
     setLoading(true);
     try {
-      await account.updatePassword(newPass, currentPass);
+      await account.updatePassword({ password: newPass, oldPassword: currentPass });
       showToast("¡Contraseña cambiada exitosamente!", "success");
       setCurrentPass(""); setNewPass(""); setConfirmPass("");
     } catch (err: any) {
@@ -110,15 +113,15 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
   };
 
   const handleChangeEmail = async () => {
-    if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-      showToast("Ingresá un email válido.", "error"); return;
+    if (!newEmail || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(newEmail)) {
+      showToast("Ingresá un email válido (ej: usuario@dominio.com).", "error"); return;
     }
     if (!emailCurrentPass) {
       showToast("Ingresá tu contraseña actual para confirmar el cambio.", "error"); return;
     }
     setLoading(true);
     try {
-      await account.updateEmail(newEmail, emailCurrentPass);
+      await account.updateEmail({ email: newEmail, password: emailCurrentPass });
       
       if (profile.id) {
         await updateUserProfile(profile.id, { email: newEmail });
