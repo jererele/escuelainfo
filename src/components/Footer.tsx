@@ -1,16 +1,36 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import EscuelaInfoLogo from '@/components/EscuelaInfoLogo';
 
 // ─── Footer global de EscuelaInfo — SKBCraft ─────────────────────────────────
-// Componente Server (sin 'use client') → zero JS bundle overhead en cliente.
-// Renderizado estático, no contiene estado ni efectos.
 
 const CURRENT_YEAR = new Date().getFullYear();
 const COPYRIGHT_YEAR = CURRENT_YEAR > 2026 ? `2024 – ${CURRENT_YEAR}` : '2024 – 2026';
 
 export default function Footer() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <footer
+        className="relative w-full no-print min-h-[60px]"
+        style={{
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg)',
+          marginTop: 'auto',
+        }}
+        aria-label="Pie de página — EscuelaInfo"
+        suppressHydrationWarning
+      />
+    );
+  }
+
   return (
     <footer
       className="relative w-full no-print"
@@ -21,6 +41,7 @@ export default function Footer() {
         marginTop: 'auto',
       }}
       aria-label="Pie de página — EscuelaInfo"
+      suppressHydrationWarning
     >
       {/* Línea decorativa superior con gradiente */}
       <div
