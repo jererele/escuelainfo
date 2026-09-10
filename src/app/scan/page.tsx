@@ -36,8 +36,8 @@ function ScanContent() {
 
         const { t, m, s, p } = payload;
         
-        // Verify expiration (60 seconds tolerance for network delay)
-        if (Date.now() - t > 60000) {
+        // Verify expiration (25 seconds tolerance to prevent sharing photos of the QR via WhatsApp)
+        if (Date.now() - t > 25000) {
           setStatus("expired");
           return;
         }

@@ -306,9 +306,13 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.clear(); // Limpiar caché de datos locales por seguridad
       await account.deleteSession("current");
       router.push("/");
-    } catch { /* redirect igualmente */ }
+    } catch { 
+      sessionStorage.clear();
+      router.push("/");
+    }
   };
 
   const showToast = (message: string, type = "success") => {
