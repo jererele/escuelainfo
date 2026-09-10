@@ -1,0 +1,9 @@
+export { GeneralTab } from "./GeneralTab";
+export { AusenciasTab } from "./AusenciasTab";
+export { ProfesoresTab } from "./ProfesoresTab";
+export { AlumnosTab } from "./AlumnosTab";
+export { HorariosTab } from "./HorariosTab";
+export { ConfiguracionTab } from "./ConfiguracionTab";
+export { AuditoriaTab } from "./AuditoriaTab";
+export { CursosTab } from "./CursosTab";
+export { CicloLectivoTab } from "./CicloLectivoTab";

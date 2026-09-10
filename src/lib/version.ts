@@ -4,16 +4,25 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.8.1";
-export const APP_BUILD_DATE = "09/09/2026 16:52 hs";
+export const APP_VERSION = "v2.8.2";
+export const APP_BUILD_DATE = "09/09/2026 17:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Capa de Compatibilidad y Puentes de Enrutamiento: Implementación de archivos puente en `src/components/` para los 23 componentes reestructurados (`modals`, `layout`, `shared`, `features`).",
-  "Resolución Total de Módulos: Garantía de que cualquier importación existente (`@/components/...`) resuelva de forma inmediata tanto en compilación como en el editor e IDE sin errores de 'Cannot find module'.",
-  "Doble Compatibilidad de Rutas: Soporte transparente tanto para rutas modulares profundas (`@/components/modals/...`) como para rutas planas clásicas."
+  "Modularización profunda del panel de control (Dashboard): Se eliminaron más de 1500 líneas de código del archivo principal, delegando la lógica de renderizado a componentes independientes por cada pestaña.",
+  "Optimización de estado y renderizado: Las pestañas del Dashboard ahora operan de manera aislada, mejorando el rendimiento de React y previniendo re-renderizados innecesarios del layout general.",
+  "Limpieza de código duplicado: Se unificaron funciones de gestión de estado duplicadas para asegurar la integridad de datos y evitar errores en producción."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.8.1",
+    date: "09/09/2026 16:52 hs",
+    notes: [
+      "Capa de Compatibilidad y Puentes de Enrutamiento: Implementación de archivos puente en `src/components/` para los 23 componentes reestructurados.",
+      "Resolución Total de Módulos: Garantía de que cualquier importación existente resuelva de forma inmediata tanto en compilación como en el editor.",
+      "Doble Compatibilidad de Rutas: Soporte transparente tanto para rutas modulares profundas como para rutas planas clásicas."
+    ]
+  },
   {
     version: "v2.8.0",
     date: "09/09/2026 16:15 hs",
