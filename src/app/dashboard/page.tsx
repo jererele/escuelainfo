@@ -1082,10 +1082,12 @@ export default function Dashboard() {
           }}
         />
       )}
-      <VersionModal
-        isOpen={isVersionModalOpen}
-        onClose={() => setIsVersionModalOpen(false)}
-      />
+      {isSuperAdmin && (
+        <VersionModal
+          isOpen={isVersionModalOpen}
+          onClose={() => setIsVersionModalOpen(false)}
+        />
+      )}
       <DynamicQRModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}

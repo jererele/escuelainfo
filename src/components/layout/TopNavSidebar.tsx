@@ -186,13 +186,15 @@ export default function TopNavSidebar({
               Escuela<span className="text-[var(--verde)]">Info</span>
             </span>
           </button>
-          <button
-            onClick={() => setIsVersionModalOpen(true)}
-            className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-            title="Ver novedades de la versión"
-          >
-            {APP_VERSION}
-          </button>
+          {userProfile?.rol === 'admin' && (
+            <button
+              onClick={() => setIsVersionModalOpen(true)}
+              className="px-2 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              title="Ver novedades de la versión (Solo Administrador)"
+            >
+              {APP_VERSION}
+            </button>
+          )}
         </div>
 
         {/* Center: active tab label */}
@@ -310,9 +312,11 @@ export default function TopNavSidebar({
                     <p className="text-[10px] uppercase tracking-widest font-black text-[var(--text3)]">
                       {rolLabel}
                     </p>
-                    <span className="px-1.5 py-0.2 text-[8px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
-                      {APP_VERSION}
-                    </span>
+                    {userProfile?.rol === 'admin' && (
+                      <span className="px-1.5 py-0.2 text-[8px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                        {APP_VERSION}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Pencil size={13} className="text-[var(--text3)] group-hover:text-[var(--verde)] transition-colors ml-1" />
@@ -332,7 +336,9 @@ export default function TopNavSidebar({
           </div>
         </div>
       )}
-      <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
+      {userProfile?.rol === 'admin' && (
+        <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
+      )}
     </div>
   );
 }

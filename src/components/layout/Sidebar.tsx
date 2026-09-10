@@ -120,17 +120,19 @@ export default function Sidebar({
               <div className="title-font text-2xl font-black whitespace-nowrap">
                 Escuela<span className="text-[var(--verde)]">Info</span>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsVersionModalOpen(true);
-                }}
-                className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                title="Ver novedades de la versión"
-              >
-                {APP_VERSION}
-              </button>
+              {userProfile?.rol === 'admin' && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVersionModalOpen(true);
+                  }}
+                  className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  title="Ver novedades de la versión (Solo Administrador)"
+                >
+                  {APP_VERSION}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -260,7 +262,9 @@ export default function Sidebar({
       </SidebarFooter>
     </ShadcnSidebar>
 
-    <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
+    {userProfile?.rol === 'admin' && (
+      <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
+    )}
     </>
   );
 }
