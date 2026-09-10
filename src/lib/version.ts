@@ -5,7 +5,7 @@ export interface VersionItem {
 }
 
 export const APP_VERSION = "v2.8.2";
-export const APP_BUILD_DATE = "09/09/2026 17:45 hs";
+export const APP_BUILD_DATE = "10/09/2026 14:13 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
   "Modularización profunda del panel de control (Dashboard): Se eliminaron más de 1500 líneas de código del archivo principal, delegando la lógica de renderizado a componentes independientes por cada pestaña.",
