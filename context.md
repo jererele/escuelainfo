@@ -30,3 +30,11 @@ El objetivo de un archivo context.md es servir como la fuente de verdad y contex
    - **Base de Datos y Tiempo Real**: Utilizar la SDK de Appwrite. Los estados en UI deben reflejar la base de datos velozmente, haciendo uso de Realtime si corresponde, y usando diccionarios de mapeo para optimizar el almacenamiento (ej. IDs de módulos en vez de strings largos).
 
 5. **Estado Actual y Próximos Pasos**: El proyecto esta casi terminado, solo faltan agregar algunas correcciones visuales, y capaz se le agregaron cosas nuevas.
+
+6. **Roles y Permisos del Sistema**:
+   - **Alumno**: El alumno puede ver sus horarios, puede ver si algún profe está ausente, puede ver las mesas de examen, puede ver el classroom.
+   - **POD/T** (Preceptor): Puede registrar ausencias de profesores, cargar horarios de los cursos, inscribir alumnos y aprobar solicitudes de inscripción, cargar mesas de examen, cargar profesores.
+   - **Profesor**: Puede cargar asistencias de alumnos, solicitar ausencias, tener classroom.
+   - **Directivo**: Puede hacer lo mismo que el POD/T, cargar preceptores.
+   - **Administrador**: Tiene todo el control de la página.
+
