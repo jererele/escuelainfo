@@ -29,6 +29,19 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 }) => {
   return (
     <div className="space-y-10 animate-fade-in">
+      {stats.pendientes > 0 && canManageAusencias && (
+        <div className="bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onNavigateToAusencias("")}>
+          <div className="flex items-center gap-3 text-[var(--amarillo)]">
+            <span className="text-2xl">🔔</span>
+            <div>
+              <h4 className="font-black text-sm">Aviso General: Licencias Pendientes</h4>
+              <p className="text-xs font-semibold">Hay {stats.pendientes} solicitud(es) de licencia esperando revisión directiva.</p>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-[var(--amarillo)]" />
+        </div>
+      )}
+      
       {/* STATS */}
       <div className="grid grid-cols-3 gap-3 md:gap-8">
         {[

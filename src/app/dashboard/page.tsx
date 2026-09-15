@@ -23,6 +23,8 @@ import {
   AuditoriaTab,
   CursosTab,
   CicloLectivoTab,
+  MonitorAsistenciaTab,
+  CalendarioTab,
 } from "@/features/dashboard/tabs";
 
 // ─── Spinner inline para managers que renderizan en el dashboard ─────────────
@@ -456,13 +458,22 @@ export default function Dashboard() {
   };
 
   // Memoized derived state — avoids costly recalculations on every render
-  const filteredAusencias = useMemo(() => ausencias.filter(a => {
-    if (userProfile?.rol === 'profesor') {
-      return currentProfesor && a.profId === currentProfesor.id;
-    }
-    const q = searchQuery.toLowerCase();
-    return a.profNombre.toLowerCase().includes(q) || a.tipo.toLowerCase().includes(q);
-  }), [ausencias, userProfile?.rol, currentProfesor, searchQuery]);
+  const filteredAusencias = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return ausencias.filter(a => {
+      const isExpired = a.fin < today;
+      const q = searchQuery.toLowerCase();
+      
+      if (isExpired && q === "") {
+        return false; // Hide expired from main view
+      }
+
+      if (userProfile?.rol === 'profesor') {
+        return currentProfesor && a.profId === currentProfesor.id && (q === "" || a.tipo.toLowerCase().includes(q));
+      }
+      return a.profNombre.toLowerCase().includes(q) || a.tipo.toLowerCase().includes(q);
+    });
+  }, [ausencias, userProfile?.rol, currentProfesor, searchQuery]);
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -819,6 +830,12 @@ export default function Dashboard() {
             </div>
           )}
 
+          {activeTab === "monitor-asistencia" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+            <div className="animate-fade-in">
+              <MonitorAsistenciaTab />
+            </div>
+          )}
+
           {activeTab === "mesas-examen" && (
             <div className="animate-fade-in">
               <ExamBoardManager user={user} userProfile={userProfile} />
@@ -939,6 +956,12 @@ export default function Dashboard() {
               onAssignAlumnos={(curso: Curso) => { setAssigningCurso(curso); setIsAssignModalOpen(true); }}
               onDeleteCurso={handleDeleteCurso}
             />
+          )}
+
+          {activeTab === "calendario" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') && (
+            <div className="animate-fade-in">
+              <CalendarioTab user={user} userProfile={userProfile} showToast={showToast} />
+            </div>
           )}
 
           {activeTab === "ciclo-lectivo" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') && (

@@ -10,11 +10,12 @@
  * Animaciones: usa solo transform/opacity para no causar layout thrashing.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Alumno } from "@/lib/dataService";
+import { CheckSquare } from "lucide-react";
 
 // ─── Tipos de estado disponibles ─────────────────────────────────────────────
-type EstadoJornada = "P" | "A" | "M" | "T";
+type EstadoJornada = "P" | "A" | "M" | "T" | "R" | "J";
 type EstadoMateria = "P" | "A" | "T";
 type ModoTabla = "jornada" | "materia";
 
@@ -31,6 +32,12 @@ const ESTADOS_JORNADA = [
   { val: "T" as EstadoJornada, label: "Tarde", short: "T",
     active: "bg-indigo-500 text-white shadow-sm",
     idle: "bg-indigo-500/10 text-indigo-600 border border-indigo-500/25" },
+  { val: "R" as EstadoJornada, label: "Retiro", short: "R",
+    active: "bg-orange-500 text-white shadow-sm",
+    idle: "bg-orange-500/10 text-orange-600 border border-orange-500/25" },
+  { val: "J" as EstadoJornada, label: "Justificado", short: "J",
+    active: "bg-blue-500 text-white shadow-sm",
+    idle: "bg-blue-500/10 text-blue-600 border border-blue-500/25" },
 ];
 
 const ESTADOS_MATERIA = [
@@ -90,20 +97,22 @@ function EstadoBtn({
 
 // ─── Vista Mobile: Tarjeta por alumno ─────────────────────────────────────────
 function AlumnoCard({
-  alumno, estado, estados, onChangeEstado, readOnly,
+  alumno, estado, estados, onChangeEstado, readOnly, isSelected, onToggleSelect
 }: {
   alumno: Alumno;
   estado: string;
   estados: typeof ESTADOS_JORNADA | typeof ESTADOS_MATERIA;
   onChangeEstado: (alId: string, estado: string) => void;
   readOnly?: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }) {
   const alId = alumno.id || alumno.dni;
   const estadoActual = estados.find(e => e.val === estado);
 
   return (
     <div className={`
-      p-4 rounded-2xl border transition-all duration-200
+      p-4 rounded-2xl border transition-all duration-200 relative
       ${estadoActual
         ? estado === "A" ? "border-rose-500/30 bg-rose-500/5"
         : estado === "M" ? "border-amber-500/30 bg-amber-500/5"
@@ -111,9 +120,20 @@ function AlumnoCard({
         : "border-emerald-500/20 bg-emerald-500/5"
         : "border-[var(--border)] bg-[var(--bg3)]/30"
       }
+      ${isSelected ? "ring-2 ring-[var(--verde)]" : ""}
     `}>
+      {/* Checkbox para múltiple selección en móvil */}
+      <div className="absolute top-3 right-3">
+        <input 
+          type="checkbox" 
+          className="w-5 h-5 accent-[var(--verde)]"
+          checked={isSelected}
+          onChange={onToggleSelect}
+        />
+      </div>
+
       {/* Nombre y DNI */}
-      <div className="flex items-start justify-between mb-3 gap-2">
+      <div className="flex items-start justify-between mb-3 gap-2 pr-8">
         <div>
           <p className="font-bold text-sm text-[var(--text)] leading-tight">{alumno.nombre}</p>
           <p className="font-mono text-[10px] text-[var(--text3)] mt-0.5">DNI: {alumno.dni}</p>
@@ -148,18 +168,28 @@ function AlumnoCard({
 
 // ─── Vista Desktop: Tabla con overflow-x-auto ─────────────────────────────────
 function AlumnoTableRow({
-  alumno, estado, estados, onChangeEstado, readOnly,
+  alumno, estado, estados, onChangeEstado, readOnly, isSelected, onToggleSelect
 }: {
   alumno: Alumno;
   estado: string;
   estados: typeof ESTADOS_JORNADA | typeof ESTADOS_MATERIA;
   onChangeEstado: (alId: string, estado: string) => void;
   readOnly?: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }) {
   const alId = alumno.id || alumno.dni;
 
   return (
-    <tr className="border-b border-[var(--border)] last:border-none hover:bg-slate-500/5 transition-colors">
+    <tr className={`border-b border-[var(--border)] last:border-none hover:bg-slate-500/5 transition-colors ${isSelected ? "bg-[var(--verde-bg)]/30" : ""}`}>
+      <td className="p-4 w-12 text-center">
+        <input 
+          type="checkbox" 
+          className="w-4 h-4 accent-[var(--verde)]"
+          checked={isSelected}
+          onChange={onToggleSelect}
+        />
+      </td>
       <td className="p-4 font-mono text-xs font-semibold text-[var(--text2)] whitespace-nowrap">
         {alumno.dni}
       </td>
@@ -196,6 +226,30 @@ export default function AttendanceTableResponsive({
   readOnly = false,
 }: AttendanceTableResponsiveProps) {
   const estados = modo === "jornada" ? ESTADOS_JORNADA : ESTADOS_MATERIA;
+  
+  // Estado local para los alumnos seleccionados para el Retiro Masivo
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(alumnos.map(a => a.id || a.dni));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleRetiroMasivo = () => {
+    selectedIds.forEach(id => {
+      onChangeEstado(id, "R");
+    });
+    setSelectedIds([]); // Limpiar selección tras aplicar
+  };
 
   // Resumen rápido de conteo por estado (útil en el header)
   const resumen = useMemo(() => {
@@ -210,8 +264,21 @@ export default function AttendanceTableResponsive({
 
   return (
     <div className="space-y-3">
+      {/* Botonera de Acción Masiva (Si hay seleccionados) */}
+      {selectedIds.length > 0 && modo === "jornada" && !readOnly && (
+        <div className="flex items-center justify-between bg-[var(--bg2)] border border-[var(--border)] p-3 rounded-2xl shadow-sm animate-fade-in">
+          <span className="text-sm font-bold text-[var(--text)] ml-2">{selectedIds.length} alumno(s) seleccionado(s)</span>
+          <button
+            onClick={handleRetiroMasivo}
+            className="flex items-center gap-2 bg-[var(--orange-bg)] text-orange-600 border border-orange-500/30 font-bold px-4 py-2 rounded-xl text-xs hover:bg-orange-500 hover:text-white transition-all shadow-sm"
+          >
+            <CheckSquare size={16} /> Retirar Seleccionados
+          </button>
+        </div>
+      )}
+
       {/* Resumen compacto (útil en móvil para ver el estado general rápido) */}
-      <div className="flex gap-2 flex-wrap text-[10px] font-black uppercase tracking-wider">
+      <div className="flex gap-2 flex-wrap text-[10px] font-black uppercase tracking-wider items-center">
         {Object.entries(resumen).map(([estado, count]) => {
           const def = estados.find(e => e.val === estado);
           if (!def) return null;
@@ -238,6 +305,8 @@ export default function AttendanceTableResponsive({
               estados={estados}
               onChangeEstado={onChangeEstado}
               readOnly={readOnly}
+              isSelected={selectedIds.includes(alId)}
+              onToggleSelect={() => handleToggleSelect(alId)}
             />
           );
         })}
@@ -248,6 +317,14 @@ export default function AttendanceTableResponsive({
         <table className="w-full text-left border-collapse bg-white/50 dark:bg-slate-950/20 min-w-[520px]">
           <thead>
             <tr className="bg-[var(--bg3)] border-b border-[var(--border)] text-[10px] font-black uppercase text-[var(--text3)] tracking-wider">
+              <th className="p-4 text-center w-12">
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 accent-[var(--verde)]"
+                  checked={selectedIds.length === alumnos.length}
+                  onChange={handleSelectAll}
+                />
+              </th>
               <th className="p-4 whitespace-nowrap">DNI</th>
               <th className="p-4">Nombre del Alumno</th>
               <th className="p-4 text-center">Estado de Asistencia</th>
@@ -264,6 +341,8 @@ export default function AttendanceTableResponsive({
                   estados={estados}
                   onChangeEstado={onChangeEstado}
                   readOnly={readOnly}
+                  isSelected={selectedIds.includes(alId)}
+                  onToggleSelect={() => handleToggleSelect(alId)}
                 />
               );
             })}

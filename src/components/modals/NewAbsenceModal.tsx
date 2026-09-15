@@ -99,9 +99,20 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
           if (!res.ok) throw new Error("Error loading holidays");
           return res.json();
         })
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setFeriados(data);
+        .then(async (data) => {
+          let feriadosNacionales = Array.isArray(data) ? data : [];
+          try {
+            // Combinar dinámicamente con Suspensiones Edilicias locales usando importación dinámica para evitar errores de hidratación
+            const { getSuspensiones } = await import("@/lib/dataService");
+            const suspensiones = await getSuspensiones();
+            const suspensionesFeriados = suspensiones.map(s => ({
+              fecha: s.fecha,
+              tipo: "Suspensión Institucional",
+              nombre: s.motivo
+            }));
+            setFeriados([...feriadosNacionales, ...suspensionesFeriados]);
+          } catch (e) {
+            setFeriados(feriadosNacionales);
           }
         })
         .catch((err) => console.error("Error al cargar feriados:", err));
@@ -223,6 +234,21 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
         userEmail, "REGISTRAR_AUSENCIA",
         `Profesor: ${newAusencia.profNombre}, Tipo: ${newAusencia.tipo}, Fechas: ${newAusencia.inicio} a ${newAusencia.fin}`
       );
+
+      // Notificar a directivos por email
+      try {
+        await fetch("/api/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: "skbcraft.info@gmail.com",
+            subject: `Nueva solicitud de licencia: ${newAusencia.profNombre}`,
+            text: `El profesor ${newAusencia.profNombre} ha solicitado una licencia (${newAusencia.tipo}) desde el ${newAusencia.inicio} al ${newAusencia.fin}.\nMotivo: ${newAusencia.motivo}\n\nPor favor, revise el panel de ausencias para aprobar o rechazar la solicitud.`
+          })
+        });
+      } catch (err) {
+        console.error("No se pudo notificar por email", err);
+      }
 
       onSuccess();
       onClose();

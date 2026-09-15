@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCheck,
-  ClipboardCheck
+  ClipboardCheck,
+  Activity
 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import {
@@ -91,6 +92,7 @@ export default function Sidebar({
 
   const tabs = [
     { id: "general", label: "Inicio", icon: <LayoutDashboard size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "monitor-asistencia", label: "Monitor Asistencia", icon: <Activity size={20} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "asistencia", label: "Asistencia", icon: <UserCheck size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "ausencias", label: "Ausencias", icon: <ClipboardList size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "mesas-examen", label: "Mesas Examen", icon: <ClipboardCheck size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
@@ -98,6 +100,7 @@ export default function Sidebar({
     { id: "profesores", label: "Profesores", icon: <GraduationCap size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "alumnos", label: "Alumnos", icon: <Users size={20} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "cursos", label: "Cursos", icon: <FolderOpen size={20} />, roles: ["admin", "directivo", "preceptor"] },
+    { id: "calendario", label: "Calendario", icon: <CalendarDays size={20} />, roles: ["admin", "directivo"] },
     { id: "classroom", label: "Google Classroom", icon: <BookOpen size={20} />, roles: ["admin", "profesor", "alumno"], isExternal: true, url: "https://classroom.google.com" },
     { id: "ciclo-lectivo", label: "Ciclo Lectivo", icon: <RefreshCw size={20} />, roles: ["admin", "directivo"] },
     ...((userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') ? [{ id: "configuracion", label: "Accesos", icon: <Settings size={20} />, roles: ["admin", "directivo"] }] : []),

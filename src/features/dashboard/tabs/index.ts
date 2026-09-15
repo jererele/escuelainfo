@@ -7,3 +7,5 @@ export { ConfiguracionTab } from "./ConfiguracionTab";
 export { AuditoriaTab } from "./AuditoriaTab";
 export { CursosTab } from "./CursosTab";
 export { CicloLectivoTab } from "./CicloLectivoTab";
+export { MonitorAsistenciaTab } from "./MonitorAsistenciaTab";
+export { CalendarioTab } from "./CalendarioTab";

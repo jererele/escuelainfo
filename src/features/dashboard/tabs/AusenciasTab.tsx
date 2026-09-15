@@ -222,14 +222,21 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                         { value: "rechazada", label: "Rechazado", activeClass: "bg-[var(--rojo-bg)] text-[var(--rojo)] border-[var(--rojo-border)] font-black", inactiveClass: "bg-transparent text-[var(--text3)] border-[var(--border)] hover:bg-[var(--bg3)] hover:text-[var(--text)]" }
                       ].map((opt) => {
                         const isSelected = a.estado === opt.value;
-                        if (!canManageAusencias && !isSelected) return null;
+                        const isEditable = canManageAusencias && a.estado === "pendiente";
+                        if (!isEditable && !isSelected) return null;
+                        
                         return (
                           <button
                             key={opt.value}
-                            disabled={!canManageAusencias}
-                            onClick={() => onChangeStatus(a.id!, opt.value as any)}
+                            disabled={!isEditable}
+                            onClick={() => {
+                              if (opt.value === "pendiente") return;
+                              askConfirm(`¿Estás seguro de ${opt.label.toLowerCase()} esta licencia?`, () => {
+                                onChangeStatus(a.id!, opt.value as any);
+                              });
+                            }}
                             className={`px-2 py-1 text-[9px] font-black uppercase rounded border transition-all duration-150 shrink-0 ${
-                              !canManageAusencias ? "cursor-default" : "active:scale-95 cursor-pointer"
+                              !isEditable ? "cursor-default opacity-80" : "active:scale-95 cursor-pointer"
                             } ${
                               isSelected ? opt.activeClass : opt.inactiveClass
                             }`}

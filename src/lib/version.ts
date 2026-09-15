@@ -4,15 +4,26 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.8.4";
-export const APP_BUILD_DATE = "10/09/2026 14:31 hs";
+export const APP_VERSION = "v2.9.0";
+export const APP_BUILD_DATE = "15/09/2026 19:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Parche de Seguridad Crítico (QR): Reducción del tiempo de expiración y tolerancia de códigos QR dinámicos a 25 segundos para prevenir la captura de pantalla y su envío remoto para fraude de asistencia.",
-  "Limpieza Segura de Sesión: Aseguramiento de limpieza profunda del `sessionStorage` local al momento del cierre de sesión para evitar filtración de caché a otros usuarios en dispositivos compartidos."
+  "Notificaciones por Email: Se integró nodemailer para enviar correos automáticos a 'skbcraft.info@gmail.com' cuando un docente solicita una licencia.",
+  "Calendario Institucional: Nueva pestaña para gestionar Suspensiones Edilicias (ej. falta de agua, desinfección) que bloquean las tomas de asistencia.",
+  "Retiro Masivo de Alumnos: Se implementó la selección múltiple en la tabla de asistencia para procesar retiros grupales con un solo clic.",
+  "Falta Justificada: Se agregó un nuevo estado (J - Justificado) para los alumnos que no asisten por tener certificado. Este estado tampoco suma faltas.",
+  "Confirmaciones de Seguridad: Se agregó un modal de confirmación antes de aprobar o rechazar licencias docentes."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.8.4",
+    date: "10/09/2026 14:31 hs",
+    notes: [
+      "Parche de Seguridad Crítico (QR): Reducción del tiempo de expiración y tolerancia de códigos QR dinámicos a 25 segundos para prevenir la captura de pantalla y su envío remoto para fraude de asistencia.",
+      "Limpieza Segura de Sesión: Aseguramiento de limpieza profunda del `sessionStorage` local al momento del cierre de sesión para evitar filtración de caché a otros usuarios en dispositivos compartidos."
+    ]
+  },
   {
     version: "v2.8.3",
     date: "10/09/2026 14:16 hs",

@@ -33,6 +33,26 @@ export function SkeletonStatCards() {
   );
 }
 
+// ─── Esqueleto para las tarjetas de cursos ────────────────────────────────────
+export function SkeletonCourseCards() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="glass p-5 rounded-3xl border border-[var(--border)] space-y-4"
+        >
+          <SkeletonBar className="h-6 w-32" />
+          <div className="space-y-2">
+            <SkeletonBar className="h-4 w-full" />
+            <SkeletonBar className="h-4 w-5/6" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Esqueleto para una fila de tabla de alumnos/planilla ────────────────────
 export function SkeletonTableRow() {
   return (

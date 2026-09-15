@@ -283,7 +283,7 @@ export interface AsistenciaJornada {
   alumnoId: string;
   alumnoNombre: string;
   fecha: string;
-  estado: "P" | "A" | "M" | "T"; // P=Presente, A=Ausente, M=Media Falta, T=Tarde
+  estado: "P" | "A" | "M" | "T" | "R" | "J"; // P=Presente, A=Ausente, M=Media Falta, T=Tarde, R=Retiro, J=Justificado
   preceptorId: string;
 }
 
@@ -1198,4 +1198,30 @@ export const getCertificateFileUrl = (fileId: string): string => {
     devLog("getCertificateFileUrl", err);
     return "";
   }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUSPENSIONES EDILICIAS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SuspensionEdilicia {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  motivo: string;
+}
+
+export const getSuspensiones = async (): Promise<SuspensionEdilicia[]> => {
+  return getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
+};
+
+export const saveSuspension = async (suspension: SuspensionEdilicia) => {
+  const current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
+  current.push(suspension);
+  setLocalStorageData("suspensiones_edilicias", current);
+};
+
+export const deleteSuspension = async (id: string) => {
+  let current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
+  current = current.filter(s => s.id !== id);
+  setLocalStorageData("suspensiones_edilicias", current);
 };
