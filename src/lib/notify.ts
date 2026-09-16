@@ -5,44 +5,46 @@ export interface NotifyOptions {
   duration?: number;
 }
 
+const DEFAULT_NOTIFICATION_DURATION = 4000;
+
 export const notify = {
   success: (title: string, options?: NotifyOptions | string) => {
     const description = typeof options === "string" ? options : options?.description;
-    const duration = typeof options === "object" ? options?.duration : undefined;
+    const duration = typeof options === "object" && options?.duration !== undefined ? options.duration : DEFAULT_NOTIFICATION_DURATION;
     return sileo.success({
       title,
       description,
-      ...(duration !== undefined ? { duration } : {}),
+      duration,
     });
   },
 
   error: (title: string, options?: NotifyOptions | string) => {
     const description = typeof options === "string" ? options : options?.description;
-    const duration = typeof options === "object" ? options?.duration : undefined;
+    const duration = typeof options === "object" && options?.duration !== undefined ? options.duration : DEFAULT_NOTIFICATION_DURATION;
     return sileo.error({
       title,
       description,
-      ...(duration !== undefined ? { duration } : {}),
+      duration,
     });
   },
 
   info: (title: string, options?: NotifyOptions | string) => {
     const description = typeof options === "string" ? options : options?.description;
-    const duration = typeof options === "object" ? options?.duration : undefined;
+    const duration = typeof options === "object" && options?.duration !== undefined ? options.duration : DEFAULT_NOTIFICATION_DURATION;
     return sileo.info({
       title,
       description,
-      ...(duration !== undefined ? { duration } : {}),
+      duration,
     });
   },
 
   warning: (title: string, options?: NotifyOptions | string) => {
     const description = typeof options === "string" ? options : options?.description;
-    const duration = typeof options === "object" ? options?.duration : undefined;
+    const duration = typeof options === "object" && options?.duration !== undefined ? options.duration : DEFAULT_NOTIFICATION_DURATION;
     return sileo.warning({
       title,
       description,
-      ...(duration !== undefined ? { duration } : {}),
+      duration,
     });
   },
 
@@ -57,18 +59,20 @@ export const notify = {
     return sileo.promise(promise, {
       loading: typeof messages.loading === "string" ? { title: messages.loading } : messages.loading,
       success: (data: T) => {
-        if (typeof messages.success === "function") {
-          const res = messages.success(data);
-          return typeof res === "string" ? { title: res } : res;
-        }
-        return typeof messages.success === "string" ? { title: messages.success } : messages.success;
+        const raw = typeof messages.success === "function" ? messages.success(data) : messages.success;
+        const opts = typeof raw === "string" ? { title: raw } : raw;
+        return {
+          duration: DEFAULT_NOTIFICATION_DURATION,
+          ...opts,
+        };
       },
       error: (err: any) => {
-        if (typeof messages.error === "function") {
-          const res = messages.error(err);
-          return typeof res === "string" ? { title: res } : res;
-        }
-        return typeof messages.error === "string" ? { title: messages.error } : messages.error;
+        const raw = typeof messages.error === "function" ? messages.error(err) : messages.error;
+        const opts = typeof raw === "string" ? { title: raw } : raw;
+        return {
+          duration: DEFAULT_NOTIFICATION_DURATION,
+          ...opts,
+        };
       },
     });
   },

@@ -20,6 +20,7 @@ export default function SileoToaster() {
       offset={{ top: 24, right: 24 }}
       options={{
         roundness: 18,
+        duration: 4000,
       }}
     />
   );

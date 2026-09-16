@@ -4,7 +4,6 @@ import { Ausencia, Horario, Alumno } from "@/lib/dataService";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 import ContactForm from "@/components/ContactForm";
 import { TiltCard, GravityText, FluidOrb } from "@/components/ui/rare";
-import UserAvatar from "@/components/ui/UserAvatar";
 
 interface GeneralTabProps {
   stats: { hoy: number; pendientes: number; total: number };
@@ -39,51 +38,21 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-gradient-to-br from-[var(--bg2)] to-[var(--bg3)]/70 backdrop-blur-md shadow-sm">
         <FluidOrb color="rgba(16, 185, 129, 0.22)" size={320} className="-top-24 -right-16" />
         <FluidOrb color="rgba(99, 102, 241, 0.16)" size={260} className="-bottom-20 left-1/4" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] text-[11px] font-black uppercase tracking-wider mb-3">
-              <span className="w-2 h-2 rounded-full bg-[var(--verde)] animate-pulse" />
-              Panel Institucional Activo
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-black title-font text-[var(--text)] tracking-tight">
-              <GravityText text="Escuela 713" className="text-[var(--verde)]" />
-              <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
-            </h1>
-            <p className="text-xs sm:text-sm font-semibold text-[var(--text3)] mt-2 max-w-xl">
-              Control de asistencias, licencias docentes y novedades en tiempo real con sincronización directa.
-            </p>
-          </div>
-          {userProfile && (
-            <button
-              type="button"
-              onClick={onOpenProfile}
-              title="Hacé clic para ver y gestionar tu perfil"
-              className="hidden sm:flex items-center gap-3.5 p-3.5 rounded-2xl bg-[var(--bg)]/80 border border-[var(--border)] backdrop-blur-md shrink-0 shadow-sm hover:border-[var(--verde-border)] hover:bg-[var(--bg3)] transition-all cursor-pointer active:scale-95 text-left group"
-            >
-              <UserAvatar
-                name={userProfile.nombre || "Usuario"}
-                email={userProfile.email}
-                size={44}
-                showRing={true}
-                animate="always"
-              />
-              <div>
-                <p className="text-xs font-black text-[var(--text)] leading-tight max-w-[140px] truncate group-hover:text-[var(--verde)] transition-colors">
-                  {userProfile.nombre || "Usuario"}
-                </p>
-                <p className="text-[9px] font-black text-[var(--verde)] uppercase tracking-wider mt-0.5">
-                  {userProfile.rol === 'admin' ? 'Administrador' : (userProfile.rol === 'directivo' ? 'Directivo' : userProfile.rol || 'Invitado')}
-                </p>
-              </div>
-            </button>
-          )}
+        <div className="relative z-10">
+          <h1 className="text-2xl sm:text-4xl font-black title-font text-[var(--text)] tracking-tight">
+            <GravityText text="Escuela 713" className="text-[var(--verde)]" />
+            <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
+          </h1>
+          <p className="text-xs sm:text-sm font-semibold text-[var(--text3)] mt-2 max-w-xl">
+            Control de asistencias, licencias docentes y novedades en tiempo real con sincronización directa.
+          </p>
         </div>
       </div>
 
       {stats.pendientes > 0 && canManageAusencias && (
         <div className="bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onNavigateToAusencias("")}>
           <div className="flex items-center gap-3 text-[var(--amarillo)]">
-            <span className="text-2xl">🔔</span>
+            <span className="text-2xl"></span>
             <div>
               <h4 className="font-black text-sm">Aviso General: Licencias Pendientes</h4>
               <p className="text-xs font-semibold">Hay {stats.pendientes} solicitud(es) de licencia esperando revisión directiva.</p>

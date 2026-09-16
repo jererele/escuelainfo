@@ -4,17 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.5";
-export const APP_BUILD_DATE = "16/09/2026 19:55 hs";
+export const APP_VERSION = "v2.10.6";
+export const APP_BUILD_DATE = "16/09/2026 20:11 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Interactividad Completa en Tarjeta y Foto de Perfil: La tarjeta de bienvenida del Dashboard (`GeneralTab`) y la foto en la barra superior ahora son botones activos con `cursor-pointer` que abren el modal 'Mi Perfil' (`UserProfileModal`).",
-  "Semántica y Accesibilidad en UserAvatar: Incorporación de la prop `onClick` con accesibilidad (`role=\"button\"`, `tabIndex={0}`) y adaptación dinámica del cursor y animación de escala para evitar falsas apariencias de botones en tablas estáticas.",
-  "Acceso Directo al Perfil: Ahora tanto en el panel principal como en la barra superior y drawer móvil se puede pulsar directamente la ficha o foto del usuario para consultar datos o modificar contraseña.",
-  "Microinteracción Consistente: Efectos hover sincronizados con el acento verde institucional y feedback háptico `active:scale-95`."
+  "Limpieza Visual de Cabecera y Banner: Se eliminó la insignia 'Panel Institucional Activo' y se retiró la tarjeta repetitiva del perfil en el banner de bienvenida (`GeneralTab`), logrando un diseño despejado y sin duplicidades.",
+  "Duración Optimizada de Notificaciones (4 segundos): Se configuró la duración de todas las alertas y avisos de Sileo a 4 segundos para que desaparezcan rápidamente sin obstaculizar la navegación del usuario.",
+  "Despacho Rápido en Estados de Acción: Las notificaciones resultantes de promesas (eliminación de ausencias, guardado y actualizaciones) ahora se descartan de forma ágil y automática.",
+  "Centralización de Perfil: El acceso al perfil se mantiene limpio e intuitivo desde la barra de navegación superior y el menú lateral."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.5",
+    date: "16/09/2026 19:55 hs",
+    notes: [
+      "Interactividad Completa en Tarjeta y Foto de Perfil: La tarjeta de bienvenida del Dashboard (`GeneralTab`) y la foto en la barra superior ahora son botones activos con `cursor-pointer` que abren el modal 'Mi Perfil' (`UserProfileModal`).",
+      "Semántica y Accesibilidad en UserAvatar: Incorporación de la prop `onClick` con accesibilidad (`role=\"button\"`, `tabIndex={0}`) y adaptación dinámica del cursor y animación de escala para evitar falsas apariencias de botones en tablas estáticas.",
+      "Acceso Directo al Perfil: Ahora tanto en el panel principal como en la barra superior y drawer móvil se puede pulsar directamente la ficha o foto del usuario para consultar datos o modificar contraseña.",
+      "Microinteracción Consistente: Efectos hover sincronizados con el acento verde institucional y feedback háptico `active:scale-95`."
+    ]
+  },
   {
     version: "v2.10.4",
     date: "16/09/2026 19:38 hs",
