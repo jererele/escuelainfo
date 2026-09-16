@@ -38,6 +38,7 @@ import {
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
 import VersionModal from "@/components/modals/VersionModal";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -223,13 +224,12 @@ export default function Sidebar({
             onClick={onProfileOpen}
             title="Ver mi perfil"
             className="w-full p-3 bg-[var(--bg2)] rounded-2xl flex items-center gap-3 border border-[var(--border)] shadow-sm hover:border-[var(--verde-border)] hover:bg-[var(--verde-bg)] transition-all hover:scale-105 active:scale-98 group text-left">
-            {user?.photoURL && user.photoURL.startsWith('https://') ? (
-              <img src={user.photoURL} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white shadow-sm shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[var(--verde)] flex items-center justify-center text-black font-black shadow-sm shrink-0">
-                {(userProfile?.nombre || user?.displayName || "U").charAt(0).toUpperCase()}
-              </div>
-            )}
+            <UserAvatar
+              name={userProfile?.nombre || user?.displayName || "Usuario"}
+              email={userProfile?.email || user?.email}
+              size={40}
+              showRing={true}
+            />
             <div className="overflow-hidden flex-1">
               <p className="text-sm font-bold truncate text-[var(--text)] group-hover:text-[var(--verde)] transition-colors">{user?.displayName || userProfile?.nombre || "Usuario"}</p>
               <p className="text-[10px] text-[var(--text3)] uppercase tracking-widest font-black truncate">
@@ -240,13 +240,12 @@ export default function Sidebar({
           </button>
         ) : (
           <button onClick={onProfileOpen} title="Ver mi perfil" className="shrink-0 w-10 h-10 flex justify-center items-center mx-auto hover:scale-110 active:scale-95 transition-all">
-            {user?.photoURL && user.photoURL.startsWith('https://') ? (
-              <img src={user.photoURL} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--border)] shadow-sm shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[var(--verde)] flex items-center justify-center text-black font-black shadow-sm shrink-0">
-                {(userProfile?.nombre || user?.displayName || "U").charAt(0).toUpperCase()}
-              </div>
-            )}
+            <UserAvatar
+              name={userProfile?.nombre || user?.displayName || "Usuario"}
+              email={userProfile?.email || user?.email}
+              size={40}
+              showRing={true}
+            />
           </button>
         )}
         

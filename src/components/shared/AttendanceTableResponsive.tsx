@@ -13,6 +13,7 @@
 import React, { useState, memo, useMemo } from "react";
 import { Alumno } from "@/lib/dataService";
 import { CheckSquare } from "lucide-react";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 // ─── Tipos de estado disponibles ─────────────────────────────────────────────
 type EstadoJornada = "P" | "A" | "M" | "T" | "R" | "J";
@@ -134,9 +135,12 @@ const AlumnoCard = memo(function AlumnoCard({
 
       {/* Nombre y DNI */}
       <div className="flex items-start justify-between mb-3 gap-2 pr-8">
-        <div>
-          <p className="font-bold text-sm text-[var(--text)] leading-tight">{alumno.nombre}</p>
-          <p className="font-mono text-[10px] text-[var(--text3)] mt-0.5">DNI: {alumno.dni}</p>
+        <div className="flex items-center gap-2.5">
+          <UserAvatar name={alumno.nombre} email={alumno.email} size={32} showRing={false} />
+          <div>
+            <p className="font-bold text-sm text-[var(--text)] leading-tight">{alumno.nombre}</p>
+            <p className="font-mono text-[10px] text-[var(--text3)] mt-0.5">DNI: {alumno.dni}</p>
+          </div>
         </div>
         {/* Badge del estado actual */}
         {estadoActual && (
@@ -194,7 +198,10 @@ const AlumnoTableRow = memo(function AlumnoTableRow({
         {alumno.dni}
       </td>
       <td className="p-4 font-bold text-sm text-[var(--text)]">
-        {alumno.nombre}
+        <div className="flex items-center gap-2.5">
+          <UserAvatar name={alumno.nombre} email={alumno.email} size={28} showRing={false} />
+          <span>{alumno.nombre}</span>
+        </div>
       </td>
       <td className="p-4">
         <div className="flex justify-center items-center gap-2 flex-wrap">

@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { Ausencia, Horario, Alumno } from "@/lib/dataService";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 import ContactForm from "@/components/ContactForm";
+import { TiltCard, GravityText, FluidOrb } from "@/components/ui/rare";
 
 interface GeneralTabProps {
   stats: { hoy: number; pendientes: number; total: number };
@@ -29,6 +30,25 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 }) => {
   return (
     <div className="space-y-10 animate-fade-in">
+      {/* BANNER DE BIENVENIDA CON RARE UI (GravityText + FluidOrb) */}
+      <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-gradient-to-br from-[var(--bg2)] to-[var(--bg3)]/70 backdrop-blur-md shadow-sm">
+        <FluidOrb color="rgba(16, 185, 129, 0.22)" size={320} className="-top-24 -right-16" />
+        <FluidOrb color="rgba(99, 102, 241, 0.16)" size={260} className="-bottom-20 left-1/4" />
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] text-[11px] font-black uppercase tracking-wider mb-3">
+            <span className="w-2 h-2 rounded-full bg-[var(--verde)] animate-pulse" />
+            Panel Institucional Activo
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-black title-font text-[var(--text)] tracking-tight">
+            <GravityText text="Escuela 713" className="text-[var(--verde)]" />
+            <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
+          </h1>
+          <p className="text-xs sm:text-sm font-semibold text-[var(--text3)] mt-2 max-w-xl">
+            Control de asistencias, licencias docentes y novedades en tiempo real con sincronización directa.
+          </p>
+        </div>
+      </div>
+
       {stats.pendientes > 0 && canManageAusencias && (
         <div className="bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onNavigateToAusencias("")}>
           <div className="flex items-center gap-3 text-[var(--amarillo)]">
@@ -42,28 +62,27 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
         </div>
       )}
       
-      {/* STATS */}
-      <div className="grid grid-cols-3 gap-3 md:gap-8">
+      {/* STATS CON TILT CARDS DE RARE UI */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
         {[
-          { label: "Ausentes Hoy", value: stats.hoy, color: "var(--rojo)", bg: "var(--rojo-bg)", action: () => onNavigateToAusencias("") },
-          { label: "Pendientes", value: stats.pendientes, color: "var(--amarillo)", bg: "var(--amarillo-bg)", action: () => onNavigateToAusencias("") },
-          { label: "Total Registros", value: stats.total, color: "var(--verde)", bg: "var(--verde-bg)", action: () => onNavigateToAusencias("") },
+          { label: "Ausentes Hoy", value: stats.hoy, color: "var(--rojo)", glowColor: "rgba(239, 68, 68, 0.16)", action: () => onNavigateToAusencias("") },
+          { label: "Pendientes", value: stats.pendientes, color: "var(--amarillo)", glowColor: "rgba(245, 158, 11, 0.16)", action: () => onNavigateToAusencias("") },
+          { label: "Total Registros", value: stats.total, color: "var(--verde)", glowColor: "rgba(16, 185, 129, 0.16)", action: () => onNavigateToAusencias("") },
         ].map((stat, i) => (
-          <button 
+          <TiltCard 
             key={i} 
-            type="button"
+            glowColor={stat.glowColor}
             onClick={stat.action}
-            className="p-3 sm:p-6 rounded-2xl sm:rounded-[28px] border border-[var(--border)] bg-[var(--bg3)]/80 backdrop-blur-md group cursor-pointer text-center sm:text-left shadow-sm hover:scale-[1.02] hover:border-[var(--verde)] transition-all duration-300 active:scale-95"
-            title={`Ver ${stat.label} en ausencias`}
+            className="p-5 sm:p-7 group"
           >
-            <div className="text-xl sm:text-4xl font-black mb-0.5 sm:mb-1 transition-transform group-hover:scale-110 origin-left" style={{ color: stat.color }}>
+            <div className="text-3xl sm:text-5xl font-black mb-1.5 transition-transform group-hover:scale-105 origin-left" style={{ color: stat.color }}>
               {stat.value}
             </div>
-            <div className="text-[7px] sm:text-[11px] uppercase tracking-widest font-black text-[var(--text3)] leading-tight flex items-center justify-between">
+            <div className="text-[9px] sm:text-[11px] uppercase tracking-widest font-black text-[var(--text3)] flex items-center justify-between">
               <span>{stat.label}</span>
-              <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block text-[var(--verde)]" />
+              <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--verde)]" />
             </div>
-          </button>
+          </TiltCard>
         ))}
       </div>
 

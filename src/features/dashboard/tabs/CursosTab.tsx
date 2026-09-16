@@ -1,6 +1,8 @@
 import React from "react";
-import { Users, Trash2 } from "lucide-react";
+import { Users, Trash2, Plus, GraduationCap } from "lucide-react";
 import { Curso, Alumno } from "@/lib/dataService";
+import { TiltCard, FluidOrb } from "@/components/ui/rare";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface CursosTabProps {
   cursos: Curso[];
@@ -18,79 +20,97 @@ export const CursosTab: React.FC<CursosTabProps> = ({
   onDeleteCurso,
 }) => {
   return (
-    <div className="animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 mb-12">
-        <div className="text-center md:text-left">
+    <div className="animate-fade-in space-y-8">
+      {/* HEADER CON FLUID ORB */}
+      <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-gradient-to-br from-[var(--bg2)] to-[var(--bg3)]/60 backdrop-blur-md shadow-sm flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
+        <FluidOrb color="rgba(16, 185, 129, 0.18)" size={260} className="-top-16 -right-12" />
+        <div className="text-center md:text-left relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] text-[10px] font-black uppercase tracking-wider mb-2">
+            Aulas y Cursos Oficiales
+          </div>
           <h2 className="text-3xl font-black title-font text-[var(--text)]">Gestión de Cursos</h2>
-          <p className="text-[var(--text2)] text-sm mt-1">Crea y elimina las aulas y cursos oficiales de la escuela.</p>
+          <p className="text-[var(--text2)] text-sm mt-1">Organiza las divisiones, asigna alumnos y supervisa la matrícula por aula.</p>
         </div>
         <button 
           onClick={onOpenCourseModal}
-          className="w-full md:w-auto bg-[var(--verde)] text-black font-black px-8 py-4 rounded-2xl hover:scale-105 transition-all shadow-xl shrink-0 cursor-pointer"
+          className="relative z-10 w-full md:w-auto bg-[var(--verde)] text-black font-black px-8 py-4 rounded-2xl hover:scale-105 transition-all shadow-xl shrink-0 cursor-pointer flex items-center justify-center gap-2"
         >
-          + Agregar Nuevo Curso
+          <Plus size={18} />
+          <span>Agregar Nuevo Curso</span>
         </button>
       </div>
 
-      <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[var(--bg3)]/50">
-            <tr>
-              <th className="p-4 sm:p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Nombre del Curso</th>
-              <th className="p-4 sm:p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Alumnos</th>
-              <th className="p-4 sm:p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cursos.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="p-16 sm:p-20 text-center text-[var(--text3)] italic">
-                  No hay cursos creados. Presiona "+ Agregar Nuevo Curso" para empezar.
-                </td>
-              </tr>
-            ) : (
-              cursos.map(c => {
-                const alumnosEnCurso = alumnos.filter(a => a.curso === c.nombre).length;
-                return (
-                  <tr key={c.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
-                    <td className="p-4 sm:p-6">
-                      <div className="font-bold text-[var(--text)]">{c.nombre}</div>
-                    </td>
-                    <td className="p-4 sm:p-6">
-                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border ${
-                        alumnosEnCurso > 0
-                          ? 'bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]'
-                          : 'bg-[var(--bg3)] text-[var(--text3)] border-[var(--border)]'
-                      }`}>
-                        {alumnosEnCurso} {alumnosEnCurso === 1 ? 'alumno' : 'alumnos'}
-                      </span>
-                    </td>
-                    <td className="p-4 sm:p-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => onAssignAlumnos(c)}
-                          className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase bg-[var(--azul-bg)] text-[var(--azul)] border border-[var(--azul-border)] rounded-xl hover:bg-[var(--azul)] hover:text-white transition-all active:scale-95 cursor-pointer"
-                          title="Asignar alumnos a este curso"
-                        >
-                          <Users size={12} />
-                          Gestionar Alumnos
-                        </button>
-                        <button
-                          onClick={() => onDeleteCurso(c)}
-                          className="text-[var(--rojo)] hover:scale-125 transition-transform p-2 cursor-pointer"
-                          title="Eliminar Curso"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+      {/* GRID DE CURSOS CON TILT CARDS DE RARE UI */}
+      {cursos.length === 0 ? (
+        <div className="card glass rounded-[32px] border border-[var(--border)] p-16 sm:p-20 text-center text-[var(--text3)] italic">
+          No hay cursos creados. Presiona "+ Agregar Nuevo Curso" para empezar.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cursos.map((c) => {
+            const alumnosCurso = alumnos.filter((a) => a.curso === c.nombre);
+            const totalAlumnos = alumnosCurso.length;
+            const previewAlumnos = alumnosCurso.slice(0, 4);
+
+            return (
+              <TiltCard
+                key={c.id}
+                className="p-6 flex flex-col justify-between group"
+                glowColor="rgba(16, 185, 129, 0.16)"
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] font-black text-lg">
+                      <GraduationCap size={24} />
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteCurso(c);
+                      }}
+                      className="text-[var(--rojo)] p-2 hover:bg-[var(--rojo-bg)] rounded-xl transition-all active:scale-95 cursor-pointer"
+                      title="Eliminar Curso"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <h3 className="text-xl font-black text-[var(--text)] group-hover:text-[var(--verde)] transition-colors mb-1">
+                    {c.nombre}
+                  </h3>
+                  <p className="text-xs text-[var(--text3)] font-semibold mb-4">
+                    División Escolar Activa
+                  </p>
+
+                  {/* PREVIEW DE ALUMNOS CON BLOBATAR */}
+                  <div className="flex items-center gap-2 mb-6 pt-3 border-t border-[var(--border)]/50">
+                    {previewAlumnos.length > 0 ? (
+                      <div className="flex -space-x-2 overflow-hidden py-1">
+                        {previewAlumnos.map((al) => (
+                          <div key={al.id || al.dni} className="inline-block ring-2 ring-[var(--bg3)] rounded-full">
+                            <UserAvatar name={al.nombre} email={al.email} size={28} showRing={false} />
+                          </div>
+                        ))}
                       </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                    ) : null}
+                    <span className="text-xs font-bold text-[var(--text2)]">
+                      {totalAlumnos} {totalAlumnos === 1 ? "alumno" : "alumnos"}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => onAssignAlumnos(c)}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-black uppercase bg-[var(--bg2)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--verde)] hover:text-black hover:border-[var(--verde)] transition-all active:scale-95 cursor-pointer"
+                >
+                  <Users size={14} />
+                  <span>Gestionar Alumnos</span>
+                </button>
+              </TiltCard>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

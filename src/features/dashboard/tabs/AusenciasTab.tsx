@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, ShieldAlert, AlertTriangle, FileText, Trash2 } from "lucide-react";
 import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl } from "@/lib/dataService";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface AusenciasTabProps {
   ausencias: Ausencia[];
@@ -183,15 +184,20 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
               {filteredAusencias.map((a) => (
                 <tr key={a.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)]">
                   <td className="p-5">
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery(a.profNombre)}
-                      className="font-bold text-[var(--text)] hover:text-[var(--verde)] hover:underline transition-colors text-left cursor-pointer"
-                      title={`Filtrar por ${a.profNombre}`}
-                    >
-                      {a.profNombre}
-                    </button>
-                    <div className="text-[10px] text-[var(--text3)] uppercase font-bold tracking-tighter">{a.materias.join(", ")}</div>
+                    <div className="flex items-center gap-3">
+                      <UserAvatar name={a.profNombre} size={36} showRing={false} />
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery(a.profNombre)}
+                          className="font-bold text-[var(--text)] hover:text-[var(--verde)] hover:underline transition-colors text-left cursor-pointer"
+                          title={`Filtrar por ${a.profNombre}`}
+                        >
+                          {a.profNombre}
+                        </button>
+                        <div className="text-[10px] text-[var(--text3)] uppercase font-bold tracking-tighter">{a.materias.join(", ")}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="p-5">
                     <div className="text-sm font-medium">{a.tipo}</div>

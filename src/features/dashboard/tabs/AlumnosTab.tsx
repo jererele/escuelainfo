@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, Trash2 } from "lucide-react";
 import { Alumno, UserProfile } from "@/lib/dataService";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface AlumnosTabProps {
   alumnos: Alumno[];
@@ -60,8 +61,13 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                     return (
                       <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
                         <td className="p-6">
-                          <div className="font-bold text-[var(--text)]">{u.nombre}</div>
-                          <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                          <div className="flex items-center gap-3">
+                            <UserAvatar name={u.nombre} email={u.email} size={36} />
+                            <div>
+                              <div className="font-bold text-[var(--text)]">{u.nombre}</div>
+                              <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="p-6 text-sm">{studDetails?.dni || "Cargando..."}</td>
                         <td className="p-6">
@@ -146,7 +152,15 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                 ) : (
                   filteredAlumnos.map(al => (
                     <tr key={al.id} className="border-b border-[var(--border)] last:border-none hover:bg-white/5 transition-colors">
-                      <td className="p-6 font-bold">{al.nombre}</td>
+                      <td className="p-6">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar name={al.nombre} email={al.email} size={36} />
+                          <div>
+                            <div className="font-bold text-[var(--text)]">{al.nombre}</div>
+                            {al.email && <div className="text-[11px] text-[var(--text3)]">{al.email}</div>}
+                          </div>
+                        </div>
+                      </td>
                       <td className="p-6 text-sm">{al.dni}</td>
                       <td className="p-6">
                         {al.curso && al.curso !== 'pendiente'

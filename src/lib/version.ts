@@ -4,16 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.9.2";
-export const APP_BUILD_DATE = "15/09/2026 21:10 hs";
+export const APP_VERSION = "v2.10.0";
+export const APP_BUILD_DATE = "16/09/2026 17:00 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Envío Automático de Correos en Segundo Plano: Se eliminó la apertura de Gmail Web (`mail.google.com`) tanto en el modal de Avisos Institucionales (`SendNoticeModal`) como en el formulario de consultas de la web (`ContactForm`). Ahora se procesan y envían automáticamente en el servidor a través de `/api/send-email`.",
-  "Soporte CCO y Privacidad: El servicio de correo ahora admite destinatarios en Copia Oculta (BCC) y remitentes de respuesta (`replyTo`), garantizando la confidencialidad de los correos de alumnos y docentes.",
-  "Feedback Visual y Prevención de Envíos Duplicados: Se agregaron estados de carga y spinners animados durante el despacho de avisos por correo."
+  "Integración de Blobatar: Avatares geométricos deterministas generados dinámicamente a partir del nombre y email de cada alumno, docente y perfil de usuario en toda la plataforma.",
+  "Rare UI (Tarjetas 3D Tilt): Efectos de perspectiva tridimensional y resplandor radial interactivo que sigue al cursor en tarjetas de cursos y métricas del Dashboard.",
+  "Rare UI (Gravity Text): Título institucional animado con físicas elásticas de resortes que reaccionan al pasar el cursor.",
+  "Rare UI (Fluid Orbs): Ambientación con orbes de gradiente líquido fluidos acelerados por hardware en cabeceras destacadas.",
+  "Optimización Móvil (Regla 2): Separación condicional del DOM para desactivar efectos pesados en pantallas táctiles y mantener 60-120 FPS estables."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.9.2",
+    date: "15/09/2026 21:10 hs",
+    notes: [
+      "Envío Automático de Correos en Segundo Plano: Se eliminó la apertura de Gmail Web (`mail.google.com`) tanto en el modal de Avisos Institucionales (`SendNoticeModal`) como en el formulario de consultas de la web (`ContactForm`). Ahora se procesan y envían automáticamente en el servidor a través de `/api/send-email`.",
+      "Soporte CCO y Privacidad: El servicio de correo ahora admite destinatarios en Copia Oculta (BCC) y remitentes de respuesta (`replyTo`), garantizando la confidencialidad de los correos de alumnos y docentes.",
+      "Feedback Visual y Prevención de Envíos Duplicados: Se agregaron estados de carga y spinners animados durante el despacho de avisos por correo."
+    ]
+  },
   {
     version: "v2.9.1",
     date: "15/09/2026 20:30 hs",

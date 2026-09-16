@@ -1,6 +1,7 @@
 import React from "react";
-import { GraduationCap, Pencil, Trash2 } from "lucide-react";
+import { GraduationCap, Pencil, Trash2, Search } from "lucide-react";
 import { Profesor, UserProfile } from "@/lib/dataService";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ProfesoresTabProps {
   profesores: Profesor[];
@@ -74,9 +75,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                 </div>
               )}
               <div className="flex justify-between items-start mb-6 mt-4">
-                <div className="w-12 h-12 bg-[var(--bg3)] rounded-2xl flex items-center justify-center text-[var(--text2)] group-hover:bg-[var(--verde-bg)] group-hover:text-[var(--verde)] transition-colors">
-                  <GraduationCap size={24} />
-                </div>
+                <UserAvatar name={p.nombre} email={p.email} size={48} showRing={true} />
                 <div className="text-[10px] font-black uppercase text-[var(--text3)]">DNI: {p.dni}</div>
               </div>
               <h3 className="text-xl font-bold mb-2 group-hover:text-[var(--verde)] transition-colors">{p.nombre}</h3>
