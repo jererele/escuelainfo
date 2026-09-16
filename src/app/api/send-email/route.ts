@@ -9,24 +9,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Faltan parámetros de destinatario ('to' o 'bcc') o 'subject'" }, { status: 400 });
     }
 
-    // Configurar el transporter usando variables de entorno
-    // Para Gmail: host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '465'),
-      secure: process.env.SMTP_SECURE === 'true' || true,
-      auth: {
-        user: process.env.SMTP_USER, 
-        pass: process.env.SMTP_PASS, 
-      },
-    });
+    const user = process.env.SMTP_USER?.trim();
+    const pass = process.env.SMTP_PASS?.replace(/\s+/g, "");
 
     // Validar configuración
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    if (!user || !pass) {
       console.warn("Faltan SMTP_USER o SMTP_PASS en .env.local. Simulación de envío exitoso.");
       console.log(`[EMAIL SIMULADO] Para: ${to || '(CCO)'}, CCO: ${Array.isArray(bcc) ? bcc.length + ' destinatarios' : bcc}, Asunto: ${subject}`);
       return NextResponse.json({ success: true, simulated: true });
     }
+
+    // Configurar el transporter para Gmail
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user,
+        pass,
+      },
+    });
 
     const mailOptions: any = {
       from: process.env.SMTP_FROM || `"EscuelaInfo" <${process.env.SMTP_USER}>`,
