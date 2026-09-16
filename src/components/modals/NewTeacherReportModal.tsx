@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { saveAusencia, Ausencia, Profesor, logAction } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
+import { notify } from "@/lib/notify";
 import { X, Check, AlertCircle, ShieldAlert, AlertTriangle, FileText } from "lucide-react";
 
 interface NewTeacherReportModalProps {
@@ -47,6 +48,11 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
 
   const showToast = (msg: string, type: "error" | "success" = "error") => {
     setToast({ msg, type });
+    if (type === "error") {
+      notify.error(msg);
+    } else {
+      notify.success(msg);
+    }
     setTimeout(() => setToast(null), 3500);
   };
 

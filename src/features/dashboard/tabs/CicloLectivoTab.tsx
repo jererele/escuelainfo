@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Trash2, RefreshCw, Check, Search } from "lucide-react";
 import { Alumno, Curso, UserProfile, MigrationResult, migrateToCompactFormat, logAction, updateAlumno, deleteHorario, getHorarios, deleteAusencia } from "@/lib/dataService";
+import { notify } from "@/lib/notify";
 
 interface CicloLectivoTabProps {
   alumnos: Alumno[];
@@ -87,23 +88,31 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
     setLoading(true);
     try {
       let count = 0;
-      for (const al of alumnos) {
-        const newCourse = promotions[al.id!];
-        if (newCourse && newCourse !== al.curso) {
-          await updateAlumno(al.id!, { curso: newCourse });
-          count++;
+      const saveAction = async () => {
+        for (const al of alumnos) {
+          const newCourse = promotions[al.id!];
+          if (newCourse && newCourse !== al.curso) {
+            await updateAlumno(al.id!, { curso: newCourse });
+            count++;
+          }
         }
-      }
-      await logAction(
-        user?.email || "desconocido", 
-        "PROMOCION_ALUMNOS", 
-        `Se promovieron ${count} alumnos para el nuevo ciclo lectivo`
-      );
-      const updated = await import("@/lib/dataService").then(m => m.getAlumnos());
-      setAlumnos(updated);
-      showToast(`¡Éxito! Se actualizaron ${count} alumnos.`, "success");
+        await logAction(
+          user?.email || "desconocido", 
+          "PROMOCION_ALUMNOS", 
+          `Se promovieron ${count} alumnos para el nuevo ciclo lectivo`
+        );
+        const updated = await import("@/lib/dataService").then(m => m.getAlumnos());
+        setAlumnos(updated);
+        return count;
+      };
+
+      await notify.promise(saveAction(), {
+        loading: "Guardando promociones de alumnos...",
+        success: (c) => `¡Éxito! Se actualizaron ${c} alumnos.`,
+        error: "Error al guardar las promociones"
+      });
     } catch (err) {
-      showToast("Error al guardar las promociones", "error");
+      notify.error("Error al guardar las promociones");
     } finally {
       setLoading(false);
     }
@@ -113,15 +122,22 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
     askConfirm("⚠️ ¿Estás seguro de VACIAR TODOS los horarios? Esta acción eliminará permanentemente la grilla de clases para todos los cursos y no se puede deshacer.", async () => {
       setLoading(true);
       try {
-        const currentHorarios = await getHorarios();
-        for (const h of currentHorarios) {
-          await deleteHorario(h.id!);
-        }
-        await logAction(user?.email || "desconocido", "REINICIAR_HORARIOS", "Se eliminaron todos los horarios del ciclo lectivo");
-        setHorarios([]);
-        showToast("Horarios vaciados con éxito", "success");
+        const clearAction = async () => {
+          const currentHorarios = await getHorarios();
+          for (const h of currentHorarios) {
+            await deleteHorario(h.id!);
+          }
+          await logAction(user?.email || "desconocido", "REINICIAR_HORARIOS", "Se eliminaron todos los horarios del ciclo lectivo");
+          setHorarios([]);
+        };
+
+        await notify.promise(clearAction(), {
+          loading: "Vaciando cronogramas...",
+          success: "Horarios vaciados con éxito",
+          error: "Error al vaciar horarios"
+        });
       } catch (err) {
-        showToast("Error al vaciar horarios", "error");
+        notify.error("Error al vaciar horarios");
       } finally {
         setLoading(false);
       }
@@ -132,14 +148,21 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
     askConfirm("⚠️ ¿Estás seguro de VACIAR TODAS las ausencias? Esta acción eliminará permanentemente todos los registros de licencias, inasistencias y paros del ciclo anterior.", async () => {
       setLoading(true);
       try {
-        for (const a of ausencias) {
-          await deleteAusencia(a.id!);
-        }
-        await logAction(user?.email || "desconocido", "REINICIAR_AUSENCIAS", "Se eliminaron todas las ausencias del ciclo lectivo");
-        setAusencias([]);
-        showToast("Historial de ausencias vaciado con éxito", "success");
+        const clearAction = async () => {
+          for (const a of ausencias) {
+            await deleteAusencia(a.id!);
+          }
+          await logAction(user?.email || "desconocido", "REINICIAR_AUSENCIAS", "Se eliminaron todas las ausencias del ciclo lectivo");
+          setAusencias([]);
+        };
+
+        await notify.promise(clearAction(), {
+          loading: "Vaciando historial de ausencias...",
+          success: "Historial de ausencias vaciado con éxito",
+          error: "Error al vaciar ausencias"
+        });
       } catch (err) {
-        showToast("Error al vaciar ausencias", "error");
+        notify.error("Error al vaciar ausencias");
       } finally {
         setLoading(false);
       }
@@ -188,13 +211,21 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
               setIsMigrating(true);
               setMigrationResult(null);
               try {
-                const res = await migrateToCompactFormat();
-                setMigrationResult(res);
-                await logAction(user?.email || "desconocido", "MIGRAR_BASE_DATOS",
-                  `Usuarios: ${res.usuariosMigrated}, Ausencias: ${res.ausenciasMigrated}, Errores: ${res.errors.length}`);
-                showToast(`Migración completa: ${res.usuariosMigrated + res.ausenciasMigrated} documentos actualizados`, "success");
+                const migrateAction = async () => {
+                  const res = await migrateToCompactFormat();
+                  setMigrationResult(res);
+                  await logAction(user?.email || "desconocido", "MIGRAR_BASE_DATOS",
+                    `Usuarios: ${res.usuariosMigrated}, Ausencias: ${res.ausenciasMigrated}, Errores: ${res.errors.length}`);
+                  return res;
+                };
+
+                await notify.promise(migrateAction(), {
+                  loading: "Optimizando y migrando base de datos...",
+                  success: (res) => `Migración completa: ${res.usuariosMigrated + res.ausenciasMigrated} documentos actualizados`,
+                  error: "Error durante la migración"
+                });
               } catch (err) {
-                showToast("Error en la migración", "error");
+                notify.error("Error en la migración");
               } finally {
                 setIsMigrating(false);
               }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { account } from "@/lib/appwrite";
 import { saveAusencia, Ausencia, getProfesores, Profesor, logAction, uploadCertificateFile, deleteCertificateFile } from "@/lib/dataService";
+import { notify } from "@/lib/notify";
 import { X, AlertCircle, Search, ChevronDown, Upload, Check } from "lucide-react";
 
 interface NewAbsenceModalProps {
@@ -226,29 +227,37 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
         fechaReg: new Date().toISOString()
       };
 
-      await saveAusencia(newAusencia);
+      const saveAction = async () => {
+        await saveAusencia(newAusencia);
 
-      let userEmail = "desconocido";
-      try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
-      await logAction(
-        userEmail, "REGISTRAR_AUSENCIA",
-        `Profesor: ${newAusencia.profNombre}, Tipo: ${newAusencia.tipo}, Fechas: ${newAusencia.inicio} a ${newAusencia.fin}`
-      );
+        let userEmail = "desconocido";
+        try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
+        await logAction(
+          userEmail, "REGISTRAR_AUSENCIA",
+          `Profesor: ${newAusencia.profNombre}, Tipo: ${newAusencia.tipo}, Fechas: ${newAusencia.inicio} a ${newAusencia.fin}`
+        );
 
-      // Notificar a directivos por email
-      try {
-        await fetch("/api/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: "skbcraft.info@gmail.com",
-            subject: `Nueva solicitud de licencia: ${newAusencia.profNombre}`,
-            text: `El profesor ${newAusencia.profNombre} ha solicitado una licencia (${newAusencia.tipo}) desde el ${newAusencia.inicio} al ${newAusencia.fin}.\nMotivo: ${newAusencia.motivo}\n\nPor favor, revise el panel de ausencias para aprobar o rechazar la solicitud.`
-          })
-        });
-      } catch (err) {
-        console.error("No se pudo notificar por email", err);
-      }
+        // Notificar a directivos por email
+        try {
+          await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: "skbcraft.info@gmail.com",
+              subject: `Nueva solicitud de licencia: ${newAusencia.profNombre}`,
+              text: `El profesor ${newAusencia.profNombre} ha solicitado una licencia (${newAusencia.tipo}) desde el ${newAusencia.inicio} al ${newAusencia.fin}.\nMotivo: ${newAusencia.motivo}\n\nPor favor, revise el panel de ausencias para aprobar o rechazar la solicitud.`
+            })
+          });
+        } catch (err) {
+          console.error("No se pudo notificar por email", err);
+        }
+      };
+
+      await notify.promise(saveAction(), {
+        loading: "Registrando solicitud de licencia...",
+        success: "¡Licencia solicitada exitosamente!",
+        error: (err: any) => err?.message || "Error al registrar la licencia"
+      });
 
       onSuccess();
       onClose();

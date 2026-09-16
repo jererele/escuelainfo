@@ -3,6 +3,7 @@ import "./globals.css";
 import CosmosBackground from "@/components/layout/CosmosBackground";
 import TermsModal from "@/components/modals/TermsModal";
 import Footer from "@/components/layout/Footer";
+import SileoToaster from "@/components/ui/SileoToaster";
 
 export const metadata: Metadata = {
   title: "EscuelaInfo — Registro de Ausencias",
@@ -69,6 +70,7 @@ export default function RootLayout({
           desaparece sin rastro del árbol de React.
         */}
         <TermsModal />
+        <SileoToaster />
 
         {/*
           Contenedor principal: relative + z-10 para estar sobre el fondo.

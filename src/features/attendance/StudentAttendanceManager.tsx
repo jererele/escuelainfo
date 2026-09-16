@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction } from "@/lib/dataService";
+import { notify } from "@/lib/notify";
 import { UserCheck, Check, X, AlertCircle, Calendar, Clock, Search, Printer } from "lucide-react";
 import AttendanceTableResponsive from "@/components/shared/AttendanceTableResponsive";
 import { SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
@@ -114,24 +115,30 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     setErrorMsg("");
     setSuccessMsg("");
     try {
-      const listToSave: AsistenciaJornada[] = Object.entries(asistenciasJornada).map(([alumnoId, estado]) => {
-        const al = alumnos.find(a => a.id === alumnoId || a.dni === alumnoId);
-        return {
-          id: existingRecords[alumnoId] || undefined,
-          alumnoId,
-          alumnoNombre: al ? al.nombre : "Alumno",
-          fecha,
-          estado,
-          preceptorId: userProfile?.uid || "admin"
-        };
-      });
+      const savePromise = async () => {
+        const listToSave: AsistenciaJornada[] = Object.entries(asistenciasJornada).map(([alumnoId, estado]) => {
+          const al = alumnos.find(a => a.id === alumnoId || a.dni === alumnoId);
+          return {
+            id: existingRecords[alumnoId] || undefined,
+            alumnoId,
+            alumnoNombre: al ? al.nombre : "Alumno",
+            fecha,
+            estado,
+            preceptorId: userProfile?.uid || "admin"
+          };
+        });
 
-      await saveAsistenciasJornada(listToSave);
+        await saveAsistenciasJornada(listToSave);
+        await logAction(userProfile?.email || "admin", "REGISTRAR_ASISTENCIA_JORNADA", `Curso: ${selectedCurso}, Fecha: ${fecha}`);
+        await cargarPlanillaJornada();
+      };
+
+      await notify.promise(savePromise(), {
+        loading: "Guardando planilla de asistencia...",
+        success: "¡Planilla de asistencia guardada con éxito!",
+        error: "Ocurrió un error al guardar la asistencia."
+      });
       setSuccessMsg("Planilla de asistencia general guardada correctamente.");
-      await logAction(userProfile?.email || "admin", "REGISTRAR_ASISTENCIA_JORNADA", `Curso: ${selectedCurso}, Fecha: ${fecha}`);
-      
-      // Recargar para actualizar los IDs guardados
-      await cargarPlanillaJornada();
     } catch {
       setErrorMsg("Ocurrió un error al guardar la asistencia.");
     } finally {

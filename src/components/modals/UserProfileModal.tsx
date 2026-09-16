@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { account } from "@/lib/appwrite";
-import { updateUserProfile, UserProfile, syncUserEmailChange } from "@/lib/dataService";
+import { UserProfile, updateUserProfile, syncUserEmailChange } from "@/lib/dataService";
+import { notify } from "@/lib/notify";
 import { X, User, Phone, MapPin, Mail, Lock, Eye, EyeOff, Check, AlertCircle, Loader } from "lucide-react";
 
 interface Props {
@@ -81,7 +82,12 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type });
-    if (type === "success") setTimeout(() => setToast(null), 4000);
+    if (type === "success") {
+      notify.success(msg);
+      setTimeout(() => setToast(null), 4000);
+    } else {
+      notify.error(msg);
+    }
   };
 
   const handleSaveInfo = async () => {

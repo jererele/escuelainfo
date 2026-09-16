@@ -13,6 +13,7 @@ import ContactForm from "@/components/ContactForm";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
+import { notify } from "@/lib/notify";
 import {
   GeneralTab,
   AusenciasTab,
@@ -160,7 +161,6 @@ export default function Dashboard() {
   const [viewType, setViewType] = useState<"hoy" | "semana">("hoy");
   const [selectedMobileDay, setSelectedMobileDay] = useState<string>("Lunes");
   const [scheduleQuery, setScheduleQuery] = useState("");
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({isOpen: false, message: "", onConfirm: () => {}});
   const [hasMounted, setHasMounted] = useState(false);
   const [promotions, setPromotions] = useState<Record<string, string>>({});
@@ -317,9 +317,12 @@ export default function Dashboard() {
     }
   };
 
-  const showToast = (message: string, type = "success") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (type === "error") {
+      notify.error(message);
+    } else {
+      notify.success(message);
+    }
   };
 
 
@@ -982,22 +985,10 @@ export default function Dashboard() {
         </div>
 </main>
 
-      {/* TOAST */}
-      <div className={`toast ${toast.show ? "show" : ""} ${toast.type === "error" ? "border-[var(--rojo-border)] text-[var(--rojo)] bg-[var(--bg)]" : "border-[var(--verde-border)] text-[var(--verde)] bg-[var(--bg)]"}`}>
-        <span className="shrink-0">{toast.type === "error" ? <X size={18} /> : <Check size={18} />}</span>
-        <span className="font-bold text-sm flex-1">{toast.message}</span>
-        <button 
-          onClick={() => setToast(prev => ({ ...prev, show: false }))} 
-          className="ml-2 p-1 rounded-lg hover:bg-[var(--bg3)] text-[var(--text3)] hover:text-[var(--text)] transition-colors shrink-0"
-        >
-          <X size={14} />
-        </button>
-      </div>
-
       <NewAbsenceModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSuccess={() => { showToast("Ausencia registrada con éxito", "success"); }}
+        onSuccess={() => {}}
         lockedProfesor={userProfile?.rol === 'profesor' ? currentProfesor : undefined}
       />
 
@@ -1120,16 +1111,6 @@ export default function Dashboard() {
         onClose={() => setIsQRModalOpen(false)}
         userProfile={userProfile}
       />
-      {toast.show && (
-        <div className={`fixed top-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold border transition-all animate-slide-in-right ${
-          toast.type === 'success'
-            ? 'bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]'
-            : 'bg-[var(--rojo-bg)] text-[var(--rojo)] border-[var(--rojo-border)]'
-        }`}>
-          {toast.type === 'success' ? <Check size={16} /> : <X size={16} />}
-          <span>{toast.message}</span>
-        </div>
-      )}
     </div>
     </SidebarProvider>
   );

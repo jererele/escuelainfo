@@ -4,13 +4,15 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
 import ContactForm from '@/components/ContactForm';
+import { notify } from '@/lib/notify';
 
 export default function ContactoPage() {
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
   const showToast = (message: string, type: "success" | "error" = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    if (type === "error") {
+      notify.error(message);
+    } else {
+      notify.success(message);
+    }
   };
 
   return (
@@ -35,16 +37,6 @@ export default function ContactoPage() {
           Volver al Inicio
         </Link>
       </div>
-
-      {toast && (
-        <div className={`fixed bottom-4 right-4 z-50 px-6 py-3.5 rounded-2xl shadow-lg border animate-slide-in text-xs font-bold flex items-center gap-3 ${
-          toast.type === "success" 
-            ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]" 
-            : "bg-[var(--rojo-bg)] text-[var(--rojo)] border-[var(--rojo-border)]"
-        }`}>
-          {toast.message}
-        </div>
-      )}
     </div>
   );
 }

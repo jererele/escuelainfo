@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Mail, AlertCircle, Send, Loader2 } from "lucide-react";
 import { Alumno, Profesor, UserProfile, Curso, logAction } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
+import { notify } from "@/lib/notify";
 
 interface Props {
   isOpen: boolean;
@@ -116,8 +117,7 @@ export default function SendNoticeModal({
       return;
     }
 
-    setIsSending(true);
-    try {
+    const sendNoticeAction = async () => {
       // Registrar auditoría de envío
       await logAction(
         userEmail,
@@ -155,12 +155,18 @@ export default function SendNoticeModal({
       if (!res.ok) {
         throw new Error(data.error || "No se pudo enviar el correo");
       }
+      return data;
+    };
 
-      if (data.simulated) {
-        showToast(`Aviso enviado a ${emails.length} destinatario(s) (Modo simulación - Ver logs de consola)`, "success");
-      } else {
-        showToast(`¡Aviso enviado automáticamente a ${emails.length} destinatario(s)!`, "success");
-      }
+    setIsSending(true);
+    try {
+      await notify.promise(sendNoticeAction(), {
+        loading: `Enviando comunicado a ${emails.length} destinatario(s)...`,
+        success: (data: any) => data?.simulated
+          ? `Aviso procesado (${emails.length} destinatarios - modo simulación)`
+          : `¡Aviso enviado automáticamente a ${emails.length} destinatario(s)!`,
+        error: (err: any) => err?.message || "Ocurrió un problema al enviar el correo automático."
+      });
 
       setSubject("");
       setMessage("");
