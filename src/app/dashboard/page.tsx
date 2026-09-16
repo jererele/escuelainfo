@@ -1035,7 +1035,6 @@ export default function Dashboard() {
         profesores={profesores}
         usuarios={usuarios}
         cursos={cursos}
-        showToast={showToast}
       />
 
       {isTeacherReportModalOpen && currentProfesor && (

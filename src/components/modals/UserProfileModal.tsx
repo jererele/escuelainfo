@@ -203,7 +203,6 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          {toast && <Toast msg={toast.msg} type={toast.type} />}
 
           {/* TAB: Info */}
           {activeTab === "info" && (

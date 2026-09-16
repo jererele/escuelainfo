@@ -144,18 +144,6 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
           </button>
         </div>
 
-        {/* TOAST INLINE */}
-        {toast && (
-          <div className={`mx-6 mt-5 flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold animate-fade-in ${
-            toast.type === "error"
-              ? "bg-[var(--rojo-bg)] border-[var(--rojo-border)] text-[var(--rojo)]"
-              : "bg-[var(--verde-bg)] border-[var(--verde-border)] text-[var(--verde)]"
-          }`}>
-            <AlertCircle size={16} className="shrink-0" />
-            {toast.msg}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
 
           {/* TIPO */}

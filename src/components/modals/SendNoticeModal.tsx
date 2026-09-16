@@ -13,7 +13,6 @@ interface Props {
   profesores: Profesor[];
   usuarios: UserProfile[];
   cursos: Curso[];
-  showToast: (msg: string, type: "success" | "error") => void;
 }
 
 export default function SendNoticeModal({
@@ -22,8 +21,7 @@ export default function SendNoticeModal({
   alumnos,
   profesores,
   usuarios,
-  cursos,
-  showToast
+  cursos
 }: Props) {
   const [destino, setDestino] = useState<"todos" | "alumnos" | "profesores" | "curso" | "usuarios">("todos");
   const [selectedCourse, setSelectedCourse] = useState("");
