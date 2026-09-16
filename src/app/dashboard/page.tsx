@@ -852,6 +852,7 @@ export default function Dashboard() {
               horarios={horarios}
               canManageAusencias={canManageAusencias}
               currentAlumno={currentAlumno}
+              userProfile={userProfile}
               onNavigateToAusencias={(search) => { setActiveTab("ausencias"); setSearchQuery(search || ""); }}
               onNavigateToHorarios={(curso) => { setActiveTab("horarios"); setSelectedCourse(curso); }}
               onOpenNewAbsenceModal={() => setIsModalOpen(true)}

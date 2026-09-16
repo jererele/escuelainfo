@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Blobatar } from "@blobatar/react";
 
 interface UserAvatarProps {
   name: string;
   email?: string;
+  avatarUrl?: string | null;
   size?: number;
   className?: string;
   animate?: "hover" | "always" | boolean;
@@ -15,17 +16,21 @@ interface UserAvatarProps {
 export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
   name,
   email,
+  avatarUrl,
   size = 40,
   className = "",
   animate = "hover",
   showRing = true,
 }) => {
+  const [imgError, setImgError] = useState(false);
+
   const animateMode: "hover" | "always" | undefined =
     animate === true || animate === "hover"
       ? "hover"
       : animate === "always"
       ? "always"
       : undefined;
+
   // Use email or clean name as deterministic seed
   const seed = useMemo(() => {
     const raw = (email || name || "usuario").trim().toLowerCase();
@@ -41,6 +46,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
     return name.slice(0, 2).toUpperCase();
   }, [name]);
 
+  const hasValidPhoto = Boolean(avatarUrl && !imgError);
+
   return (
     <div
       className={`relative inline-flex items-center justify-center rounded-2xl overflow-hidden shrink-0 transition-transform duration-300 hover:scale-105 select-none ${
@@ -50,13 +57,21 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
       title={name || "Usuario"}
       aria-label={`Avatar de ${name || "Usuario"}`}
     >
-      <Blobatar
-        name={seed}
-        size={size}
-        animate={animateMode}
-        className="w-full h-full object-cover transition-opacity duration-300"
-      />
-      {/* Accessible visual fallback if SVG fails to load or text helper */}
+      {hasValidPhoto ? (
+        <img
+          src={avatarUrl!}
+          alt={name}
+          onError={() => setImgError(true)}
+          className="w-full h-full object-cover rounded-2xl"
+        />
+      ) : (
+        <Blobatar
+          name={seed}
+          size={size}
+          animate={animateMode}
+          className="w-full h-full object-cover transition-opacity duration-300"
+        />
+      )}
       <span className="sr-only">{initials}</span>
     </div>
   );

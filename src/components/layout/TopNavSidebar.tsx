@@ -27,6 +27,7 @@ import { UserProfile } from "@/lib/dataService";
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
 import VersionModal from "@/components/modals/VersionModal";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface TopNavSidebarProps {
   user: any;
@@ -232,12 +233,15 @@ export default function TopNavSidebar({
           <button
             onClick={onProfileOpen}
             title="Ver perfil"
-            className="flex items-center gap-2 px-2 py-1 rounded-xl
+            className="flex items-center gap-2 px-1.5 py-1 rounded-xl
               hover:bg-[var(--bg3)] transition-all active:scale-95"
           >
-            <div className="w-8 h-8 rounded-full bg-[var(--verde)] flex items-center justify-center text-black font-black text-sm shadow-sm">
-              {userInitial}
-            </div>
+            <UserAvatar
+              name={userName}
+              email={userProfile?.email || user?.email}
+              size={32}
+              showRing={true}
+            />
             <span className="hidden sm:block text-xs font-bold text-[var(--text)] max-w-[100px] truncate">
               {userName.split(" ")[0]}
             </span>
@@ -301,9 +305,12 @@ export default function TopNavSidebar({
                   hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] border border-transparent
                   transition-all group"
               >
-                <div className="w-9 h-9 rounded-full bg-[var(--verde)] flex items-center justify-center text-black font-black shadow-sm shrink-0">
-                  {userInitial}
-                </div>
+                <UserAvatar
+                  name={userName}
+                  email={userProfile?.email || user?.email}
+                  size={38}
+                  showRing={true}
+                />
                 <div className="text-left">
                   <p className="text-sm font-bold text-[var(--text)] group-hover:text-[var(--verde)] transition-colors truncate max-w-[140px]">
                     {userName}

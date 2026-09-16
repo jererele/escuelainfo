@@ -4,17 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.1";
-export const APP_BUILD_DATE = "16/09/2026 17:40 hs";
+export const APP_VERSION = "v2.10.2";
+export const APP_BUILD_DATE = "16/09/2026 17:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Motor de Notificaciones Sileo (Físicas y Animaciones Fluidas): Reemplazo completo del sistema de alertas tradicional por Sileo (`sileo`), brindando notificaciones dinámicas, elásticas y basadas en física en toda la aplicación.",
-  "Estados de Carga Reactivos (Sileo Promise): Integración de `notify.promise` en despachos de avisos institucionales por correo (`SendNoticeModal`), registro de licencias docentes (`NewAbsenceModal`), guardado de planillas de asistencia (`StudentAttendanceManager`) y migraciones de base de datos.",
-  "Integración Global y Toaster Seguro: Montaje del componente `SileoToaster` en el Layout Raíz con sincronización de tema claro/oscuro y prevención total de errores de hidratación SSR.",
-  "Unificación de Avisos y Acciones: Canalización centralizada de retroalimentación en todos los módulos (aprobaciones, matriculaciones, creación de horarios y gestión de colaboradores) a través de la utilidad unificada `notify`."
+  "Unificación Total de Avatares y Fotos de Perfil (Blobatar): Se eliminaron todos los círculos con letras iniciales aisladas en la barra superior (Top Navigation Bar) y menú lateral móvil, reemplazándolos por el componente reactivo `UserAvatar`.",
+  "Integración en Modal de Perfil ('Mi Perfil'): La cabecera del perfil y la pestaña de información ahora muestran el avatar personal del usuario en alta definición con animaciones continuas.",
+  "Avatares en Tablas de Configuración y Colaboradores: Inclusión de avatares deterministas para cada solicitante y usuario activo en el módulo de accesos (`ConfiguracionTab`).",
+  "Tarjeta de Bienvenida en Dashboard: Inclusión de la ficha de usuario y avatar animado en la cabecera principal (`GeneralTab`) con sincronización en tiempo real."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.1",
+    date: "16/09/2026 17:40 hs",
+    notes: [
+      "Motor de Notificaciones Sileo (Físicas y Animaciones Fluidas): Reemplazo completo del sistema de alertas tradicional por Sileo (`sileo`), brindando notificaciones dinámicas, elásticas y basadas en física en toda la aplicación.",
+      "Estados de Carga Reactivos (Sileo Promise): Integración de `notify.promise` en despachos de avisos institucionales por correo (`SendNoticeModal`), registro de licencias docentes (`NewAbsenceModal`), guardado de planillas de asistencia (`StudentAttendanceManager`) y migraciones de base de datos.",
+      "Integración Global y Toaster Seguro: Montaje del componente `SileoToaster` en el Layout Raíz con sincronización de tema claro/oscuro y prevención total de errores de hidratación SSR.",
+      "Unificación de Avisos y Acciones: Canalización centralizada de retroalimentación en todos los módulos (aprobaciones, matriculaciones, creación de horarios y gestión de colaboradores) a través de la utilidad unificada `notify`."
+    ]
+  },
   {
     version: "v2.10.0",
     date: "16/09/2026 17:00 hs",

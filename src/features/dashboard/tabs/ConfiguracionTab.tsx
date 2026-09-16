@@ -2,6 +2,7 @@ import React from "react";
 import { Trash2 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ConfiguracionTabProps {
   usuarios: UserProfile[];
@@ -68,8 +69,13 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                   return (
                     <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
                       <td className="p-6">
-                        <div className="font-bold text-[var(--text)]">{u.nombre}</div>
-                        <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                        <div className="flex items-center gap-3">
+                          <UserAvatar name={u.nombre} email={u.email} size={36} showRing={false} />
+                          <div>
+                            <div className="font-bold text-[var(--text)]">{u.nombre}</div>
+                            <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-6">
                         <span className="px-3 py-1 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-lg text-xs font-bold uppercase">
@@ -168,8 +174,13 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                 activeCollaborators.map(u => (
                   <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
                     <td className="p-6">
-                      <div className="font-bold">{u.nombre}</div>
-                      <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                      <div className="flex items-center gap-3">
+                        <UserAvatar name={u.nombre} email={u.email} size={36} showRing={false} />
+                        <div>
+                          <div className="font-bold">{u.nombre}</div>
+                          <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-6">
                       {u.uid.startsWith("PENDING_") ? (

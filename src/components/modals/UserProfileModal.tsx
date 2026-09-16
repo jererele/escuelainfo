@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { account } from "@/lib/appwrite";
 import { UserProfile, updateUserProfile, syncUserEmailChange } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { X, User, Phone, MapPin, Mail, Lock, Eye, EyeOff, Check, AlertCircle, Loader } from "lucide-react";
 
 interface Props {
@@ -167,9 +168,13 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
         {/* Header */}
         <div className="p-6 border-b border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)]">
-              <User size={20} />
-            </div>
+            <UserAvatar
+              name={profile.nombre}
+              email={profile.email}
+              size={48}
+              showRing={true}
+              animate="hover"
+            />
             <div>
               <div className="font-black text-[var(--text)] text-base leading-tight">{profile.nombre}</div>
               <div className="text-[10px] font-bold uppercase text-[var(--text3)] mt-0.5">
@@ -203,6 +208,19 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
           {/* TAB: Info */}
           {activeTab === "info" && (
             <>
+              <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-[var(--bg3)]/60 border border-[var(--border)] mb-1">
+                <UserAvatar
+                  name={profile.nombre}
+                  email={profile.email}
+                  size={76}
+                  showRing={true}
+                  animate="always"
+                />
+                <p className="font-black text-base text-[var(--text)] mt-2.5 leading-tight">{profile.nombre}</p>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-0.5 rounded-full border border-[var(--verde-border)] mt-1">
+                  {rolLabels[profile.rol] || profile.rol}
+                </span>
+              </div>
               <Field label="Nombre completo" icon={<User size={11} />}>
                 <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 font-bold text-[var(--text)] opacity-60 text-sm">
                   {profile.nombre}
