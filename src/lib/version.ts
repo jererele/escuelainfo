@@ -4,18 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.4";
-export const APP_BUILD_DATE = "16/09/2026 19:38 hs";
+export const APP_VERSION = "v2.10.5";
+export const APP_BUILD_DATE = "16/09/2026 19:55 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Apertura Automática del Selector de Fechas (showPicker): Al hacer clic en cualquier campo de fecha (`input[type=\"date\"]`) o en sus etiquetas ('Desde', 'Hasta', etc.), el calendario nativo del navegador se abre de forma inmediata y automática.",
-  "Prevención de Selección Accidental de Texto: Se eliminó el comportamiento del navegador que seleccionaba o resaltaba únicamente partes del texto ('dd / mm / aaaa'), facilitando la elección directa de fechas.",
-  "Componente Global DatePickerEnhancer: Listener global seguro que detecta clics en campos de fecha y hora para invocar `showPicker()` en toda la plataforma.",
-  "Actualización en Módulos y Modales: Integrado en Registro de Ausencias Docentes (`NewAbsenceModal`), Planilla de Asistencia Diaria (`StudentAttendanceManager`), Reportes Docentes (`NewTeacherReportModal`), Mesas de Examen (`ExamBoardManager`) y Calendario Institucional (`CalendarioTab`).",
-  "Microinteracción y Accesibilidad: Estilos de cursor táctil e interactivo en todos los selectores e indicadores de fecha en `globals.css`."
+  "Interactividad Completa en Tarjeta y Foto de Perfil: La tarjeta de bienvenida del Dashboard (`GeneralTab`) y la foto en la barra superior ahora son botones activos con `cursor-pointer` que abren el modal 'Mi Perfil' (`UserProfileModal`).",
+  "Semántica y Accesibilidad en UserAvatar: Incorporación de la prop `onClick` con accesibilidad (`role=\"button\"`, `tabIndex={0}`) y adaptación dinámica del cursor y animación de escala para evitar falsas apariencias de botones en tablas estáticas.",
+  "Acceso Directo al Perfil: Ahora tanto en el panel principal como en la barra superior y drawer móvil se puede pulsar directamente la ficha o foto del usuario para consultar datos o modificar contraseña.",
+  "Microinteracción Consistente: Efectos hover sincronizados con el acento verde institucional y feedback háptico `active:scale-95`."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.4",
+    date: "16/09/2026 19:38 hs",
+    notes: [
+      "Apertura Automática del Selector de Fechas (showPicker): Al hacer clic en cualquier campo de fecha (`input[type=\"date\"]`) o en sus etiquetas ('Desde', 'Hasta', etc.), el calendario nativo del navegador se abre de forma inmediata y automática.",
+      "Prevención de Selección Accidental de Texto: Se eliminó el comportamiento del navegador que seleccionaba o resaltaba únicamente partes del texto ('dd / mm / aaaa'), facilitando la elección directa de fechas.",
+      "Componente Global DatePickerEnhancer: Listener global seguro que detecta clics en campos de fecha y hora para invocar `showPicker()` en toda la plataforma.",
+      "Actualización en Módulos y Modales: Integrado en Registro de Ausencias Docentes (`NewAbsenceModal`), Planilla de Asistencia Diaria (`StudentAttendanceManager`), Reportes Docentes (`NewTeacherReportModal`), Mesas de Examen (`ExamBoardManager`) y Calendario Institucional (`CalendarioTab`).",
+      "Microinteracción y Accesibilidad: Estilos de cursor táctil e interactivo en todos los selectores e indicadores de fecha en `globals.css`."
+    ]
+  },
   {
     version: "v2.10.3",
     date: "16/09/2026 18:00 hs",

@@ -856,6 +856,7 @@ export default function Dashboard() {
               onNavigateToAusencias={(search) => { setActiveTab("ausencias"); setSearchQuery(search || ""); }}
               onNavigateToHorarios={(curso) => { setActiveTab("horarios"); setSelectedCourse(curso); }}
               onOpenNewAbsenceModal={() => setIsModalOpen(true)}
+              onOpenProfile={() => setIsProfileModalOpen(true)}
               showToast={showToast}
             />
           )}

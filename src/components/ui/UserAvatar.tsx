@@ -11,6 +11,7 @@ interface UserAvatarProps {
   className?: string;
   animate?: "hover" | "always" | boolean;
   showRing?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
@@ -21,6 +22,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
   className = "",
   animate = "hover",
   showRing = true,
+  onClick,
 }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -50,7 +52,12 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center rounded-2xl overflow-hidden shrink-0 transition-transform duration-300 hover:scale-105 select-none ${
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={`relative inline-flex items-center justify-center rounded-2xl overflow-hidden shrink-0 transition-transform duration-300 select-none ${
+        onClick ? "cursor-pointer active:scale-95 hover:scale-105" : "hover:scale-[1.02]"
+      } ${
         showRing ? "ring-2 ring-[var(--border)] hover:ring-[var(--verde)] shadow-sm" : ""
       } ${className}`}
       style={{ width: size, height: size }}

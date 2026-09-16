@@ -232,9 +232,9 @@ export default function TopNavSidebar({
 
           <button
             onClick={onProfileOpen}
-            title="Ver perfil"
-            className="flex items-center gap-2 px-1.5 py-1 rounded-xl
-              hover:bg-[var(--bg3)] transition-all active:scale-95"
+            title="Ver mi perfil"
+            className="flex items-center gap-2 px-2 py-1 rounded-xl
+              hover:bg-[var(--bg3)] transition-all active:scale-95 cursor-pointer"
           >
             <UserAvatar
               name={userName}

@@ -16,6 +16,7 @@ interface GeneralTabProps {
   onNavigateToAusencias: (search?: string) => void;
   onNavigateToHorarios: (curso: string) => void;
   onOpenNewAbsenceModal: () => void;
+  onOpenProfile?: () => void;
   showToast: (message: string, type?: "success" | "error") => void;
 }
 
@@ -29,6 +30,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   onNavigateToAusencias,
   onNavigateToHorarios,
   onOpenNewAbsenceModal,
+  onOpenProfile,
   showToast,
 }) => {
   return (
@@ -52,7 +54,12 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             </p>
           </div>
           {userProfile && (
-            <div className="hidden sm:flex items-center gap-3.5 p-3.5 rounded-2xl bg-[var(--bg)]/80 border border-[var(--border)] backdrop-blur-md shrink-0 shadow-sm hover:border-[var(--verde-border)] transition-all">
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              title="Hacé clic para ver y gestionar tu perfil"
+              className="hidden sm:flex items-center gap-3.5 p-3.5 rounded-2xl bg-[var(--bg)]/80 border border-[var(--border)] backdrop-blur-md shrink-0 shadow-sm hover:border-[var(--verde-border)] hover:bg-[var(--bg3)] transition-all cursor-pointer active:scale-95 text-left group"
+            >
               <UserAvatar
                 name={userProfile.nombre || "Usuario"}
                 email={userProfile.email}
@@ -61,12 +68,14 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                 animate="always"
               />
               <div>
-                <p className="text-xs font-black text-[var(--text)] leading-tight max-w-[140px] truncate">{userProfile.nombre || "Usuario"}</p>
+                <p className="text-xs font-black text-[var(--text)] leading-tight max-w-[140px] truncate group-hover:text-[var(--verde)] transition-colors">
+                  {userProfile.nombre || "Usuario"}
+                </p>
                 <p className="text-[9px] font-black text-[var(--verde)] uppercase tracking-wider mt-0.5">
                   {userProfile.rol === 'admin' ? 'Administrador' : (userProfile.rol === 'directivo' ? 'Directivo' : userProfile.rol || 'Invitado')}
                 </p>
               </div>
-            </div>
+            </button>
           )}
         </div>
       </div>
