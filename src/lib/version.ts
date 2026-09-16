@@ -4,17 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.6";
-export const APP_BUILD_DATE = "16/09/2026 20:11 hs";
+export const APP_VERSION = "v2.10.7";
+export const APP_BUILD_DATE = "16/09/2026 20:21 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Limpieza Visual de Cabecera y Banner: Se eliminó la insignia 'Panel Institucional Activo' y se retiró la tarjeta repetitiva del perfil en el banner de bienvenida (`GeneralTab`), logrando un diseño despejado y sin duplicidades.",
-  "Duración Optimizada de Notificaciones (4 segundos): Se configuró la duración de todas las alertas y avisos de Sileo a 4 segundos para que desaparezcan rápidamente sin obstaculizar la navegación del usuario.",
-  "Despacho Rápido en Estados de Acción: Las notificaciones resultantes de promesas (eliminación de ausencias, guardado y actualizaciones) ahora se descartan de forma ágil y automática.",
-  "Centralización de Perfil: El acceso al perfil se mantiene limpio e intuitivo desde la barra de navegación superior y el menú lateral."
+  "Rediseño y Jerarquía Visual en Modo Claro: Se rediseñó la paleta de modo claro (`--bg: #edf2f7`, `--bg2/bg3: #ffffff`, `--border: #d0d7de`), logrando que las tarjetas y tablas contrasten fuertemente con el fondo y terminen con el aspecto plano.",
+  "Separación Nítida y Sombras de Elevación: Se aplicaron sombras ambientales multicapa suaves y bordes definidos para todas las tarjetas métricas (`TiltCard`), widget de horas libres, banner y tablas en modo claro.",
+  "Estilo Glass Adaptativo: Integración de la clase `.glass` para modo claro con superficies blancas pulidas y bordes nítidos de alta definición.",
+  "Contraste de Tablas y Filas: Cabeceras con fondo distintivo (`--bg4`) y líneas divisorias limpias que facilitan la lectura y separación de registros."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.6",
+    date: "16/09/2026 20:11 hs",
+    notes: [
+      "Limpieza Visual de Cabecera y Banner: Se eliminó la insignia 'Panel Institucional Activo' y se retiró la tarjeta repetitiva del perfil en el banner de bienvenida (`GeneralTab`), logrando un diseño despejado y sin duplicidades.",
+      "Duración Optimizada de Notificaciones (4 segundos): Se configuró la duración de todas las alertas y avisos de Sileo a 4 segundos para que desaparezcan rápidamente sin obstaculizar la navegación del usuario.",
+      "Despacho Rápido en Estados de Acción: Las notificaciones resultantes de promesas (eliminación de ausencias, guardado y actualizaciones) ahora se descartan de forma ágil y automática.",
+      "Centralización de Perfil: El acceso al perfil se mantiene limpio e intuitivo desde la barra de navegación superior y el menú lateral."
+    ]
+  },
   {
     version: "v2.10.5",
     date: "16/09/2026 19:55 hs",

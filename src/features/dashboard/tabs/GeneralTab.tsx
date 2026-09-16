@@ -35,7 +35,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   return (
     <div className="space-y-10 animate-fade-in">
       {/* BANNER DE BIENVENIDA CON RARE UI (GravityText + FluidOrb) */}
-      <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-gradient-to-br from-[var(--bg2)] to-[var(--bg3)]/70 backdrop-blur-md shadow-sm">
+      <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-[var(--bg2)] shadow-md">
         <FluidOrb color="rgba(16, 185, 129, 0.22)" size={320} className="-top-24 -right-16" />
         <FluidOrb color="rgba(99, 102, 241, 0.16)" size={260} className="-bottom-20 left-1/4" />
         <div className="relative z-10">
@@ -97,7 +97,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       />
 
       {/* LISTA COMPACTA */}
-      <div className="bg-[var(--bg3)]/80 backdrop-blur-md rounded-[32px] border border-[var(--border)] overflow-hidden shadow-sm content-visibility-auto will-change-gpu">
+      <div className="bg-[var(--bg3)] rounded-[32px] border border-[var(--border)] overflow-hidden shadow-md content-visibility-auto will-change-gpu">
         <div className="p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
           <h2 className="title-font font-black text-xl text-[var(--text)]">Novedades Recientes</h2>
           {canManageAusencias && (
@@ -111,7 +111,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-[var(--bg2)]">
+            <thead className="bg-[var(--bg4)]/50 border-b border-[var(--border)]">
               <tr>
                 <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Profesor</th>
                 <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Tipo</th>

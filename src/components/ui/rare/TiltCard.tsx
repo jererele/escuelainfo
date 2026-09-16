@@ -74,7 +74,7 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   if (isMobile) {
     return (
       <div
-        className={`relative rounded-[32px] border border-[var(--border)] bg-[var(--bg3)]/80 backdrop-blur-md transition-all active:scale-[0.98] ${className}`}
+        className={`relative rounded-[32px] border border-[var(--border)] bg-[var(--bg3)] backdrop-blur-md transition-all active:scale-[0.98] shadow-md ${className}`}
         onClick={onClick}
       >
         {children}
@@ -94,8 +94,8 @@ export const TiltCard: React.FC<TiltCardProps> = ({
         rotateY,
         transformStyle: "preserve-3d",
       }}
-      className={`relative rounded-[32px] border border-[var(--border)] bg-[var(--bg3)]/80 backdrop-blur-md transition-shadow duration-300 overflow-hidden cursor-pointer ${
-        isHovered ? "shadow-2xl border-[var(--verde)]/40" : "shadow-md"
+      className={`relative rounded-[32px] border border-[var(--border)] bg-[var(--bg3)] backdrop-blur-md transition-shadow duration-300 overflow-hidden cursor-pointer ${
+        isHovered ? "shadow-2xl border-[var(--verde)]/50" : "shadow-md hover:shadow-xl"
       } ${className}`}
     >
       {/* Radial Glow follow cursor */}

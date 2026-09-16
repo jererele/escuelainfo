@@ -114,10 +114,10 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
   const hasFreeHours = freeHoursToday.length > 0;
 
   return (
-    <div className={`p-6 rounded-3xl border transition-all duration-300 will-change-gpu ${
+    <div className={`p-6 rounded-3xl border transition-all duration-300 will-change-gpu shadow-md ${
       hasFreeHours 
-        ? "bg-[var(--amarillo-bg)]/20 border-[var(--amarillo-border)] shadow-[0_10px_30px_rgba(245,158,11,0.05)]" 
-        : "bg-[var(--verde-bg)]/10 border-[var(--verde-border)]/40 shadow-[0_10px_30px_rgba(16,185,129,0.02)]"
+        ? "bg-[var(--bg2)] border-[var(--amarillo-border)] shadow-[0_10px_30px_rgba(245,158,11,0.08)]" 
+        : "bg-[var(--bg2)] border-[var(--border)] hover:border-[var(--verde-border)]"
     }`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3">

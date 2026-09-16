@@ -10,13 +10,13 @@
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-text: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --bg: #f8fafc;
-  --bg2: rgba(255, 255, 255, 0.85);
-  --bg3: #f1f5f9;
+  --bg: #edf2f7;
+  --bg2: #ffffff;
+  --bg3: #ffffff;
   --bg4: #e2e8f0;
-  --border: oklch(0.922 0 0);
-  --border2: rgba(0, 0, 0, 0.15);
-  --border-glow: rgba(0, 0, 0, 0.04);
+  --border: #d0d7de;
+  --border2: rgba(15, 23, 42, 0.20);
+  --border-glow: rgba(16, 185, 129, 0.20);
   --text: #0f172a;
   --text2: #334155;
   --text3: #64748b;
@@ -51,7 +51,7 @@
 
   /* Next.js internal overrides */
 
-  --background: oklch(1 0 0);
+  --background: #edf2f7;
 
   --foreground: oklch(0.145 0 0);
 
@@ -81,7 +81,7 @@
 
   --destructive: oklch(0.577 0.245 27.325);
 
-  --input: oklch(0.922 0 0);
+  --input: #cbd5e1;
 
   --ring: oklch(0.708 0 0);
 
@@ -223,6 +223,16 @@
   }
 }
 
+.glass {
+  background: #ffffff !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 
+    0 10px 25px -5px rgba(15, 23, 42, 0.08),
+    0 4px 10px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
 .dark .glass {
   background: rgba(15, 23, 42, 0.7) !important;
   backdrop-filter: blur(20px) !important;
@@ -231,6 +241,15 @@
   box-shadow: 
     0 20px 50px -12px rgba(0, 0, 0, 0.5),
     0 10px 20px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ─── ELEVACIÓN Y CONTRASTE EN MODO CLARO ───────────────────────────────────── */
+html:not(.dark) .card,
+html:not(.dark) [class*="rounded-[32px]"],
+html:not(.dark) [class*="rounded-3xl"] {
+  box-shadow: 
+    0 4px 20px -2px rgba(15, 23, 42, 0.08),
+    0 2px 6px -1px rgba(15, 23, 42, 0.04);
 }
 
 /* Cuadrícula desactivada */
