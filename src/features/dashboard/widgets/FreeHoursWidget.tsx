@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Ausencia, Horario, Alumno } from "@/lib/dataService";
 
 interface FreeHoursWidgetProps {
@@ -92,29 +92,32 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     return null;
   }
 
-  // Profesores ausentes hoy (aprobados)
-  const activeAbsencesToday = ausencias.filter(a => 
-    a.estado === 'aprobada' && 
-    todayStr >= a.inicio && 
-    todayStr <= a.fin
-  );
+  // Profesores ausentes hoy (aprobados) memoizado
+  const activeAbsencesToday = useMemo(() => {
+    return ausencias.filter(a => 
+      a.estado === 'aprobada' && 
+      todayStr >= a.inicio && 
+      todayStr <= a.fin
+    );
+  }, [ausencias, todayStr]);
 
-  // Clases afectadas hoy
-  let freeHoursToday = horarios.filter(h => 
-    h.dia === todayDayName &&
-    activeAbsencesToday.some(a => a.profNombre === h.profesor)
-  );
+  // Clases afectadas hoy memoizado
+  const freeHoursToday = useMemo(() => {
+    let list = horarios.filter(h => 
+      h.dia === todayDayName &&
+      activeAbsencesToday.some(a => a.profNombre === h.profesor)
+    );
 
-  // Si es estudiante, filtrar solo por su curso
-  if (isStudent) {
-    if (!currentAlumno) return null;
-    freeHoursToday = freeHoursToday.filter(h => h.curso === currentAlumno.curso);
-  }
+    if (isStudent && currentAlumno) {
+      list = list.filter(h => h.curso === currentAlumno.curso);
+    }
+    return list;
+  }, [horarios, todayDayName, activeAbsencesToday, isStudent, currentAlumno]);
 
   const hasFreeHours = freeHoursToday.length > 0;
 
   return (
-    <div className={`p-6 rounded-3xl border transition-all duration-300 will-change-gpu shadow-md ${
+    <div className={`p-6 rounded-3xl border transition-colors duration-200 shadow-md ${
       hasFreeHours 
         ? "bg-[var(--bg2)] border-[var(--amarillo-border)] shadow-[0_10px_30px_rgba(245,158,11,0.08)]" 
         : "bg-[var(--bg2)] border-[var(--border)] hover:border-[var(--verde-border)]"

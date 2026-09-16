@@ -97,7 +97,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       />
 
       {/* LISTA COMPACTA */}
-      <div className="bg-[var(--bg3)] rounded-[32px] border border-[var(--border)] overflow-hidden shadow-md content-visibility-auto will-change-gpu">
+      <div className="bg-[var(--bg3)] rounded-[32px] border border-[var(--border)] overflow-hidden shadow-md">
         <div className="p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
           <h2 className="title-font font-black text-xl text-[var(--text)]">Novedades Recientes</h2>
           {canManageAusencias && (
@@ -156,7 +156,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       </div>
 
       {/* FORMULARIO DE CONSULTAS CONTROLADO */}
-      <div className="mt-12 max-w-2xl mx-auto animate-fade-in content-visibility-auto will-change-gpu">
+      <div className="mt-12 max-w-2xl mx-auto animate-fade-in">
         <ContactForm showToast={showToast} />
       </div>
     </div>

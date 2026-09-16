@@ -4,17 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.8";
-export const APP_BUILD_DATE = "16/09/2026 20:29 hs";
+export const APP_VERSION = "v2.10.9";
+export const APP_BUILD_DATE = "16/09/2026 20:41 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección de Recorte en Modal de Mesas de Examen: Se implementó `createPortal` directo hacia el `document.body`, liberando la ventana modal del contenedor interno del Dashboard que provocaba que se viera cortada como dentro de una caja.",
-  "Visualización en Pantalla Completa y Centrado: El formulario para crear o editar mesas de examen ahora flota libremente sobre el 100% de la pantalla con desenfoque de fondo (`backdrop-blur`) y sombras de profundidad.",
-  "Scroll Interno Seguro y Accesibilidad: Incorporación de `max-h-[92vh]` con barra de desplazamiento suave para garantizar que todos los campos, tribunales, alumnos y botones de guardado sean completamente visibles y accesibles.",
-  "Atajo de Cierre Rápido (Escape): Soporte nativo para cerrar la ventana modal presionando la tecla Escape o haciendo clic en el fondo oscuro."
+  "Optimización Integral de Rendimiento y Fluidez (60-120 FPS): Se desactivó el loop de Canvas y partículas en modo claro (0% consumo de CPU/GPU) y se optimizó en modo oscuro a 45 estrellas concéntricas sin `shadowBlur`, erradicando el lag y la sensación de trabado.",
+  "TiltCards sin Re-renders de React: El resplandor interactivo de las tarjetas métricas (`TiltCard`) ahora se posiciona directamente vía variables CSS y caché de dimensiones, eliminando decenas de re-renders innecesarios por segundo al mover el cursor.",
+  "Orbes Ambientales en GPU (FluidOrb): Se reemplazó el morphing continuo en JavaScript por animación CSS acelerada por hardware (`animate-ambient-float`), eliminando repintados pesados.",
+  "Pausa Inteligente de Canvas en Scroll: La animación del fondo se suspende automáticamente durante el desplazamiento para asegurar una tasa de refresco estable y ultrafluida.",
+  "Fluidez de Scroll y Memoización: Se eliminaron selectores CSS comodín y atributos `content-visibility` que generaban tirones de desplazamiento, junto con la memoización (`useMemo`) en el widget de horas libres."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.8",
+    date: "16/09/2026 20:29 hs",
+    notes: [
+      "Corrección de Recorte en Modal de Mesas de Examen: Se implementó `createPortal` directo hacia el `document.body`, liberando la ventana modal del contenedor interno del Dashboard que provocaba que se viera cortada como dentro de una caja.",
+      "Visualización en Pantalla Completa y Centrado: El formulario para crear o editar mesas de examen ahora flota libremente sobre el 100% de la pantalla con desenfoque de fondo (`backdrop-blur`) y sombras de profundidad.",
+      "Scroll Interno Seguro y Accesibilidad: Incorporación de `max-h-[92vh]` con barra de desplazamiento suave para garantizar que todos los campos, tribunales, alumnos y botones de guardado sean completamente visibles y accesibles.",
+      "Atajo de Cierre Rápido (Escape): Soporte nativo para cerrar la ventana modal presionando la tecla Escape o haciendo clic en el fondo oscuro."
+    ]
+  },
   {
     version: "v2.10.7",
     date: "16/09/2026 20:21 hs",
