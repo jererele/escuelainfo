@@ -4,17 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.7";
-export const APP_BUILD_DATE = "16/09/2026 20:21 hs";
+export const APP_VERSION = "v2.10.8";
+export const APP_BUILD_DATE = "16/09/2026 20:29 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Rediseño y Jerarquía Visual en Modo Claro: Se rediseñó la paleta de modo claro (`--bg: #edf2f7`, `--bg2/bg3: #ffffff`, `--border: #d0d7de`), logrando que las tarjetas y tablas contrasten fuertemente con el fondo y terminen con el aspecto plano.",
-  "Separación Nítida y Sombras de Elevación: Se aplicaron sombras ambientales multicapa suaves y bordes definidos para todas las tarjetas métricas (`TiltCard`), widget de horas libres, banner y tablas en modo claro.",
-  "Estilo Glass Adaptativo: Integración de la clase `.glass` para modo claro con superficies blancas pulidas y bordes nítidos de alta definición.",
-  "Contraste de Tablas y Filas: Cabeceras con fondo distintivo (`--bg4`) y líneas divisorias limpias que facilitan la lectura y separación de registros."
+  "Corrección de Recorte en Modal de Mesas de Examen: Se implementó `createPortal` directo hacia el `document.body`, liberando la ventana modal del contenedor interno del Dashboard que provocaba que se viera cortada como dentro de una caja.",
+  "Visualización en Pantalla Completa y Centrado: El formulario para crear o editar mesas de examen ahora flota libremente sobre el 100% de la pantalla con desenfoque de fondo (`backdrop-blur`) y sombras de profundidad.",
+  "Scroll Interno Seguro y Accesibilidad: Incorporación de `max-h-[92vh]` con barra de desplazamiento suave para garantizar que todos los campos, tribunales, alumnos y botones de guardado sean completamente visibles y accesibles.",
+  "Atajo de Cierre Rápido (Escape): Soporte nativo para cerrar la ventana modal presionando la tecla Escape o haciendo clic en el fondo oscuro."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.7",
+    date: "16/09/2026 20:21 hs",
+    notes: [
+      "Rediseño y Jerarquía Visual en Modo Claro: Se rediseñó la paleta de modo claro (`--bg: #edf2f7`, `--bg2/bg3: #ffffff`, `--border: #d0d7de`), logrando que las tarjetas y tablas contrasten fuertemente con el fondo y terminen con el aspecto plano.",
+      "Separación Nítida y Sombras de Elevación: Se aplicaron sombras ambientales multicapa suaves y bordes definidos para todas las tarjetas métricas (`TiltCard`), widget de horas libres, banner y tablas en modo claro.",
+      "Estilo Glass Adaptativo: Integración de la clase `.glass` para modo claro con superficies blancas pulidas y bordes nítidos de alta definición.",
+      "Contraste de Tablas y Filas: Cabeceras con fondo distintivo (`--bg4`) y líneas divisorias limpias que facilitan la lectura y separación de registros."
+    ]
+  },
   {
     version: "v2.10.6",
     date: "16/09/2026 20:11 hs",

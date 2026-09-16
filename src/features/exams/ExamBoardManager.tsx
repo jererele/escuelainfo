@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AppwriteException } from "appwrite";
 import { UserProfile, Profesor, Alumno, MesaExamen, getProfesores, getAlumnos, getMesasExamen, saveMesaExamen, deleteMesaExamen, logAction, subscribeToMesasExamen } from "@/lib/dataService";
 import { ClipboardCheck, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Search, Check, Trash2, Edit, Printer } from "lucide-react";
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function ExamBoardManager({ user, userProfile }: Props) {
+  const [mounted, setMounted] = useState(false);
   const [role, setRole] = useState<string>("alumno");
   const [mesas, setMesas] = useState<MesaExamen[]>([]);
   const [profesores, setProfesores] = useState<Profesor[]>([]);
@@ -76,6 +78,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   };
 
   useEffect(() => {
+    setMounted(true);
     refreshData();
 
     const unsubscribe = subscribeToMesasExamen((data) => {
@@ -98,6 +101,15 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isModalOpen]);
 
   const openCreateModal = () => {
     setEditingMesa(null);
@@ -416,11 +428,13 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
         )}
       </div>
 
-      {/* Modal para Crear/Editar Mesa */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-[32px] p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto">
+      {/* Modal para Crear/Editar Mesa (Portaled a document.body para evitar que se corte por contenedores padres) */}
+      {mounted && isModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
+        >
+          <div className="bg-[var(--bg)] w-full max-w-xl rounded-[32px] p-6 sm:p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h2 className="text-2xl font-black title-font text-[var(--text)]">{editingMesa ? "Editar Mesa de Examen" : "Crear Mesa de Examen"}</h2>
@@ -583,7 +597,8 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
