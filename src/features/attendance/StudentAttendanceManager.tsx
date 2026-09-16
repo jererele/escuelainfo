@@ -189,13 +189,18 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
             
             <div className="flex flex-wrap items-center gap-3">
               {/* Selector de Fecha */}
-              <div className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-1.5">
-                <Calendar size={16} className="text-[var(--text3)]" />
+              <div 
+                className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-1.5 cursor-pointer"
+                onClick={() => { try { (document.getElementById("student-attendance-date") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+              >
+                <Calendar size={16} className="text-[var(--text3)] pointer-events-none" />
                 <input
+                  id="student-attendance-date"
                   type="date"
-                  className="bg-transparent text-sm font-bold outline-none text-[var(--text)]"
+                  className="bg-transparent text-sm font-bold outline-none text-[var(--text)] cursor-pointer"
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
+                  onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
                 />
               </div>
 

@@ -4,17 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.3";
-export const APP_BUILD_DATE = "16/09/2026 18:00 hs";
+export const APP_VERSION = "v2.10.4";
+export const APP_BUILD_DATE = "16/09/2026 19:38 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección de Toasts Duplicados: Se eliminó por completo el renderizado doble heredado del sistema anterior donde coexistían un contenedor en la esquina superior derecha y otro en la esquina inferior (`.toast`).",
-  "Eliminación de Estilos CSS Obsoletos: Limpieza integral de las reglas `.toast` y `.toast.show` en `globals.css` para centralizar la presentación exclusivamente en el contenedor físico de Sileo.",
-  "Desacoplamiento de Modales: Retiro de avisos inline redundantes en modales y eliminación de props residuales `showToast` en `SendNoticeModal`, garantizando que cada evento despache una única alerta fluida.",
-  "Reinicio en Limpio de Servidor: Purgado de caché y reinicio en caliente de Next.js Turbopack para sincronizar la UI del navegador."
+  "Apertura Automática del Selector de Fechas (showPicker): Al hacer clic en cualquier campo de fecha (`input[type=\"date\"]`) o en sus etiquetas ('Desde', 'Hasta', etc.), el calendario nativo del navegador se abre de forma inmediata y automática.",
+  "Prevención de Selección Accidental de Texto: Se eliminó el comportamiento del navegador que seleccionaba o resaltaba únicamente partes del texto ('dd / mm / aaaa'), facilitando la elección directa de fechas.",
+  "Componente Global DatePickerEnhancer: Listener global seguro que detecta clics en campos de fecha y hora para invocar `showPicker()` en toda la plataforma.",
+  "Actualización en Módulos y Modales: Integrado en Registro de Ausencias Docentes (`NewAbsenceModal`), Planilla de Asistencia Diaria (`StudentAttendanceManager`), Reportes Docentes (`NewTeacherReportModal`), Mesas de Examen (`ExamBoardManager`) y Calendario Institucional (`CalendarioTab`).",
+  "Microinteracción y Accesibilidad: Estilos de cursor táctil e interactivo en todos los selectores e indicadores de fecha en `globals.css`."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.3",
+    date: "16/09/2026 18:00 hs",
+    notes: [
+      "Corrección de Toasts Duplicados: Se eliminó por completo el renderizado doble heredado del sistema anterior donde coexistían un contenedor en la esquina superior derecha y otro en la esquina inferior (`.toast`).",
+      "Eliminación de Estilos CSS Obsoletos: Limpieza integral de las reglas `.toast` y `.toast.show` en `globals.css` para centralizar la presentación exclusivamente en el contenedor físico de Sileo.",
+      "Desacoplamiento de Modales: Retiro de avisos inline redundantes en modales y eliminación de props residuales `showToast` en `SendNoticeModal`, garantizando que cada evento despache una única alerta fluida.",
+      "Reinicio en Limpio de Servidor: Purgado de caché y reinicio en caliente de Next.js Turbopack para sincronizar la UI del navegador."
+    ]
+  },
   {
     version: "v2.10.2",
     date: "16/09/2026 17:50 hs",

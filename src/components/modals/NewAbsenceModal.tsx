@@ -472,16 +472,36 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Desde</label>
+                <label 
+                  htmlFor="absence-desde-desktop"
+                  className="text-xs font-bold uppercase tracking-wider text-[var(--text2)] cursor-pointer select-none"
+                  onClick={() => { try { (document.getElementById("absence-desde-desktop") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+                >
+                  Desde
+                </label>
                 <input required type="date"
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all"
-                  value={formData.inicio} onChange={(e) => handleFieldChange("inicio", e.target.value)} />
+                  id="absence-desde-desktop"
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all cursor-pointer"
+                  value={formData.inicio} 
+                  onChange={(e) => handleFieldChange("inicio", e.target.value)}
+                  onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
+                />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Hasta</label>
+                <label 
+                  htmlFor="absence-hasta-desktop"
+                  className="text-xs font-bold uppercase tracking-wider text-[var(--text2)] cursor-pointer select-none"
+                  onClick={() => { try { (document.getElementById("absence-hasta-desktop") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+                >
+                  Hasta
+                </label>
                 <input required type="date"
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all"
-                  value={formData.fin} onChange={(e) => handleFieldChange("fin", e.target.value)} />
+                  id="absence-hasta-desktop"
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all cursor-pointer"
+                  value={formData.fin} 
+                  onChange={(e) => handleFieldChange("fin", e.target.value)}
+                  onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
+                />
               </div>
             </div>
 
@@ -667,16 +687,36 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-black uppercase text-[var(--text2)]">Desde</label>
+              <label 
+                htmlFor="absence-desde-mobile"
+                className="text-[11px] font-black uppercase text-[var(--text2)] cursor-pointer select-none"
+                onClick={() => { try { (document.getElementById("absence-desde-mobile") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+              >
+                Desde
+              </label>
               <input required type="date"
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-2.5 outline-none text-sm"
-                value={formData.inicio} onChange={(e) => handleFieldChange("inicio", e.target.value)} />
+                id="absence-desde-mobile"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-2.5 outline-none text-sm cursor-pointer"
+                value={formData.inicio} 
+                onChange={(e) => handleFieldChange("inicio", e.target.value)}
+                onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
+              />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-black uppercase text-[var(--text2)]">Hasta</label>
+              <label 
+                htmlFor="absence-hasta-mobile"
+                className="text-[11px] font-black uppercase text-[var(--text2)] cursor-pointer select-none"
+                onClick={() => { try { (document.getElementById("absence-hasta-mobile") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+              >
+                Hasta
+              </label>
               <input required type="date"
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-2.5 outline-none text-sm"
-                value={formData.fin} onChange={(e) => handleFieldChange("fin", e.target.value)} />
+                id="absence-hasta-mobile"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-2.5 outline-none text-sm cursor-pointer"
+                value={formData.fin} 
+                onChange={(e) => handleFieldChange("fin", e.target.value)}
+                onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
+              />
             </div>
           </div>
 

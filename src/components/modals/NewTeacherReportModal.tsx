@@ -177,13 +177,21 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
 
           {/* FECHA */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-wider text-[var(--text2)]">Fecha del Reporte</label>
+            <label 
+              htmlFor="teacher-report-fecha"
+              className="text-xs font-black uppercase tracking-wider text-[var(--text2)] cursor-pointer select-none"
+              onClick={() => { try { (document.getElementById("teacher-report-fecha") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+            >
+              Fecha del Reporte
+            </label>
             <input
+              id="teacher-report-fecha"
               required
               type="date"
-              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold text-sm text-[var(--text)]"
+              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold text-sm text-[var(--text)] cursor-pointer"
               value={formData.fecha}
               onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+              onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
             />
           </div>
 

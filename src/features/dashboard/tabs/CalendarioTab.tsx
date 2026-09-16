@@ -80,13 +80,21 @@ export const CalendarioTab: React.FC<CalendarioTabProps> = ({ user, userProfile,
             <p className="text-xs text-[var(--text2)]">Este día aparecerá como "Suspensión Institucional" en el sistema y bloqueará la toma de licencias o firmas de asistencia.</p>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-[var(--text3)]">Fecha</label>
+              <label 
+                htmlFor="cal-fecha-suspension"
+                className="text-[10px] font-black uppercase text-[var(--text3)] cursor-pointer select-none"
+                onClick={() => { try { (document.getElementById("cal-fecha-suspension") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+              >
+                Fecha
+              </label>
               <input 
+                id="cal-fecha-suspension"
                 type="date" 
                 required
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
                 value={fecha}
                 onChange={e => setFecha(e.target.value)}
+                onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
               />
             </div>
 

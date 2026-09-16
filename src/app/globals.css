@@ -662,3 +662,22 @@ button, a, [role="button"] {
   will-change: transform, opacity;
   transform: translate3d(0, 0, 0); /* Aceleración por hardware activa */
 }
+
+/* ─── DATE & TIME PICKER ACCESSIBILITY & INTERACTION ────────────────────────── */
+input[type="date"],
+input[type="time"] {
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}

@@ -448,13 +448,21 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
             <form onSubmit={handleSubmit} className="space-y-4 mt-5">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Fecha *</label>
+                  <label 
+                    htmlFor="exam-fecha"
+                    className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2 cursor-pointer select-none"
+                    onClick={() => { try { (document.getElementById("exam-fecha") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+                  >
+                    Fecha *
+                  </label>
                   <input
+                    id="exam-fecha"
                     type="date"
                     required
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] text-sm"
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] text-sm cursor-pointer"
                     value={fecha}
                     onChange={(e) => setFecha(e.target.value)}
+                    onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
                   />
                 </div>
                 <div>
