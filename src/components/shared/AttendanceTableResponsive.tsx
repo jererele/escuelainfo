@@ -10,7 +10,7 @@
  * Animaciones: usa solo transform/opacity para no causar layout thrashing.
  */
 
-import { useMemo, useState } from "react";
+import React, { useState, memo, useMemo } from "react";
 import { Alumno } from "@/lib/dataService";
 import { CheckSquare } from "lucide-react";
 
@@ -96,7 +96,7 @@ function EstadoBtn({
 }
 
 // ─── Vista Mobile: Tarjeta por alumno ─────────────────────────────────────────
-function AlumnoCard({
+const AlumnoCard = memo(function AlumnoCard({
   alumno, estado, estados, onChangeEstado, readOnly, isSelected, onToggleSelect
 }: {
   alumno: Alumno;
@@ -164,10 +164,10 @@ function AlumnoCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── Vista Desktop: Tabla con overflow-x-auto ─────────────────────────────────
-function AlumnoTableRow({
+const AlumnoTableRow = memo(function AlumnoTableRow({
   alumno, estado, estados, onChangeEstado, readOnly, isSelected, onToggleSelect
 }: {
   alumno: Alumno;
@@ -215,7 +215,7 @@ function AlumnoTableRow({
       </td>
     </tr>
   );
-}
+});
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function AttendanceTableResponsive({
@@ -284,7 +284,7 @@ export default function AttendanceTableResponsive({
           if (!def) return null;
           return (
             <span key={estado} className={`px-2.5 py-1 rounded-lg ${def.active}`}>
-              {def.short}: {count}
+              {def.short}: {String(count)}
             </span>
           );
         })}

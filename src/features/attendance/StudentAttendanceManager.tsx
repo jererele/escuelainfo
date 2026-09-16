@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction } from "@/lib/dataService";
 import { UserCheck, Check, X, AlertCircle, Calendar, Clock, Search, Printer } from "lucide-react";
 import AttendanceTableResponsive from "@/components/shared/AttendanceTableResponsive";
@@ -65,9 +65,9 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
   };
 
   // Cargar planilla de asistencia diaria (Preceptor/Admin)
-  const cargarPlanillaJornada = async () => {
+  const cargarPlanillaJornada = useCallback(async () => {
     if (!selectedCurso) {
-      setErrorMsg("Seleccioná un curso para cargar la planilla.");
+      setAsistenciasJornada({});
       return;
     }
     setLoading(true);
@@ -99,7 +99,14 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCurso, fecha, alumnos]);
+
+  // Cargar automáticamente al cambiar el curso o la fecha
+  useEffect(() => {
+    if (role === "admin" || role === "directivo" || role === "preceptor") {
+      cargarPlanillaJornada();
+    }
+  }, [cargarPlanillaJornada, role]);
 
   // Guardar asistencia diaria (Preceptor/Admin)
   const handleSaveJornada = async () => {
@@ -189,22 +196,11 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
               <select
                 className="bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-bold outline-none text-[var(--text)] focus:border-[var(--verde)]"
                 value={selectedCurso}
-                onChange={(e) => {
-                  setSelectedCurso(e.target.value);
-                  setAsistenciasJornada({});
-                }}
+                onChange={(e) => setSelectedCurso(e.target.value)}
               >
                 <option value="">— Seleccionar Curso —</option>
                 {cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
               </select>
-
-              <button
-                onClick={cargarPlanillaJornada}
-                disabled={loading || !selectedCurso}
-                className="bg-[var(--verde)] text-black font-black text-xs px-4 py-2.5 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all shadow-md disabled:opacity-50"
-              >
-                Cargar Planilla
-              </button>
             </div>
           </div>
 
@@ -255,7 +251,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
           ) : (
             <div className="text-center py-10 border-2 border-dashed border-[var(--border)] rounded-2xl">
               <UserCheck size={32} className="mx-auto text-[var(--text3)] mb-2 animate-pulse" />
-              <p className="text-sm font-bold text-[var(--text2)]">Seleccioná un curso y presioná "Cargar Planilla" para registrar asistencia diaria.</p>
+              <p className="text-sm font-bold text-[var(--text2)]">Seleccioná un curso para cargar la planilla de asistencia diaria.</p>
             </div>
           )}
         </div>
