@@ -1,15 +1,17 @@
-const isProd = process.env.NODE_ENV === 'production';
+const isGithubPages = process.env.GITHUB_ACTIONS === 'true';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  ...(isGithubPages ? {
+    output: 'export',
+    basePath: '/escuelainfo',
+  } : {}),
   trailingSlash: true,
   images: {
     unoptimized: true,
   },
-  basePath: isProd ? '/escuelainfo' : '',
-  // Only include headers when not exporting statically
-  ...(isProd ? {} : {
+  // Include security headers when running on Vercel / server mode
+  ...(!isGithubPages ? {
     async headers() {
       return [
         {
@@ -39,7 +41,7 @@ const nextConfig = {
         },
       ];
     },
-  }),
+  } : {}),
 };
 
 module.exports = nextConfig;
