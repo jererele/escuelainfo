@@ -4,15 +4,24 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.9.1";
-export const APP_BUILD_DATE = "15/09/2026 20:30 hs";
+export const APP_VERSION = "v2.9.2";
+export const APP_BUILD_DATE = "15/09/2026 21:10 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Optimización de Rendimiento Extrema (Memoización): Se previno el re-renderizado masivo de la tabla de asistencia implementando `React.memo` para las tarjetas y filas de alumnos. Ahora la plataforma responde instantáneamente al interactuar o tipear en el buscador.",
-  "Automatización UX: La planilla de asistencia diaria ahora se carga y refresca automáticamente al seleccionar el curso o la fecha, eliminando la necesidad del botón manual 'Cargar Planilla'.",
+  "Envío Automático de Correos en Segundo Plano: Se eliminó la apertura de Gmail Web (`mail.google.com`) tanto en el modal de Avisos Institucionales (`SendNoticeModal`) como en el formulario de consultas de la web (`ContactForm`). Ahora se procesan y envían automáticamente en el servidor a través de `/api/send-email`.",
+  "Soporte CCO y Privacidad: El servicio de correo ahora admite destinatarios en Copia Oculta (BCC) y remitentes de respuesta (`replyTo`), garantizando la confidencialidad de los correos de alumnos y docentes.",
+  "Feedback Visual y Prevención de Envíos Duplicados: Se agregaron estados de carga y spinners animados durante el despacho de avisos por correo."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.9.1",
+    date: "15/09/2026 20:30 hs",
+    notes: [
+      "Optimización de Rendimiento Extrema (Memoización): Se previno el re-renderizado masivo de la tabla de asistencia implementando `React.memo` para las tarjetas y filas de alumnos. Ahora la plataforma responde instantáneamente al interactuar o tipear en el buscador.",
+      "Automatización UX: La planilla de asistencia diaria ahora se carga y refresca automáticamente al seleccionar el curso o la fecha, eliminando la necesidad del botón manual 'Cargar Planilla'."
+    ]
+  },
   {
     version: "v2.9.0",
     date: "15/09/2026 19:30 hs",

@@ -3,15 +3,14 @@ import nodemailer from 'nodemailer';
 
 export async function POST(request: Request) {
   try {
-    const { to, subject, text, html } = await request.json();
+    const { to, bcc, replyTo, subject, text, html } = await request.json();
 
-    if (!to || !subject) {
-      return NextResponse.json({ error: "Faltan parámetros 'to' o 'subject'" }, { status: 400 });
+    if ((!to && !bcc) || !subject) {
+      return NextResponse.json({ error: "Faltan parámetros de destinatario ('to' o 'bcc') o 'subject'" }, { status: 400 });
     }
 
     // Configurar el transporter usando variables de entorno
-    // Para Gmail: service: 'gmail', auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS (Contraseña de aplicación) }
-    // Para otro SMTP (Resend, SendGrid): host: 'smtp.resend.com', port: 465, secure: true, auth: { user: 'resend', pass: API_KEY }
+    // Para Gmail: host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '465'),
@@ -25,17 +24,20 @@ export async function POST(request: Request) {
     // Validar configuración
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       console.warn("Faltan SMTP_USER o SMTP_PASS en .env.local. Simulación de envío exitoso.");
-      console.log(`[EMAIL SIMULADO] Destino: ${to}, Asunto: ${subject}`);
+      console.log(`[EMAIL SIMULADO] Para: ${to || '(CCO)'}, CCO: ${Array.isArray(bcc) ? bcc.length + ' destinatarios' : bcc}, Asunto: ${subject}`);
       return NextResponse.json({ success: true, simulated: true });
     }
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to,
+    const mailOptions: any = {
+      from: process.env.SMTP_FROM || `"EscuelaInfo" <${process.env.SMTP_USER}>`,
       subject,
       text: text || "Notificación de EscuelaInfo",
       html: html || `<p>${text || "Notificación de EscuelaInfo"}</p>`,
     };
+
+    if (to) mailOptions.to = to;
+    if (bcc) mailOptions.bcc = Array.isArray(bcc) ? bcc.join(",") : bcc;
+    if (replyTo) mailOptions.replyTo = replyTo;
 
     const info = await transporter.sendMail(mailOptions);
     console.log("Mensaje enviado: %s", info.messageId);

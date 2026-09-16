@@ -41,18 +41,39 @@ export default function ContactForm({ showToast }: Props) {
 
     setSending(true);
     try {
-      // Abre Gmail Compose con los datos pre-completados
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com&su=${encodeURIComponent(
-        `Consulta de ${form.nombre} (${form.email})`
-      )}&body=${encodeURIComponent(
-        `De: ${form.nombre} <${form.email}>\n\n${form.mensaje}`
-      )}`;
-      window.open(gmailUrl, "_blank", "noopener,noreferrer");
+      // Envío automático al buzón oficial sin salir de la página
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "skbcraft.info@gmail.com",
+          replyTo: form.email,
+          subject: `Consulta Web: ${form.nombre} (${form.email})`,
+          text: `De: ${form.nombre} <${form.email}>\n\nMensaje:\n${form.mensaje}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff; color: #111827;">
+              <h3 style="color: #065f46; margin-top: 0; font-size: 18px;">Nueva consulta recibida desde el portal web</h3>
+              <p style="margin: 6px 0;"><strong>Remitente:</strong> ${form.nombre}</p>
+              <p style="margin: 6px 0;"><strong>Email de contacto:</strong> <a href="mailto:${form.email}">${form.email}</a></p>
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
+              <p style="margin: 6px 0; font-weight: bold; color: #374151;">Mensaje:</p>
+              <div style="white-space: pre-line; line-height: 1.6; font-size: 14px; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #f3f4f6; color: #1f2937;">
+                ${form.mensaje}
+              </div>
+              <p style="margin-top: 24px; font-size: 11px; color: #9ca3af;">Respondé directamente a este correo para comunicarte con ${form.nombre}.</p>
+            </div>
+          `
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("No se pudo enviar el correo");
+      }
 
       // ✅ RESET INMEDIATO DE TODOS LOS CAMPOS
       setForm(INITIAL_STATE);
       setSent(true);
-      showToast("¡Consulta enviada! Redirigiendo a Gmail.", "success");
+      showToast("¡Consulta enviada exitosamente!", "success");
 
       // Ocultar mensaje de éxito después de 4s
       setTimeout(() => setSent(false), 4000);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Mail, AlertCircle, Send } from "lucide-react";
+import { X, Mail, AlertCircle, Send, Loader2 } from "lucide-react";
 import { Alumno, Profesor, UserProfile, Curso, logAction } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 
@@ -29,6 +29,7 @@ export default function SendNoticeModal({
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [userEmail, setUserEmail] = useState("desconocido");
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export default function SendNoticeModal({
     return 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -115,32 +116,61 @@ export default function SendNoticeModal({
       return;
     }
 
-    // Construct Gmail Web Compose Link with BCC for security/privacy
-    const bccList = emails.join(",");
-    const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bccList)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-
-    // Log the notification dispatch
-    logAction(
-      userEmail,
-      "ENVIAR_AVISO_EMAIL",
-      `Destinatarios: ${destino} (${emails.length} emails), Asunto: ${subject}`
-    );
-
-    // Copy to clipboard as helper/fallback
+    setIsSending(true);
     try {
-      navigator.clipboard.writeText(bccList);
-    } catch (err) {
-      // silent
+      // Registrar auditoría de envío
+      await logAction(
+        userEmail,
+        "ENVIAR_AVISO_EMAIL",
+        `Destinatarios: ${destino} (${emails.length} emails), Asunto: ${subject}`
+      );
+
+      // Despacho de correo en segundo plano por el endpoint interno
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bcc: emails,
+          subject: subject,
+          text: message,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff; color: #111827;">
+              <div style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #10b981;">
+                <h2 style="color: #065f46; margin: 0; font-size: 20px;">${subject}</h2>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280; font-weight: bold; text-transform: uppercase;">Aviso Institucional - EscuelaInfo</p>
+              </div>
+              <div style="white-space: pre-line; line-height: 1.6; font-size: 15px; color: #374151;">
+                ${message}
+              </div>
+              <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af; text-align: center;">
+                <p style="margin: 0;">Este mensaje fue enviado a través de la plataforma escolar EscuelaInfo.</p>
+                <p style="margin: 4px 0 0 0;">Por favor, no responder a esta dirección automática.</p>
+              </div>
+            </div>
+          `
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo enviar el correo");
+      }
+
+      if (data.simulated) {
+        showToast(`Aviso enviado a ${emails.length} destinatario(s) (Modo simulación - Ver logs de consola)`, "success");
+      } else {
+        showToast(`¡Aviso enviado automáticamente a ${emails.length} destinatario(s)!`, "success");
+      }
+
+      setSubject("");
+      setMessage("");
+      onClose();
+    } catch (err: any) {
+      console.error("Error al enviar aviso:", err);
+      setError(err?.message || "Ocurrió un problema al enviar el correo automático.");
+    } finally {
+      setIsSending(false);
     }
-
-    // Open Gmail Compose directly in a new tab (exactly like Classroom)
-    window.open(gmailComposeUrl, "_blank", "noopener,noreferrer");
-    showToast(`Redirigiendo a Gmail con ${emails.length} destinatarios en CCO (BCC).`, "success");
-
-    // Clean inputs
-    setSubject("");
-    setMessage("");
-    onClose();
   };
 
   return (
@@ -278,16 +308,27 @@ export default function SendNoticeModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95"
+              disabled={isSending}
+              className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2"
+              disabled={isSending}
+              className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
             >
-              <Send size={16} />
-              Enviar Comunicado
+              {isSending ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  Enviando en segundo plano...
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  Enviar Comunicado
+                </>
+              )}
             </button>
           </div>
         </form>
