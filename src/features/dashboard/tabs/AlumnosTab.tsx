@@ -28,11 +28,14 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
 }) => {
   const pendingAlumnos = usuarios.filter(u => (u.rol as string) === 'pendiente_alumno');
 
-  const filteredAlumnos = alumnos.filter(al => 
-    al.nombre.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-    al.dni.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-    al.curso.toLowerCase().includes(studentSearchQuery.toLowerCase())
-  );
+  const filteredAlumnos = alumnos.filter(al => {
+    const q = studentSearchQuery.toLowerCase().trim();
+    return (
+      (al.nombre || "").toLowerCase().includes(q) ||
+      (al.dni || "").toLowerCase().includes(q) ||
+      (al.curso || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="animate-fade-in space-y-10">

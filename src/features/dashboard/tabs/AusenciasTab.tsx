@@ -204,22 +204,16 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
 
       {/* BARRA DE FILTRO Y BÚSQUEDA */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)]">
-        {userProfile?.rol !== 'profesor' ? (
-          <div className="relative w-full md:w-96">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={20} /></span>
-            <input 
-              type="text" 
-              placeholder="Buscar por profesor o tipo..." 
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--verde)] transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        ) : (
-          <div className="text-sm font-black text-[var(--text2)] uppercase tracking-wider pl-2">
-            Tu Historial de Inasistencias
-          </div>
-        )}
+        <div className="relative w-full md:w-96">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={20} /></span>
+          <input 
+            type="text" 
+            placeholder={userProfile?.rol === 'profesor' ? "Buscar en mi historial de inasistencias..." : "Buscar por profesor o tipo..."} 
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--verde)] transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <div className="flex gap-2 w-full md:w-auto">
           {canManageAusencias && (
             <button 

@@ -25,8 +25,11 @@ export default function AssignStudentsModal({ isOpen, onClose, onSuccess, curso,
     if (!isOpen || !curso) return;
     setSearch("");
     setError("");
+    const targetCourse = curso.nombre.trim().toLowerCase();
     const preSelected = new Set(
-      alumnos.filter(a => a.curso === curso.nombre).map(a => a.id!)
+      alumnos
+        .filter(a => (a.curso || "").trim().toLowerCase() === targetCourse)
+        .map(a => a.id!)
     );
     setSelected(preSelected);
   }, [isOpen, curso, alumnos]);
@@ -40,11 +43,11 @@ export default function AssignStudentsModal({ isOpen, onClose, onSuccess, curso,
   }, [isOpen, onClose]);
 
   const filteredAlumnos = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     return alumnos.filter(a =>
-      a.nombre.toLowerCase().includes(q) ||
-      a.dni.includes(q) ||
-      a.email.toLowerCase().includes(q)
+      (a.nombre || "").toLowerCase().includes(q) ||
+      (a.dni || "").toLowerCase().includes(q) ||
+      (a.email || "").toLowerCase().includes(q)
     );
   }, [alumnos, search]);
 

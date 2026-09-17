@@ -52,10 +52,17 @@ export default function NewScheduleModal({ isOpen, onClose, onSuccess }: Props) 
     try {
       const currentHorarios = await getHorarios();
 
+      const normDia = dia.trim().toLowerCase();
+      const normProf = (selectedProfesor?.nombre || "").trim().toLowerCase();
+      const normCurso = curso.trim().toLowerCase();
+
       for (const hora of selectedHours) {
+        const testHora = hora.replace(/\s+/g, "").toLowerCase();
+
         const profConflict = currentHorarios.find(item =>
-          item.dia === dia && item.hora === hora &&
-          item.profesor.toLowerCase() === selectedProfesor?.nombre.toLowerCase()
+          (item.dia || "").trim().toLowerCase() === normDia &&
+          (item.hora || "").replace(/\s+/g, "").toLowerCase() === testHora &&
+          (item.profesor || "").trim().toLowerCase() === normProf
         );
         if (profConflict) {
           setError(`Conflicto de Profesor: ${selectedProfesor?.nombre} ya tiene "${profConflict.materia}" en ${profConflict.curso} el ${dia} a las ${hora}.`);
@@ -63,7 +70,9 @@ export default function NewScheduleModal({ isOpen, onClose, onSuccess }: Props) 
         }
 
         const cursoConflict = currentHorarios.find(item =>
-          item.dia === dia && item.hora === hora && item.curso === curso
+          (item.dia || "").trim().toLowerCase() === normDia &&
+          (item.hora || "").replace(/\s+/g, "").toLowerCase() === testHora &&
+          (item.curso || "").trim().toLowerCase() === normCurso
         );
         if (cursoConflict) {
           setError(`Conflicto de Curso: ${curso} ya tiene "${cursoConflict.materia}" con ${cursoConflict.profesor} el ${dia} a las ${hora}.`);

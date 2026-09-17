@@ -41,6 +41,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
   const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
 
   const getNextCourseHeuristic = (currentCourse: string, allCourses: string[]): string => {
+    if (!currentCourse) return "";
     const parts = currentCourse.split(" - ");
     if (parts.length < 2) return currentCourse;
     

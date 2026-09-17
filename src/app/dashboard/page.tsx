@@ -664,18 +664,26 @@ export default function Dashboard() {
   // Memoized derived state — avoids costly recalculations on every render
   const filteredAusencias = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
+    const q = searchQuery.toLowerCase().trim();
+
     return ausencias.filter(a => {
-      const isExpired = a.fin < today;
-      const q = searchQuery.toLowerCase();
-      
-      if (isExpired && q === "") {
-        return false; // Hide expired from main view
+      // Si es profesor, debe ver todo su historial (incluso licencias pasadas)
+      if (userProfile?.rol === 'profesor') {
+        const isCurrentTeacher = currentProfesor && (
+          (a.profId && String(a.profId) === String(currentProfesor.id)) ||
+          (a.profNombre && currentProfesor.nombre && a.profNombre.trim().toLowerCase() === currentProfesor.nombre.trim().toLowerCase())
+        );
+        if (!isCurrentTeacher) return false;
+        return q === "" || (a.tipo || "").toLowerCase().includes(q) || (a.motivo || "").toLowerCase().includes(q);
       }
 
-      if (userProfile?.rol === 'profesor') {
-        return currentProfesor && a.profId === currentProfesor.id && (q === "" || a.tipo.toLowerCase().includes(q));
+      // Para administradores y equipo institucional, ocultar pasadas solo si no hay búsqueda activa
+      const isExpired = a.fin < today;
+      if (isExpired && q === "") {
+        return false;
       }
-      return a.profNombre.toLowerCase().includes(q) || a.tipo.toLowerCase().includes(q);
+
+      return (a.profNombre || "").toLowerCase().includes(q) || (a.tipo || "").toLowerCase().includes(q);
     });
   }, [ausencias, userProfile?.rol, currentProfesor, searchQuery]);
 

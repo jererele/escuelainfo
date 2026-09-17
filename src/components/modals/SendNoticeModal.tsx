@@ -70,7 +70,8 @@ export default function SendNoticeModal({
       return usuarios.filter(u => u.email).length;
     }
     if (destino === "curso") {
-      return alumnos.filter(a => a.curso === selectedCourse && a.email).length;
+      const targetCourse = selectedCourse.trim().toLowerCase();
+      return alumnos.filter(a => (a.curso || "").trim().toLowerCase() === targetCourse && a.email).length;
     }
     return 0;
   };
@@ -107,7 +108,11 @@ export default function SendNoticeModal({
         setError("Por favor seleccioná un curso.");
         return;
       }
-      emails = alumnos.filter(a => a.curso === selectedCourse).map(a => a.email).filter(Boolean);
+      const targetCourse = selectedCourse.trim().toLowerCase();
+      emails = alumnos
+        .filter(a => (a.curso || "").trim().toLowerCase() === targetCourse)
+        .map(a => a.email)
+        .filter(Boolean);
     }
 
     if (emails.length === 0) {

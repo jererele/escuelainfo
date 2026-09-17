@@ -42,7 +42,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     if (userProfile?.email) {
       try {
         const als = await getAlumnos();
-        const al = als.find(a => a.email.toLowerCase() === userProfile.email.toLowerCase());
+        const al = als.find(a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase());
         if (al) {
           setAlumnoRecord(al);
           await cargarHistorialAlumno(al.id || al.dni);
@@ -66,7 +66,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
     if (role === "alumno" && userProfile?.email) {
       getAlumnos().then(als => {
-        const al = als.find(a => a.email.toLowerCase() === userProfile.email.toLowerCase());
+        const al = als.find(a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase());
         if (al) {
           setAlumnoRecord(al);
           cargarHistorialAlumno(al.id || al.dni);

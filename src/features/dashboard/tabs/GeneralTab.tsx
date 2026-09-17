@@ -88,7 +88,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
       {/* HORAS LIBRES DEL DÍA */}
       <FreeHoursWidget 
-        isStudent={false}
+        isStudent={userProfile?.rol === 'alumno'}
         currentAlumno={currentAlumno}
         ausencias={ausencias}
         horarios={horarios}

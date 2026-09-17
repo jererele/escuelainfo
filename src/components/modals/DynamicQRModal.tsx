@@ -50,7 +50,7 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
   useEffect(() => {
     if (userProfile?.rol === "profesor") {
       setMode("materia");
-      if (currentProfesor?.materias.length && !selectedMateria) {
+      if (currentProfesor?.materias?.length && !selectedMateria) {
         setSelectedMateria(currentProfesor.materias[0]);
       }
     }
@@ -211,10 +211,12 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
                   value={selectedMateria}
                   onChange={(e) => setSelectedMateria(e.target.value)}
                 >
-                  {currentProfesor.materias.map(m => (
+                  {(currentProfesor.materias || []).map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
-                  {currentProfesor.materias.length === 0 && <option value="">Sin materias asignadas</option>}
+                  {(!currentProfesor.materias || currentProfesor.materias.length === 0) && (
+                    <option value="">Sin materias asignadas</option>
+                  )}
                 </select>
               </div>
             )}

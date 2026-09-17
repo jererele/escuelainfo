@@ -4,17 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.16.0";
-export const APP_BUILD_DATE = "17/09/2026 19:50 hs";
+export const APP_VERSION = "v2.16.1";
+export const APP_BUILD_DATE = "17/09/2026 20:00 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Resolución de Exportación Vacía de Horarios en Excel (HorariosTab.tsx): Se corrigió la condición de filtrado donde la variable de curso asignaba por defecto 'Todos_Cursos', provocando que ninguna materia coincidiera en las celdas del archivo exportado. Ahora el generador evalúa dinámicamente el rol del usuario (docente, alumno, equipo directivo) y exporta con total exactitud todas las materias y horarios registrados.",
-  "Modo Personalizado 'Mi Horario' para Docentes: Los profesores ahora disponen de una vista dedicada por defecto ('Mi Horario') que reúne todas sus clases asignadas a través de los diferentes cursos y turnos, con un botón para alternar entre ver sus propias materias o explorar la grilla institucional por curso.",
-  "Exportación Inteligente por Rol: Al pulsar 'Descargar Excel', los docentes descargan su grilla personalizada (Mi_Horario_NombreProfesor.xlsx) con materia y curso en cada celda; los alumnos descargan el horario de su curso asignado (Mi_Horario_Curso.xlsx); y el equipo de gestión puede descargar tanto cursos individuales como el cronograma maestro institucional completo sin celdas vacías.",
-  "Normalización de Espacios y Módulos Horarios: Se introdujo normalización insensible a espacios en blanco y mayúsculas en días y franjas horarias, asegurando coherencia al 100% entre los módulos de la base de datos y la grilla visual o exportada."
+  "Restauración del Historial Completo de Inasistencias Docentes (page.tsx y AusenciasTab.tsx): Se corrigió la condición que ocultaba automáticamente las licencias pasadas cuando no había búsqueda activa, lo que impedía a los docentes consultar sus inasistencias anteriores en 'Tu Historial'. Se añadió además una barra de búsqueda dedicada para docentes y se flexibilizó el emparejamiento por ID y nombre.",
+  "Horas Libres Filtradas para Alumnos en Pantalla Principal (GeneralTab.tsx y FreeHoursWidget.tsx): Se solucionó el valor fijo `isStudent={false}` en la pestaña general, permitiendo que los alumnos vean exclusivamente las horas libres de su propio curso. Se implementó además normalización de mayúsculas y espacios en el cotejo de profesores y cursos.",
+  "Blindaje contra Errores de Propiedades Nulas e Indefinidas (DynamicQRModal, AssignStudentsModal, AlumnosTab, CicloLectivoTab): Se añadieron comprobaciones de nulidad y valores de respaldo en campos sensibles como `dni`, `materias`, `curso` y `email`, evitando caídas de la interfaz al filtrar o buscar registros incompletos.",
+  "Normalización en Detección de Conflictos Horarios y Destinatarios de Avisos (NewScheduleModal.tsx y SendNoticeModal.tsx): La validación de solapamiento de horarios y el envío de avisos a cursos específicos ahora ignoran diferencias de espacios y mayúsculas, garantizando un control estricto de superposiciones y entregas efectivas de correos."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.16.0",
+    date: "17/09/2026 19:50 hs",
+    notes: [
+      "Resolución de Exportación Vacía de Horarios en Excel (HorariosTab.tsx): Se corrigió la condición de filtrado donde la variable de curso asignaba por defecto 'Todos_Cursos', provocando que ninguna materia coincidiera en las celdas del archivo exportado. Ahora el generador evalúa dinámicamente el rol del usuario (docente, alumno, equipo directivo) y exporta con total exactitud todas las materias y horarios registrados.",
+      "Modo Personalizado 'Mi Horario' para Docentes: Los profesores ahora disponen de una vista dedicada por defecto ('Mi Horario') que reúne todas sus clases asignadas a través de los diferentes cursos y turnos, con un botón para alternar entre ver sus propias materias o explorar la grilla institucional por curso.",
+      "Exportación Inteligente por Rol: Al pulsar 'Descargar Excel', los docentes descargan su grilla personalizada (Mi_Horario_NombreProfesor.xlsx) con materia y curso en cada celda; los alumnos descargan el horario de su curso asignado (Mi_Horario_Curso.xlsx); y el equipo de gestión puede descargar tanto cursos individuales como el cronograma maestro institucional completo sin celdas vacías.",
+      "Normalización de Espacios y Módulos Horarios: Se introdujo normalización insensible a espacios en blanco y mayúsculas en días y franjas horarias, asegurando coherencia al 100% entre los módulos de la base de datos y la grilla visual o exportada."
+    ]
+  },
   {
     version: "v2.15.1",
     date: "17/09/2026 16:30 hs",

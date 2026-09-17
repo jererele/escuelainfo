@@ -104,13 +104,17 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
 
   // Clases afectadas hoy memoizado
   const freeHoursToday = useMemo(() => {
-    let list = horarios.filter(h => 
-      h.dia === todayDayName &&
-      activeAbsencesToday.some(a => a.profNombre === h.profesor)
-    );
+    const normToday = todayDayName.trim().toLowerCase();
+    let list = horarios.filter(h => {
+      const matchDay = (h.dia || "").trim().toLowerCase() === normToday;
+      if (!matchDay) return false;
+      const hProf = (h.profesor || "").trim().toLowerCase();
+      return activeAbsencesToday.some(a => (a.profNombre || "").trim().toLowerCase() === hProf);
+    });
 
-    if (isStudent && currentAlumno) {
-      list = list.filter(h => h.curso === currentAlumno.curso);
+    if (isStudent && currentAlumno?.curso) {
+      const studentCourse = currentAlumno.curso.trim().toLowerCase();
+      list = list.filter(h => (h.curso || "").trim().toLowerCase() === studentCourse);
     }
     return list;
   }, [horarios, todayDayName, activeAbsencesToday, isStudent, currentAlumno]);
