@@ -1205,6 +1205,7 @@ export default function Dashboard() {
               cursos={cursos}
               ausencias={ausencias}
               currentAlumno={currentAlumno}
+              currentProfesor={currentProfesor}
               userProfile={userProfile}
               isAdmin={isAdmin}
               selectedCourse={selectedCourse}

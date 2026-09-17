@@ -4,16 +4,26 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.15.1";
-export const APP_BUILD_DATE = "17/09/2026 16:30 hs";
+export const APP_VERSION = "v2.16.0";
+export const APP_BUILD_DATE = "17/09/2026 19:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección y Sincronización de Horarios Históricos en Horas Libres Activas (FreeHoursWidget.tsx): Se identificó y resolvió la causa raíz por la cual clases con horario asignado figuraban como 'Hora a confirmar'. Los registros previos a la migración de esquema en Appwrite poseían el campo `hora: null`; se reconstruyeron y restauraron los módulos exactos (16:30 a 19:20 hs) correlacionando los registros con los logs de auditoría.",
-  "Invalidación Reactiva de Caché Stale en getHorarios (dataService.ts): Si la caché en sessionStorage contiene elementos con 'Hora a confirmar', se invalida automáticamente forzando la lectura de los datos reparados desde Appwrite.",
-  "Visualización en Alto Contraste con Módulos Reales: Las tarjetas de horas libres ahora presentan con exactitud las horas de inicio y fin de cada clase en una insignia distintiva roja, permitiendo a los cursos y preceptores conocer al instante qué horas tienen libres."
+  "Resolución de Exportación Vacía de Horarios en Excel (HorariosTab.tsx): Se corrigió la condición de filtrado donde la variable de curso asignaba por defecto 'Todos_Cursos', provocando que ninguna materia coincidiera en las celdas del archivo exportado. Ahora el generador evalúa dinámicamente el rol del usuario (docente, alumno, equipo directivo) y exporta con total exactitud todas las materias y horarios registrados.",
+  "Modo Personalizado 'Mi Horario' para Docentes: Los profesores ahora disponen de una vista dedicada por defecto ('Mi Horario') que reúne todas sus clases asignadas a través de los diferentes cursos y turnos, con un botón para alternar entre ver sus propias materias o explorar la grilla institucional por curso.",
+  "Exportación Inteligente por Rol: Al pulsar 'Descargar Excel', los docentes descargan su grilla personalizada (Mi_Horario_NombreProfesor.xlsx) con materia y curso en cada celda; los alumnos descargan el horario de su curso asignado (Mi_Horario_Curso.xlsx); y el equipo de gestión puede descargar tanto cursos individuales como el cronograma maestro institucional completo sin celdas vacías.",
+  "Normalización de Espacios y Módulos Horarios: Se introdujo normalización insensible a espacios en blanco y mayúsculas en días y franjas horarias, asegurando coherencia al 100% entre los módulos de la base de datos y la grilla visual o exportada."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.15.1",
+    date: "17/09/2026 16:30 hs",
+    notes: [
+      "Corrección y Sincronización de Horarios Históricos en Horas Libres Activas (FreeHoursWidget.tsx): Se identificó y resolvió la causa raíz por la cual clases con horario asignado figuraban como 'Hora a confirmar'. Los registros previos a la migración de esquema en Appwrite poseían el campo `hora: null`; se reconstruyeron y restauraron los módulos exactos (16:30 a 19:20 hs) correlacionando los registros con los logs de auditoría.",
+      "Invalidación Reactiva de Caché Stale en getHorarios (dataService.ts): Si la caché en sessionStorage contiene elementos con 'Hora a confirmar', se invalida automáticamente forzando la lectura de los datos reparados desde Appwrite.",
+      "Visualización en Alto Contraste con Módulos Reales: Las tarjetas de horas libres ahora presentan con exactitud las horas de inicio y fin de cada clase en una insignia distintiva roja, permitiendo a los cursos y preceptores conocer al instante qué horas tienen libres."
+    ]
+  },
   {
     version: "v2.15.0",
     date: "17/09/2026 16:25 hs",

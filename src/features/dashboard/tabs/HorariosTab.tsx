@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, Sparkles } from "lucide-react";
-import { Horario, Curso, Ausencia, Alumno, UserProfile } from "@/lib/dataService";
+import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, Sparkles, UserCheck } from "lucide-react";
+import { Horario, Curso, Ausencia, Alumno, UserProfile, Profesor } from "@/lib/dataService";
 import CustomSelect from "@/components/shared/CustomSelect";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 
@@ -9,6 +9,7 @@ interface HorariosTabProps {
   cursos: Curso[];
   ausencias: Ausencia[];
   currentAlumno?: Alumno | null;
+  currentProfesor?: Profesor | null;
   userProfile: UserProfile | null;
   isAdmin: boolean;
   selectedCourse: string;
@@ -26,6 +27,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
   cursos,
   ausencias,
   currentAlumno,
+  currentProfesor,
   userProfile,
   isAdmin,
   selectedCourse,
@@ -38,6 +40,10 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
   showToast,
 }) => {
   const [selectedMobileDay, setSelectedMobileDay] = useState<string>("Lunes");
+  const isTeacher = userProfile?.rol === 'profesor';
+  const isStudent = userProfile?.rol === 'alumno';
+  const teacherName = currentProfesor?.nombre || userProfile?.nombre || "";
+  const [teacherOnlyMine, setTeacherOnlyMine] = useState<boolean>(true);
 
   const morningSlots = [
     "07:40 - 08:20", 
@@ -65,6 +71,9 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     "18:40 - 19:20"
   ];
 
+  const normalizeStr = (s?: string | null) => (s || "").trim().toLowerCase();
+  const normalizeSlot = (s?: string | null) => (s || "").replace(/\s+/g, "").toLowerCase();
+
   const getVisibleSlots = () => {
     const allSlots = [
       ...morningSlots,
@@ -79,11 +88,11 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     const effectiveCourse = currentAlumno?.curso || "";
     if (!effectiveCourse) return allSlots;
 
-    const courseSchedules = horarios.filter(h => h.curso === effectiveCourse);
+    const courseSchedules = horarios.filter(h => normalizeStr(h.curso) === normalizeStr(effectiveCourse));
     if (courseSchedules.length === 0) return allSlots;
 
-    const hasMorning = courseSchedules.some(h => morningSlots.includes(h.hora));
-    const hasAfternoon = courseSchedules.some(h => afternoonSlots.includes(h.hora));
+    const hasMorning = courseSchedules.some(h => morningSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
+    const hasAfternoon = courseSchedules.some(h => afternoonSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
 
     if (hasMorning && !hasAfternoon) {
       return [...morningSlots, "RECESO", afternoonSlots[0], afternoonSlots[1]];
@@ -96,12 +105,49 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     return allSlots;
   };
 
+  const findScheduleItem = (dia: string, slot: string) => {
+    const normDia = normalizeStr(dia);
+    const normSlot = normalizeSlot(slot);
+
+    if (isTeacher && teacherOnlyMine) {
+      return horarios.find(item =>
+        normalizeStr(item.dia) === normDia &&
+        normalizeSlot(item.hora) === normSlot &&
+        normalizeStr(item.profesor) === normalizeStr(teacherName)
+      );
+    }
+
+    const effectiveCourse = isStudent ? (currentAlumno?.curso || "___NO_COURSE___") : selectedCourse;
+    return horarios.find(item =>
+      normalizeStr(item.dia) === normDia &&
+      normalizeSlot(item.hora) === normSlot &&
+      (effectiveCourse === "" || normalizeStr(item.curso) === normalizeStr(effectiveCourse))
+    );
+  };
+
   const exportToExcel = async () => {
     const XLSX = await import("xlsx");
-    const effectiveCourse = userProfile?.rol === 'alumno' ? (currentAlumno?.curso || "SinCurso") : (selectedCourse || "Todos_Cursos");
-    const fileName = `Cronograma_${effectiveCourse}.xlsx`;
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
     const slots = getVisibleSlots();
+
+    const isTeacherMySchedule = isTeacher && (teacherOnlyMine || !selectedCourse);
+    const targetCourse = isStudent ? (currentAlumno?.curso || "") : selectedCourse;
+
+    let fileName = "Cronograma_General_Institucional.xlsx";
+    let sheetName = "Cronograma";
+
+    if (isTeacherMySchedule) {
+      const cleanProf = teacherName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, '_') || 'Docente';
+      fileName = `Mi_Horario_${cleanProf}.xlsx`;
+      sheetName = "Mi Horario";
+    } else if (targetCourse) {
+      const cleanCourse = targetCourse.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, '_');
+      fileName = isStudent ? `Mi_Horario_${cleanCourse}.xlsx` : `Horario_${cleanCourse}.xlsx`;
+      sheetName = targetCourse.slice(0, 31);
+    } else {
+      fileName = "Cronograma_General_Institucional.xlsx";
+      sheetName = "Cronograma General";
+    }
 
     const rows: (string | null)[][] = [];
     rows.push(['Horario', ...days]);
@@ -114,12 +160,45 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
       } else {
         const row: (string | null)[] = [slot];
         days.forEach(dia => {
-          const h = horarios.find(item =>
-            item.dia === dia &&
-            item.hora === slot &&
-            (effectiveCourse === '' || item.curso === effectiveCourse)
-          );
-          row.push(h ? `${h.materia}\nProf. ${h.profesor}\n${h.curso}` : '');
+          const normDia = normalizeStr(dia);
+          const normSlot = normalizeSlot(slot);
+
+          let matching: Horario[] = [];
+
+          if (isTeacherMySchedule) {
+            matching = horarios.filter(item =>
+              normalizeStr(item.dia) === normDia &&
+              normalizeSlot(item.hora) === normSlot &&
+              normalizeStr(item.profesor) === normalizeStr(teacherName)
+            );
+            if (matching.length > 0) {
+              row.push(matching.map(h => `${h.materia}\nCurso: ${h.curso}`).join('\n---\n'));
+            } else {
+              row.push('');
+            }
+          } else if (targetCourse) {
+            matching = horarios.filter(item =>
+              normalizeStr(item.dia) === normDia &&
+              normalizeSlot(item.hora) === normSlot &&
+              normalizeStr(item.curso) === normalizeStr(targetCourse)
+            );
+            if (matching.length > 0) {
+              row.push(matching.map(h => `${h.materia}\nProf. ${h.profesor}`).join('\n---\n'));
+            } else {
+              row.push('');
+            }
+          } else {
+            // Cronograma General completo
+            matching = horarios.filter(item =>
+              normalizeStr(item.dia) === normDia &&
+              normalizeSlot(item.hora) === normSlot
+            );
+            if (matching.length > 0) {
+              row.push(matching.map(h => `[${h.curso}] ${h.materia} (${h.profesor})`).join('\n'));
+            } else {
+              row.push('');
+            }
+          }
         });
         rows.push(row);
       }
@@ -128,47 +207,82 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [
       { wch: 18 },
-      { wch: 28 },
-      { wch: 28 },
-      { wch: 28 },
-      { wch: 28 },
-      { wch: 28 },
+      { wch: 32 },
+      { wch: 32 },
+      { wch: 32 },
+      { wch: 32 },
+      { wch: 32 },
     ];
-    ws['!rows'] = rows.map((_, i) => i === 0 ? { hpt: 22 } : { hpt: 54 });
+    ws['!rows'] = rows.map((_, i) => i === 0 ? { hpt: 24 } : { hpt: 60 });
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Cronograma');
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
     XLSX.writeFile(wb, fileName);
-    showToast('Excel del cronograma descargado', 'success');
+    showToast('Excel del horario descargado con éxito', 'success');
   };
 
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 mb-8">
         <div>
-          <h2 className="text-3xl font-black title-font text-[var(--text)]">Cronograma Institucional</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-black title-font text-[var(--text)]">Cronograma Institucional</h2>
+            {isTeacher && teacherOnlyMine && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--verde-bg)] text-[var(--verde)] text-xs font-bold rounded-xl border border-[var(--verde-border)]">
+                <UserCheck size={13} />
+                Mi Horario: {teacherName}
+              </span>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-3 z-30 relative no-print">
-            <div className="flex items-center gap-3">
-              <p className="text-[var(--text2)] text-sm font-medium">Filtrar por curso:</p>
-              {userProfile?.rol === 'alumno' ? (
-                <span className="px-4 py-2 bg-[var(--bg3)] text-[var(--verde)] rounded-2xl border border-[var(--border)] font-bold text-sm">
-                  {currentAlumno?.curso || "Sin curso"}
-                </span>
-              ) : (
-                <CustomSelect 
-                  value={selectedCourse} 
-                  onChange={(val) => setSelectedCourse(val)}
-                  placeholder="Todos los cursos"
-                  className="w-48"
-                  buttonClassName="text-[var(--verde)] bg-[var(--bg3)] text-xs"
-                  options={[
-                    { value: "", label: "Todos los cursos" },
-                    ...cursos.map(c => ({
-                      value: c.nombre, label: c.nombre
-                    }))
-                  ]}
-                />
+            <div className="flex flex-wrap items-center gap-3">
+              {isTeacher && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVal = !teacherOnlyMine;
+                    setTeacherOnlyMine(nextVal);
+                    if (nextVal) setSelectedCourse("");
+                  }}
+                  className={`px-4 py-2 rounded-2xl text-xs font-black transition-all border flex items-center gap-2 cursor-pointer ${
+                    teacherOnlyMine
+                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm"
+                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:bg-[var(--bg4)]"
+                  }`}
+                  title={teacherOnlyMine ? "Viendo únicamente tus materias asignadas" : "Cambiar a ver sólo tus materias"}
+                >
+                  <UserCheck size={15} className={teacherOnlyMine ? "text-[var(--verde)]" : "text-[var(--text3)]"} />
+                  {teacherOnlyMine ? "Viendo: Mis Materias" : "Ver Mis Materias"}
+                </button>
               )}
+
+              <div className="flex items-center gap-3">
+                <p className="text-[var(--text2)] text-sm font-medium">
+                  {isTeacher && teacherOnlyMine ? "Explorar por curso:" : "Filtrar por curso:"}
+                </p>
+                {userProfile?.rol === 'alumno' ? (
+                  <span className="px-4 py-2 bg-[var(--bg3)] text-[var(--verde)] rounded-2xl border border-[var(--border)] font-bold text-sm">
+                    {currentAlumno?.curso || "Sin curso"}
+                  </span>
+                ) : (
+                  <CustomSelect 
+                    value={teacherOnlyMine ? "" : selectedCourse} 
+                    onChange={(val) => {
+                      setSelectedCourse(val);
+                      if (val) setTeacherOnlyMine(false);
+                    }}
+                    placeholder={teacherOnlyMine ? "Seleccionar curso..." : "Todos los cursos"}
+                    className="w-48"
+                    buttonClassName="text-[var(--verde)] bg-[var(--bg3)] text-xs"
+                    options={[
+                      { value: "", label: "Todos los cursos" },
+                      ...cursos.map(c => ({
+                        value: c.nombre, label: c.nombre
+                      }))
+                    ]}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl px-4 py-2 w-full sm:w-64">
@@ -192,9 +306,16 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
           <button 
             onClick={exportToExcel}
             className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[var(--bg3)] text-[var(--text)] font-bold px-6 py-4 rounded-2xl border border-[var(--border)] hover:bg-[var(--bg4)] transition-all shadow-md active:scale-95 cursor-pointer"
+            title="Descargar horario en formato Excel (.xlsx)"
           >
-            <FileSpreadsheet size={18} />
-            Descargar Excel
+            <FileSpreadsheet size={18} className="text-[var(--verde)] shrink-0" />
+            {isTeacher 
+              ? (teacherOnlyMine || !selectedCourse ? "Descargar Mi Horario (Excel)" : `Descargar Horario ${selectedCourse} (Excel)`)
+              : isStudent 
+              ? "Descargar Mi Horario (Excel)" 
+              : selectedCourse 
+              ? `Descargar Horario ${selectedCourse} (Excel)` 
+              : "Descargar Cronograma General (Excel)"}
           </button>
           {isAdmin && (
             <button 
@@ -260,12 +381,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
             );
           }
 
-          const effectiveCourse = userProfile?.rol === 'alumno' ? (currentAlumno?.curso || "___NO_COURSE___") : selectedCourse;
-          const h = horarios.find(item => 
-            item.dia === selectedMobileDay && 
-            item.hora === slot && 
-            (effectiveCourse === "" || item.curso === effectiveCourse)
-          );
+          const h = findScheduleItem(selectedMobileDay, slot);
 
           const daysMap: {[key: string]: number} = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
           const now = new Date();
@@ -416,12 +532,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                 <tr key={idx} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)]">
                   <td className="p-4 border-r border-[var(--border)] text-[10px] font-black text-[var(--text)] text-center sticky left-0 bg-[var(--bg)]/95 backdrop-blur-md z-10">{slot}</td>
                   {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].map(dia => {
-                    const effectiveCourse = userProfile?.rol === 'alumno' ? (currentAlumno?.curso || "___NO_COURSE___") : selectedCourse;
-                    const h = horarios.find(item => 
-                      item.dia === dia && 
-                      item.hora === slot && 
-                      (effectiveCourse === "" || item.curso === effectiveCourse)
-                    );
+                    const h = findScheduleItem(dia, slot);
 
                     const daysMap: {[key: string]: number} = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
                     const now = new Date();
