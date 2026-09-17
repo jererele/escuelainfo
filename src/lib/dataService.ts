@@ -377,7 +377,7 @@ export interface MesaExamen {
 export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
   if (!forceRefresh) {
     const cached = getCachedData<Horario[]>("horarios");
-    if (cached) return cached;
+    if (cached && !cached.some(h => h.hora === "Hora a confirmar")) return cached;
   }
   try {
     const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, queries: [Query.limit(DEFAULT_LIMIT)] });

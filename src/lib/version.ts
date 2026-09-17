@@ -4,19 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.15.0";
-export const APP_BUILD_DATE = "17/09/2026 16:25 hs";
+export const APP_VERSION = "v2.15.1";
+export const APP_BUILD_DATE = "17/09/2026 16:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Diferenciación Estatutaria de Licencias por Rol (Profesores, Preceptores y Directivos): Se investigó a fondo y se modeló la normativa educativa de Chubut (Ley VIII N° 20, Decreto 508/2026, Res. 517/90). Cada rol posee reglas específicas de afectación, límites, anticipación y restricciones institucionales.",
-  "Reglas Específicas para Profesores: Afectación por horas cátedra y materias curriculares (generación de horas libres sin suplente). Art. 15 (máx. 2 días/mes), Art. 18 (hasta 3 días por examen), Art. 50 (aviso SAE dentro de los 45 min de inicio del turno).",
-  "Reglas Específicas para Preceptores (POD / Auxiliares Docentes): Afectación por cargo continuo de planta institucional (turno completo de 4.5 hs). Art. 15 con restricción de simultaneidad (no más de 1 preceptor ausente por turno para garantizar el cuidado de alumnos). Art. 18 justifica la jornada completa del turno.",
-  "Reglas Específicas para Directivos (Equipo de Conducción): Elevación preceptiva y formal a Supervisión Técnica Escolar de Región. Restricción estricta en períodos críticos (Res. 517/90: prohibido en los 20 días previos al cierre o 20 posteriores al inicio de ciclo lectivo). Designación reglamentaria de Vicedirección a cargo.",
-  "Selector Interactivo de Rol en NewAbsenceModal.tsx: Segmented control con iconos oficiales de Lucide (GraduationCap, Clock, Building2) que adapta en tiempo real las insignias, la barra de progreso, las alertas de saturación y la tarjeta de cupos restantes.",
-  "Tarjeta Enriquecida con Normativa Chubut: Despliegue de notas estatutarias oficiales, unidad de afectación del cargo, alertas preventivas institucionales y validación en vivo de días solicitados."
+  "Corrección y Sincronización de Horarios Históricos en Horas Libres Activas (FreeHoursWidget.tsx): Se identificó y resolvió la causa raíz por la cual clases con horario asignado figuraban como 'Hora a confirmar'. Los registros previos a la migración de esquema en Appwrite poseían el campo `hora: null`; se reconstruyeron y restauraron los módulos exactos (16:30 a 19:20 hs) correlacionando los registros con los logs de auditoría.",
+  "Invalidación Reactiva de Caché Stale en getHorarios (dataService.ts): Si la caché en sessionStorage contiene elementos con 'Hora a confirmar', se invalida automáticamente forzando la lectura de los datos reparados desde Appwrite.",
+  "Visualización en Alto Contraste con Módulos Reales: Las tarjetas de horas libres ahora presentan con exactitud las horas de inicio y fin de cada clase en una insignia distintiva roja, permitiendo a los cursos y preceptores conocer al instante qué horas tienen libres."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.15.0",
+    date: "17/09/2026 16:25 hs",
+    notes: [
+      "Diferenciación Estatutaria de Licencias por Rol (Profesores, Preceptores y Directivos): Se investigó a fondo y se modeló la normativa educativa de Chubut (Ley VIII N° 20, Decreto 508/2026, Res. 517/90). Cada rol posee reglas específicas de afectación, límites, anticipación y restricciones institucionales.",
+      "Reglas Específicas para Profesores: Afectación por horas cátedra y materias curriculares (generación de horas libres sin suplente). Art. 15 (máx. 2 días/mes), Art. 18 (hasta 3 días por examen), Art. 50 (aviso SAE dentro de los 45 min de inicio del turno).",
+      "Reglas Específicas para Preceptores (POD / Auxiliares Docentes): Afectación por cargo continuo de planta institucional (turno completo de 4.5 hs). Art. 15 con restricción de simultaneidad (no más de 1 preceptor ausente por turno para garantizar el cuidado de alumnos). Art. 18 justifica la jornada completa del turno.",
+      "Reglas Específicas para Directivos (Equipo de Conducción): Elevación preceptiva y formal a Supervisión Técnica Escolar de Región. Restricción estricta en períodos críticos (Res. 517/90: prohibido en los 20 días previos al cierre o 20 posteriores al inicio de ciclo lectivo). Designación reglamentaria de Vicedirección a cargo.",
+      "Selector Interactivo de Rol en NewAbsenceModal.tsx: Segmented control con iconos oficiales de Lucide (GraduationCap, Clock, Building2) que adapta en tiempo real las insignias, la barra de progreso, las alertas de saturación y la tarjeta de cupos restantes.",
+      "Tarjeta Enriquecida con Normativa Chubut: Despliegue de notas estatutarias oficiales, unidad de afectación del cargo, alertas preventivas institucionales y validación en vivo de días solicitados."
+    ]
+  },
   {
     version: "v2.14.0",
     date: "17/09/2026 16:15 hs",
