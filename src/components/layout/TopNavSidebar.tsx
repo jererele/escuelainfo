@@ -72,6 +72,29 @@ export default function TopNavSidebar({
     document.documentElement.classList.toggle("light", active === "light");
   }, []);
 
+  // Bloquear scroll de body y evitar el rebote/desgarro del fondo en móviles
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, [isOpen]);
+
+  // Si la página o ventana detecta cualquier desplazamiento, cerrar inmediatamente la sidebar
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleScroll = () => {
+      closeSidebar();
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isOpen]);
+
   // Close on outside click
   useEffect(() => {
     if (!isOpen) return;
@@ -100,6 +123,35 @@ export default function TopNavSidebar({
       window.removeEventListener("popstate", popHandler);
     };
   }, [isOpen]);
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+
+    // Al deslizar hacia abajo en la parte superior del panel, salir de la sidebar
+    if (diff > 35) {
+      if (!panelRef.current || panelRef.current.scrollTop <= 5) {
+        touchStartY.current = null;
+        closeSidebar();
+      }
+    } else if (diff < -45) {
+      // Al deslizar hacia arriba en dirección a la barra superior
+      touchStartY.current = null;
+      closeSidebar();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartY.current = null;
+  };
 
   const closeSidebar = () => {
     setIsExiting(true);
@@ -257,24 +309,38 @@ export default function TopNavSidebar({
         </div>
       </header>
 
-      {/* ── OVERLAY ────────────────────────────────────────────────────────── */}
+      {/* ── OVERLAY (filtro de oscuridad con protección táctil total) ──────── */}
       {isOpen && (
         <div
-          className={`fixed inset-0 top-14 bg-black/60 z-[490] transition-opacity duration-300 ${isExiting ? "opacity-0" : "opacity-100"}`}
+          className={`fixed inset-0 top-14 h-[calc(100dvh-3.5rem)] bg-black/60 backdrop-blur-xs z-[490] touch-none overscroll-none select-none transition-opacity duration-300 ${isExiting ? "opacity-0" : "opacity-100"}`}
           onClick={closeSidebar}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            closeSidebar();
+          }}
+          onTouchMove={(e) => {
+            e.preventDefault();
+            closeSidebar();
+          }}
         />
       )}
 
       {/* ── PANEL RETRÁCTIL (aparece debajo de la barra, se oculta hacia arriba) */}
       {isOpen && (
         <div
+          ref={panelRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className={`fixed top-14 left-0 right-0 z-[499] will-change-gpu
             bg-[var(--bg)] border-b border-[var(--border)]
             shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)]
-            max-h-[calc(100dvh-3.5rem)] overflow-y-auto custom-scrollbar
+            max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain custom-scrollbar
             ${isExiting ? "top-nav-exit" : "top-nav-enter"}`}
         >
           <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 sm:py-5">
+            {/* Tirador táctil visual para móviles */}
+            <div className="sm:hidden w-12 h-1 bg-[var(--border)] rounded-full mx-auto -mt-1 mb-3 opacity-60" />
 
             {/* Grid de tabs */}
             <nav aria-label="Menú principal" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-5">

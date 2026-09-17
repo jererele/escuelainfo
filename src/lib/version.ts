@@ -4,18 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.8";
-export const APP_BUILD_DATE = "17/09/2026 15:02 hs";
+export const APP_VERSION = "v2.11.9";
+export const APP_BUILD_DATE = "17/09/2026 15:10 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Rediseño Visual de Alta Fidelidad en Cuenta en Verificación: Se transformó la pantalla de espera de aprobación en una experiencia institucional moderna con glassmorphism, isotipo oficial de EscuelaInfo, insignia dorada de estado con aura luminosa, y badge en tiempo real con indicador palpitante.",
-  "Ficha de Datos Institucional y Eliminación de Textos Informales: Se erradicó la etiqueta 'Tu Gmail' reemplazándola por 'Correo Registrado' junto a iconos representativos para el Rol Solicitado y el Personal Habilitador correspondiente (Preceptores o Directivos).",
-  "Línea de Tiempo (Stepper) con Alineación Matemática Perfecta: Se implementó una grilla simétrica de 3 pasos (Registro Completado, Revisión en Curso y Habilitación de Acceso) eliminando márgenes negativos y garantizando simetría perfecta en celulares y pantallas de cualquier resolución.",
-  "Detección y Acceso Automático en Tiempo Real: La pantalla ahora realiza chequeos silenciosos periódicos y al reactivar la pestaña; en el momento exacto en que un directivo o preceptor aprueba al alumno o docente, el sistema lo detecta y lo traslada de inmediato al Dashboard.",
-  "Botones de Acción con Jerarquía Visual y Microanimaciones: 'Verificar Estado de mi Cuenta' ahora es un botón primario vibrante en tono esmeralda con feedback de carga, y 'Cerrar Sesión' adopta un acabado sutil y armónico."
+  "Cierre Automático al Deslizar en Sidebar Móvil (TopNavSidebar.tsx): Se corrigió el comportamiento en celulares donde al abrir el menú y deslizar hacia abajo se rompía el filtro de oscuridad por el rebote de scroll del navegador. Ahora, al deslizar hacia abajo en la parte superior del panel, la sidebar se cierra de inmediato en vez de desplazar el fondo.",
+  "Bloqueo Antirrotura de Scroll en Fondo Móvil: Mientras el menú retráctil permanece abierto, se bloquea el scroll y rebote del cuerpo (overflow: hidden y overscroll-behavior: none), impidiendo cualquier desgarro visual o desplazamiento no deseado de la pantalla trasera.",
+  "Overlay con Altura Dinámica y Cierre Táctil Instantáneo: El filtro oscuro adopta touch-none, overscroll-none y altura 100dvh, respondiendo de inmediato a cualquier toque o arrastre para replegar la barra lateral sin latencia.",
+  "Tirador Visual Táctil para Celulares: Se incorporó una guía táctil centrada en la base del panel que indica visualmente que la barra puede replegarse hacia arriba o deslizarse para salir."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.8",
+    date: "17/09/2026 15:02 hs",
+    notes: [
+      "Rediseño Visual de Alta Fidelidad en Cuenta en Verificación: Se transformó la pantalla de espera de aprobación en una experiencia institucional moderna con glassmorphism, isotipo oficial de EscuelaInfo, insignia dorada de estado con aura luminosa, y badge en tiempo real con indicador palpitante.",
+      "Ficha de Datos Institucional y Eliminación de Textos Informales: Se erradicó la etiqueta 'Tu Gmail' reemplazándola por 'Correo Registrado' junto a iconos representativos para el Rol Solicitado y el Personal Habilitador correspondiente (Preceptores o Directivos).",
+      "Línea de Tiempo (Stepper) con Alineación Matemática Perfecta: Se implementó una grilla simétrica de 3 pasos (Registro Completado, Revisión en Curso y Habilitación de Acceso) eliminando márgenes negativos y garantizando simetría perfecta en celulares y pantallas de cualquier resolución.",
+      "Detección y Acceso Automático en Tiempo Real: La pantalla ahora realiza chequeos silenciosos periódicos y al reactivar la pestaña; en el momento exacto en que un directivo o preceptor aprueba al alumno o docente, el sistema lo detecta y lo traslada de inmediato al Dashboard.",
+      "Botones de Acción con Jerarquía Visual y Microanimaciones: 'Verificar Estado de mi Cuenta' ahora es un botón primario vibrante en tono esmeralda con feedback de carga, y 'Cerrar Sesión' adopta un acabado sutil y armónico."
+    ]
+  },
   {
     version: "v2.11.7",
     date: "17/09/2026 14:52 hs",
