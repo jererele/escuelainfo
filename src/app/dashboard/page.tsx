@@ -1289,6 +1289,8 @@ export default function Dashboard() {
         lockedProfesor={userProfile?.rol === 'profesor' ? currentProfesor : undefined}
         ausencias={ausencias}
         userProfile={userProfile}
+        cursos={cursos}
+        horarios={horarios}
       />
 
       <NewTeacherModal 

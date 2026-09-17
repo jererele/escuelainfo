@@ -12,7 +12,11 @@ import {
   uploadCertificateFile,
   deleteCertificateFile,
   getAusencias,
-  calculateAbsenceDays
+  calculateAbsenceDays,
+  Curso,
+  Horario,
+  getCursos,
+  getHorarios
 } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import {
@@ -57,6 +61,8 @@ interface NewAbsenceModalProps {
   lockedProfesor?: Profesor;
   ausencias?: Ausencia[];
   userProfile?: UserProfile | null;
+  cursos?: Curso[];
+  horarios?: Horario[];
 }
 
 // ——— Catálogo estatutario enriquecido de licencias por Rol (Chubut Ley VIII N° 20 / Dto. 508/2026 / Res. 517/90) ———
@@ -450,12 +456,17 @@ export default function NewAbsenceModal({
   onSuccess,
   lockedProfesor,
   ausencias,
-  userProfile
+  userProfile,
+  cursos,
+  horarios
 }: NewAbsenceModalProps) {
   const [loading, setLoading] = useState(false);
   const [profesores, setProfesores] = useState<Profesor[]>([]);
   const [selectedProfId, setSelectedProfId] = useState("");
   const [allAusencias, setAllAusencias] = useState<Ausencia[]>(ausencias || []);
+  const [allCursos, setAllCursos] = useState<Curso[]>(cursos || []);
+  const [allHorarios, setAllHorarios] = useState<Horario[]>(horarios || []);
+  const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [selectedArticulo, setSelectedArticulo] = useState<ArticuloLicencia | null>(null);
   const [error, setError] = useState("");
 
@@ -494,6 +505,29 @@ export default function NewAbsenceModal({
       getAusencias().then(setAllAusencias).catch(() => {});
     }
   }, [isOpen, ausencias]);
+
+  // Sincronizar cursos y horarios
+  useEffect(() => {
+    if (cursos && cursos.length > 0) {
+      setAllCursos(cursos);
+    } else if (isOpen) {
+      getCursos().then(setAllCursos).catch(() => {});
+    }
+  }, [isOpen, cursos]);
+
+  useEffect(() => {
+    if (horarios && horarios.length > 0) {
+      setAllHorarios(horarios);
+    } else if (isOpen) {
+      getHorarios().then(setAllHorarios).catch(() => {});
+    }
+  }, [isOpen, horarios]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCourse("");
+    }
+  }, [isOpen]);
 
   // Inicializar rol según el perfil del usuario o si viene un profesor bloqueado
   useEffect(() => {
@@ -588,6 +622,21 @@ export default function NewAbsenceModal({
     }
     return null;
   }, [lockedProfesor, selectedProfId, profesores]);
+
+  // Cursos en los que dicta clases el docente activo
+  const activeProfesorCourses = useMemo(() => {
+    if (!activeProfesor) return [];
+    const profName = activeProfesor.nombre.trim().toLowerCase();
+    const coursesSet = new Set<string>();
+
+    allHorarios.forEach(h => {
+      if ((h.profesor || "").trim().toLowerCase() === profName && h.curso) {
+        coursesSet.add(h.curso.trim());
+      }
+    });
+
+    return Array.from(coursesSet).sort();
+  }, [activeProfesor, allHorarios]);
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
@@ -751,14 +800,41 @@ export default function NewAbsenceModal({
 
   const handleProfChange = useCallback((id: string) => {
     setSelectedProfId(id);
-    setProfesores(prevProfs => {
-      const prof = prevProfs.find(p => p.id === id);
-      if (prof) {
-        setFormData(prev => ({ ...prev, materias: prof.materias.join(", ") }));
-      }
-      return prevProfs;
-    });
-  }, []);
+    setSelectedCourse("");
+    const prof = profesores.find(p => String(p.id) === String(id));
+    if (prof) {
+      setFormData(prev => ({ ...prev, materias: (prof.materias || []).join(", ") }));
+    }
+  }, [profesores]);
+
+  const handleCourseChange = useCallback((courseName: string) => {
+    setSelectedCourse(courseName);
+    if (!activeProfesor) return;
+
+    if (!courseName) {
+      setFormData(prev => ({
+        ...prev,
+        materias: (activeProfesor.materias || []).join(", ")
+      }));
+    } else {
+      const profName = activeProfesor.nombre.trim().toLowerCase();
+      const courseNorm = courseName.trim().toLowerCase();
+      const courseSubjects = Array.from(new Set(
+        allHorarios
+          .filter(h => (h.profesor || "").trim().toLowerCase() === profName && (h.curso || "").trim().toLowerCase() === courseNorm)
+          .map(h => h.materia.trim())
+      ));
+
+      const subjectsStr = courseSubjects.length > 0
+        ? courseSubjects.join(", ")
+        : (activeProfesor.materias || []).join(", ");
+
+      setFormData(prev => ({
+        ...prev,
+        materias: `${subjectsStr} (${courseName})`
+      }));
+    }
+  }, [activeProfesor, allHorarios]);
 
   const handleTipoChange = useCallback((tipo: string) => {
     setFormData(prev => ({ ...prev, tipo }));
@@ -808,13 +884,20 @@ export default function NewAbsenceModal({
     }
 
     try {
+      let finalMaterias = formData.materias.split(",").map(m => m.trim()).filter(Boolean);
+      if (selectedCourse && finalMaterias.length > 0) {
+        finalMaterias = finalMaterias.map(m => m.includes("(") ? m : `${m} (${selectedCourse})`);
+      } else if (selectedCourse && finalMaterias.length === 0) {
+        finalMaterias = [selectedRole === "preceptor" ? `Guardia (${selectedCourse})` : `Clases (${selectedCourse})`];
+      }
+
       const newAusencia: Ausencia = {
         profId: selectedProfId,
         profNombre: prof?.nombre || "Desconocido",
         tipo: formData.tipo,
         inicio: formData.inicio,
         fin: formData.fin,
-        materias: formData.materias.split(",").map(m => m.trim()).filter(Boolean),
+        materias: finalMaterias,
         motivo: formData.motivo,
         cert: formData.cert,
         certFileId: uploadedFileId,
@@ -996,6 +1079,52 @@ export default function NewAbsenceModal({
                   <span>{lockedProfesor.nombre}</span>
                   <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)]">Docente Frente a Curso</span>
                 </div>
+              </div>
+            )}
+
+            {/* Selector de Curso Afectado (para profesor o preceptor) */}
+            {(selectedRole === "profesor" || selectedRole === "preceptor") && (
+              <div className="space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
+                    <GraduationCap size={14} className="text-[var(--verde)]" />
+                    <span>Curso Afectado</span>
+                  </label>
+                  {selectedCourse ? (
+                    <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)]">
+                      {selectedCourse}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-[var(--text3)] uppercase">
+                      Todos los cursos
+                    </span>
+                  )}
+                </div>
+                <select
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer text-sm text-[var(--text)]"
+                  value={selectedCourse}
+                  onChange={(e) => handleCourseChange(e.target.value)}
+                >
+                  <option value="">
+                    {selectedRole === "profesor"
+                      ? "Todos los cursos del docente (Jornada / Horario Completo)"
+                      : "Todos los cursos a cargo"}
+                  </option>
+                  {activeProfesorCourses.length > 0 && (
+                    <optgroup label="Cursos con Clases Asignadas al Docente">
+                      {activeProfesorCourses.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Todos los Cursos de la Escuela">
+                    {allCursos
+                      .filter(c => !activeProfesorCourses.includes(c.nombre))
+                      .map(c => (
+                        <option key={c.id || c.nombre} value={c.nombre}>{c.nombre}</option>
+                      ))}
+                  </optgroup>
+                </select>
               </div>
             )}
 
@@ -1313,14 +1442,21 @@ export default function NewAbsenceModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
-                {selectedRole === "profesor" ? "Materias Afectadas" : selectedRole === "preceptor" ? "Turno / Cursos Afectados" : "Función / Despacho a Cargo"}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
+                  {selectedRole === "profesor" ? "Materias Afectadas" : selectedRole === "preceptor" ? "Turno / Cursos Afectados" : "Función / Despacho a Cargo"}
+                </label>
+                {selectedCourse && (
+                  <span className="text-[10px] text-[var(--verde)] font-bold">
+                    Filtrado para {selectedCourse}
+                  </span>
+                )}
+              </div>
               <input type="text"
                 className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all"
                 placeholder={
                   selectedRole === "profesor"
-                    ? "Se autocompleta según el profesor"
+                    ? selectedCourse ? `Materias de ${selectedCourse}` : "Se autocompleta según el profesor"
                     : selectedRole === "preceptor"
                     ? "Ej: Turno Mañana (1° y 2° año) - Guardia cubierta"
                     : "Ej: Dirección Escolar - Vicedirección a cargo"
@@ -1436,6 +1572,48 @@ export default function NewAbsenceModal({
               <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 font-bold text-sm text-[var(--text2)] opacity-80">
                 {lockedProfesor.nombre}
               </div>
+            </div>
+          )}
+
+          {/* Selector de Curso Afectado Móvil */}
+          {(selectedRole === "profesor" || selectedRole === "preceptor") && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-black uppercase text-[var(--text2)] flex items-center gap-1">
+                  <GraduationCap size={12} className="text-[var(--verde)]" />
+                  <span>Curso Afectado</span>
+                </label>
+                {selectedCourse && (
+                  <span className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-1.5 py-0.5 rounded border border-[var(--verde-border)]">
+                    {selectedCourse}
+                  </span>
+                )}
+              </div>
+              <select
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-bold text-[var(--text)]"
+                value={selectedCourse}
+                onChange={(e) => handleCourseChange(e.target.value)}
+              >
+                <option value="">
+                  {selectedRole === "profesor"
+                    ? "Todos los cursos del docente"
+                    : "Todos los cursos a cargo"}
+                </option>
+                {activeProfesorCourses.length > 0 && (
+                  <optgroup label="Cursos del Docente">
+                    {activeProfesorCourses.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Otros Cursos">
+                  {allCursos
+                    .filter(c => !activeProfesorCourses.includes(c.nombre))
+                    .map(c => (
+                      <option key={c.id || c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                </optgroup>
+              </select>
             </div>
           )}
 
@@ -1677,14 +1855,21 @@ export default function NewAbsenceModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-black uppercase text-[var(--text2)]">
-              {selectedRole === "profesor" ? "Materias Afectadas" : selectedRole === "preceptor" ? "Turno / Cursos Afectados" : "Función / Despacho a Cargo"}
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-black uppercase text-[var(--text2)]">
+                {selectedRole === "profesor" ? "Materias Afectadas" : selectedRole === "preceptor" ? "Turno / Cursos Afectados" : "Función / Despacho a Cargo"}
+              </label>
+              {selectedCourse && (
+                <span className="text-[9px] text-[var(--verde)] font-bold">
+                  {selectedCourse}
+                </span>
+              )}
+            </div>
             <input type="text"
               className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-2.5 outline-none text-sm"
               placeholder={
                 selectedRole === "profesor"
-                  ? "Se autocompleta con el profesor"
+                  ? selectedCourse ? `Materias de ${selectedCourse}` : "Se autocompleta con el profesor"
                   : selectedRole === "preceptor"
                   ? "Ej: Turno Mañana (1° y 2° año)"
                   : "Ej: Dirección - Vicedirección a cargo"

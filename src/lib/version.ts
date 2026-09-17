@@ -4,17 +4,27 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.16.1";
-export const APP_BUILD_DATE = "17/09/2026 20:00 hs";
+export const APP_VERSION = "v2.17.0";
+export const APP_BUILD_DATE = "17/09/2026 20:20 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Restauración del Historial Completo de Inasistencias Docentes (page.tsx y AusenciasTab.tsx): Se corrigió la condición que ocultaba automáticamente las licencias pasadas cuando no había búsqueda activa, lo que impedía a los docentes consultar sus inasistencias anteriores en 'Tu Historial'. Se añadió además una barra de búsqueda dedicada para docentes y se flexibilizó el emparejamiento por ID y nombre.",
-  "Horas Libres Filtradas para Alumnos en Pantalla Principal (GeneralTab.tsx y FreeHoursWidget.tsx): Se solucionó el valor fijo `isStudent={false}` en la pestaña general, permitiendo que los alumnos vean exclusivamente las horas libres de su propio curso. Se implementó además normalización de mayúsculas y espacios en el cotejo de profesores y cursos.",
-  "Blindaje contra Errores de Propiedades Nulas e Indefinidas (DynamicQRModal, AssignStudentsModal, AlumnosTab, CicloLectivoTab): Se añadieron comprobaciones de nulidad y valores de respaldo en campos sensibles como `dni`, `materias`, `curso` y `email`, evitando caídas de la interfaz al filtrar o buscar registros incompletos.",
-  "Normalización en Detección de Conflictos Horarios y Destinatarios de Avisos (NewScheduleModal.tsx y SendNoticeModal.tsx): La validación de solapamiento de horarios y el envío de avisos a cursos específicos ahora ignoran diferencias de espacios y mayúsculas, garantizando un control estricto de superposiciones y entregas efectivas de correos."
+  "Selector de Curso Afectado en Registro de Licencias y Ausencias (NewAbsenceModal.tsx): Se incorporó un selector dinámico de 'Curso Afectado' tanto en la vista de escritorio como en la versión móvil optimizada para 120Hz. Permite a docentes y preceptores especificar si la inasistencia aplica a toda su carga horaria ('Todos los cursos') o acotarla con precisión a un curso determinado.",
+  "Filtrado Automático de Materias según el Curso Seleccionado: Al elegir un curso específico, el campo 'Materias Afectadas' extrae y precarga de inmediato las materias que dicho profesor dicta en ese curso exacto, agregando la etiqueta identificatoria (ej: 'Asistencia Al Usuario (6to ETP - Doble Turno)').",
+  "Agrupación Inteligente en el Menú Desplegable: El selector organiza los cursos en dos grupos claros: 'Cursos con Clases Asignadas al Docente' (ordenados alfabéticamente a partir de sus horarios reales) y 'Todos los Cursos de la Escuela', facilitando una selección inmediata sin perder flexibilidad.",
+  "Segmentación Precisa de Horas Libres en el Panel Principal (FreeHoursWidget.tsx): El widget de horas libres ahora reconoce licencias acotadas a un curso puntual, de modo que solo se señalan como libres las horas correspondientes al curso y materias indicadas en la ausencia, preservando el dictado habitual en los demás cursos del docente."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.16.1",
+    date: "17/09/2026 20:00 hs",
+    notes: [
+      "Restauración del Historial Completo de Inasistencias Docentes (page.tsx y AusenciasTab.tsx): Se corrigió la condición que ocultaba automáticamente las licencias pasadas cuando no había búsqueda activa, lo que impedía a los docentes consultar sus inasistencias anteriores en 'Tu Historial'. Se añadió además una barra de búsqueda dedicada para docentes y se flexibilizó el emparejamiento por ID y nombre.",
+      "Horas Libres Filtradas para Alumnos en Pantalla Principal (GeneralTab.tsx y FreeHoursWidget.tsx): Se solucionó el valor fijo `isStudent={false}` en la pestaña general, permitiendo que los alumnos vean exclusivamente las horas libres de su propio curso. Se implementó además normalización de mayúsculas y espacios en el cotejo de profesores y cursos.",
+      "Blindaje contra Errores de Propiedades Nulas e Indefinidas (DynamicQRModal, AssignStudentsModal, AlumnosTab, CicloLectivoTab): Se añadieron comprobaciones de nulidad y valores de respaldo en campos sensibles como `dni`, `materias`, `curso` y `email`, evitando caídas de la interfaz al filtrar o buscar registros incompletos.",
+      "Normalización en Detección de Conflictos Horarios y Destinatarios de Avisos (NewScheduleModal.tsx y SendNoticeModal.tsx): La validación de solapamiento de horarios y el envío de avisos a cursos específicos ahora ignoran diferencias de espacios y mayúsculas, garantizando un control estricto de superposiciones y entregas efectivas de correos."
+    ]
+  },
   {
     version: "v2.16.0",
     date: "17/09/2026 19:50 hs",

@@ -109,7 +109,25 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
       const matchDay = (h.dia || "").trim().toLowerCase() === normToday;
       if (!matchDay) return false;
       const hProf = (h.profesor || "").trim().toLowerCase();
-      return activeAbsencesToday.some(a => (a.profNombre || "").trim().toLowerCase() === hProf);
+      const hCourseNorm = (h.curso || "").trim().toLowerCase();
+      const hMatNorm = (h.materia || "").trim().toLowerCase();
+
+      return activeAbsencesToday.some(a => {
+        if ((a.profNombre || "").trim().toLowerCase() !== hProf) return false;
+
+        // Si la ausencia está acotada a un curso específico en materias:
+        if (a.materias && a.materias.length > 0) {
+          const hasCourseTag = a.materias.some(m => m.includes("(") && m.includes(")"));
+          if (hasCourseTag) {
+            return a.materias.some(m => {
+              const mNorm = m.toLowerCase();
+              return (hCourseNorm && mNorm.includes(hCourseNorm)) || (hMatNorm && mNorm.includes(hMatNorm));
+            });
+          }
+        }
+
+        return true;
+      });
     });
 
     if (isStudent && currentAlumno?.curso) {
