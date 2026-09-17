@@ -4,16 +4,25 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.1";
-export const APP_BUILD_DATE = "16/09/2026 21:55 hs";
+export const APP_VERSION = "v2.11.2";
+export const APP_BUILD_DATE = "16/09/2026 22:00 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Avatar Lateral Integrado (Sin Cajas Toscos): Se eliminó el recuadro voluminoso y todo el texto explicativo del avatar en el formulario de registro (`src/app/page.tsx`). El avatar ahora se ubica con elegancia al costado de los campos de Nombres y Apellidos, mutando en tiempo real de forma sutil y directa al tipear.",
-  "Información Institucional en Pop-out Inferior: El banner de 'Registro General de la Institución' que ocupaba espacio prominente en la parte superior fue reubicado en la base del formulario como un botón desplegable (pop-out) discreto y no invasivo.",
-  "Rediseño en Alta de Docentes (NewTeacherModal): Se aplicó la misma disposición lateral limpia al formulario de creación de profesores, eliminando recuadros innecesarios."
+  "Avatares 100% Circulares (UserAvatar): Se actualizó el componente base para utilizar rounded-full en lugar de rounded-2xl, eliminando los bordes rectos laterales y logrando que todos los avatares sean círculos matemáticamente perfectos en todo el sistema.",
+  "Eliminación de la Insignia de Estrella (✨): Se removió la estrella superpuesta sobre la foto de perfil en el registro para una apariencia limpia y minimalista.",
+  "Corrección de Desbordamiento y Recorte en Campos de Nombre: Se rediseñó la disposición de Nombres y Apellidos junto al avatar (min-w-0 y apilamiento lateral), evitando que los campos se compriman o salgan de los bordes de la tarjeta, permitiendo que ambos campos conserven sus extremos redondeados completos sin cortes."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.1",
+    date: "16/09/2026 21:55 hs",
+    notes: [
+      "Avatar Lateral Integrado (Sin Cajas Toscos): Se eliminó el recuadro voluminoso y todo el texto explicativo del avatar en el formulario de registro (`src/app/page.tsx`). El avatar ahora se ubica con elegancia al costado de los campos de Nombres y Apellidos, mutando en tiempo real de forma sutil y directa al tipear.",
+      "Información Institucional en Pop-out Inferior: El banner de 'Registro General de la Institución' que ocupaba espacio prominente en la parte superior fue reubicado en la base del formulario como un botón desplegable (pop-out) discreto y no invasivo.",
+      "Rediseño en Alta de Docentes (NewTeacherModal): Se aplicó la misma disposición lateral limpia al formulario de creación de profesores, eliminando recuadros innecesarios."
+    ]
+  },
   {
     version: "v2.11.0",
     date: "16/09/2026 21:45 hs",

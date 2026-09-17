@@ -360,7 +360,7 @@ function LoginContent() {
       <div className="hidden md:block absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
       <div className="hidden md:block absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
 
-      <div className="login-box glass animate-zoom-in will-change-gpu w-full max-w-[480px] p-8 md:p-12 rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
+      <div className="login-box glass animate-zoom-in will-change-gpu w-full max-w-[480px] p-6 sm:p-8 md:p-12 rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
         {requestSuccess ? (
           <div className="text-center py-6 animate-fade-in">
             <div className="w-16 h-16 bg-[var(--verde-bg)] text-[var(--verde)] rounded-full flex items-center justify-center mx-auto mb-6 border border-[var(--verde-border)] shadow-lg animate-bounce">
@@ -617,35 +617,30 @@ function LoginContent() {
               /* REGISTRO — Alumno o Profesor */
               <form onSubmit={handleRegister} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar animate-fade-in">
 
-                {/* Nombres y Apellidos con Avatar de costado */}
-                <div className="flex items-end gap-3 sm:gap-4">
-                  {/* Avatar dinámico solo, de costado */}
-                  <div className="shrink-0 mb-1" title="Tu avatar institucional se actualiza en vivo al escribir">
-                    <div className="relative group">
-                      <UserAvatar
-                        name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
-                        size={54}
-                        animate="always"
-                        showRing={true}
-                        className="shadow-md ring-2 ring-[var(--verde)]/50 transition-all duration-300"
-                      />
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--verde)] text-black rounded-full border-2 border-[var(--bg2)] flex items-center justify-center text-[8px] font-black shadow-sm" title="Avatar dinámico">
-                        ✨
-                      </div>
-                    </div>
+                {/* Nombres y Apellidos con Avatar 100% redondo de costado */}
+                <div className="flex items-center gap-3.5 sm:gap-4">
+                  {/* Avatar dinámico circular, sin estrellita */}
+                  <div className="shrink-0" title="Tu avatar institucional se actualiza en vivo al escribir">
+                    <UserAvatar
+                      name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
+                      size={64}
+                      animate="always"
+                      showRing={true}
+                      className="shadow-md ring-2 ring-[var(--verde)]/50 transition-all duration-300 rounded-full"
+                    />
                   </div>
 
-                  <div className="flex-1 grid grid-cols-2 gap-3">
+                  <div className="flex-1 min-w-0 space-y-2.5">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-1">Nombres</label>
                       <input required type="text" placeholder="Juan"
-                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                        className="w-full min-w-0 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 sm:p-3.5 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
                         value={nombres} onChange={(e) => setNombres(e.target.value)} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-1">Apellidos</label>
                       <input required type="text" placeholder="Pérez"
-                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                        className="w-full min-w-0 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 sm:p-3.5 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
                         value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
                     </div>
                   </div>

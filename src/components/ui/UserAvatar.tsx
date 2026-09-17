@@ -57,7 +57,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
-      className={`relative inline-flex items-center justify-center rounded-2xl overflow-hidden shrink-0 transition-transform duration-300 select-none ${
+      className={`relative inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 transition-transform duration-300 select-none ${
         onClick ? "cursor-pointer active:scale-95 hover:scale-105" : "hover:scale-[1.02]"
       } ${
         showRing ? "ring-2 ring-[var(--border)] hover:ring-[var(--verde)] shadow-sm" : ""
@@ -71,14 +71,14 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
           src={avatarUrl!}
           alt={name}
           onError={() => setImgError(true)}
-          className="w-full h-full object-cover rounded-2xl"
+          className="w-full h-full object-cover rounded-full"
         />
       ) : (
         <Blobatar
           name={seed}
           size={size}
           animate={animateMode}
-          className="w-full h-full object-cover transition-opacity duration-300"
+          className="w-full h-full object-cover rounded-full transition-opacity duration-300"
         />
       )}
       <span className="sr-only">{initials}</span>
