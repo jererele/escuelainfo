@@ -4,16 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.13.1";
-export const APP_BUILD_DATE = "17/09/2026 15:48 hs";
+export const APP_VERSION = "v2.13.2";
+export const APP_BUILD_DATE = "17/09/2026 15:52 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección de Insignia 'NULL' en Horas Libres Activas (FreeHoursWidget.tsx): Se erradicó el error donde las tarjetas de horas libres mostraban una insignia roja con el texto 'NULL'. Ahora el valor se evalúa de manera estricta y muestra el horario exacto del módulo o 'Hora a confirmar' con icono de reloj.",
-  "Decodificación y Parseo Failsafe de Horarios (dataService.ts): fromDbHora y toDbHora se blindaron para que jamás retornen 'null', 'undefined', '0' o strings vacíos frente a registros antiguos o sin módulo asignado en Appwrite, soportando mapeo flexible de módulos (1..16) y rangos horarios.",
-  "Rediseño y Alto Contraste en Tarjetas de Horas Libres: Se sustituyó el fondo descolorido en modo oscuro por tarjetas temáticas pulidas (bg-[var(--bg3)]) con micro-animaciones al hover, datos de profesor legibles con icono y enlaces directos con contraste WCAG AA."
+  "Espaciado y Claridad Visual en Avatares de Cursos (CursosTab.tsx): Se erradicó el diseño amontonado en la vista previa de alumnos por curso, reemplazando el solapamiento negativo (-space-x-2) y los halos oscuros gruesos por un diseño aireado con separación limpia (gap-1.5), bordes sutiles con micro-interacción al cursor, indicador flotante para excedentes (+N) y una insignia en pastilla para el total de alumnos."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.13.1",
+    date: "17/09/2026 15:48 hs",
+    notes: [
+      "Corrección de Insignia 'NULL' en Horas Libres Activas (FreeHoursWidget.tsx): Se erradicó el error donde las tarjetas de horas libres mostraban una insignia roja con el texto 'NULL'. Ahora el valor se evalúa de manera estricta y muestra el horario exacto del módulo o 'Hora a confirmar' con icono de reloj.",
+      "Decodificación y Parseo Failsafe de Horarios (dataService.ts): fromDbHora y toDbHora se blindaron para que jamás retornen 'null', 'undefined', '0' o strings vacíos frente a registros antiguos o sin módulo asignado en Appwrite, soportando mapeo flexible de módulos (1..16) y rangos horarios.",
+      "Rediseño y Alto Contraste en Tarjetas de Horas Libres: Se sustituyó el fondo descolorido en modo oscuro por tarjetas temáticas pulidas (bg-[var(--bg3)]) con micro-animaciones al hover, datos de profesor legibles con icono y enlaces directos con contraste WCAG AA."
+    ]
+  },
   {
     version: "v2.13.0",
     date: "17/09/2026 15:40 hs",

@@ -83,17 +83,29 @@ export const CursosTab: React.FC<CursosTabProps> = ({
                   </p>
 
                   {/* PREVIEW DE ALUMNOS CON BLOBATAR */}
-                  <div className="flex items-center gap-2 mb-6 pt-3 border-t border-[var(--border)]/50">
+                  <div className="flex items-center justify-between gap-3 mb-6 pt-3 border-t border-[var(--border)]/50">
                     {previewAlumnos.length > 0 ? (
-                      <div className="flex -space-x-2 overflow-hidden py-1">
+                      <div className="flex items-center gap-1.5 py-1">
                         {previewAlumnos.map((al) => (
-                          <div key={al.id || al.dni} className="inline-block ring-2 ring-[var(--bg3)] rounded-full">
+                          <div 
+                            key={al.id || al.dni} 
+                            className="inline-block rounded-full ring-1 ring-[var(--border)] hover:scale-110 transition-transform shadow-xs"
+                            title={al.nombre}
+                          >
                             <UserAvatar name={al.nombre} email={al.email} size={28} showRing={false} />
                           </div>
                         ))}
+                        {totalAlumnos > 4 && (
+                          <span 
+                            className="w-7 h-7 rounded-full bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-center text-[10px] font-black text-[var(--text3)]"
+                            title={`${totalAlumnos - 4} alumnos más`}
+                          >
+                            +{totalAlumnos - 4}
+                          </span>
+                        )}
                       </div>
                     ) : null}
-                    <span className="text-xs font-bold text-[var(--text2)]">
+                    <span className="text-xs font-bold text-[var(--text2)] bg-[var(--bg3)] border border-[var(--border)] px-2.5 py-1 rounded-xl shrink-0">
                       {totalAlumnos} {totalAlumnos === 1 ? "alumno" : "alumnos"}
                     </span>
                   </div>
