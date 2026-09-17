@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { X, Search, UserCheck, Users, AlertCircle, GraduationCap } from "lucide-react";
+import { X, Search, UserCheck, Users, AlertCircle, GraduationCap, Check } from "lucide-react";
 import { Alumno, Curso, updateAlumno, logAction } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 
@@ -158,9 +158,19 @@ export default function AssignStudentsModal({ isOpen, onClose, onSuccess, curso,
           {filteredAlumnos.length > 0 && (
             <button
               onClick={toggleAll}
-              className="text-xs font-black uppercase tracking-wider text-[var(--azul)] hover:text-[var(--verde)] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-[var(--azul)] hover:text-[var(--verde)] transition-colors"
             >
-              {allVisibleSelected ? "✗ Deseleccionar todos los visibles" : "✓ Seleccionar todos los visibles"}
+              {allVisibleSelected ? (
+                <>
+                  <X size={13} strokeWidth={2.5} />
+                  <span>Deseleccionar todos los visibles</span>
+                </>
+              ) : (
+                <>
+                  <Check size={13} strokeWidth={2.5} />
+                  <span>Seleccionar todos los visibles</span>
+                </>
+              )}
             </button>
           )}
         </div>

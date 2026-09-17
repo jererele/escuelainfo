@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { logAction } from '@/lib/dataService';
 import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
+import { Check } from 'lucide-react';
 
 // ─── Constantes de versión del acuerdo ───────────────────────────────────────
 // IMPORTANTE: Incrementar AGREEMENT_VERSION cada vez que se modifiquen los TyC.
@@ -523,7 +524,10 @@ export default function TermsModal() {
           <p className="text-[11px] text-center sm:text-left order-2 sm:order-1" style={{ color: canAccept ? '#10B981' : '#64748b' }}>
             {canAccept ? (
               <>
-                <span style={{ color: '#10B981', fontWeight: 'bold' }}>✓ Lectura completada.</span>
+                <span className="inline-flex items-center gap-1 font-bold text-emerald-500">
+                  <Check size={12} strokeWidth={2.5} className="shrink-0" />
+                  <span>Lectura completada.</span>
+                </span>
                 {' '}Su aceptación quedará certificada con timestamp legal.
               </>
             ) : (

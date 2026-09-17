@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Mail, AlertCircle, Send, Loader2 } from "lucide-react";
+import { X, Mail, AlertCircle, Send, Loader2, Lightbulb } from "lucide-react";
 import { Alumno, Profesor, UserProfile, Curso, logAction } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 import { notify } from "@/lib/notify";
@@ -303,8 +303,9 @@ export default function SendNoticeModal({
           </div>
 
           {/* Privacy Note */}
-          <div className="p-3 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-[10px] text-[var(--text3)] font-semibold leading-relaxed">
-            💡 Para proteger la privacidad de los destinatarios, EscuelaInfo enviará automáticamente todos los correos en **CCO (Copia de Correo Oculta - BCC)**. Nadie podrá ver las direcciones de correo de otros usuarios.
+          <div className="p-3 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-[10px] text-[var(--text3)] font-semibold leading-relaxed flex items-start gap-2">
+            <Lightbulb size={14} className="shrink-0 text-amber-400 mt-0.5" />
+            <span>Para proteger la privacidad de los destinatarios, EscuelaInfo enviará automáticamente todos los correos en <strong>CCO (Copia de Correo Oculta - BCC)</strong>. Nadie podrá ver las direcciones de correo de otros usuarios.</span>
           </div>
 
           {/* ACTIONS */}

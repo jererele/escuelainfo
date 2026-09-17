@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Check, X, Zap, ArrowRight } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -96,15 +96,17 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                     <td className="p-6 text-right space-x-2">
                       <button
                         onClick={() => onApproveNameChange?.(u)}
-                        className="px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
                       >
-                        ✓ Aprobar
+                        <Check size={13} strokeWidth={2.5} />
+                        <span>Aprobar</span>
                       </button>
                       <button
                         onClick={() => onRejectNameChange?.(u)}
-                        className="px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
                       >
-                        ✕ Rechazar
+                        <X size={13} strokeWidth={2.5} />
+                        <span>Rechazar</span>
                       </button>
                     </td>
                   </tr>
@@ -153,15 +155,17 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                       <td className="p-6 text-right space-x-2">
                         <button
                           onClick={() => onApproveRequest(u)}
-                          className="px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
                         >
-                          ✓ Aprobar
+                          <Check size={13} strokeWidth={2.5} />
+                          <span>Aprobar</span>
                         </button>
                         <button
                           onClick={() => onRejectRequest(u)}
-                          className="px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
                         >
-                          ✕ Rechazar
+                          <X size={13} strokeWidth={2.5} />
+                          <span>Rechazar</span>
                         </button>
                       </td>
                     </tr>
@@ -177,8 +181,8 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
       {userProfile?.rol === 'admin' && (
         <div className="card glass rounded-[28px] p-6 border border-[var(--border)] bg-[var(--bg2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] flex items-center justify-center font-mono font-black text-sm shrink-0">
-              ⚡
+            <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] flex items-center justify-center shrink-0">
+              <Zap size={20} strokeWidth={2.5} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -192,15 +196,16 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                 </button>
               </div>
               <p className="text-xs text-[var(--text2)] font-semibold mt-0.5">
-                Estado: <span className="text-[var(--verde)] font-bold">✓ Sistema Actualizado</span> · Compilación: {APP_BUILD_DATE}
+                Estado: <span className="inline-flex items-center gap-1 text-[var(--verde)] font-bold"><Check size={12} strokeWidth={2.5} /> Sistema Actualizado</span> · Compilación: {APP_BUILD_DATE}
               </p>
             </div>
           </div>
           <button
             onClick={onOpenVersionModal}
-            className="text-xs font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black px-4 py-2 rounded-xl border border-[var(--verde-border)] transition-all cursor-pointer shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black px-4 py-2 rounded-xl border border-[var(--verde-border)] transition-all cursor-pointer shadow-sm active:scale-95"
           >
-            Ver Novedades →
+            <span>Ver Novedades</span>
+            <ArrowRight size={13} strokeWidth={2.5} />
           </button>
         </div>
       )}

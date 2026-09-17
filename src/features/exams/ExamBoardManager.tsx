@@ -390,7 +390,12 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                     <p className="font-bold text-[var(--text)]"><span className="text-[var(--text3)] font-normal">P:</span> {m.presidenteNombre}</p>
                     {m.vocal1Nombre && <p className="font-semibold text-[var(--text2)]"><span className="text-[var(--text3)] font-normal">V1:</span> {m.vocal1Nombre}</p>}
                     {m.vocal2Nombre && <p className="font-semibold text-[var(--text2)]"><span className="text-[var(--text3)] font-normal">V2:</span> {m.vocal2Nombre}</p>}
-                    {!m.vocal1Nombre && <p className="text-amber-500/90 font-semibold italic text-[11px]">⚠️ Sin vocales asignados</p>}
+                    {!m.vocal1Nombre && (
+                      <p className="text-amber-500/90 font-semibold italic text-[11px] flex items-center gap-1.5">
+                        <AlertCircle size={12} className="shrink-0" />
+                        <span>Sin vocales asignados</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>

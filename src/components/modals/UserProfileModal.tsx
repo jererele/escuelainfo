@@ -575,13 +575,23 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
 
                   {newPass && (
                     <div
-                      className={`text-xs font-semibold px-3 py-2 rounded-xl ${
+                      className={`text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 ${
                         newPass.length >= 8
                           ? "text-[var(--verde)] bg-[var(--verde-bg)]"
                           : "text-[var(--rojo)] bg-[var(--rojo-bg)]"
                       }`}
                     >
-                      {newPass.length >= 8 ? "✓ Longitud correcta" : `✗ Faltan ${8 - newPass.length} caracteres`}
+                      {newPass.length >= 8 ? (
+                        <>
+                          <Check size={13} strokeWidth={2.5} className="shrink-0" />
+                          <span>Longitud correcta</span>
+                        </>
+                      ) : (
+                        <>
+                          <X size={13} strokeWidth={2.5} className="shrink-0" />
+                          <span>Faltan {8 - newPass.length} caracteres</span>
+                        </>
+                      )}
                       {newPass && confirmPass && newPass !== confirmPass && " · Las contraseñas no coinciden"}
                     </div>
                   )}

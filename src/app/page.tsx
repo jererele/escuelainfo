@@ -5,7 +5,7 @@ import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound, Info } from "lucide-react";
+import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound, Info, BookOpen } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
   getUserProfile, createUserProfile,
@@ -765,7 +765,8 @@ function LoginContent() {
                   {showRegisterInfo && (
                     <div className="mt-2 text-left bg-[var(--bg3)] border border-[var(--border)] p-3.5 rounded-2xl text-[11px] text-[var(--text3)] leading-relaxed animate-fade-in space-y-1">
                       <div className="font-black text-[var(--text2)] flex items-center gap-1.5 text-xs">
-                        <span>📚 Registro de la Institución</span>
+                        <BookOpen size={14} className="text-[var(--azul)] shrink-0" />
+                        <span>Registro de la Institución</span>
                       </div>
                       <p className="text-[10px]">
                         Los alumnos quedan en espera de aprobación del preceptor. Si fuiste pre-autorizado por la administración (como administrador, directivo, preceptor o docente), registrate con tu correo y tu rol se activará automáticamente.

@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, ShieldAlert, AlertTriangle, FileText, Trash2 } from "lucide-react";
+import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip } from "lucide-react";
 import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -212,10 +212,11 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                           href={getCertificateFileUrl(a.certFileId)} 
                           target="_blank" 
                           rel="noreferrer" 
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[9px] font-black uppercase text-[var(--verde)] hover:bg-[var(--verde)] hover:text-black transition-all"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[9px] font-black uppercase text-[var(--verde)] hover:bg-[var(--verde)] hover:text-black transition-all"
                           title="Ver archivo adjunto"
                         >
-                          <span>📎 Ver Certificado</span>
+                          <Paperclip size={11} className="shrink-0" />
+                          <span>Ver Certificado</span>
                         </a>
                       </div>
                     )}

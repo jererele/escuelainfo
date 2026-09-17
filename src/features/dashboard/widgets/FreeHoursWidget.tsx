@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Ausencia, Horario, Alumno } from "@/lib/dataService";
-import { Clock, ArrowRight, User } from "lucide-react";
+import { Clock, ArrowRight, User, PartyPopper, AlertTriangle, Check, ArrowUpRight } from "lucide-react";
 
 interface FreeHoursWidgetProps {
   isStudent?: boolean;
@@ -69,8 +69,8 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     return (
       <div className="p-6 rounded-3xl border bg-[var(--azul-bg)]/20 border-[var(--azul-border)] shadow-[0_10px_30px_rgba(59,130,246,0.08)] flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in will-change-gpu no-print">
         <div className="flex items-center gap-4 text-left">
-          <div className="w-12 h-12 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center text-2xl shrink-0">
-            🎉
+          <div className="w-12 h-12 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center shrink-0">
+            <PartyPopper size={24} strokeWidth={2.5} />
           </div>
           <div>
             <span className="text-[9px] font-black uppercase text-[var(--azul)] bg-[var(--azul-bg)] px-2.5 py-1 rounded-md border border-[var(--azul-border)] tracking-wider">
@@ -125,10 +125,10 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     }`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
             hasFreeHours ? "bg-[var(--amarillo-bg)] text-[var(--amarillo)]" : "bg-[var(--verde-bg)] text-[var(--verde)]"
           }`}>
-            {hasFreeHours ? "⚠️" : "✓"}
+            {hasFreeHours ? <AlertTriangle size={20} strokeWidth={2.5} /> : <Check size={20} strokeWidth={2.5} />}
           </div>
           <div>
             <h3 className="font-black text-lg text-[var(--text)] leading-tight">
@@ -178,8 +178,8 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
                     className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black transition-all px-2.5 py-1 rounded-lg border border-[var(--verde-border)] tracking-wider cursor-pointer shadow-xs flex items-center gap-1"
                     title="Ver horarios de este curso"
                   >
-                    <span>{free.curso}</span>
-                    <span>↗</span>
+                    <span className="truncate">{free.curso}</span>
+                    <ArrowUpRight size={12} strokeWidth={2.5} className="shrink-0" />
                   </button>
                   <span 
                     className={`text-[10px] font-black px-2.5 py-1 rounded-lg border flex items-center gap-1.5 shadow-xs shrink-0 ${

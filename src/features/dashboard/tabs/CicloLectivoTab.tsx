@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, RefreshCw, Check, Search } from "lucide-react";
+import { Trash2, RefreshCw, Check, Search, GraduationCap, ArrowUpRight, AlertTriangle } from "lucide-react";
 import { Alumno, Curso, UserProfile, MigrationResult, migrateToCompactFormat, logAction, updateAlumno, deleteHorario, getHorarios, deleteAusencia } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 
@@ -123,7 +123,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
   };
 
   const handleClearHorarios = () => {
-    askConfirm("⚠️ ¿Estás seguro de VACIAR TODOS los horarios? Esta acción eliminará permanentemente la grilla de clases para todos los cursos y no se puede deshacer.", async () => {
+    askConfirm("¿Estás seguro de VACIAR TODOS los horarios? Esta acción eliminará permanentemente la grilla de clases para todos los cursos y no se puede deshacer.", async () => {
       setLoading(true);
       try {
         const clearAction = async () => {
@@ -149,7 +149,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
   };
 
   const handleClearAusencias = () => {
-    askConfirm("⚠️ ¿Estás seguro de VACIAR TODAS las ausencias? Esta acción eliminará permanentemente todos los registros de licencias, inasistencias y paros del ciclo anterior.", async () => {
+    askConfirm("¿Estás seguro de VACIAR TODAS las ausencias? Esta acción eliminará permanentemente todos los registros de licencias, inasistencias y paros del ciclo anterior.", async () => {
       setLoading(true);
       try {
         const clearAction = async () => {
@@ -192,16 +192,18 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
             </p>
           </div>
           {migrationResult && (
-            <div className={`p-4 rounded-2xl text-xs font-bold space-y-1 ${
+            <div className={`p-4 rounded-2xl text-xs font-bold space-y-1.5 ${
               migrationResult.errors.length > 0
                 ? 'bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)]'
                 : 'bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)]'
             }`}>
-              <div>✓ Usuarios migrados: {migrationResult.usuariosMigrated}</div>
-              <div>✓ Ausencias migradas: {migrationResult.ausenciasMigrated}</div>
+              <div className="flex items-center gap-1.5"><Check size={13} strokeWidth={2.5} className="shrink-0" /><span>Usuarios migrados: {migrationResult.usuariosMigrated}</span></div>
+              <div className="flex items-center gap-1.5"><Check size={13} strokeWidth={2.5} className="shrink-0" /><span>Ausencias migradas: {migrationResult.ausenciasMigrated}</span></div>
               {migrationResult.errors.length > 0 && (
                 <div className="mt-2 text-[var(--rojo)] space-y-1">
-                  {migrationResult.errors.map((e, i) => <div key={i}>⚠ {e}</div>)}
+                  {migrationResult.errors.map((e, i) => (
+                    <div key={i} className="flex items-center gap-1.5"><AlertTriangle size={13} strokeWidth={2.5} className="shrink-0" /><span>{e}</span></div>
+                  ))}
                 </div>
               )}
               {migrationResult.errors.length === 0 && (
@@ -334,7 +336,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
               onChange={(e) => setPromoFilterCourse(e.target.value)}
             >
               <option value="">Todos los cursos anteriores...</option>
-              <option value="Egresado">🎓 Graduados / Egresados</option>
+              <option value="Egresado">Graduados / Egresados</option>
               {cursos.map(c => (
                 <option key={c.id} value={c.nombre}>{c.nombre}</option>
               ))}
@@ -396,7 +398,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
                             [al.id!]: e.target.value
                           })}
                         >
-                          <option value="Egresado">🎓 Graduado / Egresado</option>
+                          <option value="Egresado">Graduado / Egresado</option>
                           {cursos.map(c => (
                             <option key={c.id} value={c.nombre}>{c.nombre}</option>
                           ))}
@@ -404,16 +406,19 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
                       </td>
                       <td className="p-6">
                         {isGraduated ? (
-                          <span className="text-[9px] font-black uppercase px-2.5 py-1.5 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/20 tracking-wider">
-                            🎓 Egreso
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/20 tracking-wider">
+                            <GraduationCap size={11} strokeWidth={2.5} className="shrink-0" />
+                            <span>Egreso</span>
                           </span>
                         ) : isChanged ? (
-                          <span className="text-[9px] font-black uppercase px-2.5 py-1.5 rounded-full border bg-emerald-500/10 text-emerald-600 border-emerald-500/20 tracking-wider">
-                            ↗️ Promoción
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1 rounded-full border bg-emerald-500/10 text-emerald-600 border-emerald-500/20 tracking-wider">
+                            <ArrowUpRight size={11} strokeWidth={2.5} className="shrink-0" />
+                            <span>Promoción</span>
                           </span>
                         ) : (
-                          <span className="text-[9px] font-black uppercase px-2.5 py-1.5 rounded-full border bg-gray-500/10 text-gray-500 border-gray-500/20 tracking-wider">
-                            🔁 Mantiene
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1 rounded-full border bg-gray-500/10 text-gray-500 border-gray-500/20 tracking-wider">
+                            <RefreshCw size={10} strokeWidth={2.5} className="shrink-0" />
+                            <span>Mantiene</span>
                           </span>
                         )}
                       </td>

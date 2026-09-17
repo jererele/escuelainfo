@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { account } from "@/lib/appwrite";
 import { getAlumnos, updateAlumno, logAction, getCursos, Curso, Alumno } from "@/lib/dataService";
-import { X, AlertCircle, Search, UserCheck, UserPlus } from "lucide-react";
+import { X, AlertCircle, Search, UserCheck, UserPlus, Check } from "lucide-react";
 
 interface Props { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
 
@@ -187,7 +187,10 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess }: Props) {
                         <div className="text-[10px] text-[var(--verde)] font-bold mt-0.5">Curso actual: {alumno.curso}</div>
                       )}
                       {(!alumno.curso || alumno.curso === "pendiente") && (
-                        <div className="text-[10px] text-[var(--amarillo)] font-bold mt-0.5">⚠ Sin curso asignado</div>
+                        <div className="text-[10px] text-[var(--amarillo)] font-bold mt-0.5 flex items-center gap-1">
+                          <AlertCircle size={10} className="shrink-0" />
+                          <span>Sin curso asignado</span>
+                        </div>
                       )}
                     </div>
                   </button>
@@ -206,7 +209,10 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess }: Props) {
           {/* Alumno seleccionado — panel de confirmación */}
           {selectedAlumno && (
             <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] rounded-2xl p-4 space-y-1">
-              <div className="text-[10px] font-black uppercase text-[var(--verde)] tracking-wider mb-2">✓ Alumno Seleccionado</div>
+              <div className="text-[10px] font-black uppercase text-[var(--verde)] tracking-wider mb-2 flex items-center gap-1.5">
+                <Check size={12} strokeWidth={2.5} />
+                <span>Alumno Seleccionado</span>
+              </div>
               <div className="font-black text-[var(--text)]">{selectedAlumno.nombre}</div>
               <div className="text-xs text-[var(--text2)] font-semibold">DNI: {selectedAlumno.dni || "—"} · {selectedAlumno.email}</div>
               {selectedAlumno.curso && selectedAlumno.curso !== "pendiente" && (
@@ -240,8 +246,9 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess }: Props) {
               }
             </select>
             {!curso && (
-              <p className="text-[10px] text-[var(--rojo)] font-bold mt-1.5 ml-2 flex items-center gap-1">
-                <span>⚠</span> Este campo es obligatorio para asignar al alumno.
+              <p className="text-[10px] text-[var(--rojo)] font-bold mt-1.5 ml-2 flex items-center gap-1.5">
+                <AlertCircle size={12} className="shrink-0" />
+                <span>Este campo es obligatorio para asignar al alumno.</span>
               </p>
             )}
           </div>

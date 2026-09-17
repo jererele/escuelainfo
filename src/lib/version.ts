@@ -4,14 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.13.2";
-export const APP_BUILD_DATE = "17/09/2026 15:52 hs";
+export const APP_VERSION = "v2.13.3";
+export const APP_BUILD_DATE = "17/09/2026 16:03 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Espaciado y Claridad Visual en Avatares de Cursos (CursosTab.tsx): Se erradicó el diseño amontonado en la vista previa de alumnos por curso, reemplazando el solapamiento negativo (-space-x-2) y los halos oscuros gruesos por un diseño aireado con separación limpia (gap-1.5), bordes sutiles con micro-interacción al cursor, indicador flotante para excedentes (+N) y una insignia en pastilla para el total de alumnos."
+  "Erradicación Completa de Emojis por Iconos Vectoriales (lucide-react): Se reemplazaron todos los emojis Unicode planos de la interfaz por iconos oficiales y semánticos de lucide-react (AlertTriangle, Check, X, Clock, PartyPopper, Sparkles, Lightbulb, Paperclip, GraduationCap, Zap, Edit3, ArrowUpRight) garantizando coherencia visual y renderizado perfecto en cualquier dispositivo.",
+  "Iconos Reales en Horas Libres Activas (FreeHoursWidget.tsx): Se actualizó el icono de alerta/normalidad de la cabecera reemplazando el emoji ⚠️ por <AlertTriangle /> y ✓ por <Check />, las festividades por <PartyPopper />, y los enlaces de curso por flechas vectoriales <ArrowUpRight />.",
+  "Incorporación de Regla Permanente en Contexto (AGENTS.md): Se estableció como norma crítica en las instrucciones del proyecto ('Zero Emojis for UI Icons') el uso exclusivo de la librería de iconos vectoriales lucide-react para botones, badges, alertas y estados, impidiendo el uso futuro de emojis Unicode en la UI."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.13.2",
+    date: "17/09/2026 15:52 hs",
+    notes: [
+      "Espaciado y Claridad Visual en Avatares de Cursos (CursosTab.tsx): Se erradicó el diseño amontonado en la vista previa de alumnos por curso, reemplazando el solapamiento negativo (-space-x-2) y los halos oscuros gruesos por un diseño aireado con separación limpia (gap-1.5), bordes sutiles con micro-interacción al cursor, indicador flotante para excedentes (+N) y una insignia en pastilla para el total de alumnos."
+    ]
+  },
   {
     version: "v2.13.1",
     date: "17/09/2026 15:48 hs",

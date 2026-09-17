@@ -412,7 +412,8 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
 
                 {formData.motivo && (
                   <div className="flex items-center gap-2 bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-3 py-2 rounded-xl text-[10px] font-black animate-fade-in">
-                    <span className="shrink-0">✓ Seleccionado:</span>
+                    <Check size={12} strokeWidth={2.5} className="shrink-0" />
+                    <span className="shrink-0">Seleccionado:</span>
                     <span className="truncate">{formData.motivo}</span>
                   </div>
                 )}
@@ -642,8 +643,9 @@ export default function NewAbsenceModal({ isOpen, onClose, onSuccess, lockedProf
               </div>
 
               {formData.motivo && (
-                <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] p-2 rounded-lg text-[10px] font-black">
-                  ✓ {formData.motivo}
+                <div className="flex items-center gap-1.5 bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] p-2 rounded-lg text-[10px] font-black">
+                  <Check size={11} strokeWidth={2.5} className="shrink-0" />
+                  <span className="truncate">{formData.motivo}</span>
                 </div>
               )}
             </div>

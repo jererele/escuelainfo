@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban } from "lucide-react";
+import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, Sparkles } from "lucide-react";
 import { Horario, Curso, Ausencia, Alumno, UserProfile } from "@/lib/dataService";
 import CustomSelect from "@/components/shared/CustomSelect";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
@@ -329,8 +329,9 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                       {h.materia}
                     </h4>
                     {isAbsent && (
-                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0">
-                        🎉 Hora Libre
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0 flex items-center gap-1">
+                        <Sparkles size={11} className="shrink-0 text-amber-500" />
+                        <span>Hora Libre</span>
                       </span>
                     )}
                   </div>
@@ -491,8 +492,9 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                                 {h.curso}
                               </button>
                               {isAbsent && (
-                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0">
-                                  🎉 Hora Libre
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0 flex items-center gap-1">
+                                  <Sparkles size={10} className="shrink-0 text-amber-500" />
+                                  <span>Hora Libre</span>
                                 </span>
                               )}
                             </div>

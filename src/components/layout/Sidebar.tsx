@@ -19,7 +19,8 @@ import {
   ChevronRight,
   UserCheck,
   ClipboardCheck,
-  Activity
+  Activity,
+  Edit3
 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import {
@@ -236,7 +237,7 @@ export default function Sidebar({
                 {userProfile?.rol === 'admin' ? 'Administrador' : (userProfile?.rol === 'directivo' ? 'Directivo' : (userProfile?.rol || "Invitado"))}
               </p>
             </div>
-            <span className="text-[var(--text3)] group-hover:text-[var(--verde)] transition-colors text-[10px] font-black">✎</span>
+            <Edit3 size={12} className="text-[var(--text3)] group-hover:text-[var(--verde)] transition-colors shrink-0" />
           </button>
         ) : (
           <button onClick={onProfileOpen} title="Ver mi perfil" className="shrink-0 w-10 h-10 flex justify-center items-center mx-auto hover:scale-110 active:scale-95 transition-all">

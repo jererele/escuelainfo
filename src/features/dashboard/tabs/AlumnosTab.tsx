@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Check, X, Clock } from "lucide-react";
 import { Alumno, UserProfile } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -62,7 +62,10 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                     {cursoLabel ? (
                       <span className="px-2.5 py-1 bg-[var(--bg3)] rounded-lg text-[10px] font-bold uppercase shrink-0">{cursoLabel}</span>
                     ) : (
-                      <span className="px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold uppercase shrink-0">⏳ Sin asignar</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold uppercase shrink-0">
+                        <Clock size={10} strokeWidth={2.5} className="shrink-0" />
+                        <span>Sin asignar</span>
+                      </span>
                     )}
                   </div>
                   <div className="text-xs text-[var(--text2)] font-mono">
@@ -71,15 +74,17 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border)]/50">
                     <button
                       onClick={() => onApproveStudent(u)}
-                      className="min-h-[44px] flex items-center justify-center gap-1 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
+                      className="min-h-[44px] flex items-center justify-center gap-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
                     >
-                      ✓ Aprobar
+                      <Check size={14} strokeWidth={2.5} />
+                      <span>Aprobar</span>
                     </button>
                     <button
                       onClick={() => onRejectStudent(u)}
-                      className="min-h-[44px] flex items-center justify-center gap-1 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
+                      className="min-h-[44px] flex items-center justify-center gap-1.5 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
                     >
-                      ✕ Rechazar
+                      <X size={14} strokeWidth={2.5} />
+                      <span>Rechazar</span>
                     </button>
                   </div>
                 </div>
@@ -118,21 +123,26 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                         <td className="p-6">
                           {cursoLabel
                             ? <span className="px-3 py-1 bg-[var(--bg3)] rounded-lg text-xs font-bold uppercase">{cursoLabel}</span>
-                            : <span className="px-3 py-1 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-xs font-bold uppercase">⏳ Sin asignar</span>
+                            : <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-xs font-bold uppercase">
+                                <Clock size={11} strokeWidth={2.5} className="shrink-0" />
+                                <span>Sin asignar</span>
+                              </span>
                           }
                         </td>
                         <td className="p-6 text-right space-x-2">
                           <button
                             onClick={() => onApproveStudent(u)}
-                            className="px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
                           >
-                            ✓ Aprobar
+                            <Check size={13} strokeWidth={2.5} />
+                            <span>Aprobar</span>
                           </button>
                           <button
                             onClick={() => onRejectStudent(u)}
-                            className="px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
                           >
-                            ✕ Rechazar
+                            <X size={13} strokeWidth={2.5} />
+                            <span>Rechazar</span>
                           </button>
                         </td>
                       </tr>
@@ -208,7 +218,10 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                   {al.curso && al.curso !== 'pendiente' ? (
                     <span className="px-2.5 py-0.5 bg-[var(--bg3)] rounded-lg text-[10px] font-bold">{al.curso}</span>
                   ) : (
-                    <span className="px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold">⏳ Pendiente</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold">
+                      <Clock size={10} strokeWidth={2.5} className="shrink-0" />
+                      <span>Pendiente</span>
+                    </span>
                   )}
                 </div>
               </div>
@@ -251,7 +264,10 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                       <td className="p-6">
                         {al.curso && al.curso !== 'pendiente'
                           ? <span className="px-3 py-1 bg-[var(--bg3)] rounded-lg text-xs font-bold">{al.curso}</span>
-                          : <span className="px-3 py-1 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-xs font-bold">⏳ Pendiente</span>
+                          : <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-xs font-bold">
+                              <Clock size={11} strokeWidth={2.5} className="shrink-0" />
+                              <span>Pendiente</span>
+                            </span>
                         }
                       </td>
                       {isAdmin && (

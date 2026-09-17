@@ -17,6 +17,7 @@ This project has strict architectural, performance, and styling rules. Please re
 * **Hardware Acceleration**: For transitions and animations, use hardware-accelerated CSS properties (`transform`, `opacity`) exclusively.
 
 ## 3. UI, Aesthetics & Accessibility
+* **Zero Emojis for UI Icons (CRITICAL)**: Never use raw Unicode emoji characters (e.g. ⚠️, 🎉, ✓, ✕, ⏳, 💡, 📎, 🎓, ⚡, ✎, ↗) as icons for UI badges, buttons, headers, statuses, or alerts. The project standard icon library is **lucide-react** (e.g. `AlertTriangle`, `PartyPopper`, `Check`, `X`, `Clock`, `Lightbulb`, `Paperclip`, `GraduationCap`, `Zap`, `Edit3`, `ArrowUpRight`, `Sparkles`). Always import and use vector icons from `lucide-react` with appropriate sizing (`size={...}`), `strokeWidth`, and semantic theme colors.
 * **Premium Aesthetics**: UI must feel professional, alive, and modern. Use curated, harmonious color palettes, smooth gradients, subtle micro-animations on interactive elements, and glassmorphism. Avoid flat or generic primary colors (e.g. pure red, blue, green).
 * **Accessibility**: Maintain WCAG AA compliance. Check and ensure high color contrast ratios, especially in light mode, and provide clear visual indicators for required form fields.
 * **Responsive Design**: Ensure every screen or modal is fully responsive.
