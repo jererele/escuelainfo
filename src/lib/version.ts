@@ -4,17 +4,26 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.13.0";
-export const APP_BUILD_DATE = "17/09/2026 15:40 hs";
+export const APP_VERSION = "v2.13.1";
+export const APP_BUILD_DATE = "17/09/2026 15:48 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Selector de Códigos de Área de Sudamérica (PhoneInputWithCountry.tsx): Integración de un selector desplegable interactivo con todos los países de Sudamérica (Argentina +54, Bolivia +591, Brasil +55, Chile +56, Colombia +57, Ecuador +593, Paraguay +595, Perú +51, Uruguay +598, Venezuela +58, Guyana +592, Surinam +597 y Guayana Francesa +594) con banderas oficiales y buscador en tiempo real.",
-  "Limitador y Sanitizador Estricto de Dígitos Telefónicos: El campo restringe la entrada exclusivamente a números (0-9) e impone un límite máximo de dígitos ajustado al estándar del país seleccionado (ej: 11 dígitos para Argentina y Brasil, 9 para Chile/Uruguay/Perú/Bolivia), evitando caracteres extra o longitudes incorrectas.",
-  "Contador de Dígitos y Validación en Vivo: Indicador visual dinámico que muestra los dígitos ingresados vs. el máximo del país (ej: 10/11), destacando en verde cuando se cumple el rango requerido y alertando en ámbar si no se alcanza el mínimo.",
-  "Integración Total en Registro y Perfil Institucional: Disponible tanto en la pantalla de alta de cuenta (page.tsx) como en el panel de edición de Mi Perfil (UserProfileModal.tsx), con autodetección inteligente de prefijos existentes."
+  "Corrección de Insignia 'NULL' en Horas Libres Activas (FreeHoursWidget.tsx): Se erradicó el error donde las tarjetas de horas libres mostraban una insignia roja con el texto 'NULL'. Ahora el valor se evalúa de manera estricta y muestra el horario exacto del módulo o 'Hora a confirmar' con icono de reloj.",
+  "Decodificación y Parseo Failsafe de Horarios (dataService.ts): fromDbHora y toDbHora se blindaron para que jamás retornen 'null', 'undefined', '0' o strings vacíos frente a registros antiguos o sin módulo asignado en Appwrite, soportando mapeo flexible de módulos (1..16) y rangos horarios.",
+  "Rediseño y Alto Contraste en Tarjetas de Horas Libres: Se sustituyó el fondo descolorido en modo oscuro por tarjetas temáticas pulidas (bg-[var(--bg3)]) con micro-animaciones al hover, datos de profesor legibles con icono y enlaces directos con contraste WCAG AA."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.13.0",
+    date: "17/09/2026 15:40 hs",
+    notes: [
+      "Selector de Códigos de Área de Sudamérica (PhoneInputWithCountry.tsx): Integración de un selector desplegable interactivo con todos los países de Sudamérica (Argentina +54, Bolivia +591, Brasil +55, Chile +56, Colombia +57, Ecuador +593, Paraguay +595, Perú +51, Uruguay +598, Venezuela +58, Guyana +592, Surinam +597 y Guayana Francesa +594) con banderas oficiales y buscador en tiempo real.",
+      "Limitador y Sanitizador Estricto de Dígitos Telefónicos: El campo restringe la entrada exclusivamente a números (0-9) e impone un límite máximo de dígitos ajustado al estándar del país seleccionado (ej: 11 dígitos para Argentina y Brasil, 9 para Chile/Uruguay/Perú/Bolivia), evitando caracteres extra o longitudes incorrectas.",
+      "Contador de Dígitos y Validación en Vivo: Indicador visual dinámico que muestra los dígitos ingresados vs. el máximo del país (ej: 10/11), destacando en verde cuando se cumple el rango requerido y alertando en ámbar si no se alcanza el mínimo.",
+      "Integración Total en Registro y Perfil Institucional: Disponible tanto en la pantalla de alta de cuenta (page.tsx) como en el panel de edición de Mi Perfil (UserProfileModal.tsx), con autodetección inteligente de prefijos existentes."
+    ]
+  },
   {
     version: "v2.12.0",
     date: "17/09/2026 15:25 hs",

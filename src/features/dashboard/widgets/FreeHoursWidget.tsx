@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Ausencia, Horario, Alumno } from "@/lib/dataService";
+import { Clock, ArrowRight, User } from "lucide-react";
 
 interface FreeHoursWidgetProps {
   isStudent?: boolean;
@@ -148,40 +149,66 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
 
       {hasFreeHours && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-          {freeHoursToday.map((free, idx) => (
-            <div 
-              key={idx} 
-              className="bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-[var(--border)]/40 shadow-sm flex flex-col justify-between hover:border-[var(--verde)] hover:scale-[1.02] transition-all cursor-pointer group"
-              onClick={() => {
-                onNavigateToAusencias(free.profesor);
-              }}
-              title={`Ver ausencias de ${free.profesor}`}
-            >
-              <div className="flex justify-between items-start gap-2 mb-2">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNavigateToHorarios(free.curso);
-                  }}
-                  className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black transition-all px-2 py-0.5 rounded-md border border-[var(--verde-border)] tracking-wider cursor-pointer"
-                  title="Ver horarios de este curso"
-                >
-                  {free.curso} ↗
-                </button>
-                <span className="text-[10px] font-black bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] px-2.5 py-0.5 rounded-lg uppercase">
-                  {free.hora}
-                </span>
+          {freeHoursToday.map((free, idx) => {
+            const isHoraValida =
+              Boolean(free.hora) &&
+              free.hora.toLowerCase() !== "null" &&
+              free.hora.toLowerCase() !== "undefined" &&
+              free.hora !== "0" &&
+              free.hora !== "Hora a confirmar";
+
+            const displayHora = isHoraValida ? free.hora : "Hora a confirmar";
+
+            return (
+              <div 
+                key={free.id || `${free.curso}-${free.materia}-${idx}`} 
+                className="bg-[var(--bg3)] hover:bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--verde)] p-4 rounded-2xl shadow-sm hover:shadow-md flex flex-col justify-between hover:-translate-y-0.5 transition-all cursor-pointer group"
+                onClick={() => {
+                  onNavigateToAusencias(free.profesor);
+                }}
+                title={`Ver ausencias de ${free.profesor}`}
+              >
+                <div className="flex justify-between items-start gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigateToHorarios(free.curso);
+                    }}
+                    className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black transition-all px-2.5 py-1 rounded-lg border border-[var(--verde-border)] tracking-wider cursor-pointer shadow-xs flex items-center gap-1"
+                    title="Ver horarios de este curso"
+                  >
+                    <span>{free.curso}</span>
+                    <span>↗</span>
+                  </button>
+                  <span 
+                    className={`text-[10px] font-black px-2.5 py-1 rounded-lg border flex items-center gap-1.5 shadow-xs shrink-0 ${
+                      isHoraValida 
+                        ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border-[var(--rojo-border)]"
+                        : "bg-[var(--amarillo-bg)] text-[var(--amarillo)] border-[var(--amarillo-border)]"
+                    }`}
+                  >
+                    <Clock size={11} className="shrink-0" />
+                    <span>{displayHora}</span>
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-[var(--text)] line-clamp-1 group-hover:text-[var(--verde)] transition-colors capitalize">
+                    {free.materia}
+                  </h4>
+                  <div className="text-xs text-[var(--text2)] font-bold mt-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <User size={13} className="text-[var(--text3)] shrink-0" />
+                      <span className="truncate">Prof: {free.profesor}</span>
+                    </span>
+                    <span className="text-[10px] font-black text-[var(--verde)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5 ml-2">
+                      Ver ausencias <ArrowRight size={11} />
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 className="font-extrabold text-sm text-[var(--text)] line-clamp-1 group-hover:text-[var(--verde)] transition-colors">{free.materia}</h4>
-                <p className="text-[11px] text-[var(--text3)] font-semibold mt-0.5 flex items-center justify-between">
-                  <span>Prof: {free.profesor}</span>
-                  <span className="text-[10px] font-black text-[var(--verde)] opacity-0 group-hover:opacity-100 transition-opacity">Ver ausencias →</span>
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

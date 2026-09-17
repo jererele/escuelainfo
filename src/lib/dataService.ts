@@ -121,9 +121,67 @@ export const MODULO_REVERSE: Record<string, number> = Object.fromEntries(
   Object.entries(MODULO_MAP).map(([k, v]) => [v, Number(k)])
 );
 /** Convierte texto de módulo ("07:40 - 08:20") al número compacto para Appwrite */
-export const toDbHora = (display: string): number => MODULO_REVERSE[display] ?? 0;
+export const toDbHora = (display: string | number | null | undefined): number => {
+  if (display === null || display === undefined) return 1;
+  if (typeof display === "number") {
+    return display >= 1 && display <= 16 ? display : 1;
+  }
+  const str = String(display).trim();
+  if (MODULO_REVERSE[str]) return MODULO_REVERSE[str];
+
+  // Si ya es un dígito del 1 al 16
+  const num = Number(str);
+  if (!isNaN(num) && num >= 1 && num <= 16) return num;
+
+  // Matching flexible ignorando espacios (ej: "07:40-08:20")
+  const cleanStr = str.replace(/\s+/g, "").toLowerCase();
+  for (const [modNum, modStr] of Object.entries(MODULO_MAP)) {
+    if (modStr.replace(/\s+/g, "").toLowerCase() === cleanStr) {
+      return Number(modNum);
+    }
+  }
+
+  // Extracción de número si dice "Módulo 3" o "Hora 3"
+  const m = str.match(/(\d+)/);
+  if (m) {
+    const extracted = parseInt(m[1], 10);
+    if (extracted >= 1 && extracted <= 16) return extracted;
+  }
+
+  return 1;
+};
+
 /** Convierte el número compacto guardado en Appwrite al texto legible */
-export const fromDbHora = (code: number | string): string => MODULO_MAP[Number(code)] ?? String(code);
+export const fromDbHora = (code: number | string | null | undefined): string => {
+  if (code === null || code === undefined) return "Hora a confirmar";
+  
+  const rawStr = String(code).trim();
+  if (!rawStr || rawStr.toLowerCase() === "null" || rawStr.toLowerCase() === "undefined" || rawStr === "0") {
+    return "Hora a confirmar";
+  }
+
+  // Si es un número del 1 al 16 (código de módulo)
+  const num = Number(rawStr);
+  if (!isNaN(num) && num >= 1 && num <= 16 && MODULO_MAP[num]) {
+    return MODULO_MAP[num];
+  }
+
+  // Si ya es un rango horario de texto (ej: "07:40 - 08:20", "14:20 a 15:00")
+  if (rawStr.includes(":") || rawStr.includes("-") || rawStr.includes("a")) {
+    return rawStr;
+  }
+
+  // Si coincide con alguna variación de módulo (ej: "módulo 1", "mod 2")
+  const modMatch = rawStr.match(/(\d+)/);
+  if (modMatch) {
+    const extractedNum = parseInt(modMatch[1], 10);
+    if (extractedNum >= 1 && extractedNum <= 16 && MODULO_MAP[extractedNum]) {
+      return MODULO_MAP[extractedNum];
+    }
+  }
+
+  return "Hora a confirmar";
+};
 
 // ─── LOGS DE AUDITORÍA: Acciones comprimidas a códigos 2–4 chars ─────────────
 // Appwrite attribute type: STRING (size: 6)
@@ -335,8 +393,10 @@ export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
       return {
         id: doc.$id, dia: dayName,
         // hora: convertir código numérico almacenado en Appwrite a texto legible
-        hora: fromDbHora(doc.hora),
-        materia: doc.materia, profesor: doc.profesor, curso: doc.curso
+        hora: fromDbHora(doc.hora ?? (doc as any).modulo ?? (doc as any).horario),
+        materia: doc.materia || "Materia",
+        profesor: doc.profesor || "Docente",
+        curso: doc.curso || "Curso"
       };
     });
     setCachedData("horarios", data);
