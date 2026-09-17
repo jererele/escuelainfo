@@ -28,6 +28,7 @@ import {
   Send,
 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
+import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
 
 interface Props {
   isOpen: boolean;
@@ -115,9 +116,16 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
 
   const handleSaveInfo = async () => {
     if (!profile.id) return;
-    if (telefono && !/^\+?[0-9\s\-]{10,15}$/.test(telefono.trim())) {
-      notify.error("El teléfono debe tener entre 10 y 15 números válidos.");
-      return;
+    if (telefono) {
+      const digitsOnly = telefono.replace(/\D/g, "");
+      if (digitsOnly.length < 8) {
+        notify.error("El número de teléfono ingresado debe contener al menos 8 dígitos.");
+        return;
+      }
+      if (!/^\+?[0-9\s\-]{10,18}$/.test(telefono.trim())) {
+        notify.error("El teléfono debe tener un formato válido con código de país.");
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -445,12 +453,9 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
               </Field>
 
               <Field label="Teléfono" icon={<Phone size={11} />}>
-                <input
-                  type="tel"
-                  placeholder="+54 2945 123456"
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm"
+                <PhoneInputWithCountry
                   value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
+                  onChange={setTelefono}
                 />
               </Field>
 

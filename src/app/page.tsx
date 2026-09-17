@@ -12,6 +12,7 @@ import {
   getUserProfileByEmail, updateUserProfile,
   saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor, getProfesorByEmail
 } from "@/lib/dataService";
+import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
 
 function LoginContent() {
   const router = useRouter();
@@ -304,8 +305,12 @@ function LoginContent() {
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       setErrorMsg("El correo electrónico no tiene un formato válido (ej: usuario@dominio.com)."); return;
     }
-    if (!/^\+?[0-9\s\-]{10,15}$/.test(telefono.trim())) {
-      setErrorMsg("El teléfono debe tener entre 10 y 15 números válidos."); return;
+    const digitsOnly = telefono.replace(/\D/g, "");
+    if (!telefono || digitsOnly.length < 8) {
+      setErrorMsg("Ingresá un número de teléfono válido (mínimo 8 dígitos)."); return;
+    }
+    if (!/^\+?[0-9\s\-]{10,18}$/.test(telefono.trim())) {
+      setErrorMsg("El teléfono debe tener un formato válido con código de país."); return;
     }
 
     setLoading(true); setErrorMsg("");
@@ -717,9 +722,11 @@ function LoginContent() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Teléfono</label>
-                    <input required type="tel" placeholder="+54 2945..."
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
-                      value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                    <PhoneInputWithCountry
+                      required
+                      value={telefono}
+                      onChange={setTelefono}
+                    />
                   </div>
                 </div>
 

@@ -4,18 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.12.0";
-export const APP_BUILD_DATE = "17/09/2026 15:25 hs";
+export const APP_VERSION = "v2.13.0";
+export const APP_BUILD_DATE = "17/09/2026 15:40 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Lector de Asistencia QR Integrado para Alumnos (StudentQRScannerModal.tsx): Ahora los alumnos pueden dar el presente directamente desde su celular o dispositivo con la cámara integrada en la plataforma, sin recurrir a aplicaciones de cámara externas ni salir del panel de la escuela.",
-  "Decodificación Ultrarrápida con html5-qrcode: Integración de escáner nativo HTML5 para reconocimiento instantáneo de códigos QR dinámicos generados por preceptores (jornada institucional) y docentes (materia), con soporte para alternar entre cámara trasera y frontal en tiempo real.",
-  "Seguridad Criptográfica y Antirretención (25s): Validación estricta de tiempo de vida del código QR en el cliente para impedir la reutilización de capturas de pantalla o fotografías compartidas por mensajería, garantizando la asistencia presencial.",
-  "Feedback Háptico y Confirmación Visual Interactiva: Vibración háptica en dispositivos móviles al confirmar el registro, modal con marco animado y mira láser verde, tarjeta con el detalle de la jornada/materia, y actualización instantánea de las estadísticas de inasistencias en el panel del alumno.",
-  "Acceso Directo Destacado en Asistencia (StudentAttendanceManager.tsx): Tarjeta de acción prominente en la sección de asistencia del alumno con botón directo para abrir la cámara y escanear en un solo toque."
+  "Selector de Códigos de Área de Sudamérica (PhoneInputWithCountry.tsx): Integración de un selector desplegable interactivo con todos los países de Sudamérica (Argentina +54, Bolivia +591, Brasil +55, Chile +56, Colombia +57, Ecuador +593, Paraguay +595, Perú +51, Uruguay +598, Venezuela +58, Guyana +592, Surinam +597 y Guayana Francesa +594) con banderas oficiales y buscador en tiempo real.",
+  "Limitador y Sanitizador Estricto de Dígitos Telefónicos: El campo restringe la entrada exclusivamente a números (0-9) e impone un límite máximo de dígitos ajustado al estándar del país seleccionado (ej: 11 dígitos para Argentina y Brasil, 9 para Chile/Uruguay/Perú/Bolivia), evitando caracteres extra o longitudes incorrectas.",
+  "Contador de Dígitos y Validación en Vivo: Indicador visual dinámico que muestra los dígitos ingresados vs. el máximo del país (ej: 10/11), destacando en verde cuando se cumple el rango requerido y alertando en ámbar si no se alcanza el mínimo.",
+  "Integración Total en Registro y Perfil Institucional: Disponible tanto en la pantalla de alta de cuenta (page.tsx) como en el panel de edición de Mi Perfil (UserProfileModal.tsx), con autodetección inteligente de prefijos existentes."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.12.0",
+    date: "17/09/2026 15:25 hs",
+    notes: [
+      "Lector de Asistencia QR Integrado para Alumnos (StudentQRScannerModal.tsx): Ahora los alumnos pueden dar el presente directamente desde su celular o dispositivo con la cámara integrada en la plataforma, sin recurrir a aplicaciones de cámara externas ni salir del panel de la escuela.",
+      "Decodificación Ultrarrápida con html5-qrcode: Integración de escáner nativo HTML5 para reconocimiento instantáneo de códigos QR dinámicos generados por preceptores (jornada institucional) y docentes (materia), con soporte para alternar entre cámara trasera y frontal en tiempo real.",
+      "Seguridad Criptográfica y Antirretención (25s): Validación estricta de tiempo de vida del código QR en el cliente para impedir la reutilización de capturas de pantalla o fotografías compartidas por mensajería, garantizando la asistencia presencial.",
+      "Feedback Háptico y Confirmación Visual Interactiva: Vibración háptica en dispositivos móviles al confirmar el registro, modal con marco animado y mira láser verde, tarjeta con el detalle de la jornada/materia, y actualización instantánea de las estadísticas de inasistencias en el panel del alumno.",
+      "Acceso Directo Destacado en Asistencia (StudentAttendanceManager.tsx): Tarjeta de acción prominente en la sección de asistencia del alumno con botón directo para abrir la cámara y escanear en un solo toque."
+    ]
+  },
   {
     version: "v2.11.9",
     date: "17/09/2026 15:10 hs",
