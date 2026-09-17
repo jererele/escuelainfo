@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, approveNameChange, rejectNameChange } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, approveNameChange, rejectNameChange } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -180,117 +180,96 @@ export default function Dashboard() {
   
 
 
+  const isLoggingOut = useRef(false);
+  const lastBackToastRef = useRef<number>(0);
+
   // ── Sincronización de pestañas con historial del navegador ──
   const handleTabChange = useCallback((newTab: string) => {
     setActiveTab((prev) => {
       if (prev === newTab) return prev;
       if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        if (newTab === "general") {
-          url.searchParams.delete("tab");
-        } else {
-          url.searchParams.set("tab", newTab);
-        }
-        window.history.pushState({ tab: newTab }, "", url.pathname + url.search);
+        const targetUrl = newTab === "general" ? "/dashboard" : `/dashboard?tab=${newTab}`;
+        window.history.pushState({ app: "escuelainfo-dashboard", tab: newTab, isBase: false }, "", targetUrl);
       }
       return newTab;
     });
   }, []);
 
-  // ── Configurar pestaña inicial y resguardo de historial ──
+  // ── Configurar pestaña inicial y resguardo inexpugnable de historial ──
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    const initialTab = params.get("tab");
-    if (initialTab) {
+    const initialTab = params.get("tab") || "general";
+    if (initialTab !== "general") {
       setActiveTab(initialTab);
     }
-    // Empujar entrada base para que el botón "Atrás" nunca expulse fuera del Dashboard
-    window.history.replaceState({ tab: "general" }, "", window.location.pathname);
-    if (initialTab && initialTab !== "general") {
-      window.history.pushState({ tab: initialTab }, "", window.location.pathname + "?tab=" + initialTab);
-    }
+    // 1. Establecer ancla base en el dashboard (reemplaza cualquier entrada previa al login)
+    window.history.replaceState({ app: "escuelainfo-dashboard", tab: "general", isBase: true }, "", "/dashboard");
+    // 2. Empujar entrada activa como buffer protector para que el botón "Atrás" nunca expulse fuera
+    const activeUrl = initialTab === "general" ? "/dashboard" : `/dashboard?tab=${initialTab}`;
+    window.history.pushState({ app: "escuelainfo-dashboard", tab: initialTab, isBase: false }, "", activeUrl);
   }, []);
 
   // ── Manejo inteligente del botón Atrás (móviles y gestos) ──
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      // 1. Si hay un diálogo de confirmación abierto, cerrarlo
+      if (isLoggingOut.current) return;
+
+      // 1. Si hay un diálogo de confirmación abierto, cerrarlo con prioridad
       if (confirmDialog.isOpen) {
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        window.history.pushState({ app: "escuelainfo-dashboard", tab: activeTab, isBase: false }, "", window.location.href);
         return;
       }
+
       // 2. Si hay algún modal abierto, cerrarlo con prioridad sin salir
-      if (isProfileModalOpen) {
-        setIsProfileModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isModalOpen) {
-        setIsModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isTeacherModalOpen) {
-        setIsTeacherModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isTeacherReportModalOpen) {
-        setIsTeacherReportModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isStudentModalOpen) {
-        setIsStudentModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isScheduleModalOpen) {
-        setIsScheduleModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isCourseModalOpen) {
-        setIsCourseModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isAssignModalOpen) {
-        setIsAssignModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isSendNoticeModalOpen) {
-        setIsSendNoticeModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isUserModalOpen) {
-        setIsUserModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isQRModalOpen) {
-        setIsQRModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
-        return;
-      }
-      if (isVersionModalOpen) {
-        setIsVersionModalOpen(false);
-        window.history.pushState({ tab: activeTab }, "", window.location.href);
+      const anyModalOpen =
+        isProfileModalOpen ||
+        isModalOpen ||
+        isTeacherModalOpen ||
+        isTeacherReportModalOpen ||
+        isStudentModalOpen ||
+        isScheduleModalOpen ||
+        isCourseModalOpen ||
+        isAssignModalOpen ||
+        isSendNoticeModalOpen ||
+        isUserModalOpen ||
+        isQRModalOpen ||
+        isVersionModalOpen;
+
+      if (anyModalOpen) {
+        if (isProfileModalOpen) setIsProfileModalOpen(false);
+        if (isModalOpen) setIsModalOpen(false);
+        if (isTeacherModalOpen) setIsTeacherModalOpen(false);
+        if (isTeacherReportModalOpen) setIsTeacherReportModalOpen(false);
+        if (isStudentModalOpen) setIsStudentModalOpen(false);
+        if (isScheduleModalOpen) setIsScheduleModalOpen(false);
+        if (isCourseModalOpen) setIsCourseModalOpen(false);
+        if (isAssignModalOpen) setIsAssignModalOpen(false);
+        if (isSendNoticeModalOpen) setIsSendNoticeModalOpen(false);
+        if (isUserModalOpen) setIsUserModalOpen(false);
+        if (isQRModalOpen) setIsQRModalOpen(false);
+        if (isVersionModalOpen) setIsVersionModalOpen(false);
+
+        window.history.pushState({ app: "escuelainfo-dashboard", tab: activeTab, isBase: false }, "", window.location.href);
         return;
       }
 
-      // 3. Si no hay modales, retroceder a la pestaña previa registrada en URL
-      const params = new URLSearchParams(window.location.search);
-      const targetTab = params.get("tab") || "general";
-      setActiveTab(targetTab);
+      // 3. Si no hay modales y la pestaña no es "general", volver suavemente a "general"
+      if (activeTab !== "general") {
+        setActiveTab("general");
+        window.history.pushState({ app: "escuelainfo-dashboard", tab: "general", isBase: false }, "", "/dashboard");
+        return;
+      }
 
-      // Si ya está en "general", mantener el historial anclado para no salir al login
-      if (targetTab === "general") {
-        window.history.pushState({ tab: "general" }, "", window.location.pathname);
+      // 4. Si ya estamos en "general" y no hay modales:
+      // Restablecer el buffer protector para que el navegador JAMÁS salga al login o hacia afuera
+      window.history.pushState({ app: "escuelainfo-dashboard", tab: "general", isBase: false }, "", "/dashboard");
+
+      const now = Date.now();
+      if (now - lastBackToastRef.current > 2500) {
+        lastBackToastRef.current = now;
+        notify.info("Para cerrar sesión de forma segura, usá el botón 'Cerrar Sesión' en el menú.");
       }
     };
 
@@ -336,7 +315,14 @@ export default function Dashboard() {
         if (!isMounted) return;
         setUser(currentUser as any);
         // Cargar perfil de Appwrite
-        const profile = await getUserProfile(currentUser.$id);
+        let profile = await getUserProfile(currentUser.$id);
+        if (!profile && currentUser.email) {
+          const pre = await getUserProfileByEmail(currentUser.email);
+          if (pre?.id) {
+            await updateUserProfile(pre.id, { uid: currentUser.$id, nombre: currentUser.name || "Usuario" }).catch(() => {});
+            profile = { ...pre, uid: currentUser.$id };
+          }
+        }
         if (!isMounted) return;
 
         if (profile) {
@@ -448,13 +434,14 @@ export default function Dashboard() {
 
 
   const handleLogout = async () => {
+    isLoggingOut.current = true;
     try {
       sessionStorage.clear(); // Limpiar caché de datos locales por seguridad
       await account.deleteSession("current");
-      router.replace("/");
     } catch { 
       sessionStorage.clear();
-      router.replace("/");
+    } finally {
+      window.location.replace("/");
     }
   };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
@@ -47,11 +47,57 @@ function LoginContent() {
   const [telefono, setTelefono] = useState("");
   const [dni, setDni] = useState("");
 
+  const resetForgotForm = useCallback(() => {
+    setForgotStep(1);
+    setForgotEmail("");
+    setForgotCode("");
+    setForgotToken("");
+    setForgotNewPass("");
+    setForgotConfirmPass("");
+    setForgotTimer(0);
+    setShowForgotPass(false);
+  }, []);
+
+  const resetRegisterForm = useCallback(() => {
+    setNombres(""); setApellidos(""); setTelefono("");
+    setDni(""); setPassword("");
+    setShowPassword(false); setErrorMsg(""); setSuccessMsg("");
+  }, []);
+
+  const switchMode = useCallback((newMode: "login" | "register" | "forgot") => {
+    setActiveMode(newMode);
+    setErrorMsg("");
+    setSuccessMsg("");
+    setShowPassword(false);
+    if (newMode === "login") {
+      resetRegisterForm();
+      resetForgotForm();
+    } else if (newMode === "register") {
+      resetRegisterForm();
+    } else if (newMode === "forgot") {
+      setForgotEmail(email.trim());
+      setForgotStep(1);
+    }
+    if (typeof window !== "undefined") {
+      const url = newMode === "login" ? window.location.pathname : `${window.location.pathname}?mode=${newMode}`;
+      window.history.pushState({ mode: newMode }, "", url);
+    }
+  }, [email, resetForgotForm, resetRegisterForm]);
+
   useEffect(() => {
     setMounted(true);
     client.ping().catch(() => {});
 
-    // Auto-redirect only if session AND database profile are both valid
+    // Sincronizar modo inicial con historial del navegador
+    if (typeof window !== "undefined") {
+      const initialMode = (new URLSearchParams(window.location.search).get("mode") as "login" | "register" | "forgot") || "login";
+      if (initialMode !== "login") {
+        setActiveMode(initialMode);
+      }
+      window.history.replaceState({ mode: initialMode }, "", window.location.href);
+    }
+
+    // Auto-redirección si la sesión está activa — NUNCA destruir la sesión en segundo plano
     const checkSession = async () => {
       let user;
       try {
@@ -63,41 +109,56 @@ function LoginContent() {
       }
 
       try {
-        // Add timeout so a slow/down Appwrite doesn't block the page forever
+        const redirectTo = searchParams.get("redirect") || "/dashboard";
         const profilePromise = getUserProfile(user.$id);
-        const timeoutPromise = new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 5000)
+        const timeoutPromise = new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), 4000)
         );
         const profile = await Promise.race([profilePromise, timeoutPromise]);
 
         if (profile) {
-          const redirectTo = searchParams.get("redirect");
-          if (redirectTo) {
-            router.replace(redirectTo);
-          } else {
-            router.replace("/dashboard");
-          }
+          router.replace(redirectTo);
           return;
-        } else {
-          // Profile truly doesn't exist — clean up orphaned session
-          await account.deleteSession("current").catch(() => {});
         }
-      } catch (err: any) {
-        if (err?.message === "timeout" || err?.code === 500) {
-          // Transient server error or slow response — DO NOT delete session
-          // Just stay on login page so user can try manually
-          console.warn("[EscuelaInfo] Profile check failed temporarily, keeping session.");
-        } else {
-          // Other error (401, network) — session is invalid, clean up
-          await account.deleteSession("current").catch(() => {});
+
+        // Si no se encontró por uid, intentar resolver por correo
+        if (user.email) {
+          const pre = await getUserProfileByEmail(user.email);
+          if (pre?.id) {
+            await updateUserProfile(pre.id, { uid: user.$id, nombre: user.name || "Usuario" }).catch(() => {});
+            router.replace(redirectTo);
+            return;
+          }
         }
-      } finally {
-        setCheckingSession(false);
+
+        // Usuario autenticado en Appwrite: enviar directamente al dashboard
+        router.replace(redirectTo);
+      } catch (err) {
+        console.warn("[EscuelaInfo] Error en checkSession, preservando sesión y enviando a dashboard:", err);
+        router.replace("/dashboard");
       }
     };
 
     checkSession();
   }, [router, searchParams]);
+
+  // Manejo de retroceso en pestañas de acceso (Login <-> Register <-> Forgot)
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const mode = (e.state?.mode as "login" | "register" | "forgot") ||
+                   (new URLSearchParams(window.location.search).get("mode") as "login" | "register" | "forgot") ||
+                   "login";
+      setActiveMode(mode);
+      setErrorMsg("");
+      setSuccessMsg("");
+      if (mode === "login") {
+        resetRegisterForm();
+        resetForgotForm();
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [resetForgotForm, resetRegisterForm]);
 
   useEffect(() => {
     if (forgotTimer <= 0) return;
@@ -106,23 +167,6 @@ function LoginContent() {
     }, 1000);
     return () => clearInterval(interval);
   }, [forgotTimer]);
-
-  const resetForgotForm = () => {
-    setForgotStep(1);
-    setForgotEmail("");
-    setForgotCode("");
-    setForgotToken("");
-    setForgotNewPass("");
-    setForgotConfirmPass("");
-    setForgotTimer(0);
-    setShowForgotPass(false);
-  };
-
-  const resetRegisterForm = () => {
-    setNombres(""); setApellidos(""); setTelefono("");
-    setDni(""); setPassword("");
-    setShowPassword(false); setErrorMsg(""); setSuccessMsg("");
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,11 +208,7 @@ function LoginContent() {
   };
 
   const handleForgotPassword = () => {
-    setErrorMsg("");
-    setSuccessMsg("");
-    setForgotEmail(email.trim());
-    setForgotStep(1);
-    setActiveMode("forgot");
+    switchMode("forgot");
   };
 
   const handleSendRecoveryCode = async () => {
@@ -311,8 +351,8 @@ function LoginContent() {
 
         setSuccessMsg("¡Registro docente exitoso! Ingresando al panel...");
         setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
+          router.replace("/dashboard");
+        }, 1500);
         return;
       }
 
@@ -324,8 +364,8 @@ function LoginContent() {
           // Pre-authorized role (admin, directivo, preceptor, etc.) — enter directly
           setSuccessMsg(`¡Registro exitoso! Ingresando al panel como ${preProfile.rol}...`);
           setTimeout(() => {
-            router.push("/dashboard");
-          }, 2000);
+            router.replace("/dashboard");
+          }, 1500);
           return;
         }
 
@@ -420,7 +460,7 @@ function LoginContent() {
               <div className="flex items-center justify-between mb-6 pb-2 border-b border-[var(--border)]">
                 <button
                   type="button"
-                  onClick={() => { setActiveMode("login"); setErrorMsg(""); setSuccessMsg(""); resetForgotForm(); }}
+                  onClick={() => switchMode("login")}
                   className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text3)] hover:text-[var(--text)] transition-colors"
                 >
                   <ArrowLeft size={16} /> Volver al Inicio
@@ -433,7 +473,7 @@ function LoginContent() {
               <div className="bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)] flex mb-6">
                 {(["login", "register"] as const).map(mode => (
                   <button key={mode} type="button"
-                    onClick={() => { setActiveMode(mode); setErrorMsg(""); setSuccessMsg(""); setShowPassword(false); resetRegisterForm(); }}
+                    onClick={() => switchMode(mode)}
                     className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
                       activeMode === mode ? "bg-white shadow-sm text-black" : "text-[var(--text3)] hover:text-[var(--text2)]"
                     }`}>

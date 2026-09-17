@@ -4,17 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.6";
-export const APP_BUILD_DATE = "17/09/2026 14:38 hs";
+export const APP_VERSION = "v2.11.7";
+export const APP_BUILD_DATE = "17/09/2026 14:52 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Solución Definitiva a la Expulsión al Retroceder en Móvil: Se implementó router.replace en el flujo de inicio de sesión y auto-redirección de page.tsx, eliminando la pantalla de login del historial de navegación para que el botón 'Atrás' del navegador o celular jamás vuelva a la pantalla de acceso.",
-  "Sincronización de Pestañas con Historial (window.history / popstate): Cambiar de sección en el Dashboard ahora registra la pestaña en la URL y en el historial. Al presionar el botón 'Atrás' o hacer el gesto de retroceso en Android/iOS, el usuario vuelve a la pestaña anterior ('Inicio') de forma suave en vez de abandonar la sesión.",
-  "Cierre Automático de Modales y Menú con Botón 'Atrás': Al tener abierta una ventana emergente (Mi Perfil, Nueva Licencia, Mesas de Examen, Diálogos de Confirmación) o el menú superior retráctil, presionar 'Atrás' en el celular ahora cierra la ventana modal o el menú de forma natural sin desloguear ni recargar la página.",
-  "Protección Antisalida en Dashboard Base: Se fijó el estado base en general con trampa de retroceso para que usuarios en la vista inicial no sean expulsados de la aplicación por toques accidentales hacia atrás."
+  "Blindaje Total de Navegación y Buffer Protector en Dashboard: Se implementó una arquitectura de ancla base + buffer navegable en el historial del navegador (replaceState base + pushState activo). Presionar 'Atrás' en la pestaña de Inicio ('general') o hacer el gesto de retroceso en Android/iOS jamás expulsará al usuario fuera del Dashboard ni lo mandará a la pantalla de login.",
+  "Protección Absoluta contra Destrucción Accidental de Sesión: Se eliminó el borrado forzado de sesión (deleteSession('current')) en la verificación inicial de page.tsx. Si el usuario tiene una sesión activa válida en Appwrite, el sistema lo conduce directamente al Dashboard sin eliminar sus credenciales ante latencias o verificaciones de perfil asíncronas.",
+  "Navegación Fluida de Pestañas en Login y Registro (Login <-> Registro <-> Recuperación): Ahora cambiar entre 'Iniciar Sesión', 'Registrarse' y 'Recuperar Contraseña' sincroniza con el historial del navegador (/?mode=register). Presionar el botón 'Atrás' del celular mientras se visualiza el formulario de registro regresa automáticamente a 'Iniciar Sesión' de forma nativa sin cerrar ni recargar la aplicación.",
+  "Aviso Suave de Cierre de Sesión Seguro: Al encontrarse en el Inicio del Dashboard e intentar retroceder, el sistema previene la salida y muestra una notificación orientativa recordando que para salir o cambiar de cuenta se debe utilizar el botón 'Cerrar Sesión' del menú lateral.",
+  "Fallback Resiliente de Perfil por Correo Electrónico: Se agregó resolución automática de perfil institucional por correo electrónico en el Dashboard si no se localiza por UID de inmediato, impidiendo redirecciones falsas."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.6",
+    date: "17/09/2026 14:38 hs",
+    notes: [
+      "Solución Definitiva a la Expulsión al Retroceder en Móvil: Se implementó router.replace en el flujo de inicio de sesión y auto-redirección de page.tsx, eliminando la pantalla de login del historial de navegación para que el botón 'Atrás' del navegador o celular jamás vuelva a la pantalla de acceso.",
+      "Sincronización de Pestañas con Historial (window.history / popstate): Cambiar de sección en el Dashboard ahora registra la pestaña en la URL y en el historial. Al presionar el botón 'Atrás' o hacer el gesto de retroceso en Android/iOS, el usuario vuelve a la pestaña anterior ('Inicio') de forma suave en vez de abandonar la sesión.",
+      "Cierre Automático de Modales y Menú con Botón 'Atrás': Al tener abierta una ventana emergente (Mi Perfil, Nueva Licencia, Mesas de Examen, Diálogos de Confirmación) o el menú superior retráctil, presionar 'Atrás' en el celular ahora cierra la ventana modal o el menú de forma natural sin desloguear ni recargar la página.",
+      "Protección Antisalida en Dashboard Base: Se fijó el estado base en general con trampa de retroceso para que usuarios en la vista inicial no sean expulsados de la aplicación por toques accidentales hacia atrás."
+    ]
+  },
   {
     version: "v2.11.5",
     date: "17/09/2026 13:58 hs",
