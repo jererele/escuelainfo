@@ -5,7 +5,7 @@ import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound, Info } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
   getUserProfile, createUserProfile,
@@ -24,6 +24,7 @@ function LoginContent() {
   const [successRole, setSuccessRole] = useState<"alumno" | "profesor">("alumno");
   const [activeMode, setActiveMode] = useState<"login" | "register" | "forgot">("login");
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterInfo, setShowRegisterInfo] = useState(false);
 
   // Recuperar contraseña con código de verificación
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
@@ -616,60 +617,37 @@ function LoginContent() {
               /* REGISTRO — Alumno o Profesor */
               <form onSubmit={handleRegister} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar animate-fade-in">
 
-                {/* Info banner */}
-                <div className="bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-4 py-3 rounded-xl text-xs font-bold space-y-1">
-                  <div>📚 Registro General de la Institución</div>
-                  <div className="text-[10px] opacity-90 font-semibold">
-                    Los alumnos quedan en espera de aprobación del preceptor. 
-                    Si fuiste pre-autorizado por la administración (como administrador, directivo, preceptor o docente), regístrate con tu correo y tu rol se activará automáticamente.
+                {/* Nombres y Apellidos con Avatar de costado */}
+                <div className="flex items-end gap-3 sm:gap-4">
+                  {/* Avatar dinámico solo, de costado */}
+                  <div className="shrink-0 mb-1" title="Tu avatar institucional se actualiza en vivo al escribir">
+                    <div className="relative group">
+                      <UserAvatar
+                        name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
+                        size={54}
+                        animate="always"
+                        showRing={true}
+                        className="shadow-md ring-2 ring-[var(--verde)]/50 transition-all duration-300"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--verde)] text-black rounded-full border-2 border-[var(--bg2)] flex items-center justify-center text-[8px] font-black shadow-sm" title="Avatar dinámico">
+                        ✨
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* VISTA PREVIA EN VIVO DEL AVATAR SEGÚN EL NOMBRE */}
-                <div className="p-4 rounded-2xl bg-[var(--bg2)] border border-[var(--border)] shadow-sm flex items-center gap-4 transition-all hover:border-[var(--verde-border)]">
-                  <div className="relative shrink-0">
-                    <UserAvatar
-                      name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
-                      size={68}
-                      animate="always"
-                      showRing={true}
-                      className="shadow-md ring-2 ring-[var(--verde)]/50 transition-all duration-300"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[var(--verde)] text-black rounded-full border-2 border-[var(--bg2)] flex items-center justify-center text-[10px] font-black shadow-sm" title="Avatar dinámico">
-                      ✨
+                  <div className="flex-1 grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-1">Nombres</label>
+                      <input required type="text" placeholder="Juan"
+                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                        value={nombres} onChange={(e) => setNombres(e.target.value)} />
                     </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] flex items-center gap-1">
-                        <Sparkles size={10} />
-                        Avatar Dinámico en Vivo
-                      </span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--verde)] animate-ping" />
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-1">Apellidos</label>
+                      <input required type="text" placeholder="Pérez"
+                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                        value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
                     </div>
-                    <div className="text-sm font-black text-[var(--text)] truncate">
-                      {`${nombres} ${apellidos}`.trim() || "Escribí tu nombre..."}
-                    </div>
-                    <p className="text-[11px] text-[var(--text3)] leading-tight mt-0.5 font-medium">
-                      {nombres.trim() || apellidos.trim()
-                        ? "¡Tu personaje institucional muta en tiempo real con cada letra!"
-                        : "Descubrí qué avatar te asigna el sistema a medida que escribís tus datos."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Nombres</label>
-                    <input required type="text" placeholder="Juan"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
-                      value={nombres} onChange={(e) => setNombres(e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Apellidos</label>
-                    <input required type="text" placeholder="Pérez"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
-                      value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
                   </div>
                 </div>
 
@@ -716,6 +694,28 @@ function LoginContent() {
                     ? <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
                     : "Crear Cuenta / Registrarse"}
                 </button>
+
+                {/* Texto de registro institucional sutil / pop-out en la parte inferior */}
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterInfo(p => !p)}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[var(--text3)] hover:text-[var(--text)] transition-colors py-1 px-2.5 rounded-lg hover:bg-white/5"
+                  >
+                    <Info size={12} className="text-[var(--text3)]" />
+                    <span>¿Cómo funciona la aprobación de cuenta?</span>
+                  </button>
+                  {showRegisterInfo && (
+                    <div className="mt-2 text-left bg-[var(--bg3)] border border-[var(--border)] p-3.5 rounded-2xl text-[11px] text-[var(--text3)] leading-relaxed animate-fade-in space-y-1">
+                      <div className="font-black text-[var(--text2)] flex items-center gap-1.5 text-xs">
+                        <span>📚 Registro de la Institución</span>
+                      </div>
+                      <p className="text-[10px]">
+                        Los alumnos quedan en espera de aprobación del preceptor. Si fuiste pre-autorizado por la administración (como administrador, directivo, preceptor o docente), registrate con tu correo y tu rol se activará automáticamente.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </form>
             )}
           </>

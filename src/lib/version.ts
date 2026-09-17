@@ -4,19 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.0";
-export const APP_BUILD_DATE = "16/09/2026 21:45 hs";
+export const APP_VERSION = "v2.11.1";
+export const APP_BUILD_DATE = "16/09/2026 21:55 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Solicitud y Aprobación de Cambio de Nombre: Los usuarios pueden solicitar el cambio de su nombre completo desde 'Mi Perfil' con previsualización en vivo de su avatar mutado. La solicitud pasa a estado pendiente y requiere la aprobación previa de Directivos o Administradores desde el panel de Configuración.",
-  "Bandeja de Aprobación de Nombres (ConfiguracionTab): Panel exclusivo para Directivos y Administradores que muestra en tiempo real las solicitudes de cambio de nombre, comparativa lado a lado del nombre actual vs. solicitado con sus respectivos avatares y botones de acción rápida ('Aprobar' o 'Rechazar').",
-  "Sincronización Automática con Colecciones Vinculadas: Al aprobar un cambio de nombre, el sistema actualiza automáticamente el perfil del usuario y sincroniza su registro correspondiente en las tablas de alumnos o profesores, asegurando integridad de datos en todo el sistema.",
-  "Cambio y Recuperación de Contraseña mediante Código OTP de 6 Dígitos: Se implementó un flujo de seguridad con verificación por correo electrónico. El usuario solicita un código numérico temporal enviado a su casilla y lo ingresa junto con su nueva clave.",
-  "Integración en 'Mi Perfil' y '¿Olvidaste tu contraseña?': Disponible tanto dentro de la sesión activa del usuario (UserProfileModal) con temporizador de enfriamiento de 60 segundos y límite de intentos, como en la pantalla de bienvenida (src/app/page.tsx).",
-  "Endpoints Seguros con Appwrite Server SDK: Se desarrollaron las rutas /api/auth/send-code y /api/auth/verify-code-reset respaldadas por Node-Appwrite (Users.updatePassword), protegiendo las credenciales y garantizando una experiencia sin fricciones ni enlaces externos caídos."
+  "Avatar Lateral Integrado (Sin Cajas Toscos): Se eliminó el recuadro voluminoso y todo el texto explicativo del avatar en el formulario de registro (`src/app/page.tsx`). El avatar ahora se ubica con elegancia al costado de los campos de Nombres y Apellidos, mutando en tiempo real de forma sutil y directa al tipear.",
+  "Información Institucional en Pop-out Inferior: El banner de 'Registro General de la Institución' que ocupaba espacio prominente en la parte superior fue reubicado en la base del formulario como un botón desplegable (pop-out) discreto y no invasivo.",
+  "Rediseño en Alta de Docentes (NewTeacherModal): Se aplicó la misma disposición lateral limpia al formulario de creación de profesores, eliminando recuadros innecesarios."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.0",
+    date: "16/09/2026 21:45 hs",
+    notes: [
+      "Solicitud y Aprobación de Cambio de Nombre: Los usuarios pueden solicitar el cambio de su nombre completo desde 'Mi Perfil' con previsualización en vivo de su avatar mutado. La solicitud pasa a estado pendiente y requiere la aprobación previa de Directivos o Administradores desde el panel de Configuración.",
+      "Bandeja de Aprobación de Nombres (ConfiguracionTab): Panel exclusivo para Directivos y Administradores que muestra en tiempo real las solicitudes de cambio de nombre, comparativa lado a lado del nombre actual vs. solicitado con sus respectivos avatares y botones de acción rápida ('Aprobar' o 'Rechazar').",
+      "Sincronización Automática con Colecciones Vinculadas: Al aprobar un cambio de nombre, el sistema actualiza automáticamente el perfil del usuario y sincroniza su registro correspondiente en las tablas de alumnos o profesores, asegurando integridad de datos en todo el sistema.",
+      "Cambio y Recuperación de Contraseña mediante Código OTP de 6 Dígitos: Se implementó un flujo de seguridad con verificación por correo electrónico. El usuario solicita un código numérico temporal enviado a su casilla y lo ingresa junto con su nueva clave.",
+      "Integración en 'Mi Perfil' y '¿Olvidaste tu contraseña?': Disponible tanto dentro de la sesión activa del usuario (UserProfileModal) con temporizador de enfriamiento de 60 segundos y límite de intentos, como en la pantalla de bienvenida (src/app/page.tsx).",
+      "Endpoints Seguros con Appwrite Server SDK: Se desarrollaron las rutas /api/auth/send-code y /api/auth/verify-code-reset respaldadas por Node-Appwrite (Users.updatePassword), protegiendo las credenciales y garantizando una experiencia sin fricciones ni enlaces externos caídos."
+    ]
+  },
   {
     version: "v2.10.10",
     date: "16/09/2026 21:25 hs",

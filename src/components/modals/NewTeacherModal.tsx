@@ -89,30 +89,22 @@ export default function NewTeacherModal({ isOpen, onClose, onSuccess, editingPro
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-5">
-          {/* Vista previa en vivo del avatar según el nombre */}
-          <div className="p-3.5 rounded-2xl bg-[var(--bg2)] border border-[var(--border)] flex items-center gap-3.5 shadow-sm">
-            <UserAvatar
-              name={nombre.trim() || "Nuevo Docente"}
-              size={54}
-              animate="always"
-              showRing={true}
-              className="shrink-0 shadow ring-2 ring-[var(--verde)]/50"
-            />
-            <div className="flex-1 min-w-0">
-              <span className="text-[9px] font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] inline-flex items-center gap-1">
-                <Sparkles size={10} /> Avatar en Vivo
-              </span>
-              <div className="text-xs font-black text-[var(--text)] truncate mt-1">
-                {nombre.trim() || "Escribí el nombre del docente..."}
-              </div>
+          <div className="flex items-end gap-3">
+            <div className="shrink-0 mb-1" title="Avatar dinámico del docente">
+              <UserAvatar
+                name={nombre.trim() || "Nuevo Docente"}
+                size={54}
+                animate="always"
+                showRing={true}
+                className="shadow-md ring-2 ring-[var(--verde)]/50"
+              />
             </div>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Nombre Completo</label>
-            <input required type="text" placeholder="Ej: María González"
-              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
-              value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            <div className="flex-1">
+              <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Nombre Completo</label>
+              <input required type="text" placeholder="Ej: María González"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
+                value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </div>
           </div>
           <div>
             <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">DNI (Solo números)</label>
