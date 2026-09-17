@@ -364,7 +364,7 @@ function LoginContent() {
       <div className="hidden md:block absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
       <div className="hidden md:block absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
 
-      <div className="login-box glass animate-zoom-in will-change-gpu w-full max-w-[480px] p-6 sm:p-8 md:p-12 rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
+      <div className="login-box glass animate-zoom-in will-change-gpu w-full max-w-[480px] p-5 sm:p-8 md:p-12 rounded-[32px] sm:rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
         {requestSuccess ? (
           <div className="text-center py-6 animate-fade-in">
             <div className="w-16 h-16 bg-[var(--verde-bg)] text-[var(--verde)] rounded-full flex items-center justify-center mx-auto mb-6 border border-[var(--verde-border)] shadow-lg animate-bounce">
@@ -657,7 +657,7 @@ function LoginContent() {
                     value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">DNI</label>
                     <input required type="text" inputMode="numeric" maxLength={8} placeholder="12345678"

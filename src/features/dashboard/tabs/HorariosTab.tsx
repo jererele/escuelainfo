@@ -228,10 +228,10 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
               key={dia}
               type="button"
               onClick={() => setSelectedMobileDay(dia)}
-              className={`flex-1 py-3 text-xs font-black uppercase rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 py-2.5 sm:py-3 text-xs uppercase rounded-xl transition-all cursor-pointer text-center ${
                 selectedMobileDay === dia
-                  ? "bg-[var(--verde)] text-black shadow-md scale-105"
-                  : "text-[var(--text2)] hover:bg-[var(--bg4)]"
+                  ? "bg-[var(--verde)] text-black shadow-md font-black ring-1 ring-[var(--verde)]"
+                  : "text-[var(--text2)] hover:bg-[var(--bg4)] font-bold"
               }`}
             >
               {shortName}

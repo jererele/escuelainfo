@@ -38,12 +38,57 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
     <div className="animate-fade-in space-y-10">
       {/* SOLICITUDES DE MATRICULACIÓN PENDIENTES */}
       {pendingAlumnos.length > 0 && (
-        <div className="animate-fade-in">
-          <h3 className="text-xl font-black title-font mb-4 text-[var(--amarillo)] flex items-center gap-2">
+        <div className="animate-fade-in space-y-3">
+          <h3 className="text-xl font-black title-font text-[var(--amarillo)] flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[var(--amarillo)] animate-pulse inline-block"></span>
             Solicitudes de Inscripción Pendientes
           </h3>
-          <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+
+          {/* VISTA MÓVIL: Tarjetas táctiles (< md) */}
+          <div className="md:hidden space-y-3">
+            {pendingAlumnos.map(u => {
+              const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+              const cursoLabel = studDetails?.curso && studDetails.curso !== 'pendiente' ? studDetails.curso : null;
+              return (
+                <div key={u.id} className="card glass rounded-2xl border border-[var(--border)] p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserAvatar name={u.nombre} email={u.email} size={38} />
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-[var(--text)] truncate">{u.nombre}</div>
+                        <div className="text-xs text-[var(--text3)] truncate">{u.email}</div>
+                      </div>
+                    </div>
+                    {cursoLabel ? (
+                      <span className="px-2.5 py-1 bg-[var(--bg3)] rounded-lg text-[10px] font-bold uppercase shrink-0">{cursoLabel}</span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold uppercase shrink-0">⏳ Sin asignar</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-[var(--text2)] font-mono">
+                    DNI: <span className="font-bold text-[var(--text)]">{studDetails?.dni || "Cargando..."}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border)]/50">
+                    <button
+                      onClick={() => onApproveStudent(u)}
+                      className="min-h-[44px] flex items-center justify-center gap-1 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
+                    >
+                      ✓ Aprobar
+                    </button>
+                    <button
+                      onClick={() => onRejectStudent(u)}
+                      className="min-h-[44px] flex items-center justify-center gap-1 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
+                    >
+                      ✕ Rechazar
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
+          <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-[600px]">
                 <thead className="bg-[var(--bg3)]/50">
@@ -101,16 +146,16 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
       )}
 
       <div>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 mb-8">
           <div>
-            <h2 className="text-3xl font-black title-font">Gestión de Alumnos</h2>
-            <p className="text-[var(--text2)]">Listado oficial de estudiantes por curso.</p>
+            <h2 className="text-2xl sm:text-3xl font-black title-font">Gestión de Alumnos</h2>
+            <p className="text-xs sm:text-sm text-[var(--text2)]">Listado oficial de estudiantes por curso.</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             {isAdmin && (
               <button 
                 onClick={onOpenAddStudent}
-                className="flex-1 md:flex-none bg-black text-white dark:bg-white dark:text-black font-bold px-8 py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer"
+                className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer text-center text-xs sm:text-sm"
               >
                 + Inscribir Alumno
               </button>
@@ -124,14 +169,55 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
             <input 
               type="text" 
               placeholder="Buscar alumnos por nombre, DNI o curso..." 
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--verde)] transition-all"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--verde)] transition-all text-sm"
               value={studentSearchQuery}
               onChange={(e) => setStudentSearchQuery(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+        {/* VISTA MÓVIL: Tarjetas de alumnos filtrados (< md) */}
+        <div className="md:hidden space-y-3 mb-6">
+          {filteredAlumnos.length === 0 ? (
+            <div className="card glass rounded-2xl border border-[var(--border)] p-8 text-center text-[var(--text3)] italic text-sm">
+              No se encontraron alumnos.
+            </div>
+          ) : (
+            filteredAlumnos.map(al => (
+              <div key={al.id} className="card glass rounded-2xl border border-[var(--border)] p-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar name={al.nombre} email={al.email} size={38} />
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-[var(--text)] truncate">{al.nombre}</div>
+                      {al.email && <div className="text-xs text-[var(--text3)] truncate">{al.email}</div>}
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => onDeleteAlumno(al)} 
+                      className="p-2 rounded-lg text-[var(--rojo)] hover:bg-[var(--rojo-bg)] transition-colors"
+                      title="Eliminar Alumno"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-[var(--border)]/50">
+                  <span className="font-mono text-[var(--text2)]">DNI: <strong className="text-[var(--text)]">{al.dni}</strong></span>
+                  {al.curso && al.curso !== 'pendiente' ? (
+                    <span className="px-2.5 py-0.5 bg-[var(--bg3)] rounded-lg text-[10px] font-bold">{al.curso}</span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold">⏳ Pendiente</span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
+        <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[550px]">
               <thead className="bg-[var(--bg3)]/50">

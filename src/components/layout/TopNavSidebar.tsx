@@ -198,8 +198,8 @@ export default function TopNavSidebar({
           )}
         </div>
 
-        {/* Center: active tab label */}
-        <span className="hidden md:block text-xs font-black uppercase tracking-[0.18em] text-[var(--text3)]">
+        {/* Center: active tab label (visible en móvil y desktop) */}
+        <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.12em] sm:tracking-[0.18em] text-[var(--text2)] sm:text-[var(--text3)] max-w-[140px] sm:max-w-none truncate text-center">
           {{
             general: "Inicio",
             asistencia: "Asistencia",
@@ -263,9 +263,10 @@ export default function TopNavSidebar({
           className={`fixed top-14 left-0 right-0 z-[499] will-change-gpu
             bg-[var(--bg)] border-b border-[var(--border)]
             shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)]
+            max-h-[calc(100dvh-3.5rem)] overflow-y-auto custom-scrollbar
             ${isExiting ? "top-nav-exit" : "top-nav-enter"}`}
         >
-          <div className="max-w-6xl mx-auto px-4 md:px-8 py-5">
+          <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 sm:py-5">
 
             {/* Grid de tabs */}
             <nav aria-label="Menú principal" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-5">

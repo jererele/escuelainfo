@@ -286,6 +286,7 @@ export default function TermsModal() {
   const [visible, setVisible]   = useState(false);
   const [canAccept, setCanAccept] = useState(false);
   const [saving, setSaving]     = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // ── Leer localStorage — solo en cliente ───────────────────────────────────
@@ -308,15 +309,32 @@ export default function TermsModal() {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // ── Scroll 100% obligatorio (prueba legal de lectura) ────────────────────
+  // ── Scroll obligatorio (prueba legal de lectura con tolerancia móvil) ─────
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
-    if (!el || canAccept) return;
-    // Requiere llegar al 100% absoluto del contenido
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll <= 0) {
+      setReadProgress(100);
       setCanAccept(true);
+      return;
+    }
+    const currentProgress = Math.min(100, Math.round((el.scrollTop / maxScroll) * 100));
+    setReadProgress(currentProgress);
+
+    // Tolerancia de 15px o >= 95% para dispositivos móviles con subpíxeles y rebote
+    if (!canAccept && (el.scrollTop + el.clientHeight >= el.scrollHeight - 15 || currentProgress >= 95)) {
+      setCanAccept(true);
+      setReadProgress(100);
     }
   }, [canAccept]);
+
+  // Desplazar al final
+  const scrollToBottom = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  };
 
   // ── Aceptar: guardar timestamp en localStorage + Appwrite logs ───────────
   const handleAccept = useCallback(async () => {
@@ -465,17 +483,31 @@ export default function TermsModal() {
 
         {/* ── Barra de progreso visual ────────────────────────────────────── */}
         <div className="flex-shrink-0 px-4 pb-1">
+          <div className="flex items-center justify-between text-[10px] mb-1 font-mono">
+            <span style={{ color: canAccept ? '#10B981' : '#64748b' }}>
+              {canAccept ? "100% Leído" : `Progreso de lectura: ${readProgress}%`}
+            </span>
+            {!canAccept && (
+              <button
+                type="button"
+                onClick={scrollToBottom}
+                className="text-[10px] text-[var(--verde)] hover:underline active:scale-95 transition-transform cursor-pointer font-sans"
+              >
+                Desplazar al final ↓
+              </button>
+            )}
+          </div>
           <div
-            className="h-0.5 rounded-full overflow-hidden"
+            className="h-1 rounded-full overflow-hidden"
             style={{ background: 'rgba(255,255,255,0.06)' }}
             aria-hidden="true"
           >
             <div
               style={{
                 height: '100%',
-                width: canAccept ? '100%' : '0%',
+                width: `${canAccept ? 100 : readProgress}%`,
                 background: 'linear-gradient(90deg, #10B981, #3B82F6)',
-                transition: 'width 400ms cubic-bezier(0.16,1,0.3,1)',
+                transition: 'width 200ms ease-out',
                 willChange: 'width',
               }}
             />
@@ -488,11 +520,11 @@ export default function TermsModal() {
           style={{ borderTop: '1px solid rgba(255,255,255,0.07)', background: '#050810' }}
         >
           {/* Indicador de estado */}
-          <p className="text-[11px] text-center sm:text-left order-2 sm:order-1" style={{ color: canAccept ? '#10B981' : '#475569' }}>
+          <p className="text-[11px] text-center sm:text-left order-2 sm:order-1" style={{ color: canAccept ? '#10B981' : '#64748b' }}>
             {canAccept ? (
               <>
-                <span style={{ color: '#10B981' }}>✓ Lectura completada.</span>
-                {' '}Su aceptación será registrada con timestamp.
+                <span style={{ color: '#10B981', fontWeight: 'bold' }}>✓ Lectura completada.</span>
+                {' '}Su aceptación quedará certificada con timestamp legal.
               </>
             ) : (
               'Desplace el texto hasta el final para habilitar el botón.'

@@ -4,16 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.4";
-export const APP_BUILD_DATE = "16/09/2026 23:05 hs";
+export const APP_VERSION = "v2.11.5";
+export const APP_BUILD_DATE = "17/09/2026 13:58 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Modal de Confirmación Contextual (Cancelar / Aprobar): Se rediseñó por completo el diálogo de confirmación (`askConfirm` / `confirmDialog`) del dashboard para adaptarse de manera inteligente a la acción solicitada. Al aprobar una licencia, ahora muestra el título 'Aprobar Licencia' y los botones 'Cancelar' y '✓ Aprobar' con fondo verde esmeralda, eliminando el texto genérico o destructivo 'Eliminar'.",
-  "Diferenciación Semántica de Acciones: Las acciones de rechazo o revocación despliegan el botón rojo '✕ Rechazar' o 'Eliminar', las adhesiones a paro muestran 'Confirmar Adhesión' en tono ámbar de advertencia, y las aprobaciones destacan en verde con iconos correspondientes (`Check`, `ShieldAlert`, `AlertTriangle`).",
-  "Gramática Precisa en Licencias Docentes (`AusenciasTab.tsx`): Se corrigió la redacción al presionar los estados de una licencia, mostrando con exactitud '¿Estás seguro de aprobar esta licencia?' o '¿Estás seguro de rechazar esta licencia?'."
+  "Corrección Crítica de Desbloqueo en Términos y Condiciones (TermsModal.tsx): Se corrigió el cálculo de scroll para pantallas móviles con subpíxeles y rebote inercial (Retina / AMOLED), implementando una tolerancia fiable (<= 15px o >= 95% de lectura) y una barra de progreso interactiva dinámica en tiempo real con botón directo de desplazamiento al final para evitar que los usuarios queden bloqueados sin poder aceptar.",
+  "Scroll Seguro en Menú Retráctil Superior (TopNavSidebar.tsx): Se incorporó max-h-[calc(100dvh-3.5rem)] y desplazamiento vertical suave con overflow-y-auto, impidiendo que el perfil de usuario y el botón de 'Salir' queden cortados fuera de la pantalla en dispositivos móviles y vistas apaisadas.",
+  "Visibilidad de Títulos de Sección en Dashboard Móvil: Se reemplazó la restricción hidden lg:flex de la cabecera por una barra responsiva integrada, asegurando que en celulares siempre esté visible el nombre de la sección activa (Asistencia, Ausencias, Horarios, Mesas de Examen, etc.).",
+  "Tarjetas Táctiles y Accesibilidad Móvil en Alumnos (AlumnosTab.tsx): Las solicitudes de inscripción pendientes y el listado de alumnos ahora se renderizan en tarjetas móviles optimizadas con botones de acción grandes (≥ 44px de altura) para aprobar o rechazar con el pulgar, eliminando el scroll horizontal incómodo de tablas anchas.",
+  "Alineación Responsiva en Mesas de Examen y Horarios: Se ajustaron la barra de búsqueda y botones de ExamBoardManager a anchos adaptables (w-full sm:w-64), el modal de mesas ahora utiliza max-h-[92dvh], y se eliminó el scale-105 en el selector de días de HorariosTab para erradicar cualquier jitter o desbordamiento subpixel.",
+  "Optimización de Espaciado en Registro y Acceso (page.tsx): Ajuste de márgenes perimetrales para celulares y reorganización de los campos de DNI y teléfono a una columna en pantallas angostas para evitar textos apretados."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.4",
+    date: "16/09/2026 23:05 hs",
+    notes: [
+      "Modal de Confirmación Contextual (Cancelar / Aprobar): Se rediseñó por completo el diálogo de confirmación (`askConfirm` / `confirmDialog`) del dashboard para adaptarse de manera inteligente a la acción solicitada. Al aprobar una licencia, ahora muestra el título 'Aprobar Licencia' y los botones 'Cancelar' y '✓ Aprobar' con fondo verde esmeralda, eliminando el texto genérico o destructivo 'Eliminar'.",
+      "Diferenciación Semántica de Acciones: Las acciones de rechazo o revocación despliegan el botón rojo '✕ Rechazar' o 'Eliminar', las adhesiones a paro muestran 'Confirmar Adhesión' en tono ámbar de advertencia, y las aprobaciones destacan en verde con iconos correspondientes (`Check`, `ShieldAlert`, `AlertTriangle`).",
+      "Gramática Precisa en Licencias Docentes (`AusenciasTab.tsx`): Se corrigió la redacción al presionar los estados de una licencia, mostrando con exactitud '¿Estás seguro de aprobar esta licencia?' o '¿Estás seguro de rechazar esta licencia?'."
+    ]
+  },
   {
     version: "v2.11.3",
     date: "16/09/2026 22:50 hs",

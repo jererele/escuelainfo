@@ -851,29 +851,29 @@ export default function Dashboard() {
           pt-14 para compensar el TopNav fijo. */}
       <main className="flex-1 min-w-0 overflow-y-auto relative pt-14">
 
-        <div className="p-6 md:p-12 pb-16 max-w-[1400px] mx-auto">
+        <div className="p-3.5 sm:p-6 md:p-12 pb-20 max-w-[1400px] mx-auto">
           {/* HEADER: saludo solo en inicio, título de sección en el resto */}
           {activeTab === "general" ? (
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sm:mb-12">
               <div>
-                <h1 className="text-3xl sm:text-4xl font-black title-font mb-2 tracking-tight">¡Hola, {user?.displayName?.split(' ')[0] || "Bienvenido"}!</h1>
-                <p className="text-[var(--text2)] text-sm sm:text-lg">
+                <h1 className="text-2xl sm:text-4xl font-black title-font mb-1.5 sm:mb-2 tracking-tight">¡Hola, {user?.displayName?.split(' ')[0] || "Bienvenido"}!</h1>
+                <p className="text-[var(--text2)] text-xs sm:text-base md:text-lg">
                   {userProfile?.rol === 'alumno' ? "Consulta tu horario y materias asignadas." : "Aquí tienes el control de tu institución en tiempo real."}
                 </p>
               </div>
               {userProfile?.rol !== 'alumno' && (
                 <button
                   onClick={() => setIsSendNoticeModalOpen(true)}
-                  className="flex items-center gap-2 px-5 py-3.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black rounded-2xl font-bold text-xs sm:text-sm transition-all duration-300 shadow-md active:scale-95 cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 sm:py-3.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black rounded-2xl font-bold text-xs sm:text-sm transition-all duration-300 shadow-md active:scale-95 cursor-pointer"
                 >
                   <Mail size={16} />
-                  Enviar Aviso por Mail
+                  <span>Enviar Aviso por Mail</span>
                 </button>
               )}
             </header>
           ) : (
-            <header className="hidden lg:flex items-center gap-3 mb-10">
-              <h1 className="text-2xl font-black title-font tracking-tight">
+            <header className="flex items-center justify-between gap-3 mb-6 sm:mb-10">
+              <h1 className="text-xl sm:text-2xl font-black title-font tracking-tight">
                 {{
                   asistencia: "Asistencia",
                   ausencias: "Ausencias",
@@ -887,7 +887,7 @@ export default function Dashboard() {
                   "ciclo-lectivo": "Ciclo Lectivo",
                 }[activeTab] ?? "Panel"}
               </h1>
-              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[var(--text3)] bg-[var(--bg3)] border border-[var(--border)] px-3 py-1 rounded-full">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-black text-[var(--text3)] bg-[var(--bg3)] border border-[var(--border)] px-2.5 sm:px-3 py-1 rounded-full shrink-0">
                 EscuelaInfo
               </span>
             </header>

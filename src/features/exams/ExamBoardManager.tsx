@@ -314,32 +314,34 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
             <p className="text-[var(--text2)] text-xs font-bold uppercase tracking-wider mt-1">Gestión y consulta de tribunales examinadores</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+            <div className="relative w-full sm:w-64">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]" />
               <input
                 type="text"
                 placeholder="Buscar por materia, docente o alumno..."
-                className="bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2 text-sm font-semibold outline-none text-[var(--text)] focus:border-[var(--verde)] w-64 transition-all"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 sm:py-2 text-sm font-semibold outline-none text-[var(--text)] focus:border-[var(--verde)] transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
-            {canManage && (
+            <div className="flex items-center gap-2">
+              {canManage && (
+                <button
+                  onClick={openCreateModal}
+                  className="flex-1 sm:flex-initial bg-[var(--verde)] text-black font-black text-xs px-4 py-2.5 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 no-print cursor-pointer"
+                >
+                  <Plus size={16} /> <span>Crear Mesa</span>
+                </button>
+              )}
               <button
-                onClick={openCreateModal}
-                className="bg-[var(--verde)] text-black font-black text-xs px-4 py-2.5 rounded-xl hover:-translate-y-0.5 active:scale-95 transition-all shadow-md flex items-center gap-1.5 no-print"
+                onClick={() => window.print()}
+                className="flex-1 sm:flex-initial bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[var(--bg4)] transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 no-print cursor-pointer"
               >
-                <Plus size={16} /> Crear Mesa
+                <Printer size={16} /> <span>Imprimir</span>
               </button>
-            )}
-            <button
-              onClick={() => window.print()}
-              className="bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[var(--bg4)] transition-all shadow-sm active:scale-95 flex items-center gap-1.5 no-print"
-            >
-              <Printer size={16} /> Imprimir
-            </button>
+            </div>
           </div>
         </div>
 
@@ -434,7 +436,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
           className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
         >
-          <div className="bg-[var(--bg)] w-full max-w-xl rounded-[32px] p-6 sm:p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-[var(--bg)] w-full max-w-xl rounded-[32px] p-5 sm:p-8 border border-[var(--border)] shadow-2xl animate-zoom-in my-auto max-h-[92dvh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h2 className="text-2xl font-black title-font text-[var(--text)]">{editingMesa ? "Editar Mesa de Examen" : "Crear Mesa de Examen"}</h2>
