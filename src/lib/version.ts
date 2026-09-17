@@ -4,18 +4,29 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.7";
-export const APP_BUILD_DATE = "17/09/2026 14:52 hs";
+export const APP_VERSION = "v2.11.8";
+export const APP_BUILD_DATE = "17/09/2026 15:02 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Blindaje Total de Navegación y Buffer Protector en Dashboard: Se implementó una arquitectura de ancla base + buffer navegable en el historial del navegador (replaceState base + pushState activo). Presionar 'Atrás' en la pestaña de Inicio ('general') o hacer el gesto de retroceso en Android/iOS jamás expulsará al usuario fuera del Dashboard ni lo mandará a la pantalla de login.",
-  "Protección Absoluta contra Destrucción Accidental de Sesión: Se eliminó el borrado forzado de sesión (deleteSession('current')) en la verificación inicial de page.tsx. Si el usuario tiene una sesión activa válida en Appwrite, el sistema lo conduce directamente al Dashboard sin eliminar sus credenciales ante latencias o verificaciones de perfil asíncronas.",
-  "Navegación Fluida de Pestañas en Login y Registro (Login <-> Registro <-> Recuperación): Ahora cambiar entre 'Iniciar Sesión', 'Registrarse' y 'Recuperar Contraseña' sincroniza con el historial del navegador (/?mode=register). Presionar el botón 'Atrás' del celular mientras se visualiza el formulario de registro regresa automáticamente a 'Iniciar Sesión' de forma nativa sin cerrar ni recargar la aplicación.",
-  "Aviso Suave de Cierre de Sesión Seguro: Al encontrarse en el Inicio del Dashboard e intentar retroceder, el sistema previene la salida y muestra una notificación orientativa recordando que para salir o cambiar de cuenta se debe utilizar el botón 'Cerrar Sesión' del menú lateral.",
-  "Fallback Resiliente de Perfil por Correo Electrónico: Se agregó resolución automática de perfil institucional por correo electrónico en el Dashboard si no se localiza por UID de inmediato, impidiendo redirecciones falsas."
+  "Rediseño Visual de Alta Fidelidad en Cuenta en Verificación: Se transformó la pantalla de espera de aprobación en una experiencia institucional moderna con glassmorphism, isotipo oficial de EscuelaInfo, insignia dorada de estado con aura luminosa, y badge en tiempo real con indicador palpitante.",
+  "Ficha de Datos Institucional y Eliminación de Textos Informales: Se erradicó la etiqueta 'Tu Gmail' reemplazándola por 'Correo Registrado' junto a iconos representativos para el Rol Solicitado y el Personal Habilitador correspondiente (Preceptores o Directivos).",
+  "Línea de Tiempo (Stepper) con Alineación Matemática Perfecta: Se implementó una grilla simétrica de 3 pasos (Registro Completado, Revisión en Curso y Habilitación de Acceso) eliminando márgenes negativos y garantizando simetría perfecta en celulares y pantallas de cualquier resolución.",
+  "Detección y Acceso Automático en Tiempo Real: La pantalla ahora realiza chequeos silenciosos periódicos y al reactivar la pestaña; en el momento exacto en que un directivo o preceptor aprueba al alumno o docente, el sistema lo detecta y lo traslada de inmediato al Dashboard.",
+  "Botones de Acción con Jerarquía Visual y Microanimaciones: 'Verificar Estado de mi Cuenta' ahora es un botón primario vibrante en tono esmeralda con feedback de carga, y 'Cerrar Sesión' adopta un acabado sutil y armónico."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.7",
+    date: "17/09/2026 14:52 hs",
+    notes: [
+      "Blindaje Total de Navegación y Buffer Protector en Dashboard: Se implementó una arquitectura de ancla base + buffer navegable en el historial del navegador (replaceState base + pushState activo). Presionar 'Atrás' en la pestaña de Inicio ('general') o hacer el gesto de retroceso en Android/iOS jamás expulsará al usuario fuera del Dashboard ni lo mandará a la pantalla de login.",
+      "Protección Absoluta contra Destrucción Accidental de Sesión: Se eliminó el borrado forzado de sesión (deleteSession('current')) en la verificación inicial de page.tsx. Si el usuario tiene una sesión activa válida en Appwrite, el sistema lo conduce directamente al Dashboard sin eliminar sus credenciales ante latencias o verificaciones de perfil asíncronas.",
+      "Navegación Fluida de Pestañas en Login y Registro (Login <-> Registro <-> Recuperación): Ahora cambiar entre 'Iniciar Sesión', 'Registrarse' y 'Recuperar Contraseña' sincroniza con el historial del navegador (/?mode=register). Presionar el botón 'Atrás' del celular mientras se visualiza el formulario de registro regresa automáticamente a 'Iniciar Sesión' de forma nativa sin cerrar ni recargar la aplicación.",
+      "Aviso Suave de Cierre de Sesión Seguro: Al encontrarse en el Inicio del Dashboard e intentar retroceder, el sistema previene la salida y muestra una notificación orientativa recordando que para salir o cambiar de cuenta se debe utilizar el botón 'Cerrar Sesión' del menú lateral.",
+      "Fallback Resiliente de Perfil por Correo Electrónico: Se agregó resolución automática de perfil institucional por correo electrónico en el Dashboard si no se localiza por UID de inmediato, impidiendo redirecciones falsas."
+    ]
+  },
   {
     version: "v2.11.6",
     date: "17/09/2026 14:38 hs",

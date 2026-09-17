@@ -95,6 +95,7 @@ const ExamBoardManager = dynamic(
   () => import("@/features/exams/ExamBoardManager"),
   { ssr: false, loading: () => <SkeletonExamGrid count={3} /> }
 );
+import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -102,6 +103,7 @@ import {
   GraduationCap, 
   Users, 
   ShieldAlert, 
+  ShieldCheck,
   LogOut, 
   Menu, 
   Search, 
@@ -121,7 +123,9 @@ import {
   FileSpreadsheet,
   Pencil,
   Clock,
-  UserCheck
+  UserCheck,
+  Hourglass,
+  Info
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -789,15 +793,31 @@ export default function Dashboard() {
     });
   };
 
-  const checkStatus = async () => {
+  // Comprobación periódica automática para usuarios en espera de aprobación
+  useEffect(() => {
+    if (!userProfile || !userProfile.rol.startsWith("pendiente_")) return;
+    const interval = setInterval(() => {
+      checkStatus(false);
+    }, 10000);
+    const onFocus = () => {
+      checkStatus(false);
+    };
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [userProfile?.rol, user?.$id]);
+
+  const checkStatus = async (isManual = true) => {
     if (!user) return;
-    setLoading(true);
+    if (isManual) setLoading(true);
     try {
       const profile = await getUserProfile(user.$id);
       if (profile) {
         setUserProfile(profile);
         if (!profile.rol.startsWith("pendiente_")) {
-          showToast("¡Tu cuenta ha sido aprobada! Cargando...", "success");
+          showToast("¡Tu cuenta ha sido aprobada! Ingresando al panel...", "success");
           // Fetch relevant tables based on the newly approved role
           if (profile.rol === 'admin' || profile.rol === 'directivo' || profile.rol === 'preceptor') {
             getProfesores().then(d => { setProfesores(d); stamp('profesores'); });
@@ -810,14 +830,16 @@ export default function Dashboard() {
           getHorarios().then(d => { setHorarios(d); stamp('horarios'); });
           getCursos().then(d => { setCursos(d); stamp('cursos'); });
           if (profile.rol === 'admin') getLogs().then(d => { setLogs(d); stamp('logs'); });
-        } else {
-          showToast("Tu cuenta aún está en revisión.", "error");
+        } else if (isManual) {
+          notify.info("Tu solicitud continúa en proceso de revisión institucional.");
         }
       }
     } catch {
-      showToast("Error al verificar estado. Intentá de nuevo.", "error");
+      if (isManual) {
+        showToast("Error al verificar estado. Intentá de nuevo.", "error");
+      }
     } finally {
-      setLoading(false);
+      if (isManual) setLoading(false);
     }
   };
 
@@ -839,99 +861,162 @@ export default function Dashboard() {
       alumno: "Alumno / Estudiante"
     };
     const approverLabels: {[key: string]: string} = {
-      directivo: "Administrador / Creador del Sistema",
-      preceptor: "Directivo / Director de la Escuela",
-      profesor: "Directivo / Director de la Escuela",
-      alumno: "Preceptor del Curso"
+      directivo: "Dirección / Administrador",
+      preceptor: "Equipo Directivo",
+      profesor: "Equipo Directivo",
+      alumno: "Preceptores del Curso"
     };
 
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 bg-transparent text-[var(--text)]">
-        {/* DECORATIVE BACKGROUND */}
-        <div className="absolute top-[-10%] right-[-10%] w-[45%] h-[45%] bg-[var(--amarillo-bg)] rounded-full blur-[140px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[45%] h-[45%] bg-[var(--azul-bg)] rounded-full blur-[140px] animate-pulse"></div>
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 py-8 bg-transparent text-[var(--text)]">
+        {/* Glows ambientales decorativos */}
+        <div className="hidden sm:block absolute top-[-10%] right-[-10%] w-[45%] h-[45%] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none animate-pulse" />
+        <div className="hidden sm:block absolute bottom-[-10%] left-[-10%] w-[45%] h-[45%] bg-[var(--verde-bg)] rounded-full blur-[140px] pointer-events-none animate-pulse" />
 
-        <div className="glass w-full max-w-[500px] p-10 md:p-12 rounded-[40px] border border-white/40 shadow-2xl relative z-10 text-center animate-zoom-in">
-          <div className="text-[2.2rem] font-black tracking-tighter mb-4 title-font leading-none">
-            Escuela<span className="text-[var(--verde)]">Info</span>
-          </div>
-
-          <div className="w-20 h-20 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_10px_30px_rgba(245,158,11,0.2)] animate-pulse">
-            <ShieldAlert size={36} />
-          </div>
-
-          <h2 className="text-2xl font-black mb-2">Cuenta en Verificación</h2>
-          <p className="text-[var(--text2)] text-sm mb-6 font-medium">
-            Hola, <span className="text-[var(--text)] font-bold">{userProfile.nombre}</span>. Tu cuenta ha sido registrada con éxito y está en espera de aprobación.
-          </p>
-
-          <div className="bg-[var(--bg3)] border border-[var(--border)] p-6 rounded-3xl text-left space-y-3 mb-8 text-xs font-bold shadow-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-[var(--text3)] uppercase">Tu Gmail:</span>
-              <span className="text-[var(--text)]">{userProfile.email}</span>
+        <div className="glass w-full max-w-[480px] p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/20 dark:border-white/10 shadow-2xl relative z-10 text-center animate-zoom-in">
+          {/* Header con Identidad Institucional */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="mb-3 shrink-0 transition-transform duration-300 hover:scale-105">
+              <EscuelaInfoLogo size={52} />
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[var(--text3)] uppercase">Rol Solicitado:</span>
-              <span className="text-[var(--verde)] uppercase tracking-wider">{roleLabels[requestedCleanRole] || requestedCleanRole}</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-[10px] font-black uppercase tracking-wider mb-2">
+              Escuela N° 713 &quot;Juan Abdala Chayep&quot;
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[var(--text3)] uppercase">Quién Aprueba:</span>
-              <span className="text-[var(--text2)]">{approverLabels[requestedCleanRole] || "Personal Autorizado"}</span>
+            <div className="text-2xl sm:text-3xl font-black tracking-tight title-font">
+              Escuela<span className="text-[var(--verde)]">Info</span>
             </div>
           </div>
 
-          {/* TIMELINE PROGRESS */}
-          <div className="mb-10 max-w-[340px] mx-auto select-none">
-            {/* Row of circles and line */}
-            <div className="relative flex justify-between items-center mb-3">
-              {/* Progress Line Background (connecting centers of step circles) */}
-              <div className="absolute left-[16px] right-[16px] h-[3px] bg-[var(--border)] top-1/2 -translate-y-1/2 z-0 rounded-full"></div>
-              {/* Active Progress Line (from step 1 center to step 2 center) */}
-              <div className="absolute left-[16px] w-[calc(50%-16px)] h-[3px] bg-[var(--verde)] top-1/2 -translate-y-1/2 z-0 rounded-full shadow-[0_0_10px_rgba(var(--verde-rgb),0.5)]"></div>
-
-              {/* Step 1: Auth */}
-              <div className="w-8 h-8 rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border-2 border-[var(--verde)] flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)] z-10 transition-all duration-300">
-                <Check size={15} strokeWidth={3} />
+          {/* Insignia Hero de Estado */}
+          <div className="mb-6 flex flex-col items-center">
+            <div className="relative mb-4">
+              <div className="absolute inset-0 rounded-3xl bg-amber-500/20 blur-xl animate-pulse" />
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/30 flex items-center justify-center relative shadow-[0_8px_30px_rgba(245,158,11,0.25)]">
+                <Clock size={36} className="text-amber-400 animate-[spin_16s_linear_infinite]" />
               </div>
-
-              {/* Step 2: Request */}
-              <div className="w-8 h-8 rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border-2 border-[var(--verde)] flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)] z-10 transition-all duration-300">
-                <Check size={15} strokeWidth={3} />
-              </div>
-
-              {/* Step 3: Approval */}
-              <div className="w-8 h-8 rounded-full bg-[var(--amarillo-bg)] text-[var(--amarillo)] border-2 border-[var(--amarillo)] flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.2)] z-10 transition-all duration-300">
-                <Clock size={15} strokeWidth={2.5} className="animate-pulse" />
+              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-amber-500 text-black flex items-center justify-center border-2 border-[var(--bg)] shadow-md">
+                <Hourglass size={13} strokeWidth={2.5} className="animate-pulse" />
               </div>
             </div>
 
-            {/* Row of labels matching the columns */}
-            <div className="flex justify-between text-[10px] font-black uppercase tracking-wider px-1 text-center">
-              <span className="text-[var(--text3)] w-16 -ml-4 text-left">Registro</span>
-              <span className="text-[var(--text3)] w-16">Enviada</span>
-              <span className="text-[var(--amarillo)] w-16 -mr-4 text-right">Pendiente</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-wider mb-2 shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Cuenta en Verificación
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text)] mb-1">
+              ¡Tu solicitud está en camino!
+            </h2>
+            <p className="text-[var(--text2)] text-xs sm:text-sm font-medium max-w-sm">
+              Hola <span className="text-[var(--text)] font-extrabold">{userProfile.nombre}</span>, tu registro se completó exitosamente y se encuentra a la espera de validación institucional.
+            </p>
+          </div>
+
+          {/* Ficha de Información Institucional */}
+          <div className="bg-[var(--bg3)]/80 backdrop-blur-md border border-[var(--border)] p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-left space-y-3 mb-6 text-xs shadow-inner">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-[var(--text3)] font-bold text-[11px] uppercase tracking-wider">
+                <Mail size={14} className="text-emerald-400 shrink-0" />
+                <span>Correo Registrado:</span>
+              </div>
+              <span className="text-[var(--text)] font-bold font-mono text-[11px] truncate max-w-[200px]" title={userProfile.email}>
+                {userProfile.email}
+              </span>
+            </div>
+
+            <div className="h-px bg-[var(--border)]/60 w-full" />
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-[var(--text3)] font-bold text-[11px] uppercase tracking-wider">
+                <GraduationCap size={14} className="text-cyan-400 shrink-0" />
+                <span>Rol Solicitado:</span>
+              </div>
+              <span className="text-[var(--verde)] font-black uppercase text-[11px] tracking-wider px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)]">
+                {roleLabels[requestedCleanRole] || requestedCleanRole}
+              </span>
+            </div>
+
+            <div className="h-px bg-[var(--border)]/60 w-full" />
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-[var(--text3)] font-bold text-[11px] uppercase tracking-wider">
+                <UserCheck size={14} className="text-amber-400 shrink-0" />
+                <span>Quién Habilita:</span>
+              </div>
+              <span className="text-[var(--text2)] font-extrabold text-[11px]">
+                {approverLabels[requestedCleanRole] || "Personal Autorizado"}
+              </span>
             </div>
           </div>
 
-          <div className="space-y-4">
+          {/* Línea de Progreso 3 Pasos (Alineación Matemática Perfecta) */}
+          <div className="mb-8 select-none px-2">
+            <div className="grid grid-cols-3 relative">
+              {/* Línea conectora entre círculos */}
+              <div className="absolute top-4 left-[16.66%] right-[16.66%] h-[3px] bg-[var(--border)] -translate-y-1/2 z-0 rounded-full">
+                <div className="h-full w-1/2 bg-gradient-to-r from-[var(--verde)] to-amber-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              </div>
+
+              {/* Paso 1: Registro */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-8 h-8 rounded-full bg-[var(--verde)] text-black font-black flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-transform hover:scale-110">
+                  <Check size={16} strokeWidth={3} />
+                </div>
+                <span className="mt-2 text-[10px] font-black uppercase tracking-wider text-[var(--text)]">Registro</span>
+                <span className="text-[9px] font-bold text-emerald-400">Completado</span>
+              </div>
+
+              {/* Paso 2: Revisión */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-8 h-8 rounded-full bg-amber-500 text-black font-black flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.45)] border-2 border-amber-300 animate-pulse">
+                  <Clock size={15} strokeWidth={2.5} />
+                </div>
+                <span className="mt-2 text-[10px] font-black uppercase tracking-wider text-amber-400">Revisión</span>
+                <span className="text-[9px] font-bold text-amber-400/80">En proceso</span>
+              </div>
+
+              {/* Paso 3: Aprobación */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-8 h-8 rounded-full bg-[var(--bg3)] text-[var(--text3)] border-2 border-[var(--border)] flex items-center justify-center transition-all">
+                  <ShieldCheck size={15} />
+                </div>
+                <span className="mt-2 text-[10px] font-black uppercase tracking-wider text-[var(--text3)]">Acceso</span>
+                <span className="text-[9px] font-bold text-[var(--text3)]">Habilitación</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Acciones */}
+          <div className="space-y-3">
             <button
               type="button"
-              onClick={checkStatus}
+              onClick={() => checkStatus(true)}
               disabled={loading}
-              className="w-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black rounded-2xl p-4 text-[0.95rem] font-black cursor-pointer transition-all duration-300 shadow-md active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-[var(--verde)] hover:brightness-110 text-black rounded-2xl py-3.5 px-4 text-sm font-black cursor-pointer transition-all duration-300 shadow-[0_4px_20px_rgba(var(--verde-rgb),0.35)] hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50"
             >
-              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              Verificar mi estado
+              <RefreshCw size={17} className={loading ? "animate-spin" : "transition-transform group-hover:rotate-180"} />
+              <span>{loading ? "Comprobando aprobación..." : "Verificar Estado de mi Cuenta"}</span>
             </button>
+
             <button
+              type="button"
               onClick={handleLogout}
-              className="w-full bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] hover:bg-[var(--rojo)] hover:text-white rounded-2xl p-4 text-[0.95rem] font-bold cursor-pointer transition-all duration-300 shadow-md active:scale-95 flex items-center justify-center gap-2"
+              className="w-full bg-[var(--bg3)] hover:bg-[var(--rojo-bg)] hover:text-[var(--rojo)] hover:border-[var(--rojo-border)] text-[var(--text2)] border border-[var(--border)] rounded-2xl py-3 px-4 text-xs font-bold cursor-pointer transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
             >
-              <LogOut size={18} />
-              Cerrar Sesión
+              <LogOut size={15} />
+              <span>Cerrar Sesión</span>
             </button>
-            <p className="text-[10px] text-[var(--text3)] uppercase tracking-[0.15em] font-black">
-              Si crees que se trata de un error, contacta al Administrador.
+
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-[var(--text3)] font-semibold pt-1">
+              <Info size={12} className="text-emerald-400 shrink-0" />
+              <span>Esta pantalla se actualiza en tiempo real al ser aprobada.</span>
+            </div>
+
+            <p className="text-[9px] text-[var(--text3)] uppercase tracking-[0.15em] font-semibold pt-1">
+              ¿Tenés alguna urgencia? Contactá a la secretaría o directivo de la escuela.
             </p>
           </div>
         </div>
