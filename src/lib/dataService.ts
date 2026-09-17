@@ -789,9 +789,63 @@ export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) 
 };
 
 // ─── AUSENCIAS ───────────────────────────────────────────────────────────────
+
+/**
+ * Calcula de manera precisa e inclusiva los días corridos de una ausencia.
+ */
+export const calculateAbsenceDays = (inicioStr: string, finStr?: string): number => {
+  if (!inicioStr) return 0;
+  const endStr = finStr || inicioStr;
+  const parts1 = inicioStr.split("-").map(Number);
+  const parts2 = endStr.split("-").map(Number);
+  if (parts1.length < 3 || parts2.length < 3) return 1;
+  const date1 = new Date(parts1[0], parts1[1] - 1, parts1[2]);
+  const date2 = new Date(parts2[0], parts2[1] - 1, parts2[2]);
+  const diffTime = date2.getTime() - date1.getTime();
+  if (diffTime < 0) return 0;
+  return Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+};
+
+export const getAusencias = async (bypassCache = false): Promise<Ausencia[]> => {
+  if (!bypassCache) {
+    const cached = getCachedData<Ausencia[]>("ausencias_list");
+    if (cached) return cached;
+  }
+  try {
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_COLLECTION_ID,
+      queries: [
+        Query.orderDesc("inicio"),
+        Query.limit(250)
+      ]
+    });
+    const list = response.documents.map(doc => ({
+      id: doc.$id,
+      profId: doc.profId,
+      profNombre: doc.profNombre,
+      tipo: doc.tipo,
+      inicio: doc.inicio,
+      fin: doc.fin,
+      materias: doc.materias,
+      motivo: doc.motivo,
+      cert: doc.cert,
+      certFileId: doc.certFileId,
+      estado: fromDbEstado(doc.estado),
+      fechaReg: doc.fechaReg
+    })) as Ausencia[];
+    setCachedData("ausencias_list", list);
+    return list;
+  } catch (err) {
+    devLog("getAusencias", err);
+    return [];
+  }
+};
+
 export const saveAusencia = async (ausencia: Ausencia) => {
   await requireAuth();
   try {
+    clearCache("ausencias_list");
     const response = await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: ID.unique(), data: {
                 profId: String(ausencia.profId),
                 profNombre: sanitize(ausencia.profNombre, 200),
@@ -894,6 +948,7 @@ export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "ap
   }
 
   try {
+    clearCache("ausencias_list");
     await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id, data: { estado: toDbEstado(estado) } });
   } catch (err) { devLog("updateAusenciaStatus", err); throw err; }
 };
@@ -908,6 +963,7 @@ export const deleteAusencia = async (id: string) => {
   }
 
   try {
+    clearCache("ausencias_list");
     await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id });
   } catch (err) { devLog("deleteAusencia", err); throw err; }
 };

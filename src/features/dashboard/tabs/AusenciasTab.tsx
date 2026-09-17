@@ -1,6 +1,6 @@
-import React from "react";
-import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip } from "lucide-react";
-import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl } from "@/lib/dataService";
+import React, { useMemo } from "react";
+import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check } from "lucide-react";
+import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface AusenciasTabProps {
@@ -44,16 +44,79 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
   showToast,
   onRefreshAusencias,
 }) => {
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
+  // Cupos anuales del profesor logueado
+  const teacherQuotas = useMemo(() => {
+    if (!currentProfesor) return null;
+    const targetId = String(currentProfesor.id);
+    const targetNombre = currentProfesor.nombre.trim().toLowerCase();
+
+    const profAbsences = ausencias.filter(a => {
+      const matches = (a.profId && String(a.profId) === targetId) ||
+        (a.profNombre && a.profNombre.trim().toLowerCase() === targetNombre);
+      if (!matches) return false;
+      if (a.estado === "rechazada") return false;
+      const y = a.inicio ? parseInt(a.inicio.slice(0, 4), 10) : (a.fechaReg ? new Date(a.fechaReg).getFullYear() : currentYear);
+      return y === currentYear;
+    });
+
+    const calcUsed = (pattern: string, detail: string) => {
+      let days = 0;
+      profAbsences.forEach(a => {
+        const m = (a.motivo || "").toLowerCase();
+        if (m.includes(pattern) || m.includes(detail)) {
+          days += calculateAbsenceDays(a.inicio, a.fin);
+        }
+      });
+      return days;
+    };
+
+    const art15Used = calcUsed("art. 15", "particulares");
+    const art14Used = calcUsed("art. 14", "familiar enfermo");
+    const art50Used = calcUsed("art. 50", "corta duración");
+
+    return {
+      art15: { max: 6, used: art15Used, remaining: Math.max(0, 6 - art15Used) },
+      art14: { max: 20, used: art14Used, remaining: Math.max(0, 20 - art14Used) },
+      art50: { max: 30, used: art50Used, remaining: Math.max(0, 30 - art50Used) },
+    };
+  }, [currentProfesor, ausencias, currentYear]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* PANEL DE AUTOGESTIÓN DOCENTE (Solo para Profesores) */}
       {userProfile?.rol === 'profesor' && currentProfesor && (
         <div className="card glass p-6 sm:p-8 rounded-[32px] border border-[var(--border)] space-y-6">
-          <div>
-            <h2 className="title-font font-black text-xl">Autogestión Docente</h2>
-            <p className="text-xs text-[var(--text2)] mt-1">
-              Gestioná rápidamente tu asistencia, licencias, paros o avisos urgentes.
-            </p>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 className="title-font font-black text-xl">Autogestión Docente</h2>
+              <p className="text-xs text-[var(--text2)] mt-1">
+                Gestioná rápidamente tu asistencia, licencias, paros o avisos urgentes.
+              </p>
+            </div>
+            {teacherQuotas && (
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="px-3 py-1.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] text-xs flex items-center gap-2" title="Art. 15 - Razones Particulares">
+                  <span className="font-mono font-black text-[var(--verde)]">Art. 15</span>
+                  <span className="text-[var(--text2)] font-semibold">
+                    <strong className="text-[var(--text)]">{teacherQuotas.art15.remaining}</strong>/6 d. libres
+                  </span>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] text-xs flex items-center gap-2" title="Art. 14 - Familiar Enfermo">
+                  <span className="font-mono font-black text-[var(--azul)]">Art. 14</span>
+                  <span className="text-[var(--text2)] font-semibold">
+                    <strong className="text-[var(--text)]">{teacherQuotas.art14.remaining}</strong>/20 d. libres
+                  </span>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] text-xs flex items-center gap-2" title="Art. 50 - Enfermedad Corta Duración">
+                  <span className="font-mono font-black text-amber-500">Art. 50</span>
+                  <span className="text-[var(--text2)] font-semibold">
+                    <strong className="text-[var(--text)]">{teacherQuotas.art50.remaining}</strong>/30 d. libres
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* BOTÓN ADHESIÓN AL PARO */}

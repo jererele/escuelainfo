@@ -1278,6 +1278,8 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)} 
         onSuccess={() => {}}
         lockedProfesor={userProfile?.rol === 'profesor' ? currentProfesor : undefined}
+        ausencias={ausencias}
+        userProfile={userProfile}
       />
 
       <NewTeacherModal 

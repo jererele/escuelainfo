@@ -4,16 +4,39 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.13.3";
-export const APP_BUILD_DATE = "17/09/2026 16:03 hs";
+export const APP_VERSION = "v2.15.0";
+export const APP_BUILD_DATE = "17/09/2026 16:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Erradicación Completa de Emojis por Iconos Vectoriales (lucide-react): Se reemplazaron todos los emojis Unicode planos de la interfaz por iconos oficiales y semánticos de lucide-react (AlertTriangle, Check, X, Clock, PartyPopper, Sparkles, Lightbulb, Paperclip, GraduationCap, Zap, Edit3, ArrowUpRight) garantizando coherencia visual y renderizado perfecto en cualquier dispositivo.",
-  "Iconos Reales en Horas Libres Activas (FreeHoursWidget.tsx): Se actualizó el icono de alerta/normalidad de la cabecera reemplazando el emoji ⚠️ por <AlertTriangle /> y ✓ por <Check />, las festividades por <PartyPopper />, y los enlaces de curso por flechas vectoriales <ArrowUpRight />.",
-  "Incorporación de Regla Permanente en Contexto (AGENTS.md): Se estableció como norma crítica en las instrucciones del proyecto ('Zero Emojis for UI Icons') el uso exclusivo de la librería de iconos vectoriales lucide-react para botones, badges, alertas y estados, impidiendo el uso futuro de emojis Unicode en la UI."
+  "Diferenciación Estatutaria de Licencias por Rol (Profesores, Preceptores y Directivos): Se investigó a fondo y se modeló la normativa educativa de Chubut (Ley VIII N° 20, Decreto 508/2026, Res. 517/90). Cada rol posee reglas específicas de afectación, límites, anticipación y restricciones institucionales.",
+  "Reglas Específicas para Profesores: Afectación por horas cátedra y materias curriculares (generación de horas libres sin suplente). Art. 15 (máx. 2 días/mes), Art. 18 (hasta 3 días por examen), Art. 50 (aviso SAE dentro de los 45 min de inicio del turno).",
+  "Reglas Específicas para Preceptores (POD / Auxiliares Docentes): Afectación por cargo continuo de planta institucional (turno completo de 4.5 hs). Art. 15 con restricción de simultaneidad (no más de 1 preceptor ausente por turno para garantizar el cuidado de alumnos). Art. 18 justifica la jornada completa del turno.",
+  "Reglas Específicas para Directivos (Equipo de Conducción): Elevación preceptiva y formal a Supervisión Técnica Escolar de Región. Restricción estricta en períodos críticos (Res. 517/90: prohibido en los 20 días previos al cierre o 20 posteriores al inicio de ciclo lectivo). Designación reglamentaria de Vicedirección a cargo.",
+  "Selector Interactivo de Rol en NewAbsenceModal.tsx: Segmented control con iconos oficiales de Lucide (GraduationCap, Clock, Building2) que adapta en tiempo real las insignias, la barra de progreso, las alertas de saturación y la tarjeta de cupos restantes.",
+  "Tarjeta Enriquecida con Normativa Chubut: Despliegue de notas estatutarias oficiales, unidad de afectación del cargo, alertas preventivas institucionales y validación en vivo de días solicitados."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.14.0",
+    date: "17/09/2026 16:15 hs",
+    notes: [
+      "Contador Dinámico y Reactivo de Licencias Docentes (NewAbsenceModal.tsx): Se transformó el texto estático de cupos por un contador en tiempo real que calcula con precisión los días utilizados y restantes de cada artículo por docente durante el ciclo lectivo actual.",
+      "Tarjeta Interactiva de Cupo y Validación de Fechas en Vivo: Al seleccionar un artículo, se despliega una tarjeta con barra de progreso visual de días consumidos vs. disponibles y cálculo inmediato de la duración solicitada ('Solicitando N días · Quedarán X días restantes' o advertencia destacada en caso de superar el cupo disponible).",
+      "Insignias Dinámicas en el Selector de Artículos: Cada artículo muestra en su pastilla el estado exacto de disponibilidad (ej: 'Quedan 4 de 6 d.' en verde, o '0 de 6 d. (Agotado)' en rojo/ámbar) recalculándose instantáneamente según el docente seleccionado.",
+      "Panel Rápido de Cupos en Autogestión Docente (AusenciasTab.tsx): Los docentes pueden consultar de un vistazo sus saldos disponibles de los artículos más comunes (Art. 15 Razones Particulares, Art. 14 Familiar Enfermo, Art. 50 Salud) directamente en su pantalla principal.",
+      "Cálculo Failsafe de Días y Acceso en dataService.ts: Implementación de calculateAbsenceDays y getAusencias con caché client-side para obtener cupos y duraciones de ausencias con máxima velocidad y sin latencia."
+    ]
+  },
+  {
+    version: "v2.13.3",
+    date: "17/09/2026 16:03 hs",
+    notes: [
+      "Erradicación Completa de Emojis por Iconos Vectoriales (lucide-react): Se reemplazaron todos los emojis Unicode planos de la interfaz por iconos oficiales y semánticos de lucide-react (AlertTriangle, Check, X, Clock, PartyPopper, Sparkles, Lightbulb, Paperclip, GraduationCap, Zap, Edit3, ArrowUpRight) garantizando coherencia visual y renderizado perfecto en cualquier dispositivo.",
+      "Iconos Reales en Horas Libres Activas (FreeHoursWidget.tsx): Se actualizó el icono de alerta/normalidad de la cabecera reemplazando el emoji ⚠️ por <AlertTriangle /> y ✓ por <Check />, las festividades por <PartyPopper />, y los enlaces de curso por flechas vectoriales <ArrowUpRight />.",
+      "Incorporación de Regla Permanente en Contexto (AGENTS.md): Se estableció como norma crítica en las instrucciones del proyecto ('Zero Emojis for UI Icons') el uso exclusivo de la librería de iconos vectoriales lucide-react para botones, badges, alertas y estados, impidiendo el uso futuro de emojis Unicode en la UI."
+    ]
+  },
   {
     version: "v2.13.2",
     date: "17/09/2026 15:52 hs",
