@@ -4,19 +4,29 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.5";
-export const APP_BUILD_DATE = "17/09/2026 13:58 hs";
+export const APP_VERSION = "v2.11.6";
+export const APP_BUILD_DATE = "17/09/2026 14:38 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección Crítica de Desbloqueo en Términos y Condiciones (TermsModal.tsx): Se corrigió el cálculo de scroll para pantallas móviles con subpíxeles y rebote inercial (Retina / AMOLED), implementando una tolerancia fiable (<= 15px o >= 95% de lectura) y una barra de progreso interactiva dinámica en tiempo real con botón directo de desplazamiento al final para evitar que los usuarios queden bloqueados sin poder aceptar.",
-  "Scroll Seguro en Menú Retráctil Superior (TopNavSidebar.tsx): Se incorporó max-h-[calc(100dvh-3.5rem)] y desplazamiento vertical suave con overflow-y-auto, impidiendo que el perfil de usuario y el botón de 'Salir' queden cortados fuera de la pantalla en dispositivos móviles y vistas apaisadas.",
-  "Visibilidad de Títulos de Sección en Dashboard Móvil: Se reemplazó la restricción hidden lg:flex de la cabecera por una barra responsiva integrada, asegurando que en celulares siempre esté visible el nombre de la sección activa (Asistencia, Ausencias, Horarios, Mesas de Examen, etc.).",
-  "Tarjetas Táctiles y Accesibilidad Móvil en Alumnos (AlumnosTab.tsx): Las solicitudes de inscripción pendientes y el listado de alumnos ahora se renderizan en tarjetas móviles optimizadas con botones de acción grandes (≥ 44px de altura) para aprobar o rechazar con el pulgar, eliminando el scroll horizontal incómodo de tablas anchas.",
-  "Alineación Responsiva en Mesas de Examen y Horarios: Se ajustaron la barra de búsqueda y botones de ExamBoardManager a anchos adaptables (w-full sm:w-64), el modal de mesas ahora utiliza max-h-[92dvh], y se eliminó el scale-105 en el selector de días de HorariosTab para erradicar cualquier jitter o desbordamiento subpixel.",
-  "Optimización de Espaciado en Registro y Acceso (page.tsx): Ajuste de márgenes perimetrales para celulares y reorganización de los campos de DNI y teléfono a una columna en pantallas angostas para evitar textos apretados."
+  "Solución Definitiva a la Expulsión al Retroceder en Móvil: Se implementó router.replace en el flujo de inicio de sesión y auto-redirección de page.tsx, eliminando la pantalla de login del historial de navegación para que el botón 'Atrás' del navegador o celular jamás vuelva a la pantalla de acceso.",
+  "Sincronización de Pestañas con Historial (window.history / popstate): Cambiar de sección en el Dashboard ahora registra la pestaña en la URL y en el historial. Al presionar el botón 'Atrás' o hacer el gesto de retroceso en Android/iOS, el usuario vuelve a la pestaña anterior ('Inicio') de forma suave en vez de abandonar la sesión.",
+  "Cierre Automático de Modales y Menú con Botón 'Atrás': Al tener abierta una ventana emergente (Mi Perfil, Nueva Licencia, Mesas de Examen, Diálogos de Confirmación) o el menú superior retráctil, presionar 'Atrás' en el celular ahora cierra la ventana modal o el menú de forma natural sin desloguear ni recargar la página.",
+  "Protección Antisalida en Dashboard Base: Se fijó el estado base en general con trampa de retroceso para que usuarios en la vista inicial no sean expulsados de la aplicación por toques accidentales hacia atrás."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.5",
+    date: "17/09/2026 13:58 hs",
+    notes: [
+      "Corrección Crítica de Desbloqueo en Términos y Condiciones (TermsModal.tsx): Se corrigió el cálculo de scroll para pantallas móviles con subpíxeles y rebote inercial (Retina / AMOLED), implementando una tolerancia fiable (<= 15px o >= 95% de lectura) y una barra de progreso interactiva dinámica en tiempo real con botón directo de desplazamiento al final para evitar que los usuarios queden bloqueados sin poder aceptar.",
+      "Scroll Seguro en Menú Retráctil Superior (TopNavSidebar.tsx): Se incorporó max-h-[calc(100dvh-3.5rem)] y desplazamiento vertical suave con overflow-y-auto, impidiendo que el perfil de usuario y el botón de 'Salir' queden cortados fuera de la pantalla en dispositivos móviles y vistas apaisadas.",
+      "Visibilidad de Títulos de Sección en Dashboard Móvil: Se reemplazó la restricción hidden lg:flex de la cabecera por una barra responsiva integrada, asegurando que en celulares siempre esté visible el nombre de la sección activa (Asistencia, Ausencias, Horarios, Mesas de Examen, etc.).",
+      "Tarjetas Táctiles y Accesibilidad Móvil en Alumnos (AlumnosTab.tsx): Las solicitudes de inscripción pendientes y el listado de alumnos ahora se renderizan en tarjetas móviles optimizadas con botones de acción grandes (≥ 44px de altura) para aprobar o rechazar con el pulgar, eliminando el scroll horizontal incómodo de tablas anchas.",
+      "Alineación Responsiva en Mesas de Examen y Horarios: Se ajustaron la barra de búsqueda y botones de ExamBoardManager a anchos adaptables (w-full sm:w-64), el modal de mesas ahora utiliza max-h-[92dvh], y se eliminó el scale-105 en el selector de días de HorariosTab para erradicar cualquier jitter o desbordamiento subpixel.",
+      "Optimización de Espaciado en Registro y Acceso (page.tsx): Ajuste de márgenes perimetrales para celulares y reorganización de los campos de DNI y teléfono a una columna en pantallas angostas para evitar textos apretados."
+    ]
+  },
   {
     version: "v2.11.4",
     date: "16/09/2026 23:05 hs",

@@ -25,6 +25,7 @@ function LoginContent() {
   const [activeMode, setActiveMode] = useState<"login" | "register" | "forgot">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterInfo, setShowRegisterInfo] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   // Recuperar contraseña con código de verificación
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
@@ -57,6 +58,7 @@ function LoginContent() {
         user = await account.get();
       } catch {
         // No active session — normal, stay on login page
+        setCheckingSession(false);
         return;
       }
 
@@ -71,10 +73,11 @@ function LoginContent() {
         if (profile) {
           const redirectTo = searchParams.get("redirect");
           if (redirectTo) {
-            router.push(redirectTo);
+            router.replace(redirectTo);
           } else {
-            router.push("/dashboard");
+            router.replace("/dashboard");
           }
+          return;
         } else {
           // Profile truly doesn't exist — clean up orphaned session
           await account.deleteSession("current").catch(() => {});
@@ -88,11 +91,13 @@ function LoginContent() {
           // Other error (401, network) — session is invalid, clean up
           await account.deleteSession("current").catch(() => {});
         }
+      } finally {
+        setCheckingSession(false);
       }
     };
 
     checkSession();
-  }, [router]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     if (forgotTimer <= 0) return;
@@ -143,9 +148,9 @@ function LoginContent() {
       }
       const redirectTo = searchParams.get("redirect");
       if (redirectTo) {
-        router.push(redirectTo);
+        router.replace(redirectTo);
       } else {
-        router.push("/dashboard");
+        router.replace("/dashboard");
       }
     } catch (err: any) {
       console.error("[EscuelaInfo Login Error]:", err);
@@ -357,7 +362,13 @@ function LoginContent() {
     }
   };
 
-  if (!mounted) return null;
+  if (!mounted || checkingSession) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-transparent">
+        <div className="w-10 h-10 border-4 border-[var(--border)] border-t-[var(--verde)] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex items-center justify-center relative overflow-hidden px-4 bg-transparent py-10">

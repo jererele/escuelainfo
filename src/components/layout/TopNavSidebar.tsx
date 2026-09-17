@@ -84,13 +84,21 @@ export default function TopNavSidebar({
     return () => window.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
-  // Close on ESC
+  // Close on ESC and on popstate (mobile back gesture / back button)
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) closeSidebar();
+    if (!isOpen) return;
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeSidebar();
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const popHandler = () => {
+      closeSidebar();
+    };
+    window.addEventListener("keydown", keyHandler);
+    window.addEventListener("popstate", popHandler);
+    return () => {
+      window.removeEventListener("keydown", keyHandler);
+      window.removeEventListener("popstate", popHandler);
+    };
   }, [isOpen]);
 
   const closeSidebar = () => {

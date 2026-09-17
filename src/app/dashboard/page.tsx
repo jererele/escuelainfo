@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
 import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, approveNameChange, rejectNameChange } from "@/lib/dataService";
@@ -180,6 +180,139 @@ export default function Dashboard() {
   
 
 
+  // ── Sincronización de pestañas con historial del navegador ──
+  const handleTabChange = useCallback((newTab: string) => {
+    setActiveTab((prev) => {
+      if (prev === newTab) return prev;
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        if (newTab === "general") {
+          url.searchParams.delete("tab");
+        } else {
+          url.searchParams.set("tab", newTab);
+        }
+        window.history.pushState({ tab: newTab }, "", url.pathname + url.search);
+      }
+      return newTab;
+    });
+  }, []);
+
+  // ── Configurar pestaña inicial y resguardo de historial ──
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const initialTab = params.get("tab");
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+    // Empujar entrada base para que el botón "Atrás" nunca expulse fuera del Dashboard
+    window.history.replaceState({ tab: "general" }, "", window.location.pathname);
+    if (initialTab && initialTab !== "general") {
+      window.history.pushState({ tab: initialTab }, "", window.location.pathname + "?tab=" + initialTab);
+    }
+  }, []);
+
+  // ── Manejo inteligente del botón Atrás (móviles y gestos) ──
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // 1. Si hay un diálogo de confirmación abierto, cerrarlo
+      if (confirmDialog.isOpen) {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      // 2. Si hay algún modal abierto, cerrarlo con prioridad sin salir
+      if (isProfileModalOpen) {
+        setIsProfileModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isModalOpen) {
+        setIsModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isTeacherModalOpen) {
+        setIsTeacherModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isTeacherReportModalOpen) {
+        setIsTeacherReportModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isStudentModalOpen) {
+        setIsStudentModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isScheduleModalOpen) {
+        setIsScheduleModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isCourseModalOpen) {
+        setIsCourseModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isAssignModalOpen) {
+        setIsAssignModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isSendNoticeModalOpen) {
+        setIsSendNoticeModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isUserModalOpen) {
+        setIsUserModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isQRModalOpen) {
+        setIsQRModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+      if (isVersionModalOpen) {
+        setIsVersionModalOpen(false);
+        window.history.pushState({ tab: activeTab }, "", window.location.href);
+        return;
+      }
+
+      // 3. Si no hay modales, retroceder a la pestaña previa registrada en URL
+      const params = new URLSearchParams(window.location.search);
+      const targetTab = params.get("tab") || "general";
+      setActiveTab(targetTab);
+
+      // Si ya está en "general", mantener el historial anclado para no salir al login
+      if (targetTab === "general") {
+        window.history.pushState({ tab: "general" }, "", window.location.pathname);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [
+    activeTab,
+    confirmDialog.isOpen,
+    isProfileModalOpen,
+    isModalOpen,
+    isTeacherModalOpen,
+    isTeacherReportModalOpen,
+    isStudentModalOpen,
+    isScheduleModalOpen,
+    isCourseModalOpen,
+    isAssignModalOpen,
+    isSendNoticeModalOpen,
+    isUserModalOpen,
+    isQRModalOpen,
+    isVersionModalOpen,
+  ]);
+
   const sidebarLeaveTimeout = useRef<NodeJS.Timeout | null>(null);
   // Cache TTL: evita re-fetchear si el dato tiene menos de 60 segundos
   const dataCache = useRef<Map<string, number>>(new Map());
@@ -225,10 +358,10 @@ export default function Dashboard() {
           if (profile.rol === 'admin') getLogs().then(d => { if (isMounted) { setLogs(d); stamp('logs'); }});
         } else {
           // Si no hay perfil, algo salió mal en el login, redirigir
-          if (isMounted) router.push("/");
+          if (isMounted) router.replace("/");
         }
       } catch (err) {
-        if (isMounted) router.push("/");
+        if (isMounted) router.replace("/");
       }
     };
     checkSession();
@@ -318,10 +451,10 @@ export default function Dashboard() {
     try {
       sessionStorage.clear(); // Limpiar caché de datos locales por seguridad
       await account.deleteSession("current");
-      router.push("/");
+      router.replace("/");
     } catch { 
       sessionStorage.clear();
-      router.push("/");
+      router.replace("/");
     }
   };
 
@@ -832,7 +965,7 @@ export default function Dashboard() {
           userProfile={userProfile}
           activeTab={activeTab}
           setActiveTab={(tabId) => {
-            setActiveTab(tabId);
+            handleTabChange(tabId);
             setIsMobileMenuOpen(false);
           }}
           showSecretAdmin={showSecretAdmin}
@@ -929,8 +1062,8 @@ export default function Dashboard() {
               canManageAusencias={canManageAusencias}
               currentAlumno={currentAlumno}
               userProfile={userProfile}
-              onNavigateToAusencias={(search) => { setActiveTab("ausencias"); setSearchQuery(search || ""); }}
-              onNavigateToHorarios={(curso) => { setActiveTab("horarios"); setSelectedCourse(curso); }}
+              onNavigateToAusencias={(search) => { handleTabChange("ausencias"); setSearchQuery(search || ""); }}
+              onNavigateToHorarios={(curso) => { handleTabChange("horarios"); setSelectedCourse(curso); }}
               onOpenNewAbsenceModal={() => setIsModalOpen(true)}
               onOpenProfile={() => setIsProfileModalOpen(true)}
               showToast={showToast}
@@ -1005,7 +1138,7 @@ export default function Dashboard() {
               setScheduleQuery={setScheduleQuery}
               onOpenScheduleModal={() => setIsScheduleModalOpen(true)}
               onDeleteHorario={handleDeleteHorario}
-              onNavigateToAusencias={(profNombre) => { setActiveTab("ausencias"); setSearchQuery(profNombre); }}
+              onNavigateToAusencias={(profNombre) => { handleTabChange("ausencias"); setSearchQuery(profNombre); }}
               showToast={showToast}
             />
           )}
