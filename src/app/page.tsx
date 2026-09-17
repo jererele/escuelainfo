@@ -5,7 +5,8 @@ import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Sparkles } from "lucide-react";
+import UserAvatar from "@/components/ui/UserAvatar";
 import {
   getUserProfile, createUserProfile,
   getUserProfileByEmail, updateUserProfile,
@@ -373,6 +374,39 @@ function LoginContent() {
                   <div className="text-[10px] opacity-90 font-semibold">
                     Los alumnos quedan en espera de aprobación del preceptor. 
                     Si fuiste pre-autorizado por la administración (como administrador, directivo, preceptor o docente), regístrate con tu correo y tu rol se activará automáticamente.
+                  </div>
+                </div>
+
+                {/* VISTA PREVIA EN VIVO DEL AVATAR SEGÚN EL NOMBRE */}
+                <div className="p-4 rounded-2xl bg-[var(--bg2)] border border-[var(--border)] shadow-sm flex items-center gap-4 transition-all hover:border-[var(--verde-border)]">
+                  <div className="relative shrink-0">
+                    <UserAvatar
+                      name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
+                      size={68}
+                      animate="always"
+                      showRing={true}
+                      className="shadow-md ring-2 ring-[var(--verde)]/50 transition-all duration-300"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[var(--verde)] text-black rounded-full border-2 border-[var(--bg2)] flex items-center justify-center text-[10px] font-black shadow-sm" title="Avatar dinámico">
+                      ✨
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] flex items-center gap-1">
+                        <Sparkles size={10} />
+                        Avatar Dinámico en Vivo
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--verde)] animate-ping" />
+                    </div>
+                    <div className="text-sm font-black text-[var(--text)] truncate">
+                      {`${nombres} ${apellidos}`.trim() || "Escribí tu nombre..."}
+                    </div>
+                    <p className="text-[11px] text-[var(--text3)] leading-tight mt-0.5 font-medium">
+                      {nombres.trim() || apellidos.trim()
+                        ? "¡Tu personaje institucional muta en tiempo real con cada letra!"
+                        : "Descubrí qué avatar te asigna el sistema a medida que escribís tus datos."}
+                    </p>
                   </div>
                 </div>
 

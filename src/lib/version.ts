@@ -4,18 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.9";
-export const APP_BUILD_DATE = "16/09/2026 20:41 hs";
+export const APP_VERSION = "v2.10.10";
+export const APP_BUILD_DATE = "16/09/2026 21:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Optimización Integral de Rendimiento y Fluidez (60-120 FPS): Se desactivó el loop de Canvas y partículas en modo claro (0% consumo de CPU/GPU) y se optimizó en modo oscuro a 45 estrellas concéntricas sin `shadowBlur`, erradicando el lag y la sensación de trabado.",
-  "TiltCards sin Re-renders de React: El resplandor interactivo de las tarjetas métricas (`TiltCard`) ahora se posiciona directamente vía variables CSS y caché de dimensiones, eliminando decenas de re-renders innecesarios por segundo al mover el cursor.",
-  "Orbes Ambientales en GPU (FluidOrb): Se reemplazó el morphing continuo en JavaScript por animación CSS acelerada por hardware (`animate-ambient-float`), eliminando repintados pesados.",
-  "Pausa Inteligente de Canvas en Scroll: La animación del fondo se suspende automáticamente durante el desplazamiento para asegurar una tasa de refresco estable y ultrafluida.",
-  "Fluidez de Scroll y Memoización: Se eliminaron selectores CSS comodín y atributos `content-visibility` que generaban tirones de desplazamiento, junto con la memoización (`useMemo`) en el widget de horas libres."
+  "Avatar Dinámico en Vivo al Crear Cuenta: Al registrarse en la plataforma (`src/app/page.tsx`), se despliega una tarjeta interactiva con vista previa en tiempo real donde el avatar muta, cambia de expresión, colores y formas dinámicamente con cada letra que se escribe en el nombre y apellido.",
+  "Semilla Determinista Centrada en el Nombre (`UserAvatar`): Se ajustó el motor de `UserAvatar` para priorizar el nombre completo sobre el email, garantizando que el personaje visual visto en el registro sea idéntico al que acompañará al usuario en la barra superior, perfil y paneles.",
+  "Animación Continua de Expresión (`animate=\"always\"`): El avatar en vivo parpadea, respira y cobra vida de forma interactiva mientras se completan los campos de registro.",
+  "Avatar en Vivo para Docentes (`NewTeacherModal`): Se extendió la previsualización en vivo al formulario de alta de docentes para que los directivos también disfruten de la mutación del avatar al tipear el nombre del profesor."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.9",
+    date: "16/09/2026 20:41 hs",
+    notes: [
+      "Optimización Integral de Rendimiento y Fluidez (60-120 FPS): Se desactivó el loop de Canvas y partículas en modo claro (0% consumo de CPU/GPU) y se optimizó en modo oscuro a 45 estrellas concéntricas sin `shadowBlur`, erradicando el lag y la sensación de trabado.",
+      "TiltCards sin Re-renders de React: El resplandor interactivo de las tarjetas métricas (`TiltCard`) ahora se posiciona directamente vía variables CSS y caché de dimensiones, eliminando decenas de re-renders innecesarios por segundo al mover el cursor.",
+      "Orbes Ambientales en GPU (FluidOrb): Se reemplazó el morphing continuo en JavaScript por animación CSS acelerada por hardware (`animate-ambient-float`), eliminando repintados pesados.",
+      "Pausa Inteligente de Canvas en Scroll: La animación del fondo se suspende automáticamente durante el desplazamiento para asegurar una tasa de refresco estable y ultrafluida.",
+      "Fluidez de Scroll y Memoización: Se eliminaron selectores CSS comodín y atributos `content-visibility` que generaban tirones de desplazamiento, junto con la memoización (`useMemo`) en el widget de horas libres."
+    ]
+  },
   {
     version: "v2.10.8",
     date: "16/09/2026 20:29 hs",

@@ -11,6 +11,7 @@ interface UserAvatarProps {
   className?: string;
   animate?: "hover" | "always" | boolean;
   showRing?: boolean;
+  seed?: string;
   onClick?: (e: React.MouseEvent) => void;
 }
 
@@ -22,6 +23,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
   className = "",
   animate = "hover",
   showRing = true,
+  seed: customSeed,
   onClick,
 }) => {
   const [imgError, setImgError] = useState(false);
@@ -33,11 +35,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
       ? "always"
       : undefined;
 
-  // Use email or clean name as deterministic seed
+  // Priorizar el nombre para que el avatar responda dinámicamente al escribirlo al crear la cuenta
   const seed = useMemo(() => {
-    const raw = (email || name || "usuario").trim().toLowerCase();
+    const raw = (customSeed || name || email || "usuario").trim().toLowerCase();
     return raw || "escuelainfo";
-  }, [email, name]);
+  }, [customSeed, name, email]);
 
   const initials = useMemo(() => {
     if (!name) return "?";
