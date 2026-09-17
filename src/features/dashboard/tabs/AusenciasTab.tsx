@@ -17,7 +17,11 @@ interface AusenciasTabProps {
   onOpenTeacherReportModal: (tipo: string) => void;
   onChangeStatus: (id: string, status: "pendiente" | "aprobada" | "rechazada") => void;
   onDeleteAbsence: (id: string) => void;
-  askConfirm: (message: string, onConfirm: () => void) => void;
+  askConfirm: (
+    message: string,
+    onConfirm: () => void,
+    options?: { title?: string; confirmText?: string; cancelText?: string; variant?: "danger" | "success" | "warning" | "info" }
+  ) => void;
   showToast: (msg: string, type?: "success" | "error") => void;
   onRefreshAusencias: () => void;
 }
@@ -237,9 +241,23 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                             disabled={!isEditable}
                             onClick={() => {
                               if (opt.value === "pendiente") return;
-                              askConfirm(`¿Estás seguro de ${opt.label.toLowerCase()} esta licencia?`, () => {
-                                onChangeStatus(a.id!, opt.value as any);
-                              });
+                              const isAprobar = opt.value === "aprobada";
+                              const verb = isAprobar ? "aprobar" : "rechazar";
+                              const btnText = isAprobar ? "Aprobar" : "Rechazar";
+                              const variant = isAprobar ? "success" : "danger";
+                              const title = isAprobar ? "Aprobar Licencia" : "Rechazar Licencia";
+
+                              askConfirm(
+                                `¿Estás seguro de ${verb} esta licencia?`,
+                                () => {
+                                  onChangeStatus(a.id!, opt.value as any);
+                                },
+                                {
+                                  title,
+                                  confirmText: btnText,
+                                  variant,
+                                }
+                              );
                             }}
                             className={`px-2 py-1 text-[9px] font-black uppercase rounded border transition-all duration-150 shrink-0 ${
                               !isEditable ? "cursor-default opacity-80" : "active:scale-95 cursor-pointer"

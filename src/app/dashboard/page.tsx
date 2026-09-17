@@ -161,7 +161,15 @@ export default function Dashboard() {
   const [viewType, setViewType] = useState<"hoy" | "semana">("hoy");
   const [selectedMobileDay, setSelectedMobileDay] = useState<string>("Lunes");
   const [scheduleQuery, setScheduleQuery] = useState("");
-  const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({isOpen: false, message: "", onConfirm: () => {}});
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    title?: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: "danger" | "success" | "warning" | "info";
+  }>({ isOpen: false, message: "", onConfirm: () => {} });
   const [hasMounted, setHasMounted] = useState(false);
   const [promotions, setPromotions] = useState<Record<string, string>>({});
   const [promoSearchQuery, setPromoSearchQuery] = useState("");
@@ -335,8 +343,52 @@ export default function Dashboard() {
   const canManageAusencias = isSuperAdmin || isDirector;
   const canManageColaboradores = isSuperAdmin || isDirector;
 
-  const askConfirm = (message: string, onConfirm: () => void) => {
-    setConfirmDialog({ isOpen: true, message, onConfirm });
+  const askConfirm = (
+    message: string,
+    onConfirm: () => void,
+    options?: {
+      title?: string;
+      confirmText?: string;
+      cancelText?: string;
+      variant?: "danger" | "success" | "warning" | "info";
+    }
+  ) => {
+    const lower = message.toLowerCase();
+    let defaultConfirmText = "Confirmar";
+    let defaultVariant: "danger" | "success" | "warning" | "info" = "danger";
+    let defaultTitle = "¿Estás seguro?";
+
+    if (lower.includes("aprobar")) {
+      defaultConfirmText = "Aprobar";
+      defaultVariant = "success";
+      defaultTitle = "Confirmar Aprobación";
+    } else if (lower.includes("rechazar")) {
+      defaultConfirmText = "Rechazar";
+      defaultVariant = "danger";
+      defaultTitle = "Confirmar Rechazo";
+    } else if (lower.includes("eliminar") || lower.includes("borrar") || lower.includes("vaciar")) {
+      defaultConfirmText = "Eliminar";
+      defaultVariant = "danger";
+      defaultTitle = "¿Estás seguro?";
+    } else if (lower.includes("revocar")) {
+      defaultConfirmText = "Revocar";
+      defaultVariant = "danger";
+      defaultTitle = "Revocar Acceso";
+    } else if (lower.includes("adhesión") || lower.includes("paro")) {
+      defaultConfirmText = "Confirmar Adhesión";
+      defaultVariant = "warning";
+      defaultTitle = "Adhesión a Paro";
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      message,
+      onConfirm,
+      title: options?.title || defaultTitle,
+      confirmText: options?.confirmText || defaultConfirmText,
+      cancelText: options?.cancelText || "Cancelar",
+      variant: options?.variant || defaultVariant,
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -1090,26 +1142,51 @@ export default function Dashboard() {
       {confirmDialog.isOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-[var(--bg)] w-full max-w-sm rounded-[32px] p-8 border border-[var(--border)] shadow-2xl text-center">
-            <div className="w-16 h-16 bg-[var(--rojo-bg)] text-[var(--rojo)] rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShieldAlert size={32} />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 transition-transform ${
+              confirmDialog.variant === "success"
+                ? "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-lg shadow-[var(--verde)]/10"
+                : confirmDialog.variant === "warning"
+                ? "bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] shadow-lg shadow-[var(--amarillo)]/10"
+                : "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] shadow-lg shadow-[var(--rojo)]/10"
+            }`}>
+              {confirmDialog.variant === "success" ? (
+                <Check size={32} strokeWidth={3} />
+              ) : confirmDialog.variant === "warning" ? (
+                <AlertTriangle size={32} />
+              ) : (
+                <ShieldAlert size={32} />
+              )}
             </div>
-            <h3 className="text-xl font-black title-font mb-2">¿Estás seguro?</h3>
-            <p className="text-[var(--text2)] text-sm mb-8">{confirmDialog.message}</p>
-            <div className="flex gap-4">
+            <h3 className="text-xl font-black title-font mb-2">
+              {confirmDialog.title || "¿Estás seguro?"}
+            </h3>
+            <p className="text-[var(--text2)] text-sm mb-8 leading-relaxed font-semibold">
+              {confirmDialog.message}
+            </p>
+            <div className="flex gap-3">
               <button 
                 onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} 
-                className="flex-1 p-3 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-colors"
+                className="flex-1 p-3.5 rounded-2xl border border-[var(--border)] font-bold text-sm hover:bg-[var(--bg3)] text-[var(--text)] transition-colors cursor-pointer"
               >
-                Cancelar
+                {confirmDialog.cancelText || "Cancelar"}
               </button>
               <button 
                 onClick={() => {
                   confirmDialog.onConfirm();
                   setConfirmDialog({ ...confirmDialog, isOpen: false });
                 }} 
-                className="flex-1 p-3 rounded-2xl bg-[var(--rojo)] text-white font-black hover:scale-105 transition-all shadow-lg"
+                className={`flex-1 p-3.5 rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center justify-center gap-1.5 ${
+                  confirmDialog.variant === "success"
+                    ? "bg-[var(--verde)] text-black shadow-[var(--verde)]/20 hover:brightness-105"
+                    : confirmDialog.variant === "warning"
+                    ? "bg-[var(--amarillo)] text-black shadow-[var(--amarillo)]/20 hover:brightness-105"
+                    : "bg-[var(--rojo)] text-white shadow-[var(--rojo)]/20 hover:brightness-105"
+                }`}
               >
-                Eliminar
+                {confirmDialog.variant === "success" && <Check size={16} strokeWidth={3} />}
+                {confirmDialog.variant === "danger" && confirmDialog.confirmText === "Rechazar" && <X size={16} strokeWidth={3} />}
+                {confirmDialog.variant === "danger" && confirmDialog.confirmText === "Eliminar" && <Trash2 size={16} />}
+                <span>{confirmDialog.confirmText || "Confirmar"}</span>
               </button>
             </div>
           </div>

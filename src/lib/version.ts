@@ -4,16 +4,25 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.3";
-export const APP_BUILD_DATE = "16/09/2026 22:50 hs";
+export const APP_VERSION = "v2.11.4";
+export const APP_BUILD_DATE = "16/09/2026 23:05 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección Crítica en Verificación OTP de Contraseña en Vercel Serverless: Se solucionó el fallo donde el sistema arrojaba 'No se encontró ningún código solicitado o ya expiró' en escuelainfo.vercel.app a pesar de haber recibido el correo correctamente.",
-  "Validación Criptográfica Stateless (HMAC + Cookie): En entornos serverless donde cada petición HTTP puede ejecutarse en lambdas/contenedores aislados sin memoria compartida, el backend ahora genera un token HMAC firmado y una cookie segura HTTP-only que viajan al cliente para validar el código de 6 dígitos de forma atómica y 100% fiable.",
-  "Integración Completa en Frontend (Perfil y Login): Se actualizaron 'Mi Perfil' (UserProfileModal.tsx) y 'Recuperar Contraseña' (page.tsx) para preservar y enviar el token de verificación junto al código ingresado, garantizando que el cambio de contraseña con Node-Appwrite se ejecute de manera inmediata y sin errores en producción."
+  "Modal de Confirmación Contextual (Cancelar / Aprobar): Se rediseñó por completo el diálogo de confirmación (`askConfirm` / `confirmDialog`) del dashboard para adaptarse de manera inteligente a la acción solicitada. Al aprobar una licencia, ahora muestra el título 'Aprobar Licencia' y los botones 'Cancelar' y '✓ Aprobar' con fondo verde esmeralda, eliminando el texto genérico o destructivo 'Eliminar'.",
+  "Diferenciación Semántica de Acciones: Las acciones de rechazo o revocación despliegan el botón rojo '✕ Rechazar' o 'Eliminar', las adhesiones a paro muestran 'Confirmar Adhesión' en tono ámbar de advertencia, y las aprobaciones destacan en verde con iconos correspondientes (`Check`, `ShieldAlert`, `AlertTriangle`).",
+  "Gramática Precisa en Licencias Docentes (`AusenciasTab.tsx`): Se corrigió la redacción al presionar los estados de una licencia, mostrando con exactitud '¿Estás seguro de aprobar esta licencia?' o '¿Estás seguro de rechazar esta licencia?'."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.3",
+    date: "16/09/2026 22:50 hs",
+    notes: [
+      "Corrección Crítica en Verificación OTP de Contraseña en Vercel Serverless: Se solucionó el fallo donde el sistema arrojaba 'No se encontró ningún código solicitado o ya expiró' en escuelainfo.vercel.app a pesar de haber recibido el correo correctamente.",
+      "Validación Criptográfica Stateless (HMAC + Cookie): En entornos serverless donde cada petición HTTP puede ejecutarse en lambdas/contenedores aislados sin memoria compartida, el backend ahora genera un token HMAC firmado y una cookie segura HTTP-only que viajan al cliente para validar el código de 6 dígitos de forma atómica y 100% fiable.",
+      "Integración Completa en Frontend (Perfil y Login): Se actualizaron 'Mi Perfil' (UserProfileModal.tsx) y 'Recuperar Contraseña' (page.tsx) para preservar y enviar el token de verificación junto al código ingresado, garantizando que el cambio de contraseña con Node-Appwrite se ejecute de manera inmediata y sin errores en producción."
+    ]
+  },
   {
     version: "v2.11.2",
     date: "16/09/2026 22:00 hs",

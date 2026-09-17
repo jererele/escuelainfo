@@ -12,7 +12,11 @@ interface CicloLectivoTabProps {
   setHorarios: React.Dispatch<React.SetStateAction<any[]>>;
   ausencias: any[];
   setAusencias: React.Dispatch<React.SetStateAction<any[]>>;
-  askConfirm: (msg: string, onConfirm: () => void) => void;
+  askConfirm: (
+    msg: string,
+    onConfirm: () => void,
+    options?: { title?: string; confirmText?: string; cancelText?: string; variant?: "danger" | "success" | "warning" | "info" }
+  ) => void;
   showToast: (msg: string, type?: "success" | "error") => void;
   setLoading: (l: boolean) => void;
 }
