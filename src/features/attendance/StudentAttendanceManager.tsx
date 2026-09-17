@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
-import { UserCheck, Check, X, AlertCircle, Calendar, Clock, Search, Printer } from "lucide-react";
+import { UserCheck, Check, X, AlertCircle, Calendar, Clock, Search, Printer, QrCode, Camera } from "lucide-react";
 import AttendanceTableResponsive from "@/components/shared/AttendanceTableResponsive";
 import { SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
+
+const StudentQRScannerModal = dynamic(
+  () => import("@/components/modals/StudentQRScannerModal"),
+  { ssr: false, loading: () => null }
+);
 
 interface Props {
   user: any;
@@ -30,6 +36,22 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
   // Historial del alumno (Vista Alumno)
   const [historialJornada, setHistorialJornada] = useState<AsistenciaJornada[]>([]);
   const [alumnoRecord, setAlumnoRecord] = useState<Alumno | null>(null);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+
+  const refrescarDatosAlumno = useCallback(async () => {
+    if (userProfile?.email) {
+      try {
+        const als = await getAlumnos();
+        const al = als.find(a => a.email.toLowerCase() === userProfile.email.toLowerCase());
+        if (al) {
+          setAlumnoRecord(al);
+          await cargarHistorialAlumno(al.id || al.dni);
+        }
+      } catch (err) {
+        console.error("Error al refrescar datos del alumno:", err);
+      }
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     if (userProfile) {
@@ -272,6 +294,29 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
       {/* VISTA 2: ALUMNO (Historial y Estadísticas de sólo lectura) */}
       {role === "alumno" && (
         <div className="space-y-6">
+          {/* Banner de escaneo QR para el alumno */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 rounded-[28px] glass shadow-lg">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] shadow-[0_0_20px_rgba(16,185,129,0.25)] shrink-0">
+                <QrCode size={24} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-[var(--text)]">Escanear Asistencia QR</h3>
+                <p className="text-xs font-semibold text-[var(--text3)]">
+                  Apuntá con tu cámara al código del profesor o preceptor para dar el presente al instante
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsQRScannerOpen(true)}
+              className="w-full sm:w-auto bg-[var(--verde)] hover:brightness-110 text-black font-black px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(var(--verde-rgb),0.35)] hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer text-sm shrink-0"
+            >
+              <Camera size={18} />
+              <span>Abrir Cámara y Escanear</span>
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
               <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">Inasistencias</p>
@@ -341,6 +386,13 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
           </div>
         </div>
       )}
+      {/* Modal Lector QR de Asistencia para Alumnos */}
+      <StudentQRScannerModal
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+        userProfile={userProfile}
+        onSuccess={refrescarDatosAlumno}
+      />
     </div>
   );
 }

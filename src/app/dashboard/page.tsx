@@ -125,7 +125,8 @@ import {
   Clock,
   UserCheck,
   Hourglass,
-  Info
+  Info,
+  QrCode
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -1101,15 +1102,17 @@ export default function Dashboard() {
           {/* CONTENIDO SEGÚN PESTAÑA */}
           {activeTab === "asistencia" && (
             <div className="animate-fade-in space-y-6">
-              <div className="flex justify-end">
-                <button 
-                  onClick={() => setIsQRModalOpen(true)}
-                  className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-bold px-6 py-4 rounded-2xl hover:bg-[var(--verde)] hover:text-black transition-all shadow-md flex items-center gap-2 w-full md:w-auto justify-center"
-                >
-                  <UserCheck size={18} />
-                  Asistencias
-                </button>
-              </div>
+              {userProfile?.rol !== "alumno" && (
+                <div className="flex justify-end">
+                  <button 
+                    onClick={() => setIsQRModalOpen(true)}
+                    className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-bold px-6 py-3.5 rounded-2xl hover:bg-[var(--verde)] hover:text-black transition-all shadow-md flex items-center gap-2 w-full md:w-auto justify-center cursor-pointer text-sm"
+                  >
+                    <QrCode size={18} />
+                    <span>Generar QR / Asistencia Rápida</span>
+                  </button>
+                </div>
+              )}
               <StudentAttendanceManager user={user} userProfile={userProfile} />
             </div>
           )}

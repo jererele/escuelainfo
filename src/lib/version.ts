@@ -4,17 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.9";
-export const APP_BUILD_DATE = "17/09/2026 15:10 hs";
+export const APP_VERSION = "v2.12.0";
+export const APP_BUILD_DATE = "17/09/2026 15:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Cierre Automático al Deslizar en Sidebar Móvil (TopNavSidebar.tsx): Se corrigió el comportamiento en celulares donde al abrir el menú y deslizar hacia abajo se rompía el filtro de oscuridad por el rebote de scroll del navegador. Ahora, al deslizar hacia abajo en la parte superior del panel, la sidebar se cierra de inmediato en vez de desplazar el fondo.",
-  "Bloqueo Antirrotura de Scroll en Fondo Móvil: Mientras el menú retráctil permanece abierto, se bloquea el scroll y rebote del cuerpo (overflow: hidden y overscroll-behavior: none), impidiendo cualquier desgarro visual o desplazamiento no deseado de la pantalla trasera.",
-  "Overlay con Altura Dinámica y Cierre Táctil Instantáneo: El filtro oscuro adopta touch-none, overscroll-none y altura 100dvh, respondiendo de inmediato a cualquier toque o arrastre para replegar la barra lateral sin latencia.",
-  "Tirador Visual Táctil para Celulares: Se incorporó una guía táctil centrada en la base del panel que indica visualmente que la barra puede replegarse hacia arriba o deslizarse para salir."
+  "Lector de Asistencia QR Integrado para Alumnos (StudentQRScannerModal.tsx): Ahora los alumnos pueden dar el presente directamente desde su celular o dispositivo con la cámara integrada en la plataforma, sin recurrir a aplicaciones de cámara externas ni salir del panel de la escuela.",
+  "Decodificación Ultrarrápida con html5-qrcode: Integración de escáner nativo HTML5 para reconocimiento instantáneo de códigos QR dinámicos generados por preceptores (jornada institucional) y docentes (materia), con soporte para alternar entre cámara trasera y frontal en tiempo real.",
+  "Seguridad Criptográfica y Antirretención (25s): Validación estricta de tiempo de vida del código QR en el cliente para impedir la reutilización de capturas de pantalla o fotografías compartidas por mensajería, garantizando la asistencia presencial.",
+  "Feedback Háptico y Confirmación Visual Interactiva: Vibración háptica en dispositivos móviles al confirmar el registro, modal con marco animado y mira láser verde, tarjeta con el detalle de la jornada/materia, y actualización instantánea de las estadísticas de inasistencias en el panel del alumno.",
+  "Acceso Directo Destacado en Asistencia (StudentAttendanceManager.tsx): Tarjeta de acción prominente en la sección de asistencia del alumno con botón directo para abrir la cámara y escanear en un solo toque."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.9",
+    date: "17/09/2026 15:10 hs",
+    notes: [
+      "Cierre Automático al Deslizar en Sidebar Móvil (TopNavSidebar.tsx): Se corrigió el comportamiento en celulares donde al abrir el menú y deslizar hacia abajo se rompía el filtro de oscuridad por el rebote de scroll del navegador. Ahora, al deslizar hacia abajo en la parte superior del panel, la sidebar se cierra de inmediato en vez de desplazar el fondo.",
+      "Bloqueo Antirrotura de Scroll en Fondo Móvil: Mientras el menú retráctil permanece abierto, se bloquea el scroll y rebote del cuerpo (overflow: hidden y overscroll-behavior: none), impidiendo cualquier desgarro visual o desplazamiento no deseado de la pantalla trasera.",
+      "Overlay con Altura Dinámica y Cierre Táctil Instantáneo: El filtro oscuro adopta touch-none, overscroll-none y altura 100dvh, respondiendo de inmediato a cualquier toque o arrastre para replegar la barra lateral sin latencia.",
+      "Tirador Visual Táctil para Celulares: Se incorporó una guía táctil centrada en la base del panel que indica visualmente que la barra puede replegarse hacia arriba o deslizarse para salir."
+    ]
+  },
   {
     version: "v2.11.8",
     date: "17/09/2026 15:02 hs",
