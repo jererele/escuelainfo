@@ -30,6 +30,7 @@ function LoginContent() {
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotCode, setForgotCode] = useState("");
+  const [forgotToken, setForgotToken] = useState("");
   const [forgotNewPass, setForgotNewPass] = useState("");
   const [forgotConfirmPass, setForgotConfirmPass] = useState("");
   const [forgotTimer, setForgotTimer] = useState(0);
@@ -105,6 +106,7 @@ function LoginContent() {
     setForgotStep(1);
     setForgotEmail("");
     setForgotCode("");
+    setForgotToken("");
     setForgotNewPass("");
     setForgotConfirmPass("");
     setForgotTimer(0);
@@ -183,6 +185,7 @@ function LoginContent() {
       if (!res.ok) {
         throw new Error(data.error || "No se pudo enviar el código de verificación");
       }
+      if (data.token) setForgotToken(data.token);
       setForgotStep(2);
       setForgotTimer(60);
       setSuccessMsg("¡Código de 6 dígitos enviado! Revisá tu bandeja de entrada o spam.");
@@ -219,6 +222,7 @@ function LoginContent() {
         body: JSON.stringify({
           email: forgotEmail.trim().toLowerCase(),
           code: forgotCode.trim(),
+          token: forgotToken,
           newPassword: forgotNewPass,
         }),
       });

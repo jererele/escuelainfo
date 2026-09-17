@@ -64,6 +64,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
   // Password tab (Código OTP por email)
   const [codeSent, setCodeSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [otpToken, setOtpToken] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [showNewPass, setShowNewPass] = useState(false);
@@ -100,6 +101,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
       setNewName("");
       setCodeSent(false);
       setOtpCode("");
+      setOtpToken("");
       setNewPass("");
       setConfirmPass("");
       setShowNewPass(false);
@@ -178,6 +180,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo enviar el código.");
+      if (data.token) setOtpToken(data.token);
       setCodeSent(true);
       setTimer(60);
       notify.success(`Código de 6 dígitos enviado a ${profile.email}`);
@@ -216,6 +219,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
         body: JSON.stringify({
           email: profile.email,
           code: cleanCode,
+          token: otpToken,
           newPassword: newPass,
         }),
       });
@@ -225,6 +229,7 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
       notify.success("¡Tu contraseña ha sido actualizada con éxito!");
       setCodeSent(false);
       setOtpCode("");
+      setOtpToken("");
       setNewPass("");
       setConfirmPass("");
     } catch (err: any) {

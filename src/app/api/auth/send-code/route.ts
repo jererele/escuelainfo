@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { Client, Users, Query } from 'node-appwrite';
+import { Client, Users, Databases, Query } from 'node-appwrite';
 import nodemailer from 'nodemailer';
-import { setOtp } from '@/lib/otpStore';
+import { setOtp, generateOtpToken } from '@/lib/otpStore';
 
 export async function POST(request: Request) {
   try {
@@ -42,9 +42,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Generar código numérico de 6 dígitos
+    // 2. Generar código numérico de 6 dígitos y token criptográfico firmado
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setOtp(cleanEmail, code, 10);
+    const token = generateOtpToken(cleanEmail, code, 10);
+
+    // Guardar también en la base de datos Appwrite como respaldo persistente
+    const databases = new Databases(client);
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'escuelainfodb';
+    try {
+      const uDocs = await databases.listDocuments(dbId, 'usuarios', [Query.equal('email', cleanEmail)]);
+      if (uDocs.total > 0) {
+        const expiresAt = Date.now() + 10 * 60 * 1000;
+        await databases.updateDocument(dbId, 'usuarios', uDocs.documents[0].$id, {
+          otpCode: `${code}:${expiresAt}`,
+        });
+      }
+    } catch (e: any) {
+      console.warn('No se pudo guardar otpCode en documento de usuario:', e?.message);
+    }
 
     // 3. Preparar y enviar el correo con Nodemailer
     const smtpUser = process.env.SMTP_USER?.trim();
@@ -96,11 +112,20 @@ export async function POST(request: Request) {
 
     if (!smtpUser || !smtpPass) {
       console.log(`[CÓDIGO OTP SIMULADO] Email: ${cleanEmail} -> Código: ${code}`);
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         message: 'Código de verificación generado (Modo simulación local).',
         simulated: true,
+        token,
       });
+      res.cookies.set('escuelainfo_otp_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 10 * 60,
+        path: '/',
+      });
+      return res;
     }
 
     const transporter = nodemailer.createTransport({
@@ -119,10 +144,19 @@ export async function POST(request: Request) {
       html: htmlContent,
     });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       message: `Enviamos un código de 6 dígitos a ${cleanEmail}. Revisá tu bandeja de entrada o spam.`,
+      token,
     });
+    res.cookies.set('escuelainfo_otp_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 10 * 60,
+      path: '/',
+    });
+    return res;
   } catch (error: any) {
     console.error('Error enviando código de verificación:', error);
     return NextResponse.json(

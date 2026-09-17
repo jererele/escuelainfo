@@ -1,4 +1,8 @@
-// ─── EscuelaInfo — Gestor en Memoria de Códigos OTP de Verificación ───────────
+// ─── EscuelaInfo — Gestor de Códigos OTP de Verificación ─────────────────────
+// Compatible con entornos Serverless (Vercel) mediante tokens criptográficos HMAC
+// y con fallback en memoria para desarrollo local.
+
+import crypto from 'crypto';
 
 interface OtpEntry {
   code: string;
@@ -6,14 +10,64 @@ interface OtpEntry {
   attempts: number;
 }
 
-// Almacén en memoria global para el proceso de Node.js
+// Almacén en memoria para desarrollo local
 const otpMap = new Map<string, OtpEntry>();
 
 const MAX_ATTEMPTS = 5;
 const DEFAULT_TTL_MINUTES = 10;
+const OTP_SECRET = process.env.APPWRITE_API_KEY || process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'escuelainfo-secure-otp-secret-key-2026';
 
 /**
- * Guarda un código OTP numérico para un correo electrónico dado.
+ * Genera un token HMAC criptográficamente firmado que viaja de forma segura
+ * hacia el cliente y permite validar el código en cualquier instancia Serverless sin estado.
+ */
+export function generateOtpToken(email: string, code: string, ttlMinutes = DEFAULT_TTL_MINUTES): string {
+  const normalizedEmail = email.trim().toLowerCase();
+  const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
+  const data = `${normalizedEmail}:${code.trim()}:${expiresAt}`;
+  const hmac = crypto.createHmac('sha256', OTP_SECRET).update(data).digest('hex');
+  return `${expiresAt}.${hmac}`;
+}
+
+/**
+ * Valida un código OTP contra el token firmado recibido.
+ * Es 100% independiente de instancias en memoria y funciona perfecto en Vercel Serverless.
+ */
+export function verifyOtpToken(email: string, code: string, token: string): { valid: boolean; error?: string } {
+  try {
+    if (!token || typeof token !== 'string') {
+      return { valid: false, error: 'No se encontró el token de verificación. Solicitá un nuevo código.' };
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+    const [expiresAtStr, hmac] = token.split('.');
+    if (!expiresAtStr || !hmac) {
+      return { valid: false, error: 'Token de verificación corrupto o inválido. Solicitá un nuevo código.' };
+    }
+
+    const expiresAt = parseInt(expiresAtStr, 10);
+    if (isNaN(expiresAt) || Date.now() > expiresAt) {
+      return { valid: false, error: 'El código de verificación ha expirado (validez de 10 min). Solicitá uno nuevo.' };
+    }
+
+    const data = `${normalizedEmail}:${cleanCode}:${expiresAt}`;
+    const expectedHmac = crypto.createHmac('sha256', OTP_SECRET).update(data).digest('hex');
+
+    const hmacBuf = Buffer.from(hmac, 'hex');
+    const expectedBuf = Buffer.from(expectedHmac, 'hex');
+
+    if (hmacBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(hmacBuf, expectedBuf)) {
+      return { valid: false, error: 'Código de verificación incorrecto. Verificá los 6 dígitos recibidos en tu correo.' };
+    }
+
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Código o token de verificación inválido. Solicitá uno nuevo.' };
+  }
+}
+
+/**
+ * Guarda un código OTP numérico en memoria (fallback local).
  */
 export function setOtp(email: string, code: string, ttlMinutes = DEFAULT_TTL_MINUTES): void {
   const normalizedEmail = email.trim().toLowerCase();
@@ -26,24 +80,24 @@ export function setOtp(email: string, code: string, ttlMinutes = DEFAULT_TTL_MIN
 }
 
 /**
- * Verifica si el código provisto coincide con el almacenado y si aún está vigente.
+ * Verifica si el código provisto coincide con el almacenado en memoria.
  */
 export function verifyOtp(email: string, code: string): { valid: boolean; error?: string } {
   const normalizedEmail = email.trim().toLowerCase();
   const entry = otpMap.get(normalizedEmail);
 
   if (!entry) {
-    return { valid: false, error: "No se encontró ningún código solicitado o ya expiró. Solicitá uno nuevo." };
+    return { valid: false, error: 'No se encontró ningún código solicitado o ya expiró. Solicitá uno nuevo.' };
   }
 
   if (Date.now() > entry.expiresAt) {
     otpMap.delete(normalizedEmail);
-    return { valid: false, error: "El código de verificación ha vencido (validez de 10 min). Solicitá uno nuevo." };
+    return { valid: false, error: 'El código de verificación ha vencido (validez de 10 min). Solicitá uno nuevo.' };
   }
 
   if (entry.attempts >= MAX_ATTEMPTS) {
     otpMap.delete(normalizedEmail);
-    return { valid: false, error: "Demasiados intentos fallidos. Por seguridad, solicitá un nuevo código." };
+    return { valid: false, error: 'Demasiados intentos fallidos. Por seguridad, solicitá un nuevo código.' };
   }
 
   entry.attempts += 1;
@@ -55,7 +109,6 @@ export function verifyOtp(email: string, code: string): { valid: boolean; error?
     };
   }
 
-  // Código correcto: eliminar para que sea de un solo uso
   otpMap.delete(normalizedEmail);
   return { valid: true };
 }

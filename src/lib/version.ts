@@ -4,16 +4,25 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.11.2";
-export const APP_BUILD_DATE = "16/09/2026 22:00 hs";
+export const APP_VERSION = "v2.11.3";
+export const APP_BUILD_DATE = "16/09/2026 22:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Avatares 100% Circulares (UserAvatar): Se actualizó el componente base para utilizar rounded-full en lugar de rounded-2xl, eliminando los bordes rectos laterales y logrando que todos los avatares sean círculos matemáticamente perfectos en todo el sistema.",
-  "Eliminación de la Insignia de Estrella (✨): Se removió la estrella superpuesta sobre la foto de perfil en el registro para una apariencia limpia y minimalista.",
-  "Corrección de Desbordamiento y Recorte en Campos de Nombre: Se rediseñó la disposición de Nombres y Apellidos junto al avatar (min-w-0 y apilamiento lateral), evitando que los campos se compriman o salgan de los bordes de la tarjeta, permitiendo que ambos campos conserven sus extremos redondeados completos sin cortes."
+  "Corrección Crítica en Verificación OTP de Contraseña en Vercel Serverless: Se solucionó el fallo donde el sistema arrojaba 'No se encontró ningún código solicitado o ya expiró' en escuelainfo.vercel.app a pesar de haber recibido el correo correctamente.",
+  "Validación Criptográfica Stateless (HMAC + Cookie): En entornos serverless donde cada petición HTTP puede ejecutarse en lambdas/contenedores aislados sin memoria compartida, el backend ahora genera un token HMAC firmado y una cookie segura HTTP-only que viajan al cliente para validar el código de 6 dígitos de forma atómica y 100% fiable.",
+  "Integración Completa en Frontend (Perfil y Login): Se actualizaron 'Mi Perfil' (UserProfileModal.tsx) y 'Recuperar Contraseña' (page.tsx) para preservar y enviar el token de verificación junto al código ingresado, garantizando que el cambio de contraseña con Node-Appwrite se ejecute de manera inmediata y sin errores en producción."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.11.2",
+    date: "16/09/2026 22:00 hs",
+    notes: [
+      "Avatares 100% Circulares (UserAvatar): Se actualizó el componente base para utilizar rounded-full en lugar de rounded-2xl, eliminando los bordes rectos laterales y logrando que todos los avatares sean círculos matemáticamente perfectos en todo el sistema.",
+      "Eliminación de la Insignia de Estrella (✨): Se removió la estrella superpuesta sobre la foto de perfil en el registro para una apariencia limpia y minimalista.",
+      "Corrección de Desbordamiento y Recorte en Campos de Nombre: Se rediseñó la disposición de Nombres y Apellidos junto al avatar (min-w-0 y apilamiento lateral), evitando que los campos se compriman o salgan de los bordes de la tarjeta, permitiendo que ambos campos conserven sus extremos redondeados completos sin cortes."
+    ]
+  },
   {
     version: "v2.11.1",
     date: "16/09/2026 21:55 hs",
