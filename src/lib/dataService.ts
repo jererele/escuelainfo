@@ -246,6 +246,7 @@ export interface UserProfile {
   rol: string;
   telefono?: string;
   direccion?: string;
+  nombrePendiente?: string;
 }
 
 export interface Curso {
@@ -564,7 +565,83 @@ export const updateUserProfile = async (id: string, data: Partial<UserProfile>) 
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
   if (updateData.uid) updateData.uid = sanitize(updateData.uid, 50);
+  if (updateData.nombrePendiente !== undefined) {
+    updateData.nombrePendiente = updateData.nombrePendiente ? sanitize(updateData.nombrePendiente, 200) : "";
+  }
   return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: id, data: updateData });
+};
+
+export const requestNameChange = async (userId: string, newName: string, userEmail: string) => {
+  const cleanName = sanitize(newName, 200);
+  const result = await updateUserProfile(userId, { nombrePendiente: cleanName });
+  await logAction(userEmail, "SOLICITAR_CAMBIO_NOMBRE", `Solicitó cambiar su nombre a: "${cleanName}"`);
+  return result;
+};
+
+export const cancelNameChangeRequest = async (userId: string, userEmail: string) => {
+  const result = await updateUserProfile(userId, { nombrePendiente: "" });
+  await logAction(userEmail, "CANCELAR_CAMBIO_NOMBRE", `Canceló su solicitud de cambio de nombre`);
+  return result;
+};
+
+export const approveNameChange = async (user: UserProfile, adminEmail: string) => {
+  if (!user.id || !user.nombrePendiente) return;
+  const newName = user.nombrePendiente.trim();
+  const oldName = user.nombre;
+
+  // 1. Actualizar en colección usuarios
+  await updateUserProfile(user.id, { nombre: newName, nombrePendiente: "" });
+
+  // 2. Sincronizar en alumnos o profesores según corresponda
+  if (user.rol === "alumno") {
+    try {
+      const res = await databases.listDocuments({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+        queries: [Query.equal("email", sanitize(user.email, 200))]
+      });
+      for (const doc of res.documents) {
+        await databases.updateDocument({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+          documentId: doc.$id,
+          data: { nombre: newName }
+        });
+      }
+      clearCache("alumnos");
+    } catch (err) {
+      devLog("approveNameChange/alumno", err);
+    }
+  } else if (user.rol === "profesor") {
+    try {
+      const res = await databases.listDocuments({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_PROFS_COLLECTION_ID,
+        queries: [Query.equal("email", sanitize(user.email, 200))]
+      });
+      for (const doc of res.documents) {
+        await databases.updateDocument({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_PROFS_COLLECTION_ID,
+          documentId: doc.$id,
+          data: { nombre: newName }
+        });
+      }
+      clearCache("profesores");
+    } catch (err) {
+      devLog("approveNameChange/profesor", err);
+    }
+  }
+
+  // 3. Log de auditoría
+  await logAction(adminEmail, "APROBAR_CAMBIO_NOMBRE", `Aprobó cambio de nombre para ${user.email}: "${oldName}" -> "${newName}"`);
+};
+
+export const rejectNameChange = async (user: UserProfile, adminEmail: string) => {
+  if (!user.id) return;
+  const requestedName = user.nombrePendiente || "desconocido";
+  await updateUserProfile(user.id, { nombrePendiente: "" });
+  await logAction(adminEmail, "RECHAZAR_CAMBIO_NOMBRE", `Rechazó cambio de nombre para ${user.email} (Solicitaba: "${requestedName}")`);
 };
 
 export const syncUserEmailChange = async (oldEmail: string, newEmail: string, rol: string) => {

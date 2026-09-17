@@ -5,7 +5,7 @@ import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
   getUserProfile, createUserProfile,
@@ -22,8 +22,17 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState("");
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [successRole, setSuccessRole] = useState<"alumno" | "profesor">("alumno");
-  const [activeMode, setActiveMode] = useState<"login" | "register">("login");
+  const [activeMode, setActiveMode] = useState<"login" | "register" | "forgot">("login");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Recuperar contraseña con código de verificación
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotCode, setForgotCode] = useState("");
+  const [forgotNewPass, setForgotNewPass] = useState("");
+  const [forgotConfirmPass, setForgotConfirmPass] = useState("");
+  const [forgotTimer, setForgotTimer] = useState(0);
+  const [showForgotPass, setShowForgotPass] = useState(false);
 
   // Login
   const [email, setEmail] = useState("");
@@ -83,6 +92,24 @@ function LoginContent() {
     checkSession();
   }, [router]);
 
+  useEffect(() => {
+    if (forgotTimer <= 0) return;
+    const interval = setInterval(() => {
+      setForgotTimer(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [forgotTimer]);
+
+  const resetForgotForm = () => {
+    setForgotStep(1);
+    setForgotEmail("");
+    setForgotCode("");
+    setForgotNewPass("");
+    setForgotConfirmPass("");
+    setForgotTimer(0);
+    setShowForgotPass(false);
+  };
+
   const resetRegisterForm = () => {
     setNombres(""); setApellidos(""); setTelefono("");
     setDni(""); setPassword("");
@@ -128,19 +155,87 @@ function LoginContent() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email) {
-      setErrorMsg("Ingresá tu correo electrónico en el campo superior para recuperar tu contraseña.");
-      setSuccessMsg(""); return;
+  const handleForgotPassword = () => {
+    setErrorMsg("");
+    setSuccessMsg("");
+    setForgotEmail(email.trim());
+    setForgotStep(1);
+    setActiveMode("forgot");
+  };
+
+  const handleSendRecoveryCode = async () => {
+    const clean = forgotEmail.trim().toLowerCase();
+    if (!clean) {
+      setErrorMsg("Ingresá tu correo electrónico para enviar el código.");
+      return;
     }
-    setLoading(true); setErrorMsg(""); setSuccessMsg("");
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
     try {
-      const basePath = process.env.NODE_ENV === 'production' ? '/escuelainfo' : '';
-      await account.createRecovery({ email: email, url: `${window.location.origin}${basePath}/reset-password` });
-      setSuccessMsg("Se ha enviado un enlace para restablecer tu contraseña. Revisá tu casilla de correo.");
+      const res = await fetch("/api/auth/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo enviar el código de verificación");
+      }
+      setForgotStep(2);
+      setForgotTimer(60);
+      setSuccessMsg("¡Código de 6 dígitos enviado! Revisá tu bandeja de entrada o spam.");
     } catch (err: any) {
-      setErrorMsg(err.message || "Error al enviar el correo de recuperación. Verificá la dirección.");
-    } finally { setLoading(false); }
+      setErrorMsg(err.message || "Error al enviar el código de verificación.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (!forgotCode || forgotCode.trim().length !== 6) {
+      setErrorMsg("Ingresá el código numérico de 6 dígitos que te enviamos.");
+      return;
+    }
+    if (forgotNewPass.length < 8) {
+      setErrorMsg("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (forgotNewPass !== forgotConfirmPass) {
+      setErrorMsg("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-code-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: forgotEmail.trim().toLowerCase(),
+          code: forgotCode.trim(),
+          newPassword: forgotNewPass,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Código incorrecto o vencido");
+      }
+
+      setSuccessMsg("¡Contraseña actualizada con éxito! Ya podés ingresar con tu nueva clave.");
+      setEmail(forgotEmail.trim().toLowerCase());
+      setPassword("");
+      setActiveMode("login");
+      resetForgotForm();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error al restablecer la contraseña.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -305,17 +400,32 @@ function LoginContent() {
             </div>
 
             {/* Tabs */}
-            <div className="bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)] flex mb-6">
-              {(["login", "register"] as const).map(mode => (
-                <button key={mode} type="button"
-                  onClick={() => { setActiveMode(mode); setErrorMsg(""); setSuccessMsg(""); setShowPassword(false); resetRegisterForm(); }}
-                  className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                    activeMode === mode ? "bg-white shadow-sm text-black" : "text-[var(--text3)] hover:text-[var(--text2)]"
-                  }`}>
-                  {mode === "login" ? "Iniciar Sesión" : "Registrarse"}
+            {activeMode === "forgot" ? (
+              <div className="flex items-center justify-between mb-6 pb-2 border-b border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => { setActiveMode("login"); setErrorMsg(""); setSuccessMsg(""); resetForgotForm(); }}
+                  className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                >
+                  <ArrowLeft size={16} /> Volver al Inicio
                 </button>
-              ))}
-            </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-full border border-[var(--verde-border)]">
+                  Paso {forgotStep} de 2
+                </span>
+              </div>
+            ) : (
+              <div className="bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)] flex mb-6">
+                {(["login", "register"] as const).map(mode => (
+                  <button key={mode} type="button"
+                    onClick={() => { setActiveMode(mode); setErrorMsg(""); setSuccessMsg(""); setShowPassword(false); resetRegisterForm(); }}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+                      activeMode === mode ? "bg-white shadow-sm text-black" : "text-[var(--text3)] hover:text-[var(--text2)]"
+                    }`}>
+                    {mode === "login" ? "Iniciar Sesión" : "Registrarse"}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {successMsg && (
               <div className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] p-4 rounded-xl text-xs font-bold text-center mb-5 animate-fade-in">
@@ -329,8 +439,146 @@ function LoginContent() {
               </div>
             )}
 
-            {/* LOGIN */}
-            {activeMode === "login" ? (
+            {/* FORGOT PASSWORD */}
+            {activeMode === "forgot" ? (
+              <div className="space-y-4 animate-fade-in">
+                {forgotStep === 1 ? (
+                  <form onSubmit={(e) => { e.preventDefault(); handleSendRecoveryCode(); }} className="space-y-4">
+                    <div className="bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-4 py-3 rounded-xl text-xs font-bold space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Mail size={14} />
+                        <span>Recuperación con Código de Verificación</span>
+                      </div>
+                      <div className="text-[10px] opacity-90 font-semibold">
+                        Ingresá tu correo electrónico institucional. Te enviaremos un código numérico de 6 dígitos para validar tu identidad y crear una nueva contraseña.
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Correo Electrónico</label>
+                      <input
+                        required
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || !forgotEmail.trim()}
+                      className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-4"
+                    >
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Mail size={18} />
+                          Enviar Código de 6 Dígitos
+                        </>
+                      )}
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyAndResetPassword} className="space-y-4">
+                    <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-between">
+                      <div className="truncate mr-2">
+                        <span className="opacity-75 font-normal block text-[10px]">Código enviado a:</span>
+                        <span className="font-mono font-bold text-xs">{forgotEmail}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setForgotStep(1); setErrorMsg(""); }}
+                        className="text-[10px] uppercase font-black underline hover:opacity-80 shrink-0"
+                      >
+                        Cambiar
+                      </button>
+                    </div>
+
+                    <div className="space-y-1 text-center">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block">
+                        Código de Verificación (6 dígitos)
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={forgotCode}
+                        onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        className="w-full text-center font-mono text-2xl tracking-[0.4em] font-black bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 outline-none text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">
+                        Nueva Contraseña (Mín. 8 caracteres)
+                      </label>
+                      <div className="relative">
+                        <input
+                          required
+                          type={showForgotPass ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={forgotNewPass}
+                          onChange={(e) => setForgotNewPass(e.target.value)}
+                          className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 pr-12 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPass(p => !p)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                        >
+                          {showForgotPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">
+                        Confirmar Nueva Contraseña
+                      </label>
+                      <input
+                        required
+                        type={showForgotPass ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={forgotConfirmPass}
+                        onChange={(e) => setForgotConfirmPass(e.target.value)}
+                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        disabled={loading || forgotTimer > 0}
+                        onClick={handleSendRecoveryCode}
+                        className="text-[11px] font-bold text-[var(--text3)] hover:text-[var(--verde)] disabled:opacity-50 transition-colors"
+                      >
+                        {forgotTimer > 0 ? `Reenviar código en ${forgotTimer}s` : "¿No te llegó? Reenviar código"}
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || forgotCode.length !== 6 || forgotNewPass.length < 8}
+                      className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2"
+                    >
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <KeyRound size={18} />
+                          Restablecer Contraseña
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
+            ) : activeMode === "login" ? (
               <form onSubmit={handleLogin} className="space-y-5 animate-fade-in">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Correo Electrónico</label>

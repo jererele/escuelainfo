@@ -4,17 +4,29 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.10.10";
-export const APP_BUILD_DATE = "16/09/2026 21:25 hs";
+export const APP_VERSION = "v2.11.0";
+export const APP_BUILD_DATE = "16/09/2026 21:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Avatar Dinámico en Vivo al Crear Cuenta: Al registrarse en la plataforma (`src/app/page.tsx`), se despliega una tarjeta interactiva con vista previa en tiempo real donde el avatar muta, cambia de expresión, colores y formas dinámicamente con cada letra que se escribe en el nombre y apellido.",
-  "Semilla Determinista Centrada en el Nombre (`UserAvatar`): Se ajustó el motor de `UserAvatar` para priorizar el nombre completo sobre el email, garantizando que el personaje visual visto en el registro sea idéntico al que acompañará al usuario en la barra superior, perfil y paneles.",
-  "Animación Continua de Expresión (`animate=\"always\"`): El avatar en vivo parpadea, respira y cobra vida de forma interactiva mientras se completan los campos de registro.",
-  "Avatar en Vivo para Docentes (`NewTeacherModal`): Se extendió la previsualización en vivo al formulario de alta de docentes para que los directivos también disfruten de la mutación del avatar al tipear el nombre del profesor."
+  "Solicitud y Aprobación de Cambio de Nombre: Los usuarios pueden solicitar el cambio de su nombre completo desde 'Mi Perfil' con previsualización en vivo de su avatar mutado. La solicitud pasa a estado pendiente y requiere la aprobación previa de Directivos o Administradores desde el panel de Configuración.",
+  "Bandeja de Aprobación de Nombres (ConfiguracionTab): Panel exclusivo para Directivos y Administradores que muestra en tiempo real las solicitudes de cambio de nombre, comparativa lado a lado del nombre actual vs. solicitado con sus respectivos avatares y botones de acción rápida ('Aprobar' o 'Rechazar').",
+  "Sincronización Automática con Colecciones Vinculadas: Al aprobar un cambio de nombre, el sistema actualiza automáticamente el perfil del usuario y sincroniza su registro correspondiente en las tablas de alumnos o profesores, asegurando integridad de datos en todo el sistema.",
+  "Cambio y Recuperación de Contraseña mediante Código OTP de 6 Dígitos: Se implementó un flujo de seguridad con verificación por correo electrónico. El usuario solicita un código numérico temporal enviado a su casilla y lo ingresa junto con su nueva clave.",
+  "Integración en 'Mi Perfil' y '¿Olvidaste tu contraseña?': Disponible tanto dentro de la sesión activa del usuario (UserProfileModal) con temporizador de enfriamiento de 60 segundos y límite de intentos, como en la pantalla de bienvenida (src/app/page.tsx).",
+  "Endpoints Seguros con Appwrite Server SDK: Se desarrollaron las rutas /api/auth/send-code y /api/auth/verify-code-reset respaldadas por Node-Appwrite (Users.updatePassword), protegiendo las credenciales y garantizando una experiencia sin fricciones ni enlaces externos caídos."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.10.10",
+    date: "16/09/2026 21:25 hs",
+    notes: [
+      "Avatar Dinámico en Vivo al Crear Cuenta: Al registrarse en la plataforma (`src/app/page.tsx`), se despliega una tarjeta interactiva con vista previa en tiempo real donde el avatar muta, cambia de expresión, colores y formas dinámicamente con cada letra que se escribe en el nombre y apellido.",
+      "Semilla Determinista Centrada en el Nombre (`UserAvatar`): Se ajustó el motor de `UserAvatar` para priorizar el nombre completo sobre el email, garantizando que el personaje visual visto en el registro sea idéntico al que acompañará al usuario en la barra superior, perfil y paneles.",
+      "Animación Continua de Expresión (`animate=\"always\"`): El avatar en vivo parpadea, respira y cobra vida de forma interactiva mientras se completan los campos de registro.",
+      "Avatar en Vivo para Docentes (`NewTeacherModal`): Se extendió la previsualización en vivo al formulario de alta de docentes para que los directivos también disfruten de la mutación del avatar al tipear el nombre del profesor."
+    ]
+  },
   {
     version: "v2.10.9",
     date: "16/09/2026 20:41 hs",

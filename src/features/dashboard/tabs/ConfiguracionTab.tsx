@@ -13,6 +13,8 @@ interface ConfiguracionTabProps {
   onApproveRequest: (u: UserProfile) => void;
   onRejectRequest: (u: UserProfile) => void;
   onRevokeAccess: (u: UserProfile) => void;
+  onApproveNameChange?: (u: UserProfile) => void;
+  onRejectNameChange?: (u: UserProfile) => void;
 }
 
 export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
@@ -24,6 +26,8 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
   onApproveRequest,
   onRejectRequest,
   onRevokeAccess,
+  onApproveNameChange,
+  onRejectNameChange,
 }) => {
   const pendingRequests = usuarios.filter(u => {
     if (!u.rol.startsWith("pendiente_")) return false;
@@ -32,6 +36,12 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
     if (userProfile?.rol === 'directivo') {
       return (u.rol as string) === 'pendiente_preceptor' || (u.rol as string) === 'pendiente_profesor';
     }
+    return false;
+  });
+
+  const pendingNameChanges = usuarios.filter(u => {
+    if (!u.nombrePendiente || !u.nombrePendiente.trim()) return false;
+    if (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') return true;
     return false;
   });
 
@@ -47,6 +57,64 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
 
   return (
     <div className="animate-fade-in space-y-10">
+      {/* SOLICITUDES DE CAMBIO DE NOMBRE PENDIENTES */}
+      {pendingNameChanges.length > 0 && (
+        <div className="animate-fade-in">
+          <h3 className="text-xl font-black title-font mb-4 text-[var(--verde)] flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--verde)] animate-pulse inline-block"></span>
+            Solicitudes de Cambio de Nombre ({pendingNameChanges.length})
+          </h3>
+          <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-[var(--bg3)]/50">
+                <tr>
+                  <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Nombre Actual</th>
+                  <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Nuevo Nombre Solicitado</th>
+                  <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Rol / Correo</th>
+                  <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingNameChanges.map(u => (
+                  <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
+                    <td className="p-6">
+                      <div className="flex items-center gap-3">
+                        <UserAvatar name={u.nombre} email={u.email} size={36} showRing={false} />
+                        <span className="font-bold text-[var(--text)]">{u.nombre}</span>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex items-center gap-3">
+                        <UserAvatar name={u.nombrePendiente!} size={36} showRing={true} className="ring-1 ring-[var(--verde)]" />
+                        <span className="font-black text-[var(--verde)]">{u.nombrePendiente}</span>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="text-xs font-bold text-[var(--text)] uppercase tracking-wider">{u.rol.replace("pendiente_", "")}</div>
+                      <div className="text-xs text-[var(--text3)]">{u.email}</div>
+                    </td>
+                    <td className="p-6 text-right space-x-2">
+                      <button
+                        onClick={() => onApproveNameChange?.(u)}
+                        className="px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
+                      >
+                        ✓ Aprobar
+                      </button>
+                      <button
+                        onClick={() => onRejectNameChange?.(u)}
+                        className="px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
+                      >
+                        ✕ Rechazar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* SOLICITUDES DE REGISTRO PENDIENTES */}
       {pendingRequests.length > 0 && (
         <div className="animate-fade-in">
