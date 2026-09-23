@@ -66,12 +66,16 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const refreshData = async () => {
     setLoading(true);
     try {
-      const profs = await getProfesores();
+      const [profs, als, mesasData] = await Promise.all([
+        getProfesores(),
+        getAlumnos(),
+        getMesasExamen(true),
+      ]);
       setProfesores(profs);
-      const als = await getAlumnos();
       setAlumnos(als);
+      setMesas(mesasData);
     } catch {
-      setPanelError("Error cargando profesores/alumnos.");
+      setPanelError("Error cargando mesas de examen o profesores.");
     } finally {
       setLoading(false);
     }
@@ -139,7 +143,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setPresidenteId(m.presidenteId);
     setVocal1Id(m.vocal1Id || "");
     setVocal2Id(m.vocal2Id || "");
-    setAlumnosInput(m.alumnosInscriptos.join(", "));
+    setAlumnosInput((m.alumnosInscriptos || []).join(", "));
     setEstado(m.estado);
     // ✅ Limpieza explícita del estado interno del modal
     setModalError("");
@@ -152,11 +156,14 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setLoading(true);
     setPanelError("");
     setPanelSuccess("");
+    // Actualización optimista inmediata
+    setMesas(prev => prev.filter(m => m.id !== id));
     try {
       await deleteMesaExamen(id);
       setPanelSuccess("Mesa de examen eliminada con éxito.");
       await logAction(userProfile?.email || "admin", "ELIMINAR_MESA_EXAMEN", `ID: ${id}`);
-      refreshData();
+      const fresh = await getMesasExamen(true);
+      setMesas(fresh);
     } catch (err) {
       if (err instanceof AppwriteException) {
         setPanelError(`Error Appwrite (${err.code}): ${err.message}`);
@@ -245,7 +252,29 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     // ✅ Usar estado de loading PROPIO del modal, no el global
     setModalLoading(true);
     try {
-      await saveMesaExamen(payload);
+      const savedRes = await saveMesaExamen(payload);
+      const savedId = (savedRes as any)?.$id || payload.id || `MESA_${Date.now()}`;
+      const finalSaved: MesaExamen = {
+        ...payload,
+        id: savedId,
+      };
+
+      // ✅ Actualización optimista: la mesa es visible de INMEDIATO sin esperar websocket
+      setMesas((prev) => {
+        const exists = prev.some(
+          (m) => m.id === savedId || (payload.id && m.id === payload.id)
+        );
+        if (exists) {
+          return prev.map((m) =>
+            m.id === savedId || (payload.id && m.id === payload.id)
+              ? finalSaved
+              : m
+          );
+        } else {
+          return [finalSaved, ...prev];
+        }
+      });
+
       await logAction(
         userProfile?.email || "admin",
         editingMesa ? "EDITAR_MESA_EXAMEN" : "CREAR_MESA_EXAMEN",
@@ -254,7 +283,13 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       // ✅ Cerramos el modal ANTES de refrescar para evitar estado visual congelado
       setIsModalOpen(false);
       setPanelSuccess(editingMesa ? "Mesa de examen actualizada." : "Mesa de examen creada con éxito.");
-      refreshData();
+
+      // Sincronización en segundo plano con la base de datos
+      getMesasExamen(true).then((fresh) => {
+        if (fresh && fresh.length > 0) {
+          setMesas(fresh);
+        }
+      });
     } catch (err: unknown) {
       // ✅ Captura específica de AppwriteException sin congelar la UI
       if (err instanceof AppwriteException) {
@@ -274,15 +309,25 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     }
   };
 
-  // Filtrado de mesas por búsqueda
-  const filteredMesas = mesas.filter(m => {
-    const q = searchQuery.toLowerCase();
+  // Filtrado de mesas por búsqueda seguro contra undefined
+  const filteredMesas = mesas.filter((m) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const mat = (m.materia || "").toLowerCase();
+    const aul = (m.aula || "").toLowerCase();
+    const pres = (m.presidenteNombre || "").toLowerCase();
+    const v1 = (m.vocal1Nombre || "").toLowerCase();
+    const v2 = (m.vocal2Nombre || "").toLowerCase();
+    const al = (m.alumnosInscriptos || []).some((a) =>
+      (a || "").toLowerCase().includes(q)
+    );
     return (
-      m.materia.toLowerCase().includes(q) ||
-      m.aula.toLowerCase().includes(q) ||
-      m.presidenteNombre.toLowerCase().includes(q) ||
-      (m.vocal1Nombre && m.vocal1Nombre.toLowerCase().includes(q)) ||
-      m.alumnosInscriptos.some(a => a.toLowerCase().includes(q))
+      mat.includes(q) ||
+      aul.includes(q) ||
+      pres.includes(q) ||
+      v1.includes(q) ||
+      v2.includes(q) ||
+      al
     );
   });
 
@@ -399,9 +444,9 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                   </div>
 
                   <div>
-                    <span className="font-bold text-[var(--text3)] uppercase text-[9px] tracking-wider block">Alumnos ({m.alumnosInscriptos.length})</span>
+                    <span className="font-bold text-[var(--text3)] uppercase text-[9px] tracking-wider block">Alumnos ({(m.alumnosInscriptos || []).length})</span>
                     <p className="text-[var(--text2)] truncate font-medium">
-                      {m.alumnosInscriptos.length > 0 ? m.alumnosInscriptos.join(", ") : "Sin inscriptos"}
+                      {(m.alumnosInscriptos && m.alumnosInscriptos.length > 0) ? m.alumnosInscriptos.join(", ") : "Sin inscriptos"}
                     </p>
                   </div>
                 </div>

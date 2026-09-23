@@ -1301,77 +1301,125 @@ export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ 
 
 // ─── NUEVO: GESTIÓN DE MESAS DE EXAMEN ────────────────────────────────────────
 export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]> => {
+  let appwriteItems: MesaExamen[] = [];
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, queries: [Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)] });
-    return response.documents.map(doc => ({
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
+      queries: [Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)]
+    });
+    appwriteItems = response.documents.map(doc => ({
       id: doc.$id,
-      fecha: doc.fecha,
-      hora: doc.hora,
-      materia: doc.materia,
-      aula: doc.aula,
-      presidenteId: doc.presidenteId,
-      presidenteNombre: doc.presidenteNombre,
-      vocal1Id: doc.vocal1Id,
-      vocal1Nombre: doc.vocal1Nombre,
-      vocal2Id: doc.vocal2Id,
-      vocal2Nombre: doc.vocal2Nombre,
-      alumnosInscriptos: doc.alumnosInscriptos,
-      estado: doc.estado as any
+      fecha: doc.fecha || "",
+      hora: doc.hora || "",
+      materia: doc.materia || "",
+      aula: doc.aula || "",
+      presidenteId: doc.presidenteId || "",
+      presidenteNombre: doc.presidenteNombre || "Presidente",
+      vocal1Id: doc.vocal1Id || undefined,
+      vocal1Nombre: doc.vocal1Nombre || undefined,
+      vocal2Id: doc.vocal2Id || undefined,
+      vocal2Nombre: doc.vocal2Nombre || undefined,
+      alumnosInscriptos: Array.isArray(doc.alumnosInscriptos) ? doc.alumnosInscriptos : [],
+      estado: (doc.estado as any) || "borrador"
     }));
   } catch (err: any) {
     devLog("getMesasExamen (LocalStorage fallback)", err);
-    return getLocalStorageData<MesaExamen[]>("mesas_examen", []);
   }
+
+  // Merge with localStorage so that any locally saved mesas are ALWAYS visible and never lost
+  const localItems = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+  const combinedMap = new Map<string, MesaExamen>();
+
+  // Add Appwrite items first
+  appwriteItems.forEach(item => {
+    if (item.id) combinedMap.set(item.id, item);
+  });
+
+  // Add local items (offline or local fallback) if not already present from Appwrite
+  localItems.forEach(item => {
+    if (item.id && !combinedMap.has(item.id)) {
+      combinedMap.set(item.id, item);
+    }
+  });
+
+  const finalMesas = Array.from(combinedMap.values());
+  finalMesas.sort((a, b) => {
+    const dateCmp = (a.fecha || "").localeCompare(b.fecha || "");
+    if (dateCmp !== 0) return dateCmp;
+    return (a.hora || "").localeCompare(b.hora || "");
+  });
+
+  return finalMesas;
 };
 
 export const saveMesaExamen = async (m: MesaExamen) => {
   await requireAuth();
-  try {
-    const payload = {
-      fecha: sanitize(m.fecha, 20),
-      hora: sanitize(m.hora, 10),
-      materia: sanitize(m.materia, 100),
-      aula: sanitize(m.aula, 50),
-      presidenteId: sanitize(m.presidenteId, 50),
-      presidenteNombre: sanitize(m.presidenteNombre, 200),
-      vocal1Id: sanitize(m.vocal1Id || "", 50),
-      vocal1Nombre: sanitize(m.vocal1Nombre || "", 200),
-      vocal2Id: sanitize(m.vocal2Id || "", 50),
-      vocal2Nombre: sanitize(m.vocal2Nombre || "", 200),
-      alumnosInscriptos: (m.alumnosInscriptos || []).map(a => sanitize(a, 100)),
-      estado: m.estado
-    };
+  const local = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+  let assignedId = m.id;
 
+  const payload = {
+    fecha: sanitize(m.fecha, 20),
+    hora: sanitize(m.hora, 10),
+    materia: sanitize(m.materia, 100),
+    aula: sanitize(m.aula, 50),
+    presidenteId: sanitize(m.presidenteId, 50),
+    presidenteNombre: sanitize(m.presidenteNombre, 200),
+    vocal1Id: sanitize(m.vocal1Id || "", 50),
+    vocal1Nombre: sanitize(m.vocal1Nombre || "", 200),
+    vocal2Id: sanitize(m.vocal2Id || "", 50),
+    vocal2Nombre: sanitize(m.vocal2Nombre || "", 200),
+    alumnosInscriptos: (m.alumnosInscriptos || []).map(a => sanitize(a, 100)),
+    estado: m.estado || "borrador"
+  };
+
+  try {
     if (m.id && !m.id.startsWith("LOCAL_")) {
-      return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, documentId: m.id, data: payload });
+      const res = await databases.updateDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
+        documentId: m.id,
+        data: payload
+      });
+      assignedId = res.$id;
     } else {
-      return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, documentId: ID.unique(), data: payload });
+      const res = await databases.createDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
+        documentId: ID.unique(),
+        data: payload
+      });
+      assignedId = res.$id;
     }
   } catch (err: any) {
     devLog("saveMesaExamen (LocalStorage fallback)", err);
-    const local = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
-    if (m.id) {
-      const idx = local.findIndex(item => item.id === m.id);
-      if (idx !== -1) {
-        local[idx] = m;
-      } else {
-        local.push(m);
-      }
-    } else {
-      const newRecord = { ...m, id: "LOCAL_" + Math.random().toString(36).substr(2, 9) };
-      local.push(newRecord);
-      m.id = newRecord.id;
+    if (!assignedId) {
+      assignedId = "LOCAL_" + Math.random().toString(36).substr(2, 9);
     }
-    setLocalStorageData("mesas_examen", local);
-    return { $id: m.id };
   }
+
+  // Always update local storage so it's guaranteed to be available instantly
+  const savedItem: MesaExamen = { ...m, ...payload, id: assignedId };
+  const existingIdx = local.findIndex(item => item.id === assignedId || (m.id && item.id === m.id));
+  if (existingIdx !== -1) {
+    local[existingIdx] = savedItem;
+  } else {
+    local.unshift(savedItem);
+  }
+  setLocalStorageData("mesas_examen", local);
+
+  return { $id: assignedId, ...savedItem };
 };
 
 export const deleteMesaExamen = async (id: string) => {
   await requireAuth();
   try {
     if (!id.startsWith("LOCAL_")) {
-      await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID, documentId: id });
+      await databases.deleteDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
+        documentId: id
+      });
     }
   } catch (err: any) {
     devLog("deleteMesaExamen (LocalStorage fallback)", err);

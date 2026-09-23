@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.1";
-export const APP_BUILD_DATE = "23/09/2026 16:45 hs";
+export const APP_VERSION = "v2.20.2";
+export const APP_BUILD_DATE = "23/09/2026 16:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Depuración Visual en Pie de Página (Footer.tsx): Se removió la insignia identificadora de versión del pie de página institucional, manteniendo una estética limpia, despejada y minimalista enfocada en la identidad de marca y enlaces legales."
+  "Corrección y Reflejo Inmediato de Mesas de Examen (ExamBoardManager.tsx y dataService.ts): Se resolvió la discrepancia por la cual las nuevas mesas de examen creadas no se visualizaban en el cronograma. Se introdujo actualización optimista instantánea en el estado local de mesas al crear, editar o eliminar registros, asegurando su visualización inmediata sin esperas de WebSocket. En dataService.ts se unificó y blindó la persistencia híbrida (Appwrite + LocalStorage merge con ordenamiento cronológico por fecha y hora) y se aseguraron valores por defecto contra propiedades indefinidas en los filtros y tarjetas."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.1",
+    date: "23/09/2026 16:45 hs",
+    notes: [
+      "Depuración Visual en Pie de Página (Footer.tsx): Se removió la insignia identificadora de versión del pie de página institucional, manteniendo una estética limpia, despejada y minimalista enfocada en la identidad de marca y enlaces legales."
+    ]
+  },
   {
     version: "v2.20.0",
     date: "23/09/2026 16:40 hs",
