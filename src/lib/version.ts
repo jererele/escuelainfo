@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.18.0";
-export const APP_BUILD_DATE = "23/09/2026 16:25 hs";
+export const APP_VERSION = "v2.18.1";
+export const APP_BUILD_DATE = "23/09/2026 16:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Easter Egg Modo ARGB GAMER con Nyan Cats y Música Chiptune: Se integró una sorpresa interactiva que se dispara al alternar rápidamente 30 veces seguidas el tema (claro/oscuro) sin pausas prolongadas. Al activarse, la plataforma entra en modo ARGB Gamer con bordes y resplandores cromáticos animados en tiempo real, múltiples Nyan Cats cruzando la pantalla con estelas de arcoíris y estrellas flotantes de 8 bits, junto con la auténtica melodía de Nyan Cat sintetizada vía Web Audio API. Al alternar nuevamente el tema, el modo se cancela de inmediato, la música se detiene y el contador se reinicia."
+  "Limpieza Visual en Banner de Inicio (GeneralTab.tsx): Se removieron los efectos ambientales animados de fondo (orbes fluidos FluidOrb) en la tarjeta de cabecera 'Escuela 713 · Sistema de Gestión' en la pestaña Inicio, logrando una presentación sobria, de lectura clara y alto rendimiento visual."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.18.0",
+    date: "23/09/2026 16:25 hs",
+    notes: [
+      "Easter Egg Modo ARGB GAMER con Nyan Cats y Música Chiptune: Se integró una sorpresa interactiva que se dispara al alternar rápidamente 30 veces seguidas el tema (claro/oscuro) sin pausas prolongadas. Al activarse, la plataforma entra en modo ARGB Gamer con bordes y resplandores cromáticos animados en tiempo real, múltiples Nyan Cats cruzando la pantalla con estelas de arcoíris y estrellas flotantes de 8 bits, junto con la auténtica melodía de Nyan Cat sintetizada vía Web Audio API. Al alternar nuevamente el tema, el modo se cancela de inmediato, la música se detiene y el contador se reinicia."
+    ]
+  },
   {
     version: "v2.17.7",
     date: "23/09/2026 16:11 hs",

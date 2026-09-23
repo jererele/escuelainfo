@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { Ausencia, Horario, Alumno } from "@/lib/dataService";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 import ContactForm from "@/components/ContactForm";
-import { TiltCard, GravityText, FluidOrb } from "@/components/ui/rare";
+import { TiltCard, GravityText } from "@/components/ui/rare";
 
 interface GeneralTabProps {
   stats: { hoy: number; pendientes: number; total: number };
@@ -34,11 +34,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 }) => {
   return (
     <div className="space-y-10 animate-fade-in">
-      {/* BANNER DE BIENVENIDA CON RARE UI (GravityText + FluidOrb) */}
-      <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-[var(--bg2)] shadow-md">
-        <FluidOrb color="rgba(16, 185, 129, 0.22)" size={320} className="-top-24 -right-16" />
-        <FluidOrb color="rgba(99, 102, 241, 0.16)" size={260} className="-bottom-20 left-1/4" />
-        <div className="relative z-10">
+      {/* BANNER DE BIENVENIDA */}
+      <div className="p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-[var(--bg2)] shadow-md">
+        <div>
           <h1 className="text-2xl sm:text-4xl font-black title-font text-[var(--text)] tracking-tight">
             <GravityText text="Escuela 713" className="text-[var(--verde)]" />
             <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
