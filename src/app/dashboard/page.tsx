@@ -1161,11 +1161,15 @@ export default function Dashboard() {
             <ProfesoresTab
               profesores={profesores}
               usuarios={usuarios}
+              horarios={horarios}
               isAdmin={isAdmin}
+              canManage={isAdmin || userProfile?.rol === 'preceptor'}
               onOpenAddTeacher={() => setIsTeacherModalOpen(true)}
               onEditTeacher={(p: Profesor) => { setEditingProfesor(p); setIsTeacherModalOpen(true); }}
               onDeleteTeacher={handleDeleteProfesor}
               onNavigateToAusencias={(search: string) => { setActiveTab("ausencias"); setSearchQuery(search); }}
+              onRefreshProfesores={() => getProfesores().then(setProfesores)}
+              showToast={showToast}
             />
           )}
 

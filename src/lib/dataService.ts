@@ -599,6 +599,7 @@ export const checkAlumnoDNI = async (dni: string): Promise<boolean> => {
 };
 
 export const checkProfesorDNI = async (dni: string): Promise<boolean> => {
+  if (!dni || !dni.trim()) return false;
   try {
     const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("dni", sanitize(dni, 20))] });
     return response.documents.length > 0;

@@ -113,8 +113,8 @@ export default function NewTeacherModal({ isOpen, onClose, onSuccess, editingPro
               value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))} />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Materias que dicta (separadas por coma)</label>
-            <input required type="text" placeholder="Ej: Lengua, Historia, Geografía"
+            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Materias que dicta (separadas por coma, opcional)</label>
+            <input type="text" placeholder="Ej: Lengua, Historia, Geografía"
               className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
               value={materias} onChange={(e) => setMaterias(e.target.value)} />
           </div>
