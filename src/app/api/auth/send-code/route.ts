@@ -72,6 +72,7 @@ export async function POST(request: Request) {
       <head>
         <meta charset="utf-8">
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@800;900&display=swap');
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b1120; color: #f8fafc; margin: 0; padding: 32px 16px; }
           .container { max-width: 500px; margin: 0 auto; background-color: #111e30; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 28px; padding: 36px 28px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
           .logo { font-size: 24px; font-weight: 900; color: #f8fafc; margin-bottom: 8px; }
@@ -79,9 +80,9 @@ export async function POST(request: Request) {
           .subtitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 24px; }
           .title { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
           .text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 24px; }
-          .code-box { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%); border: 2px dashed #10B981; border-radius: 20px; padding: 20px; margin: 24px auto; display: inline-block; }
-          .code { font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #10B981; margin: 0; }
-          .expiry { font-size: 12px; color: #f59e0b; font-weight: 700; margin-top: 8px; }
+          .code-box { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%); border: 2px dashed #10B981; border-radius: 24px; padding: 24px 28px; margin: 24px auto; display: inline-block; }
+          .code { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 44px; font-weight: 800; letter-spacing: 12px; padding-left: 12px; color: #10B981; margin: 0; font-variant-numeric: tabular-nums; line-height: 1.2; }
+          .expiry { font-size: 12px; color: #f59e0b; font-weight: 700; margin-top: 10px; }
           .footer { font-size: 11px; color: #64748b; margin-top: 32px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; line-height: 1.5; }
         </style>
       </head>
@@ -95,8 +96,8 @@ export async function POST(request: Request) {
             Utilizá el siguiente código de seguridad de 6 dígitos para confirmar tu identidad:
           </div>
           <div class="code-box">
-            <div class="code">${code}</div>
-            <div class="expiry">⏱ Válido durante 10 minutos</div>
+            <div class="code" style="font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 44px; font-weight: 800; letter-spacing: 12px; padding-left: 12px; color: #10B981; margin: 0; font-variant-numeric: tabular-nums; line-height: 1.2;">${code}</div>
+            <div class="expiry">Válido durante 10 minutos</div>
           </div>
           <div class="text" style="font-size: 12px; color: #94a3b8;">
             Ingresá este código en la pantalla donde estabas realizando el trámite para establecer tu nueva clave.
