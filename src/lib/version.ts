@@ -4,15 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.19.0";
-export const APP_BUILD_DATE = "23/09/2026 16:35 hs";
+export const APP_VERSION = "v2.20.0";
+export const APP_BUILD_DATE = "23/09/2026 16:40 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Asignación Directa de Materias en Cuerpo Docente (ProfesoresTab.tsx y AssignTeacherSubjectsModal.tsx): Se incorporó un sistema integral para gestionar y asignar materias a los profesores ya registrados. En cada tarjeta docente se visualiza la sección de materias con botones dedicados ('+ Asignar' o 'Modificar') y llamada visual para docentes sin materias asignadas. Se implementó un modal interactivo con chips editables, adición rápida por teclado y sugerencias automáticas de materias existentes en la escuela (extraídas de horarios y currícula). Además, se añadió un panel destacado para docentes registrados en el sistema que aún no tenían asignadas sus materias oficiales, permitiendo configurarlos con 1 clic.",
-  "Búsqueda y Optimización Táctil en Cuerpo Docente: Se incorporó un buscador en tiempo real por nombre, materia o email del profesor, y se hicieron accesibles los controles de edición y eliminación en pantallas táctiles y móviles sin depender de eventos hover."
+  "Selección de Rol Institucional al Aprobar Alumnos (AlumnosTab.tsx y ApproveStudentRoleModal.tsx): Al pulsar 'Aprobar' en una solicitud de inscripción pendiente, ahora se despliega un modal interactivo que permite a directivos y preceptores decidir con precisión el rol a otorgar al usuario: Alumno (matriculación oficial en el curso), Profesor (incorpora al usuario al cuerpo docente con materias y licencias) o Preceptor (gestión de asistencia y cursos). Si se aprueba como Profesor o Preceptor, el sistema limpia automáticamente su registro temporal en la lista de alumnos e inicializa su ficha docente oficial en Appwrite con registro de auditoría."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.19.0",
+    date: "23/09/2026 16:35 hs",
+    notes: [
+      "Asignación Directa de Materias en Cuerpo Docente (ProfesoresTab.tsx y AssignTeacherSubjectsModal.tsx): Se incorporó un sistema integral para gestionar y asignar materias a los profesores ya registrados. En cada tarjeta docente se visualiza la sección de materias con botones dedicados ('+ Asignar' o 'Modificar') y llamada visual para docentes sin materias asignadas. Se implementó un modal interactivo con chips editables, adición rápida por teclado y sugerencias automáticas de materias existentes en la escuela (extraídas de horarios y currícula). Además, se añadió un panel destacado para docentes registrados en el sistema que aún no tenían asignadas sus materias oficiales, permitiendo configurarlos con 1 clic.",
+      "Búsqueda y Optimización Táctil en Cuerpo Docente: Se incorporó un buscador en tiempo real por nombre, materia o email del profesor, y se hicieron accesibles los controles de edición y eliminación en pantallas táctiles y móviles sin depender de eventos hover."
+    ]
+  },
   {
     version: "v2.18.1",
     date: "23/09/2026 16:30 hs",

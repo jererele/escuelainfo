@@ -606,16 +606,56 @@ export default function Dashboard() {
     });
   };
 
-  // APROBACIONES DE ALUMNOS (Hecho por Preceptor)
-  const handleApproveStudent = async (u: UserProfile) => {
+  // APROBACIONES DE ALUMNOS (Permite elegir rol: alumno, profesor o preceptor)
+  const handleApproveStudent = async (u: UserProfile, targetRole: "alumno" | "profesor" | "preceptor" = "alumno") => {
     try {
-      await updateUserProfile(u.id!, { rol: "alumno" });
-      await logAction(user?.email || "desconocido", "APROBAR_ALUMNO", `Email: ${u.email}`);
-      showToast(`Matriculación de ${u.nombre} aprobada con éxito`, "success");
+      await updateUserProfile(u.id!, { rol: targetRole });
+
+      const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+
+      if (targetRole === "profesor") {
+        // Si se aprobó como profesor, asegurar que tenga registro en profesores y remover de alumnos
+        const teachers = await getProfesores();
+        const alreadyExists = teachers.some(t => t.email.toLowerCase() === u.email.toLowerCase());
+        if (!alreadyExists) {
+          await saveProfesor({
+            nombre: u.nombre,
+            dni: studDetails?.dni || "",
+            materias: [],
+            email: u.email.toLowerCase().trim(),
+          });
+          getProfesores().then(setProfesores);
+        }
+        if (studDetails && studDetails.id) {
+          await deleteAlumno(studDetails.id);
+        }
+      } else if (targetRole === "preceptor") {
+        // Si se aprobó como preceptor, remover de alumnos
+        if (studDetails && studDetails.id) {
+          await deleteAlumno(studDetails.id);
+        }
+      }
+
+      const roleLabels: Record<string, string> = {
+        alumno: "Alumno",
+        profesor: "Profesor",
+        preceptor: "Preceptor",
+      };
+      const label = roleLabels[targetRole] || targetRole;
+
+      await logAction(
+        user?.email || "desconocido", 
+        targetRole === "alumno" ? "APROBAR_ALUMNO" : "APROBAR_COLABORADOR", 
+        `Email: ${u.email}, Rol asignado: ${label}`
+      );
+      showToast(`Solicitud de ${u.nombre} aprobada como ${label}`, "success");
       getUsuarios().then(setUsuarios);
       getAlumnos().then(setAlumnos);
+      if (targetRole === "profesor") {
+        getProfesores().then(setProfesores);
+      }
     } catch (err) {
-      showToast("Error al aprobar alumno", "error");
+      showToast("Error al aprobar usuario", "error");
     }
   };
 

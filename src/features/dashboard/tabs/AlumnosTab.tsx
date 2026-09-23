@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { Search, Trash2, Check, X, Clock } from "lucide-react";
 import { Alumno, UserProfile } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
+
+const ApproveStudentRoleModal = dynamic(
+  () => import("@/components/modals/ApproveStudentRoleModal"),
+  { ssr: false }
+);
 
 interface AlumnosTabProps {
   alumnos: Alumno[];
@@ -10,7 +16,7 @@ interface AlumnosTabProps {
   studentSearchQuery: string;
   setStudentSearchQuery: (q: string) => void;
   onOpenAddStudent: () => void;
-  onApproveStudent: (u: UserProfile) => void;
+  onApproveStudent: (u: UserProfile, targetRole?: "alumno" | "profesor" | "preceptor") => Promise<void> | void;
   onRejectStudent: (u: UserProfile) => void;
   onDeleteAlumno: (al: Alumno) => void;
 }
@@ -26,6 +32,8 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
   onRejectStudent,
   onDeleteAlumno,
 }) => {
+  const [approvingUser, setApprovingUser] = useState<UserProfile | null>(null);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const pendingAlumnos = usuarios.filter(u => (u.rol as string) === 'pendiente_alumno');
 
   const filteredAlumnos = alumnos.filter(al => {
@@ -76,7 +84,10 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border)]/50">
                     <button
-                      onClick={() => onApproveStudent(u)}
+                      onClick={() => {
+                        setApprovingUser(u);
+                        setIsApproveModalOpen(true);
+                      }}
                       className="min-h-[44px] flex items-center justify-center gap-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold active:scale-95 transition-all"
                     >
                       <Check size={14} strokeWidth={2.5} />
@@ -134,7 +145,10 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                         </td>
                         <td className="p-6 text-right space-x-2">
                           <button
-                            onClick={() => onApproveStudent(u)}
+                            onClick={() => {
+                              setApprovingUser(u);
+                              setIsApproveModalOpen(true);
+                            }}
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
                           >
                             <Check size={13} strokeWidth={2.5} />
@@ -292,6 +306,22 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* MODAL DE SELECCIÓN DE ROL AL APROBAR */}
+      {isApproveModalOpen && approvingUser && (
+        <ApproveStudentRoleModal
+          isOpen={isApproveModalOpen}
+          onClose={() => {
+            setIsApproveModalOpen(false);
+            setApprovingUser(null);
+          }}
+          onConfirm={(targetRole) => onApproveStudent(approvingUser, targetRole)}
+          user={approvingUser}
+          alumnoDetails={alumnos.find(
+            (a) => a.email.toLowerCase() === approvingUser.email.toLowerCase()
+          )}
+        />
+      )}
     </div>
   );
 };
