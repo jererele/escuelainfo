@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
-import { Ausencia, Horario, Alumno } from "@/lib/dataService";
+import { Ausencia, Horario, Alumno, Profesor } from "@/lib/dataService";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 import ContactForm from "@/components/ContactForm";
 import { TiltCard, GravityText } from "@/components/ui/rare";
@@ -11,6 +11,7 @@ interface GeneralTabProps {
   horarios: Horario[];
   canManageAusencias: boolean;
   currentAlumno?: Alumno | null;
+  currentProfesor?: Profesor | null;
   userProfile?: any;
   onNavigateToAusencias: (search?: string) => void;
   onNavigateToHorarios: (curso: string) => void;
@@ -25,6 +26,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   horarios,
   canManageAusencias,
   currentAlumno,
+  currentProfesor,
   userProfile,
   onNavigateToAusencias,
   onNavigateToHorarios,
@@ -32,6 +34,47 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   onOpenProfile,
   showToast,
 }) => {
+  const isTeacher = userProfile?.rol === 'profesor';
+
+  // Si el usuario es profesor, filtrar novedades para mostrar ÚNICAMENTE sus propios registros
+  const displayedAusencias = useMemo(() => {
+    if (isTeacher) {
+      const targetId = currentProfesor?.id ? String(currentProfesor.id) : null;
+      const targetNombre = currentProfesor?.nombre?.trim().toLowerCase() || userProfile?.nombre?.trim().toLowerCase() || "";
+
+      return ausencias.filter(a => {
+        const idMatches = targetId && a.profId && String(a.profId) === targetId;
+        const nameMatches = targetNombre && a.profNombre && a.profNombre.trim().toLowerCase() === targetNombre;
+        return Boolean(idMatches || nameMatches);
+      });
+    }
+    return ausencias;
+  }, [ausencias, isTeacher, currentProfesor, userProfile?.nombre]);
+
+  const statCards = [
+    {
+      label: isTeacher ? "Mis Ausencias Hoy" : "Ausentes Hoy",
+      value: stats.hoy,
+      color: "var(--rojo)",
+      glowColor: "rgba(239, 68, 68, 0.16)",
+      action: () => onNavigateToAusencias("")
+    },
+    {
+      label: isTeacher ? "Mis Pendientes" : "Pendientes",
+      value: stats.pendientes,
+      color: "var(--amarillo)",
+      glowColor: "rgba(245, 158, 11, 0.16)",
+      action: () => onNavigateToAusencias("")
+    },
+    {
+      label: isTeacher ? "Mis Registros Totales" : "Total Registros",
+      value: stats.total,
+      color: "var(--verde)",
+      glowColor: "rgba(16, 185, 129, 0.16)",
+      action: () => onNavigateToAusencias("")
+    },
+  ];
+
   return (
     <div className="space-y-10 animate-fade-in">
       {/* BANNER DE BIENVENIDA */}
@@ -62,11 +105,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       
       {/* STATS CON TILT CARDS DE RARE UI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
-        {[
-          { label: "Ausentes Hoy", value: stats.hoy, color: "var(--rojo)", glowColor: "rgba(239, 68, 68, 0.16)", action: () => onNavigateToAusencias("") },
-          { label: "Pendientes", value: stats.pendientes, color: "var(--amarillo)", glowColor: "rgba(245, 158, 11, 0.16)", action: () => onNavigateToAusencias("") },
-          { label: "Total Registros", value: stats.total, color: "var(--verde)", glowColor: "rgba(16, 185, 129, 0.16)", action: () => onNavigateToAusencias("") },
-        ].map((stat, i) => (
+        {statCards.map((stat, i) => (
           <TiltCard 
             key={i} 
             glowColor={stat.glowColor}
@@ -96,12 +135,21 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
       {/* LISTA COMPACTA */}
       <div className="bg-[var(--bg3)] rounded-[32px] border border-[var(--border)] overflow-hidden shadow-md">
-        <div className="p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
-          <h2 className="title-font font-black text-xl text-[var(--text)]">Novedades Recientes</h2>
+        <div className="p-6 sm:p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="title-font font-black text-xl text-[var(--text)]">
+              {isTeacher ? "Mis Novedades Recientes" : "Novedades Recientes"}
+            </h2>
+            {isTeacher && (
+              <p className="text-xs text-[var(--text2)] mt-0.5 font-medium">
+                Control exclusivo de tus licencias, ausencias y justificaciones registradas.
+              </p>
+            )}
+          </div>
           {canManageAusencias && (
             <button 
               onClick={onOpenNewAbsenceModal}
-              className="w-full md:w-auto bg-[var(--verde)] text-black font-black text-sm px-8 py-3.5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(16,185,129,0.4)] hover:-translate-y-1 active:scale-95 transition-all"
+              className="w-full md:w-auto bg-[var(--verde)] text-black font-black text-sm px-8 py-3.5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(16,185,129,0.4)] hover:-translate-y-1 active:scale-95 transition-all cursor-pointer"
             >
               + Registrar Ausencia
             </button>
@@ -117,19 +165,21 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               </tr>
             </thead>
             <tbody>
-              {ausencias.length === 0 ? (
+              {displayedAusencias.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="p-20 text-center text-[var(--text3)] italic">
-                    No hay registros recientes.
+                  <td colSpan={3} className="p-16 text-center text-[var(--text3)] italic">
+                    {isTeacher
+                      ? "No tenés licencias o novedades registradas recientemente."
+                      : "No hay registros recientes."}
                   </td>
                 </tr>
               ) : (
-                ausencias.slice(0, 5).map((a) => (
+                displayedAusencias.slice(0, 5).map((a) => (
                   <tr 
                     key={a.id} 
-                    onClick={() => onNavigateToAusencias(a.profNombre)}
+                    onClick={() => onNavigateToAusencias(isTeacher ? undefined : a.profNombre)}
                     className="hover:bg-[var(--bg3)] transition-colors border-b border-[var(--border)] last:border-none cursor-pointer group"
-                    title={`Ver ausencias de ${a.profNombre}`}
+                    title={isTeacher ? "Ver detalle de mi licencia" : `Ver ausencias de ${a.profNombre}`}
                   >
                     <td className="p-6 font-bold text-[var(--text)] group-hover:text-[var(--verde)] transition-colors flex items-center gap-2">
                       <span>{a.profNombre}</span>

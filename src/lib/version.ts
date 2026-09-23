@@ -4,15 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.4";
-export const APP_BUILD_DATE = "23/09/2026 17:05 hs";
+export const APP_VERSION = "v2.20.5";
+export const APP_BUILD_DATE = "23/09/2026 17:15 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Optimización Total de Notificaciones en Celulares (SileoToaster.tsx y globals.css): Se corrigió la posición, z-index y adaptabilidad de las notificaciones toast en dispositivos móviles. En pantallas táctiles (< 640px) ahora se ubican centradas en la parte superior ('top-center') con margen seguro debajo de la barra de navegación (safe-area + 68px), eliminando el desborde horizontal que las cortaba fuera de pantalla y evitando colisiones con el notch/isla dinámica de los teléfonos. Se elevó su z-index a 999999 para que nunca queden ocultas detrás de modales, hojas inferiores o paneles de menú, y se sincronizó el tema automáticamente con el modo claro/oscuro de la aplicación.",
-  "Adaptabilidad Móvil en Envío de Avisos y Notificaciones (SendNoticeModal.tsx y TopNavSidebar.tsx): Se ajustaron los tamaños tipográficos de inputs a 16px para evitar el auto-zoom de iOS Safari al escribir, se perfeccionó la cuadrícula táctil de grupos de destinatarios y los botones de acción para pantallas compactas. Además, el botón de menú hamburguesa ahora incluye un punto indicador pulsante en tiempo real que alerta a los directivos cuando existen solicitudes de acceso o alumnos pendientes de revisión."
+  "Privacidad y Aislamiento de Novedades Docentes (GeneralTab.tsx y page.tsx): Se blindó la sección 'Novedades Recientes' del panel de Inicio para que los profesores con sesión activa visualicen única y exclusivamente sus propias licencias, justificaciones y novedades ('Mis Novedades Recientes'), impidiendo la exposición de los motivos, estados o registros de otros colegas de la institución. Las métricas y tarjetas estadísticas en el inicio docente ahora se computan de forma personalizada según el historial individual del profesor, mientras que los equipos directivos y de preceptoría conservan el panorama general e institucional."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.4",
+    date: "23/09/2026 17:05 hs",
+    notes: [
+      "Optimización Total de Notificaciones en Celulares (SileoToaster.tsx y globals.css): Se corrigió la posición, z-index y adaptabilidad de las notificaciones toast en dispositivos móviles. En pantallas táctiles (< 640px) ahora se ubican centradas en la parte superior ('top-center') con margen seguro debajo de la barra de navegación (safe-area + 68px), eliminando el desborde horizontal que las cortaba fuera de pantalla y evitando colisiones con el notch/isla dinámica de los teléfonos. Se elevó su z-index a 999999 para que nunca queden ocultas detrás de modales, hojas inferiores o paneles de menú, y se sincronizó el tema automáticamente con el modo claro/oscuro de la aplicación.",
+      "Adaptabilidad Móvil en Envío de Avisos y Notificaciones (SendNoticeModal.tsx y TopNavSidebar.tsx): Se ajustaron los tamaños tipográficos de inputs a 16px para evitar el auto-zoom de iOS Safari al escribir, se perfeccionó la cuadrícula táctil de grupos de destinatarios y los botones de acción para pantallas compactas. Además, el botón de menú hamburguesa ahora incluye un punto indicador pulsante en tiempo real que alerta a los directivos cuando existen solicitudes de acceso o alumnos pendientes de revisión."
+    ]
+  },
   {
     version: "v2.20.3",
     date: "23/09/2026 16:55 hs",

@@ -739,17 +739,28 @@ export default function Dashboard() {
     const mondayStr = monday.toISOString().split('T')[0];
     const fridayStr = friday.toISOString().split('T')[0];
 
+    const relevantAusencias = userProfile?.rol === 'profesor'
+      ? ausencias.filter(a => {
+          const targetId = currentProfesor?.id ? String(currentProfesor.id) : null;
+          const targetNombre = currentProfesor?.nombre?.trim().toLowerCase() || userProfile?.nombre?.trim().toLowerCase() || "";
+          return Boolean(
+            (targetId && a.profId && String(a.profId) === targetId) ||
+            (targetNombre && a.profNombre && a.profNombre.trim().toLowerCase() === targetNombre)
+          );
+        })
+      : ausencias;
+
     return {
-      total: ausencias.filter(a => a.estado === 'aprobada').length,
-      pendientes: ausencias.filter(a => a.estado === 'pendiente').length,
-      hoy: ausencias.filter(a =>
+      total: relevantAusencias.filter(a => a.estado === 'aprobada').length,
+      pendientes: relevantAusencias.filter(a => a.estado === 'pendiente').length,
+      hoy: relevantAusencias.filter(a =>
         a.estado === 'aprobada' && today >= a.inicio && today <= a.fin
       ).length,
-      semana: ausencias.filter(a =>
+      semana: relevantAusencias.filter(a =>
         a.estado === 'aprobada' && a.inicio <= fridayStr && a.fin >= mondayStr
       ).length,
     };
-  }, [ausencias]);
+  }, [ausencias, userProfile?.rol, userProfile?.nombre, currentProfesor]);
 
   const handleLogoClick = () => {
     if (userProfile?.rol === 'alumno') {
@@ -1186,6 +1197,7 @@ export default function Dashboard() {
               horarios={horarios}
               canManageAusencias={canManageAusencias}
               currentAlumno={currentAlumno}
+              currentProfesor={currentProfesor}
               userProfile={userProfile}
               onNavigateToAusencias={(search) => { handleTabChange("ausencias"); setSearchQuery(search || ""); }}
               onNavigateToHorarios={(curso) => { handleTabChange("horarios"); setSelectedCourse(curso); }}
