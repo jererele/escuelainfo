@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.2";
-export const APP_BUILD_DATE = "23/09/2026 15:26 hs";
+export const APP_VERSION = "v2.17.3";
+export const APP_BUILD_DATE = "23/09/2026 15:38 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Depuración Visual de Insignia de Hora Libre (HorariosTab.tsx): Se removió el icono de estrella (Sparkles) de la etiqueta 'Hora Libre' en las tarjetas de clases y vista de grilla de horarios, manteniendo una estética limpia, sobria y de alto contraste."
+  "Rediseño y Centrado de Insignias de Estado de Ingreso (ConfiguracionTab.tsx): Se transformó la insignia 'Registrado y Activo' en un contenedor rectangular unificado con bordes suavizados (rounded-xl) y borde temático, alineando vertical y horizontalmente 'Registrado' e 'y Activo' en dos líneas centradas para evitar solapamientos o fragmentaciones de fondo."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.2",
+    date: "23/09/2026 15:26 hs",
+    notes: [
+      "Depuración Visual de Insignia de Hora Libre (HorariosTab.tsx): Se removió el icono de estrella (Sparkles) de la etiqueta 'Hora Libre' en las tarjetas de clases y vista de grilla de horarios, manteniendo una estética limpia, sobria y de alto contraste."
+    ]
+  },
   {
     version: "v2.17.1",
     date: "23/09/2026 15:05 hs",

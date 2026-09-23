@@ -187,12 +187,14 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                     </td>
                     <td className="p-6">
                       {u.uid.startsWith("PENDING_") ? (
-                        <span className="text-[10px] font-black uppercase px-2 py-1 bg-[var(--amarillo-bg)] text-[var(--amarillo)] rounded">
-                          Invitación Pendiente
+                        <span className="inline-flex flex-col items-center justify-center text-center px-3 py-1.5 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-xl text-[10px] font-black uppercase tracking-wider leading-tight">
+                          <span>Invitación</span>
+                          <span>Pendiente</span>
                         </span>
                       ) : (
-                        <span className="text-[10px] font-black uppercase px-2 py-1 bg-[var(--verde-bg)] text-[var(--verde)] rounded">
-                          Registrado y Activo
+                        <span className="inline-flex flex-col items-center justify-center text-center px-3 py-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-[10px] font-black uppercase tracking-wider leading-tight">
+                          <span>Registrado</span>
+                          <span>y Activo</span>
                         </span>
                       )}
                     </td>
