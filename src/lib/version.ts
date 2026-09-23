@@ -4,16 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.1";
-export const APP_BUILD_DATE = "23/09/2026 15:05 hs";
+export const APP_VERSION = "v2.17.2";
+export const APP_BUILD_DATE = "23/09/2026 15:26 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Desactivación y Remoción de Solicitud de Cambio de Nombre: Se retiró de forma completa la opción para que los alumnos y usuarios soliciten el cambio de su nombre desde 'Mi Perfil' (UserProfileModal.tsx), asegurando la inmutabilidad de la identidad y datos filiatorios oficiales registrados por la institución.",
-  "Limpieza de la Bandeja Directiva de Nombres (ConfiguracionTab.tsx y dashboard/page.tsx): Se removió la sección de 'Solicitudes de Cambio de Nombre' del panel de Configuración y sus flujos asociados de aprobación/rechazo, simplificando la interfaz de gestión institucional y eliminando código en desuso.",
-  "Optimización de dataService y Depuración de Endpoints: Se descontinuaron las funciones de solicitud, cancelación, aprobación y rechazo de nombres en dataService.ts, manteniendo la coherencia de datos con Appwrite."
+  "Depuración Visual de Insignia de Hora Libre (HorariosTab.tsx): Se removió el icono de estrella (Sparkles) de la etiqueta 'Hora Libre' en las tarjetas de clases y vista de grilla de horarios, manteniendo una estética limpia, sobria y de alto contraste."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.1",
+    date: "23/09/2026 15:05 hs",
+    notes: [
+      "Desactivación y Remoción de Solicitud de Cambio de Nombre: Se retiró de forma completa la opción para que los alumnos y usuarios soliciten el cambio de su nombre desde 'Mi Perfil' (UserProfileModal.tsx), asegurando la inmutabilidad de la identidad y datos filiatorios oficiales registrados por la institución.",
+      "Limpieza de la Bandeja Directiva de Nombres (ConfiguracionTab.tsx y dashboard/page.tsx): Se removió la sección de 'Solicitudes de Cambio de Nombre' del panel de Configuración y sus flujos asociados de aprobación/rechazo, simplificando la interfaz de gestión institucional y eliminando código en desuso.",
+      "Optimización de dataService y Depuración de Endpoints: Se descontinuaron las funciones de solicitud, cancelación, aprobación y rechazo de nombres en dataService.ts, manteniendo la coherencia de datos con Appwrite."
+    ]
+  },
   {
     version: "v2.17.0",
     date: "17/09/2026 20:20 hs",
