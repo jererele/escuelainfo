@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Search, Clock, ShieldCheck, Activity } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { formatActionLabel } from "@/lib/dataService";
 
 interface LogEntry {
   usuarioEmail: string;
@@ -19,25 +20,29 @@ export const AuditoriaTab: React.FC<AuditoriaTabProps> = ({ logs }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAction, setSelectedAction] = useState<string>("todas");
 
-  // Lista única de acciones para el selector de filtro
+  // Lista única de acciones traducidas para el selector de filtro
   const uniqueActions = useMemo(() => {
     const set = new Set<string>();
     logs.forEach(l => {
-      if (l.accion) set.add(l.accion.trim().toUpperCase());
+      if (l.accion) {
+        set.add(formatActionLabel(l.accion));
+      }
     });
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "es"));
   }, [logs]);
 
   // Filtrado de logs por búsqueda y acción
   const filteredLogs = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return logs.filter(log => {
-      const matchAction = selectedAction === "todas" || (log.accion && log.accion.trim().toUpperCase() === selectedAction);
+      const actionTitle = formatActionLabel(log.accion);
+      const matchAction = selectedAction === "todas" || actionTitle === selectedAction;
       if (!matchAction) return false;
       if (!q) return true;
       return (
         (log.usuarioEmail || "").toLowerCase().includes(q) ||
         (log.accion || "").toLowerCase().includes(q) ||
+        actionTitle.toLowerCase().includes(q) ||
         (log.detalles || "").toLowerCase().includes(q)
       );
     });
@@ -110,8 +115,8 @@ export const AuditoriaTab: React.FC<AuditoriaTabProps> = ({ logs }) => {
                     <div className="font-bold text-xs text-[var(--text)] truncate">{log.usuarioEmail}</div>
                   </div>
                 </div>
-                <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase font-mono tracking-wider bg-[var(--bg3)] text-[var(--verde)] border border-[var(--verde-border)]">
-                  {log.accion}
+                <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider bg-[var(--bg3)] text-[var(--verde)] border border-[var(--verde-border)] shadow-sm">
+                  {formatActionLabel(log.accion)}
                 </span>
               </div>
 
@@ -138,7 +143,7 @@ export const AuditoriaTab: React.FC<AuditoriaTabProps> = ({ logs }) => {
             <thead className="bg-[var(--bg3)]/80 border-b border-[var(--border)]">
               <tr>
                 <th className="p-5 text-[10px] font-black uppercase tracking-widest text-[var(--text2)] w-[240px]">Usuario</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-[var(--text2)] w-[140px]">Acción</th>
+                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-[var(--text2)] w-[180px]">Acción</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-widest text-[var(--text2)]">Detalles</th>
                 <th className="p-5 text-[10px] font-black uppercase tracking-widest text-[var(--text2)] w-[180px] whitespace-nowrap">Fecha</th>
               </tr>
@@ -162,8 +167,8 @@ export const AuditoriaTab: React.FC<AuditoriaTabProps> = ({ logs }) => {
                       </div>
                     </td>
                     <td className="p-5">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase font-mono tracking-wider bg-[var(--bg3)] text-[var(--verde)] border border-[var(--verde-border)] shadow-sm">
-                        {log.accion}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black tracking-wider bg-[var(--bg3)] text-[var(--verde)] border border-[var(--verde-border)] shadow-sm">
+                        {formatActionLabel(log.accion)}
                       </span>
                     </td>
                     <td className="p-5 text-xs text-[var(--text)] font-medium leading-relaxed break-words max-w-[400px]">

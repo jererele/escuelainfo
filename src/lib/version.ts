@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.5";
-export const APP_BUILD_DATE = "23/09/2026 15:50 hs";
+export const APP_VERSION = "v2.17.6";
+export const APP_BUILD_DATE = "23/09/2026 16:02 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Separación Responsiva y Visualización Completa en Logs de Auditoría (AuditoriaTab.tsx): Se solucionó el recorte de columnas en dispositivos móviles implementando DOM separation con tarjetas individuales enriquecidas (md:hidden) que exhiben detalles completos sin truncamiento. Para escritorio (hidden md:block), se incorporó un contenedor con scroll horizontal (overflow-x-auto) y ancho mínimo garantizado, junto a un buscador dinámico y filtro por tipo de acción."
+  "Traducción Completa y Legible de Acciones en Auditoría (AuditoriaTab.tsx y dataService.ts): Se implementó el diccionario integral ACTION_NAME_MAP y el normalizador formatActionLabel para traducir todos los códigos técnicos y truncados de logs (ej: 'AP_A' -> 'Aprobar Alumno', 'M_EA' -> 'Cambio de Estado', 'AU_C' -> 'Autorizar Colaborador', 'REGIST' -> 'Registrar Docente', 'ENVIAR' -> 'Enviar Notificación') a títulos legibles en español tanto en las tarjetas móviles como en la tabla de escritorio y en el menú de filtrado por acción."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.5",
+    date: "23/09/2026 15:50 hs",
+    notes: [
+      "Separación Responsiva y Visualización Completa en Logs de Auditoría (AuditoriaTab.tsx): Se solucionó el recorte de columnas en dispositivos móviles implementando DOM separation con tarjetas individuales enriquecidas (md:hidden) que exhiben detalles completos sin truncamiento. Para escritorio (hidden md:block), se incorporó un contenedor con scroll horizontal (overflow-x-auto) y ancho mínimo garantizado, junto a un buscador dinámico y filtro por tipo de acción."
+    ]
+  },
   {
     version: "v2.17.4",
     date: "23/09/2026 15:43 hs",

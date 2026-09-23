@@ -261,7 +261,120 @@ const LEGACY_LOG_MAP: Record<string, string> = {
   "MIGRAR_BASE_DATOS":         "MI_D",
   "ACEPTAR_TERMINOS":          "AC_T",
   "ENVIAR_NOTIFICACION":       "EN_N",
+  "ENVIAR":                    "EN_N",
+  "AGREGAR_SUSPENSION_EDILICIA": "SUSP_E",
 };
+
+export const ACTION_NAME_MAP: Record<string, string> = {
+  // Aprobaciones / Accesos
+  "AP_A": "Aprobar Alumno",
+  "APROBAR_ALUMNO": "Aprobar Alumno",
+  "RC_A": "Rechazar Alumno",
+  "RECHAZAR_ALUMNO": "Rechazar Alumno",
+  "AP_C": "Aprobar Colaborador",
+  "APROBAR_COLABORADOR": "Aprobar Colaborador",
+  "RC_C": "Rechazar Solicitud",
+  "RECHAZAR_SOLICITUD": "Rechazar Solicitud",
+  "AU_C": "Autorizar Colaborador",
+  "AUTORIZAR_COLABORADOR": "Autorizar Colaborador",
+  "RV_A": "Revocar Acceso",
+  "REVOCAR_ACCESO": "Revocar Acceso",
+
+  // Ausencias y Licencias
+  "C_A": "Registrar Ausencia",
+  "REGISTRAR_AUSENCIA": "Registrar Ausencia",
+  "E_A": "Eliminar Ausencia",
+  "BORRAR_AUSENCIA": "Eliminar Ausencia",
+  "M_EA": "Cambio de Estado",
+  "CAMBIO_ESTADO": "Cambio de Estado",
+  "RP_D": "Registrar Paro Docente",
+  "REGISTRAR_PARO_DOCENTE": "Registrar Paro Docente",
+  "RE_A": "Reiniciar Ausencias",
+  "REINICIAR_AUSENCIAS": "Reiniciar Ausencias",
+  "AGREGAR_SUSPENSION_EDILICIA": "Suspensión Edilicia",
+  "SUSP_E": "Suspensión Edilicia",
+
+  // Docentes
+  "C_D": "Registrar Docente",
+  "REGISTRAR_DOCENTE": "Registrar Docente",
+  "M_D": "Editar Docente",
+  "EDITAR_DOCENTE": "Editar Docente",
+  "E_D": "Eliminar Docente",
+  "ELIMINAR_DOCENTE": "Eliminar Docente",
+
+  // Alumnos y Cursos
+  "C_AL": "Inscribir Alumno",
+  "REGISTRAR_ALUMNO": "Inscribir Alumno",
+  "E_AL": "Eliminar Alumno",
+  "ELIMINAR_ALUMNO": "Eliminar Alumno",
+  "M_AL": "Asignar Curso",
+  "ASIGNAR_CURSO_ALUMNO": "Asignar Curso",
+  "ASIGNAR_ALUMNOS_CURSO": "Asignar Curso",
+  "C_CU": "Crear Curso",
+  "CREAR_CURSO": "Crear Curso",
+  "E_CU": "Eliminar Curso",
+  "ELIMINAR_CURSO": "Eliminar Curso",
+
+  // Horarios
+  "C_H": "Programar Clase",
+  "PROGRAMAR_CLASE": "Programar Clase",
+  "E_H": "Eliminar Clase",
+  "ELIMINAR_HORARIO": "Eliminar Clase",
+  "RE_H": "Reiniciar Horarios",
+  "REINICIAR_HORARIOS": "Reiniciar Horarios",
+
+  // Mesas de Examen
+  "C_M": "Crear Mesa de Examen",
+  "CREAR_MESA_EXAMEN": "Crear Mesa de Examen",
+  "E_M": "Eliminar Mesa de Examen",
+  "ELIMINAR_MESA_EXAMEN": "Eliminar Mesa de Examen",
+
+  // Asistencias
+  "C_AJ": "Asistencia General",
+  "REGISTRAR_ASISTENCIA_JORNADA": "Asistencia General",
+  "C_AM": "Asistencia por Materia",
+  "REGISTRAR_ASISTENCIA_MATERIA": "Asistencia por Materia",
+
+  // Notificaciones y Avisos
+  "EN_N": "Enviar Notificación",
+  "ENVIAR_NOTIFICACION": "Enviar Notificación",
+  "ENVIAR": "Enviar Notificación",
+
+  // Truncados históricos de Appwrite (failsafe slice(0, 6))
+  "REGIST": "Registrar Docente",
+  "EDITAR": "Editar Registro",
+  "ELIMIN": "Eliminar Registro",
+  "ASIGNA": "Asignar Curso",
+  "PROGRAM": "Programar Horario",
+  "REINIC": "Reiniciar Datos",
+  "ACEPTA": "Aceptar Términos",
+  "SOLICI": "Solicitud de Acceso",
+
+  // Sistema / Legales
+  "MI_D": "Migrar Base de Datos",
+  "MIGRAR_BASE_DATOS": "Migrar Base de Datos",
+  "AC_T": "Aceptar Términos",
+  "ACEPTAR_TERMINOS": "Aceptar Términos",
+  "LOGIN": "Inicio de Sesión",
+  "LOGOUT": "Cierre de Sesión"
+};
+
+/**
+ * Traduce cualquier código de acción (compacto, truncado o legacy) a un título
+ * claro y legible para el usuario (ej: "AP_A" -> "Aprobar Alumno").
+ */
+export const formatActionLabel = (code: string): string => {
+  if (!code) return "Acción Desconocida";
+  const trimmed = code.trim();
+  if (ACTION_NAME_MAP[trimmed]) return ACTION_NAME_MAP[trimmed];
+  const upper = trimmed.toUpperCase();
+  if (ACTION_NAME_MAP[upper]) return ACTION_NAME_MAP[upper];
+  return trimmed
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+};
+
 /**
  * Convierte cualquier acción (legacy SNAKE_UPPER o código compacto) al código
  * compacto para almacenar en Appwrite. Máx 6 chars.
@@ -274,11 +387,11 @@ export const toDbAccion = (accion: string): string => {
   // Si por alguna razón no se reconoce, truncar a 6 chars (failsafe)
   return accion.slice(0, 6);
 };
+
 /**
  * Traduce un código compacto de log al texto legible para la UI del Administrador.
- * Si el código no se reconoce (por datos legacy), lo devuelve tal cual.
  */
-export const fromDbAccion = (code: string): string => LOG_CODE_MAP[code] ?? LEGACY_LOG_MAP[code] ?? code;
+export const fromDbAccion = (code: string): string => formatActionLabel(code);
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 export interface Ausencia {
