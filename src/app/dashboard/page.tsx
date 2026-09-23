@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, approveNameChange, rejectNameChange } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -602,30 +602,6 @@ export default function Dashboard() {
         getUsuarios().then(setUsuarios);
       } catch (err) {
         showToast("Error al rechazar solicitud", "error");
-      }
-    });
-  };
-
-  const handleApproveNameChange = async (u: UserProfile) => {
-    try {
-      await approveNameChange(u, user?.email || "desconocido");
-      showToast(`Cambio de nombre aprobado: ${u.nombrePendiente}`, "success");
-      setUsuarios(prev => prev.map(usr => usr.id === u.id ? { ...usr, nombre: usr.nombrePendiente!, nombrePendiente: "" } : usr));
-      if (u.rol === "alumno") getAlumnos().then(setAlumnos);
-      if (u.rol === "profesor") getProfesores().then(setProfesores);
-    } catch {
-      showToast("Error al aprobar cambio de nombre", "error");
-    }
-  };
-
-  const handleRejectNameChange = async (u: UserProfile) => {
-    askConfirm(`¿Rechazar el cambio de nombre solicitado por ${u.nombre}?`, async () => {
-      try {
-        await rejectNameChange(u, user?.email || "desconocido");
-        showToast("Solicitud de cambio de nombre rechazada", "success");
-        setUsuarios(prev => prev.map(usr => usr.id === u.id ? { ...usr, nombrePendiente: "" } : usr));
-      } catch {
-        showToast("Error al rechazar cambio de nombre", "error");
       }
     });
   };
@@ -1237,8 +1213,6 @@ export default function Dashboard() {
               onApproveRequest={handleApproveRequest}
               onRejectRequest={handleRejectRequest}
               onRevokeAccess={handleRevokeAccess}
-              onApproveNameChange={handleApproveNameChange}
-              onRejectNameChange={handleRejectNameChange}
             />
           )}
 

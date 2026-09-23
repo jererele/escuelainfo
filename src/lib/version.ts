@@ -4,17 +4,26 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.0";
-export const APP_BUILD_DATE = "17/09/2026 20:20 hs";
+export const APP_VERSION = "v2.17.1";
+export const APP_BUILD_DATE = "23/09/2026 15:05 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Selector de Curso Afectado en Registro de Licencias y Ausencias (NewAbsenceModal.tsx): Se incorporó un selector dinámico de 'Curso Afectado' tanto en la vista de escritorio como en la versión móvil optimizada para 120Hz. Permite a docentes y preceptores especificar si la inasistencia aplica a toda su carga horaria ('Todos los cursos') o acotarla con precisión a un curso determinado.",
-  "Filtrado Automático de Materias según el Curso Seleccionado: Al elegir un curso específico, el campo 'Materias Afectadas' extrae y precarga de inmediato las materias que dicho profesor dicta en ese curso exacto, agregando la etiqueta identificatoria (ej: 'Asistencia Al Usuario (6to ETP - Doble Turno)').",
-  "Agrupación Inteligente en el Menú Desplegable: El selector organiza los cursos en dos grupos claros: 'Cursos con Clases Asignadas al Docente' (ordenados alfabéticamente a partir de sus horarios reales) y 'Todos los Cursos de la Escuela', facilitando una selección inmediata sin perder flexibilidad.",
-  "Segmentación Precisa de Horas Libres en el Panel Principal (FreeHoursWidget.tsx): El widget de horas libres ahora reconoce licencias acotadas a un curso puntual, de modo que solo se señalan como libres las horas correspondientes al curso y materias indicadas en la ausencia, preservando el dictado habitual en los demás cursos del docente."
+  "Desactivación y Remoción de Solicitud de Cambio de Nombre: Se retiró de forma completa la opción para que los alumnos y usuarios soliciten el cambio de su nombre desde 'Mi Perfil' (UserProfileModal.tsx), asegurando la inmutabilidad de la identidad y datos filiatorios oficiales registrados por la institución.",
+  "Limpieza de la Bandeja Directiva de Nombres (ConfiguracionTab.tsx y dashboard/page.tsx): Se removió la sección de 'Solicitudes de Cambio de Nombre' del panel de Configuración y sus flujos asociados de aprobación/rechazo, simplificando la interfaz de gestión institucional y eliminando código en desuso.",
+  "Optimización de dataService y Depuración de Endpoints: Se descontinuaron las funciones de solicitud, cancelación, aprobación y rechazo de nombres en dataService.ts, manteniendo la coherencia de datos con Appwrite."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.0",
+    date: "17/09/2026 20:20 hs",
+    notes: [
+      "Selector de Curso Afectado en Registro de Licencias y Ausencias (NewAbsenceModal.tsx): Se incorporó un selector dinámico de 'Curso Afectado' tanto en la vista de escritorio como en la versión móvil optimizada para 120Hz. Permite a docentes y preceptores especificar si la inasistencia aplica a toda su carga horaria ('Todos los cursos') o acotarla con precisión a un curso determinado.",
+      "Filtrado Automático de Materias según el Curso Seleccionado: Al elegir un curso específico, el campo 'Materias Afectadas' extrae y precarga de inmediato las materias que dicho profesor dicta en ese curso exacto, agregando la etiqueta identificatoria (ej: 'Asistencia Al Usuario (6to ETP - Doble Turno)').",
+      "Agrupación Inteligente en el Menú Desplegable: El selector organiza los cursos en dos grupos claros: 'Cursos con Clases Asignadas al Docente' (ordenados alfabéticamente a partir de sus horarios reales) y 'Todos los Cursos de la Escuela', facilitando una selección inmediata sin perder flexibilidad.",
+      "Segmentación Precisa de Horas Libres en el Panel Principal (FreeHoursWidget.tsx): El widget de horas libres ahora reconoce licencias acotadas a un curso puntual, de modo que solo se señalan como libres las horas correspondientes al curso y materias indicadas en la ausencia, preservando el dictado habitual en los demás cursos del docente."
+    ]
+  },
   {
     version: "v2.16.1",
     date: "17/09/2026 20:00 hs",

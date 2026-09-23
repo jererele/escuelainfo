@@ -6,8 +6,6 @@ import {
   UserProfile,
   updateUserProfile,
   syncUserEmailChange,
-  requestNameChange,
-  cancelNameChangeRequest,
 } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import {
@@ -22,8 +20,6 @@ import {
   MapPin,
   Eye,
   EyeOff,
-  Sparkles,
-  Clock,
   KeyRound,
   Send,
 } from "lucide-react";
@@ -57,10 +53,6 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
   // Info tab
   const [telefono, setTelefono] = useState(profile.telefono || "");
   const [direccion, setDireccion] = useState(profile.direccion || "");
-
-  // Solicitud de cambio de nombre
-  const [isRequestingName, setIsRequestingName] = useState(false);
-  const [newName, setNewName] = useState("");
 
   // Password tab (Código OTP por email)
   const [codeSent, setCodeSent] = useState(false);
@@ -98,8 +90,6 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
     if (isOpen) {
       setTelefono(profile.telefono || "");
       setDireccion(profile.direccion || "");
-      setIsRequestingName(false);
-      setNewName("");
       setCodeSent(false);
       setOtpCode("");
       setOtpToken("");
@@ -134,44 +124,6 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
       notify.success("Datos de contacto actualizados correctamente.");
     } catch {
       notify.error("Error al guardar los datos.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSendNameChangeRequest = async () => {
-    if (!profile.id) return;
-    if (!newName.trim() || newName.trim().length < 3) {
-      notify.error("Ingresá un nombre y apellido válido (mínimo 3 caracteres).");
-      return;
-    }
-    if (newName.trim() === profile.nombre.trim()) {
-      notify.error("El nombre solicitado es igual a tu nombre actual.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await requestNameChange(profile.id, newName.trim(), profile.email);
-      onProfileUpdated({ nombrePendiente: newName.trim() });
-      setIsRequestingName(false);
-      setNewName("");
-      notify.success("Solicitud enviada. Los directivos revisarán tu cambio de nombre.");
-    } catch {
-      notify.error("No se pudo enviar la solicitud. Intentá de nuevo.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancelNameChangeRequest = async () => {
-    if (!profile.id) return;
-    setLoading(true);
-    try {
-      await cancelNameChangeRequest(profile.id, profile.email);
-      onProfileUpdated({ nombrePendiente: "" });
-      notify.success("Solicitud de cambio de nombre cancelada.");
-    } catch {
-      notify.error("Error al cancelar la solicitud.");
     } finally {
       setLoading(false);
     }
@@ -348,103 +300,12 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
                 </span>
               </div>
 
-              {/* Nombre Completo & Solicitud de Cambio */}
-              <div>
-                <label className="flex items-center justify-between text-[10px] font-black uppercase text-[var(--text3)] mb-1.5 ml-1">
-                  <span className="flex items-center gap-1.5">
-                    <User size={11} /> Nombre Completo
-                  </span>
-                  {!profile.nombrePendiente && !isRequestingName && (
-                    <button
-                      type="button"
-                      onClick={() => setIsRequestingName(true)}
-                      className="text-[10px] font-bold text-[var(--verde)] hover:underline flex items-center gap-1 normal-case tracking-normal"
-                    >
-                      <Sparkles size={11} /> Solicitar cambio
-                    </button>
-                  )}
-                </label>
-
-                {/* Si hay solicitud pendiente */}
-                {profile.nombrePendiente ? (
-                  <div className="p-3.5 rounded-2xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] space-y-2.5 animate-fade-in">
-                    <div className="flex items-center gap-2 text-[var(--amarillo)] font-black text-xs">
-                      <Clock size={13} className="animate-spin" />
-                      <span>Cambio de nombre en revisión directiva</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 bg-[var(--bg)] p-3 rounded-xl border border-[var(--border)]">
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[9px] text-[var(--text3)] font-black uppercase tracking-wider block">
-                          Nuevo nombre solicitado:
-                        </span>
-                        <div className="font-black text-[var(--text)] text-sm truncate">{profile.nombrePendiente}</div>
-                      </div>
-                      <UserAvatar name={profile.nombrePendiente} size={36} showRing={false} />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleCancelNameChangeRequest}
-                      disabled={loading}
-                      className="w-full py-2 text-xs font-bold text-[var(--rojo)] hover:bg-[var(--rojo-bg)] rounded-xl border border-[var(--rojo-border)] transition-all active:scale-95 cursor-pointer"
-                    >
-                      Cancelar Solicitud
-                    </button>
-                  </div>
-                ) : isRequestingName ? (
-                  /* Formulario de nueva solicitud de cambio de nombre */
-                  <div className="p-4 rounded-2xl bg-[var(--bg2)] border border-[var(--verde-border)] space-y-3 animate-fade-in">
-                    <div className="text-xs font-black text-[var(--verde)] flex items-center gap-1.5">
-                      <Sparkles size={13} /> Nueva Solicitud de Nombre
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Ej: Juan Carlos Pérez"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl p-3 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                    />
-
-                    {/* Previsualización en vivo del nuevo avatar */}
-                    {newName.trim() && (
-                      <div className="flex items-center gap-3 p-2.5 bg-[var(--bg3)] rounded-xl border border-[var(--border)] animate-fade-in">
-                        <UserAvatar name={newName.trim()} size={36} animate="always" showRing={true} />
-                        <div className="text-xs min-w-0 flex-1">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-[var(--verde)] block">
-                            Tu nuevo avatar será:
-                          </span>
-                          <span className="font-bold text-[var(--text)] truncate block">{newName.trim()}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsRequestingName(false);
-                          setNewName("");
-                        }}
-                        className="flex-1 py-2 rounded-xl border border-[var(--border)] text-xs font-bold hover:bg-[var(--bg3)] text-[var(--text)] transition-all"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSendNameChangeRequest}
-                        disabled={loading || !newName.trim()}
-                        className="flex-1 py-2 rounded-xl bg-[var(--verde)] text-black text-xs font-black hover:opacity-90 transition-all disabled:opacity-50"
-                      >
-                        {loading ? "Enviando..." : "Enviar a Directivos"}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Campo estático regular */
-                  <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 font-bold text-[var(--text)] opacity-70 text-sm">
-                    {profile.nombre}
-                  </div>
-                )}
-              </div>
+              {/* Nombre Completo */}
+              <Field label="Nombre Completo" icon={<User size={11} />}>
+                <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 font-bold text-[var(--text)] opacity-70 text-sm">
+                  {profile.nombre}
+                </div>
+              </Field>
 
               <Field label="Email institucional" icon={<Mail size={11} />}>
                 <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 font-bold text-[var(--text)] opacity-70 text-sm">
