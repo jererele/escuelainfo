@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion } from "motion/react";
+import React, { useState, useCallback, useRef } from "react";
 
 interface GravityTextProps {
   text: string;
@@ -9,54 +8,89 @@ interface GravityTextProps {
   delay?: number;
 }
 
+const ROTATION_ANGLES = [-9, 8, -7, 10, -8, 7, -10, 9, -7, 8];
+
+interface InteractiveCharProps {
+  char: string;
+  index: number;
+  totalIndex: number;
+  delay: number;
+  className?: string;
+}
+
+const InteractiveChar: React.FC<InteractiveCharProps> = ({
+  char,
+  totalIndex,
+  delay,
+  className = "",
+}) => {
+  const [bouncing, setBouncing] = useState(false);
+  const [bounceKey, setBounceKey] = useState(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const angle = ROTATION_ANGLES[totalIndex % ROTATION_ANGLES.length];
+  const revAngle = -Math.round(angle * 0.55);
+  const subAngle = Math.round(angle * 0.25);
+
+  const triggerBounce = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setBounceKey((k) => k + 1);
+    setBouncing(true);
+    timeoutRef.current = setTimeout(() => {
+      setBouncing(false);
+    }, 550);
+  }, []);
+
+  return (
+    <span
+      key={bounceKey}
+      onMouseEnter={triggerBounce}
+      onPointerEnter={triggerBounce}
+      onTouchStart={triggerBounce}
+      style={{
+        "--letter-rot": `${angle}deg`,
+        "--letter-rot-rev": `${revAngle}deg`,
+        "--letter-rot-sub": `${subAngle}deg`,
+        animationDelay: bouncing ? "0ms" : `${totalIndex * delay * 1000}ms`,
+      } as React.CSSProperties}
+      className={`interactive-letter ${
+        bouncing ? "animate-letter-bounce" : "animate-letter-in"
+      } ${className}`}
+      title="Escuela 713"
+    >
+      {char}
+    </span>
+  );
+};
+
 export const GravityText: React.FC<GravityTextProps> = ({
   text,
   className = "",
-  delay = 0.03,
+  delay = 0.04,
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768 || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }, []);
-
-  const characters = text.split("");
-
-  if (isMobile) {
-    return <span className={className}>{text}</span>;
-  }
+  const words = text.split(" ");
+  let globalCharIndex = 0;
 
   return (
-    <span className={`inline-flex flex-wrap ${className}`}>
-      {characters.map((char, index) => {
-        if (char === " ") {
-          return (
-            <span key={index} className="inline-block w-2">
-              &nbsp;
-            </span>
-          );
-        }
-
+    <span className={`inline-flex flex-wrap items-center gap-x-2.5 sm:gap-x-3.5 ${className}`}>
+      {words.map((word, wordIdx) => {
+        const wordChars = word.split("");
         return (
-          <motion.span
-            key={index}
-            initial={{ opacity: 0, y: -24, rotate: -8 }}
-            animate={{ opacity: 1, y: 0, rotate: 0 }}
-            transition={{
-              type: "spring",
-              damping: 12,
-              stiffness: 150,
-              delay: index * delay,
-            }}
-            whileHover={{
-              y: -8,
-              rotate: [0, -6, 6, 0],
-              transition: { duration: 0.25 },
-            }}
-            className="inline-block cursor-default select-none"
-          >
-            {char}
-          </motion.span>
+          <span key={wordIdx} className="inline-flex whitespace-nowrap">
+            {wordChars.map((char) => {
+              const idx = globalCharIndex++;
+              return (
+                <InteractiveChar
+                  key={`${wordIdx}-${idx}`}
+                  char={char}
+                  index={idx}
+                  totalIndex={idx}
+                  delay={delay}
+                  className={className}
+                />
+              );
+            })}
+          </span>
         );
       })}
     </span>
@@ -64,3 +98,4 @@ export const GravityText: React.FC<GravityTextProps> = ({
 };
 
 export default GravityText;
+

@@ -860,3 +860,68 @@ html.argb-gamer-mode .title-font {
     word-break: break-word !important;
   }
 }
+
+/* ─── KINETIC BOUNCING LETTERS (GravityText / Escuela 713) ──────────── */
+@keyframes letterKineticBounce {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  20% {
+    transform: translateY(-16px) scale(1.24) rotate(var(--letter-rot, -8deg));
+    filter: drop-shadow(0 6px 12px rgba(16, 185, 129, 0.5));
+  }
+  45% {
+    transform: translateY(3px) scale(0.92, 1.1) rotate(var(--letter-rot-rev, 4deg));
+  }
+  70% {
+    transform: translateY(-6px) scale(1.08, 0.96) rotate(var(--letter-rot-sub, -2deg));
+  }
+  85% {
+    transform: translateY(1px) scale(0.98, 1.02) rotate(0deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+@keyframes letterCascadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.7) rotate(-10deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px) scale(1.08) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+.animate-letter-bounce {
+  animation: letterKineticBounce 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  will-change: transform, filter;
+}
+
+.animate-letter-in {
+  animation: letterCascadeIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  will-change: transform, opacity;
+}
+
+.interactive-letter {
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transform-origin: center bottom;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .interactive-letter:hover {
+    transform: translateY(-12px) scale(1.18) rotate(var(--letter-rot, -6deg));
+    filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.45));
+    transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.3, 1.25), filter 0.16s ease;
+  }
+}

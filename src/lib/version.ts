@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.5";
-export const APP_BUILD_DATE = "23/09/2026 17:15 hs";
+export const APP_VERSION = "v2.20.6";
+export const APP_BUILD_DATE = "23/09/2026 17:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Privacidad y Aislamiento de Novedades Docentes (GeneralTab.tsx y page.tsx): Se blindó la sección 'Novedades Recientes' del panel de Inicio para que los profesores con sesión activa visualicen única y exclusivamente sus propias licencias, justificaciones y novedades ('Mis Novedades Recientes'), impidiendo la exposición de los motivos, estados o registros de otros colegas de la institución. Las métricas y tarjetas estadísticas en el inicio docente ahora se computan de forma personalizada según el historial individual del profesor, mientras que los equipos directivos y de preceptoría conservan el panorama general e institucional."
+  "Reactivación de Letras Cinéticas Interactivas en 'Escuela 713' (GravityText.tsx y globals.css): Se revitalizó la tipografía interactiva del banner principal en Inicio. Cada letra de 'Escuela 713' ahora reacciona de forma inmediata y elástica cada vez que el usuario pasa el cursor por encima (hover / sweep) o desliza el dedo en pantallas táctiles y móviles, elevándose 16px con rotación angular dinámica, escalado suave (1.24x) y un destello de resplandor verde esmeralda. Se implementó una animación física de rebote elástico (rubber-band bounce) que se reinicia limpiamente en cada interacción sin pausas ni bloqueos de hidratación, acompañada de una entrada en cascada escalonada al cargar el panel institucional."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.5",
+    date: "23/09/2026 17:15 hs",
+    notes: [
+      "Privacidad y Aislamiento de Novedades Docentes (GeneralTab.tsx y page.tsx): Se blindó la sección 'Novedades Recientes' del panel de Inicio para que los profesores con sesión activa visualicen única y exclusivamente sus propias licencias, justificaciones y novedades ('Mis Novedades Recientes'), impidiendo la exposición de los motivos, estados o registros de otros colegas de la institución. Las métricas y tarjetas estadísticas en el inicio docente ahora se computan de forma personalizada según el historial individual del profesor, mientras que los equipos directivos y de preceptoría conservan el panorama general e institucional."
+    ]
+  },
   {
     version: "v2.20.4",
     date: "23/09/2026 17:05 hs",

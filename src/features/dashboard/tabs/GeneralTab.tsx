@@ -80,7 +80,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       {/* BANNER DE BIENVENIDA */}
       <div className="p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-[var(--bg2)] shadow-md">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-black title-font text-[var(--text)] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black title-font text-[var(--text)] tracking-tight flex flex-wrap items-center">
             <GravityText text="Escuela 713" className="text-[var(--verde)]" />
             <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
           </h1>
