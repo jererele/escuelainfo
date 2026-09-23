@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { Search, Trash2, Check, X, Clock } from "lucide-react";
-import { Alumno, UserProfile } from "@/lib/dataService";
+import { Alumno, UserProfile, Curso } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 const ApproveStudentRoleModal = dynamic(
@@ -15,10 +15,15 @@ interface AlumnosTabProps {
   isAdmin: boolean;
   studentSearchQuery: string;
   setStudentSearchQuery: (q: string) => void;
-  onOpenAddStudent: () => void;
-  onApproveStudent: (u: UserProfile, targetRole?: "alumno" | "profesor" | "preceptor") => Promise<void> | void;
+  onOpenAddStudent: (al?: Alumno) => void;
+  onApproveStudent: (
+    u: UserProfile,
+    targetRole?: "alumno" | "profesor" | "preceptor",
+    selectedCurso?: string
+  ) => Promise<void> | void;
   onRejectStudent: (u: UserProfile) => void;
   onDeleteAlumno: (al: Alumno) => void;
+  cursos?: Curso[];
 }
 
 export const AlumnosTab: React.FC<AlumnosTabProps> = ({
@@ -31,6 +36,7 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
   onApproveStudent,
   onRejectStudent,
   onDeleteAlumno,
+  cursos,
 }) => {
   const [approvingUser, setApprovingUser] = useState<UserProfile | null>(null);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
@@ -181,7 +187,7 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
           <div className="flex gap-2 w-full md:w-auto">
             {isAdmin && (
               <button 
-                onClick={onOpenAddStudent}
+                onClick={() => onOpenAddStudent()}
                 className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer text-center text-xs sm:text-sm"
               >
                 + Inscribir Alumno
@@ -233,12 +239,30 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[var(--border)]/50">
                   <span className="font-mono text-[var(--text2)]">DNI: <strong className="text-[var(--text)]">{al.dni}</strong></span>
                   {al.curso && al.curso !== 'pendiente' ? (
-                    <span className="inline-block text-center px-2.5 py-0.5 bg-[var(--bg3)] border border-[var(--border)] rounded-lg text-[10px] font-bold leading-tight">{al.curso}</span>
+                    <button
+                      type="button"
+                      onClick={() => isAdmin && onOpenAddStudent(al)}
+                      disabled={!isAdmin}
+                      className={`inline-block text-center px-2.5 py-0.5 bg-[var(--bg3)] border border-[var(--border)] rounded-lg text-[10px] font-bold leading-tight ${
+                        isAdmin ? "hover:border-[var(--verde)] cursor-pointer active:scale-95" : ""
+                      }`}
+                      title={isAdmin ? "Hacé clic para cambiar o asignar curso" : undefined}
+                    >
+                      {al.curso}
+                    </button>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => isAdmin && onOpenAddStudent(al)}
+                      disabled={!isAdmin}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold ${
+                        isAdmin ? "hover:border-[var(--verde)] hover:text-[var(--verde)] cursor-pointer active:scale-95" : ""
+                      }`}
+                      title={isAdmin ? "Hacé clic para asignar curso" : undefined}
+                    >
                       <Clock size={10} strokeWidth={2.5} className="shrink-0" />
-                      <span>Pendiente</span>
-                    </span>
+                      <span>Pendiente {isAdmin ? "· Asignar" : ""}</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -279,13 +303,32 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                       </td>
                       <td className="p-6 text-sm">{al.dni}</td>
                       <td className="p-6">
-                        {al.curso && al.curso !== 'pendiente'
-                          ? <span className="inline-block text-center px-3 py-1.5 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-xs font-bold leading-tight shadow-sm">{al.curso}</span>
-                          : <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-xl text-xs font-bold leading-tight shadow-sm">
-                              <Clock size={11} strokeWidth={2.5} className="shrink-0" />
-                              <span>Pendiente</span>
-                            </span>
-                        }
+                        {al.curso && al.curso !== 'pendiente' ? (
+                          <button
+                            type="button"
+                            onClick={() => isAdmin && onOpenAddStudent(al)}
+                            disabled={!isAdmin}
+                            className={`inline-block text-center px-3 py-1.5 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-xs font-bold leading-tight shadow-sm transition-all ${
+                              isAdmin ? "hover:border-[var(--verde)] hover:bg-[var(--verde-bg)]/20 cursor-pointer" : ""
+                            }`}
+                            title={isAdmin ? "Hacé clic para cambiar o asignar curso" : undefined}
+                          >
+                            {al.curso}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => isAdmin && onOpenAddStudent(al)}
+                            disabled={!isAdmin}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-xl text-xs font-bold leading-tight shadow-sm transition-all ${
+                              isAdmin ? "hover:border-[var(--verde)] hover:text-[var(--verde)] cursor-pointer" : ""
+                            }`}
+                            title={isAdmin ? "Hacé clic para asignar curso" : undefined}
+                          >
+                            <Clock size={11} strokeWidth={2.5} className="shrink-0" />
+                            <span>Pendiente {isAdmin ? "· Asignar" : ""}</span>
+                          </button>
+                        )}
                       </td>
                       {isAdmin && (
                         <td className="p-6 text-right">
@@ -315,11 +358,14 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
             setIsApproveModalOpen(false);
             setApprovingUser(null);
           }}
-          onConfirm={(targetRole) => onApproveStudent(approvingUser, targetRole)}
+          onConfirm={(targetRole, selectedCurso) =>
+            onApproveStudent(approvingUser, targetRole, selectedCurso)
+          }
           user={approvingUser}
           alumnoDetails={alumnos.find(
             (a) => a.email.toLowerCase() === approvingUser.email.toLowerCase()
           )}
+          cursos={cursos}
         />
       )}
     </div>

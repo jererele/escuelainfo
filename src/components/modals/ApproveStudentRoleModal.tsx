@@ -2,15 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Check, GraduationCap, BookOpen, Users, Clock, AlertCircle } from "lucide-react";
-import { UserProfile, Alumno } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ApproveStudentRoleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (targetRole: "alumno" | "profesor" | "preceptor") => Promise<void> | void;
+  onConfirm: (
+    targetRole: "alumno" | "profesor" | "preceptor",
+    selectedCurso?: string
+  ) => Promise<void> | void;
   user: UserProfile | null;
   alumnoDetails?: Alumno | null;
+  cursos?: Curso[];
 }
 
 export default function ApproveStudentRoleModal({
@@ -19,30 +23,48 @@ export default function ApproveStudentRoleModal({
   onConfirm,
   user,
   alumnoDetails,
+  cursos,
 }: ApproveStudentRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
+  const [selectedCurso, setSelectedCurso] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setSelectedRole("alumno");
+      setSelectedCurso("");
       setLoading(false);
       return;
     }
     setSelectedRole("alumno");
+
+    // Pre-seleccionar curso solicitado si existe en cursos, o el primer curso disponible
+    const requested = alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? alumnoDetails.curso : "";
+    if (requested && cursos && cursos.some(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase())) {
+      const matched = cursos.find(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase());
+      setSelectedCurso(matched ? matched.nombre : requested);
+    } else if (cursos && cursos.length > 0) {
+      setSelectedCurso(cursos[0].nombre);
+    } else {
+      setSelectedCurso(requested || "");
+    }
+
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, alumnoDetails, cursos, onClose]);
 
   if (!isOpen || !user) return null;
 
   const handleConfirm = async () => {
+    if (selectedRole === "alumno" && cursos && cursos.length > 0 && !selectedCurso) {
+      return;
+    }
     setLoading(true);
     try {
-      await onConfirm(selectedRole);
+      await onConfirm(selectedRole, selectedRole === "alumno" ? selectedCurso : undefined);
       onClose();
     } finally {
       setLoading(false);
@@ -158,6 +180,52 @@ export default function ApproveStudentRoleModal({
           </div>
         </div>
 
+        {/* Selector de Curso (solo si el rol seleccionado es Alumno) */}
+        {selectedRole === "alumno" && (
+          <div className="space-y-2.5 p-4 rounded-2xl bg-[var(--bg3)]/60 border border-[var(--border)] animate-fade-in">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
+                <GraduationCap size={14} className="text-[var(--verde)]" />
+                <span>Curso a Asignar</span>
+                <span className="text-[var(--rojo)]">*</span>
+              </label>
+              {selectedCurso && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                  {selectedCurso}
+                </span>
+              )}
+            </div>
+
+            {cursos && cursos.length > 0 ? (
+              <div className="relative">
+                <select
+                  value={selectedCurso}
+                  onChange={(e) => setSelectedCurso(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] focus:border-[var(--verde)] rounded-2xl p-3.5 text-sm font-bold text-[var(--text)] outline-none transition-all cursor-pointer"
+                >
+                  <option value="" disabled>-- Seleccionar Curso Obligatorio --</option>
+                  {cursos.map((c) => (
+                    <option key={c.id || c.nombre} value={c.nombre}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="text-xs text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-3 rounded-xl flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>No hay cursos dados de alta. Podrás asignarlo luego desde Ciclo Lectivo.</span>
+              </div>
+            )}
+
+            {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" && alumnoDetails.curso !== selectedCurso && (
+              <p className="text-[11px] text-[var(--amarillo)] font-medium pl-1">
+                Nota: El alumno solicitó originalmente el curso <strong>{alumnoDetails.curso}</strong>.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Acciones */}
         <div className="flex gap-3 pt-2">
           <button
@@ -171,13 +239,15 @@ export default function ApproveStudentRoleModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={loading || (selectedRole === "alumno" && Boolean(cursos && cursos.length > 0 && !selectedCurso))}
             className="flex-1 p-3.5 rounded-2xl bg-[var(--verde)] text-black font-black text-sm disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Check size={16} strokeWidth={2.5} />
             <span>
               {loading
                 ? "Aprobando..."
+                : selectedRole === "alumno" && selectedCurso
+                ? `Aprobar en ${selectedCurso}`
                 : `Aprobar como ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`}
             </span>
           </button>

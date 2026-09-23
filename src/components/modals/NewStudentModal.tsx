@@ -5,9 +5,14 @@ import { account } from "@/lib/appwrite";
 import { getAlumnos, updateAlumno, logAction, getCursos, Curso, Alumno } from "@/lib/dataService";
 import { X, AlertCircle, Search, UserCheck, UserPlus, Check } from "lucide-react";
 
-interface Props { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  initialAlumno?: Alumno | null;
+}
 
-export default function NewStudentModal({ isOpen, onClose, onSuccess }: Props) {
+export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlumno }: Props) {
   const [loading, setLoading] = useState(false);
   const [cursos, setCursosList] = useState<Curso[]>([]);
   const [curso, setCurso] = useState("");
@@ -25,8 +30,21 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess }: Props) {
     if (isOpen) {
       getCursos().then(setCursosList);
       getAlumnos(true).then(setAllAlumnos);
+      if (initialAlumno) {
+        setSelectedAlumno(initialAlumno);
+        setSearchQuery(initialAlumno.nombre);
+        if (initialAlumno.curso && initialAlumno.curso !== "pendiente") {
+          setCurso(initialAlumno.curso);
+        } else {
+          setCurso("");
+        }
+      } else {
+        setSelectedAlumno(null);
+        setSearchQuery("");
+        setCurso("");
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialAlumno]);
 
   // Filtrar alumnos mientras escribe
   useEffect(() => {

@@ -149,6 +149,7 @@ export default function Dashboard() {
   const [reportModalInitialTipo, setReportModalInitialTipo] = useState("Paro Docente");
   const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+  const [editingStudentForCourse, setEditingStudentForCourse] = useState<Alumno | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -606,14 +607,30 @@ export default function Dashboard() {
     });
   };
 
-  // APROBACIONES DE ALUMNOS (Permite elegir rol: alumno, profesor o preceptor)
-  const handleApproveStudent = async (u: UserProfile, targetRole: "alumno" | "profesor" | "preceptor" = "alumno") => {
+  // APROBACIONES DE ALUMNOS (Permite elegir rol: alumno, profesor o preceptor, y el curso en caso de alumno)
+  const handleApproveStudent = async (
+    u: UserProfile,
+    targetRole: "alumno" | "profesor" | "preceptor" = "alumno",
+    selectedCurso?: string
+  ) => {
     try {
       await updateUserProfile(u.id!, { rol: targetRole });
 
       const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
 
-      if (targetRole === "profesor") {
+      if (targetRole === "alumno") {
+        if (studDetails && studDetails.id && selectedCurso) {
+          await updateAlumno(studDetails.id, { curso: selectedCurso });
+          setAlumnos(prev => prev.map(a => a.id === studDetails.id ? { ...a, curso: selectedCurso } : a));
+        } else if (!studDetails && selectedCurso) {
+          await saveAlumno({
+            nombre: u.nombre,
+            dni: "",
+            curso: selectedCurso,
+            email: u.email.toLowerCase().trim()
+          });
+        }
+      } else if (targetRole === "profesor") {
         // Si se aprobó como profesor, asegurar que tenga registro en profesores y remover de alumnos
         const teachers = await getProfesores();
         const alreadyExists = teachers.some(t => t.email.toLowerCase() === u.email.toLowerCase());
@@ -643,12 +660,21 @@ export default function Dashboard() {
       };
       const label = roleLabels[targetRole] || targetRole;
 
+      const logDesc = targetRole === "alumno" && selectedCurso
+        ? `Email: ${u.email}, Rol: Alumno, Curso: ${selectedCurso}`
+        : `Email: ${u.email}, Rol asignado: ${label}`;
+
       await logAction(
         user?.email || "desconocido", 
         targetRole === "alumno" ? "APROBAR_ALUMNO" : "APROBAR_COLABORADOR", 
-        `Email: ${u.email}, Rol asignado: ${label}`
+        logDesc
       );
-      showToast(`Solicitud de ${u.nombre} aprobada como ${label}`, "success");
+
+      const toastMessage = targetRole === "alumno" && selectedCurso
+        ? `Solicitud de ${u.nombre} aprobada en curso ${selectedCurso}`
+        : `Solicitud de ${u.nombre} aprobada como ${label}`;
+      showToast(toastMessage, "success");
+
       getUsuarios().then(setUsuarios);
       getAlumnos().then(setAlumnos);
       if (targetRole === "profesor") {
@@ -1220,10 +1246,14 @@ export default function Dashboard() {
               isAdmin={isAdmin}
               studentSearchQuery={studentSearchQuery}
               setStudentSearchQuery={setStudentSearchQuery}
-              onOpenAddStudent={() => setIsStudentModalOpen(true)}
+              onOpenAddStudent={(al?: Alumno) => {
+                setEditingStudentForCourse(al || null);
+                setIsStudentModalOpen(true);
+              }}
               onApproveStudent={handleApproveStudent}
               onRejectStudent={handleRejectStudent}
               onDeleteAlumno={handleDeleteAlumno}
+              cursos={cursos}
             />
           )}
 
@@ -1320,8 +1350,15 @@ export default function Dashboard() {
 
       <NewStudentModal 
         isOpen={isStudentModalOpen} 
-        onClose={() => setIsStudentModalOpen(false)} 
-        onSuccess={() => { getAlumnos().then(setAlumnos); showToast("Alumno inscrito"); }}
+        onClose={() => {
+          setIsStudentModalOpen(false);
+          setEditingStudentForCourse(null);
+        }} 
+        onSuccess={() => {
+          getAlumnos().then(setAlumnos);
+          showToast("Alumno inscripto exitosamente", "success");
+        }}
+        initialAlumno={editingStudentForCourse}
       />
 
       <NewScheduleModal 

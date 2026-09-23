@@ -4,14 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.2";
-export const APP_BUILD_DATE = "23/09/2026 16:50 hs";
+export const APP_VERSION = "v2.20.3";
+export const APP_BUILD_DATE = "23/09/2026 16:55 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección y Reflejo Inmediato de Mesas de Examen (ExamBoardManager.tsx y dataService.ts): Se resolvió la discrepancia por la cual las nuevas mesas de examen creadas no se visualizaban en el cronograma. Se introdujo actualización optimista instantánea en el estado local de mesas al crear, editar o eliminar registros, asegurando su visualización inmediata sin esperas de WebSocket. En dataService.ts se unificó y blindó la persistencia híbrida (Appwrite + LocalStorage merge con ordenamiento cronológico por fecha y hora) y se aseguraron valores por defecto contra propiedades indefinidas en los filtros y tarjetas."
+  "Asignación Simultánea de Curso al Aprobar Alumnos (ApproveStudentRoleModal, AlumnosTab y page.tsx): Al aprobar o asignar a un alumno desde las solicitudes de inscripción pendientes, ahora es posible seleccionar simultáneamente el curso oficial al que pertenecerá dentro del mismo modal de confirmación. El selector interactivo despliega todas las divisiones y cursos de la institución, pre-seleccionando el curso solicitado (si existe) o el primer curso disponible, y actualiza de inmediato el registro del alumno en la base de datos de Appwrite junto con la auditoría institucional.",
+  "Asignación y Reubicación Ágil desde el Listado de Alumnos (AlumnosTab.tsx y NewStudentModal.tsx): Directivos y preceptores ahora pueden hacer clic directamente en la insignia de curso ('Pendiente' o curso actual) de cualquier estudiante de la tabla para abrir el modal de asignación con el alumno ya seleccionado, agilizando la gestión de matrículas sin pasos intermedios."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.2",
+    date: "23/09/2026 16:50 hs",
+    notes: [
+      "Corrección y Reflejo Inmediato de Mesas de Examen (ExamBoardManager.tsx y dataService.ts): Se resolvió la discrepancia por la cual las nuevas mesas de examen creadas no se visualizaban en el cronograma. Se introdujo actualización optimista instantánea en el estado local de mesas al crear, editar o eliminar registros, asegurando su visualización inmediata sin esperas de WebSocket. En dataService.ts se unificó y blindó la persistencia híbrida (Appwrite + LocalStorage merge con ordenamiento cronológico por fecha y hora) y se aseguraron valores por defecto contra propiedades indefinidas en los filtros y tarjetas."
+    ]
+  },
   {
     version: "v2.20.1",
     date: "23/09/2026 16:45 hs",
