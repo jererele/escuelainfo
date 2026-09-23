@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.0";
-export const APP_BUILD_DATE = "23/09/2026 16:40 hs";
+export const APP_VERSION = "v2.20.1";
+export const APP_BUILD_DATE = "23/09/2026 16:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Selección de Rol Institucional al Aprobar Alumnos (AlumnosTab.tsx y ApproveStudentRoleModal.tsx): Al pulsar 'Aprobar' en una solicitud de inscripción pendiente, ahora se despliega un modal interactivo que permite a directivos y preceptores decidir con precisión el rol a otorgar al usuario: Alumno (matriculación oficial en el curso), Profesor (incorpora al usuario al cuerpo docente con materias y licencias) o Preceptor (gestión de asistencia y cursos). Si se aprueba como Profesor o Preceptor, el sistema limpia automáticamente su registro temporal en la lista de alumnos e inicializa su ficha docente oficial en Appwrite con registro de auditoría."
+  "Depuración Visual en Pie de Página (Footer.tsx): Se removió la insignia identificadora de versión del pie de página institucional, manteniendo una estética limpia, despejada y minimalista enfocada en la identidad de marca y enlaces legales."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.0",
+    date: "23/09/2026 16:40 hs",
+    notes: [
+      "Selección de Rol Institucional al Aprobar Alumnos (AlumnosTab.tsx y ApproveStudentRoleModal.tsx): Al pulsar 'Aprobar' en una solicitud de inscripción pendiente, ahora se despliega un modal interactivo que permite a directivos y preceptores decidir con precisión el rol a otorgar al usuario: Alumno (matriculación oficial en el curso), Profesor (incorpora al usuario al cuerpo docente con materias y licencias) o Preceptor (gestión de asistencia y cursos). Si se aprueba como Profesor o Preceptor, el sistema limpia automáticamente su registro temporal en la lista de alumnos e inicializa su ficha docente oficial en Appwrite con registro de auditoría."
+    ]
+  },
   {
     version: "v2.19.0",
     date: "23/09/2026 16:35 hs",
