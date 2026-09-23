@@ -53,6 +53,7 @@ interface SidebarProps {
   handleLogout: () => void;
   onTabChange?: (tabId: string) => void;
   onProfileOpen?: () => void;
+  pendingUsersCount?: number;
   pendingAccessCount?: number;
   pendingAlumnosCount?: number;
   toggleSidebar?: () => void;
@@ -68,6 +69,7 @@ export default function Sidebar({
   handleLogout,
   onTabChange,
   onProfileOpen,
+  pendingUsersCount = 0,
   pendingAccessCount = 0,
   pendingAlumnosCount = 0,
 }: SidebarProps) {
@@ -96,6 +98,7 @@ export default function Sidebar({
 
   const tabs = [
     { id: "general", label: "Inicio", icon: <LayoutDashboard size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "usuarios", label: "Usuarios", icon: <UserCheck size={20} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "monitor-asistencia", label: "Monitor Asistencia", icon: <Activity size={20} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "asistencia", label: "Asistencia", icon: <UserCheck size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "ausencias", label: "Ausencias", icon: <ClipboardList size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
@@ -153,7 +156,10 @@ export default function Sidebar({
                 let showBadge = false;
                 let badgeCount = 0;
                 
-                if (tab.id === 'configuracion' && pendingAccessCount > 0) {
+                if (tab.id === 'usuarios' && pendingUsersCount > 0) {
+                  showBadge = true;
+                  badgeCount = pendingUsersCount;
+                } else if (tab.id === 'configuracion' && pendingAccessCount > 0) {
                   showBadge = true;
                   badgeCount = pendingAccessCount;
                 } else if (tab.id === 'alumnos' && pendingAlumnosCount > 0) {

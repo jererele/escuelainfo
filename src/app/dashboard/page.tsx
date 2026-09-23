@@ -16,6 +16,7 @@ import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
 import {
   GeneralTab,
+  UsuariosTab,
   AusenciasTab,
   ProfesoresTab,
   AlumnosTab,
@@ -1109,6 +1110,7 @@ export default function Dashboard() {
           onTabChange={(tabId) => {
             if (tabId === 'auditoria') getLogs().then(setLogs);
           }}
+          pendingUsersCount={usuarios.filter(u => u.rol.startsWith("pendiente_")).length}
           pendingAccessCount={usuarios.filter(u => u.rol.startsWith("pendiente_") && u.rol !== "pendiente_alumno").length}
           pendingAlumnosCount={usuarios.filter(u => u.rol === "pendiente_alumno").length}
         />
@@ -1251,10 +1253,23 @@ export default function Dashboard() {
             />
           )}
 
+          {activeTab === "usuarios" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+            <UsuariosTab
+              usuarios={usuarios}
+              alumnos={alumnos}
+              cursos={cursos}
+              isAdmin={isAdmin}
+              userProfile={userProfile}
+              onApproveStudent={handleApproveStudent}
+              onRejectStudent={handleRejectStudent}
+              showToast={showToast}
+              onRefreshUsuarios={() => getUsuarios().then(setUsuarios)}
+            />
+          )}
+
           {activeTab === "alumnos" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
             <AlumnosTab
               alumnos={alumnos}
-              usuarios={usuarios}
               isAdmin={isAdmin}
               studentSearchQuery={studentSearchQuery}
               setStudentSearchQuery={setStudentSearchQuery}
@@ -1262,8 +1277,6 @@ export default function Dashboard() {
                 setEditingStudentForCourse(al || null);
                 setIsStudentModalOpen(true);
               }}
-              onApproveStudent={handleApproveStudent}
-              onRejectStudent={handleRejectStudent}
               onDeleteAlumno={handleDeleteAlumno}
               cursos={cursos}
             />

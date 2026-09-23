@@ -4,14 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.7";
-export const APP_BUILD_DATE = "23/09/2026 17:35 hs";
+export const APP_VERSION = "v2.21.0";
+export const APP_BUILD_DATE = "23/09/2026 17:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Depuración de 'Inscribir Alumno' y Función de Desinscripción de Cursos (AlumnosTab.tsx y NewStudentModal.tsx): Se retiró el botón '+ Inscribir Alumno' de la cabecera del listado de alumnos, dado que la matriculación y asignación oficial ahora se gestiona de forma centralizada al aprobar las solicitudes de registro con su rol y curso correspondientes. Asimismo, el modal de asignación de cursos pasó a llamarse 'Asignar Curso' y sumó la opción 'Sin curso (Desinscribir / Pendiente)', permitiendo a directivos y administradores quitar a un alumno de su curso actual y dejarlo en estado pendiente con registro de auditoría, sin necesidad de eliminar su cuenta de usuario."
+  "Nuevo Módulo y Pestaña Dedicada de Usuarios (UsuariosTab.tsx, Sidebar.tsx y TopNavSidebar.tsx): Se creó la pestaña principal 'Usuarios' en la navegación institucional (accesible para Administradores, Directivos y Preceptores). En esta vista centralizada se gestionan todas las solicitudes de personas que quieren ingresar a la plataforma, integrando el flujo de aprobación con selector interactivo de rol (Alumno, Profesor, Preceptor) y asignación simultánea de división/curso, buscador predictivo por nombre, email, DNI y curso solicitado, y tarjetas táctiles para celulares. Además, incluye un directorio navegable de usuarios activos con insignias temáticas por rol institucional.",
+  "Desacoplamiento y Limpieza en Alumnos (AlumnosTab.tsx): La pestaña de Alumnos ahora se enfoca con exclusividad en el padrón oficial de estudiantes matriculados por curso, habiendo trasladado las solicitudes de registro pendientes al nuevo centro de control de Usuarios."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.7",
+    date: "23/09/2026 17:35 hs",
+    notes: [
+      "Depuración de 'Inscribir Alumno' y Función de Desinscripción de Cursos (AlumnosTab.tsx y NewStudentModal.tsx): Se retiró el botón '+ Inscribir Alumno' de la cabecera del listado de alumnos, dado que la matriculación y asignación oficial ahora se gestiona de forma centralizada al aprobar las solicitudes de registro con su rol y curso correspondientes. Asimismo, el modal de asignación de cursos pasó a llamarse 'Asignar Curso' y sumó la opción 'Sin curso (Desinscribir / Pendiente)', permitiendo a directivos y administradores quitar a un alumno de su curso actual y dejarlo en estado pendiente con registro de auditoría, sin necesidad de eliminar su cuenta de usuario."
+    ]
+  },
   {
     version: "v2.20.6",
     date: "23/09/2026 17:25 hs",

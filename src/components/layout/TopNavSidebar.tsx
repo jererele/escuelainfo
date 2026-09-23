@@ -40,6 +40,7 @@ interface TopNavSidebarProps {
   handleLogout: () => void;
   onTabChange?: (tabId: string) => void;
   onProfileOpen?: () => void;
+  pendingUsersCount?: number;
   pendingAccessCount?: number;
   pendingAlumnosCount?: number;
 }
@@ -54,6 +55,7 @@ export default function TopNavSidebar({
   handleLogout,
   onTabChange,
   onProfileOpen,
+  pendingUsersCount = 0,
   pendingAccessCount = 0,
   pendingAlumnosCount = 0,
 }: TopNavSidebarProps) {
@@ -191,6 +193,7 @@ export default function TopNavSidebar({
 
   const tabs = [
     { id: "general",       label: "Inicio",            icon: <LayoutDashboard size={18} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "usuarios",      label: "Usuarios",          icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor"] },
     { id: "asistencia",    label: "Asistencia",        icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "ausencias",     label: "Ausencias",         icon: <ClipboardList size={18} />,   roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "mesas-examen",  label: "Mesas de Examen",   icon: <ClipboardCheck size={18} />,  roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
@@ -238,7 +241,7 @@ export default function TopNavSidebar({
             ) : (
               <Menu size={18} className="transition-transform duration-300" />
             )}
-            {(pendingAccessCount > 0 || pendingAlumnosCount > 0) && (
+            {(pendingUsersCount > 0 || pendingAccessCount > 0 || pendingAlumnosCount > 0) && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--rojo)] rounded-full animate-pulse border-2 border-[var(--bg)]" />
             )}
           </button>
@@ -267,6 +270,7 @@ export default function TopNavSidebar({
         <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.12em] sm:tracking-[0.18em] text-[var(--text2)] sm:text-[var(--text3)] max-w-[140px] sm:max-w-none truncate text-center">
           {{
             general: "Inicio",
+            usuarios: "Usuarios",
             asistencia: "Asistencia",
             ausencias: "Ausencias",
             "mesas-examen": "Mesas de Examen",
@@ -352,9 +356,15 @@ export default function TopNavSidebar({
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 const hasBadge =
+                  (tab.id === "usuarios" && pendingUsersCount > 0) ||
                   (tab.id === "configuracion" && pendingAccessCount > 0) ||
                   (tab.id === "alumnos" && pendingAlumnosCount > 0);
-                const badgeCount = tab.id === "configuracion" ? pendingAccessCount : pendingAlumnosCount;
+                const badgeCount =
+                  tab.id === "usuarios"
+                    ? pendingUsersCount
+                    : tab.id === "configuracion"
+                    ? pendingAccessCount
+                    : pendingAlumnosCount;
 
                 return (
                   <button
