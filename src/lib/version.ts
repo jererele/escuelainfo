@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.6";
-export const APP_BUILD_DATE = "23/09/2026 17:25 hs";
+export const APP_VERSION = "v2.20.7";
+export const APP_BUILD_DATE = "23/09/2026 17:35 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Reactivación de Letras Cinéticas Interactivas en 'Escuela 713' (GravityText.tsx y globals.css): Se revitalizó la tipografía interactiva del banner principal en Inicio. Cada letra de 'Escuela 713' ahora reacciona de forma inmediata y elástica cada vez que el usuario pasa el cursor por encima (hover / sweep) o desliza el dedo en pantallas táctiles y móviles, elevándose 16px con rotación angular dinámica, escalado suave (1.24x) y un destello de resplandor verde esmeralda. Se implementó una animación física de rebote elástico (rubber-band bounce) que se reinicia limpiamente en cada interacción sin pausas ni bloqueos de hidratación, acompañada de una entrada en cascada escalonada al cargar el panel institucional."
+  "Depuración de 'Inscribir Alumno' y Función de Desinscripción de Cursos (AlumnosTab.tsx y NewStudentModal.tsx): Se retiró el botón '+ Inscribir Alumno' de la cabecera del listado de alumnos, dado que la matriculación y asignación oficial ahora se gestiona de forma centralizada al aprobar las solicitudes de registro con su rol y curso correspondientes. Asimismo, el modal de asignación de cursos pasó a llamarse 'Asignar Curso' y sumó la opción 'Sin curso (Desinscribir / Pendiente)', permitiendo a directivos y administradores quitar a un alumno de su curso actual y dejarlo en estado pendiente con registro de auditoría, sin necesidad de eliminar su cuenta de usuario."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.6",
+    date: "23/09/2026 17:25 hs",
+    notes: [
+      "Reactivación de Letras Cinéticas Interactivas en 'Escuela 713' (GravityText.tsx y globals.css): Se revitalizó la tipografía interactiva del banner principal en Inicio. Cada letra de 'Escuela 713' ahora reacciona de forma inmediata y elástica cada vez que el usuario pasa el cursor por encima (hover / sweep) o desliza el dedo en pantallas táctiles y móviles, elevándose 16px con rotación angular dinámica, escalado suave (1.24x) y un destello de resplandor verde esmeralda. Se implementó una animación física de rebote elástico (rubber-band bounce) que se reinicia limpiamente en cada interacción sin pausas ni bloqueos de hidratación, acompañada de una entrada en cascada escalonada al cargar el panel institucional."
+    ]
+  },
   {
     version: "v2.20.5",
     date: "23/09/2026 17:15 hs",

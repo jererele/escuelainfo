@@ -184,16 +184,6 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
             <h2 className="text-2xl sm:text-3xl font-black title-font">Gestión de Alumnos</h2>
             <p className="text-xs sm:text-sm text-[var(--text2)]">Listado oficial de estudiantes por curso.</p>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            {isAdmin && (
-              <button 
-                onClick={() => onOpenAddStudent()}
-                className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer text-center text-xs sm:text-sm"
-              >
-                + Inscribir Alumno
-              </button>
-            )}
-          </div>
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)] mb-6">

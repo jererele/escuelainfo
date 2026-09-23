@@ -119,11 +119,16 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
 
     setLoading(true);
     try {
+      const isUnenrolling = curso === "pendiente";
       await updateAlumno(selectedAlumno.id!, { curso });
 
       let userEmail = "desconocido";
       try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
-      await logAction(userEmail, "ASIGNAR_CURSO_ALUMNO", `Alumno: ${selectedAlumno.nombre}, DNI: ${selectedAlumno.dni}, Curso: ${curso}`);
+      await logAction(
+        userEmail,
+        isUnenrolling ? "DESASIGNAR_CURSO_ALUMNO" : "ASIGNAR_CURSO_ALUMNO",
+        `Alumno: ${selectedAlumno.nombre}, DNI: ${selectedAlumno.dni}, ${isUnenrolling ? "Se quitó la asignación de curso (Pendiente)" : `Curso: ${curso}`}`
+      );
 
       onSuccess();
       onClose();
@@ -141,8 +146,8 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
       <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <h2 className="text-2xl font-black title-font text-[var(--text)]">Inscribir Alumno</h2>
-            <p className="text-[var(--text2)] text-xs mt-1 font-bold uppercase tracking-wider">Asignar alumno existente a un curso</p>
+            <h2 className="text-2xl font-black title-font text-[var(--text)]">Asignar Curso</h2>
+            <p className="text-[var(--text2)] text-xs mt-1 font-bold uppercase tracking-wider">Gestionar curso oficial del estudiante</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all"><X size={18} /></button>
         </div>
@@ -150,7 +155,7 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
         {/* Info banner */}
         <div className="mt-4 flex items-start gap-2 bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-4 py-3 rounded-xl text-xs font-semibold">
           <Search size={14} className="shrink-0 mt-0.5" />
-          <span>Buscá por nombre, DNI o email al alumno que ya está registrado en el sistema y asignale un curso.</span>
+          <span>Buscá por nombre, DNI o email al alumno registrado para asignarle su curso oficial o desinscribirlo si es necesario.</span>
         </div>
 
         {error && (
@@ -257,7 +262,8 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
               value={curso}
               onChange={(e) => setCurso(e.target.value)}
             >
-              <option value="" disabled>— Seleccionar Curso Obligatorio —</option>
+              <option value="" disabled>— Seleccionar Curso —</option>
+              <option value="pendiente">Sin curso (Desinscribir / Pendiente)</option>
               {cursos.length === 0
                 ? <option disabled>No hay cursos — agregalos primero.</option>
                 : cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
@@ -266,7 +272,7 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
             {!curso && (
               <p className="text-[10px] text-[var(--rojo)] font-bold mt-1.5 ml-2 flex items-center gap-1.5">
                 <AlertCircle size={12} className="shrink-0" />
-                <span>Este campo es obligatorio para asignar al alumno.</span>
+                <span>Seleccioná un curso o la opción &quot;Sin curso&quot;.</span>
               </p>
             )}
           </div>
@@ -276,7 +282,7 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
               className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95">Cancelar</button>
             <button type="submit" disabled={loading || !selectedAlumno || !curso}
               className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-              {loading ? "Guardando..." : "Asignar Curso"}
+              {loading ? "Guardando..." : curso === "pendiente" ? "Desinscribir de Curso" : "Guardar Curso"}
             </button>
           </div>
         </form>
