@@ -351,7 +351,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
               <tr>
                 <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Alumno</th>
                 <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">DNI</th>
-                <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Curso Anterior</th>
+                <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em] min-w-[140px]">Curso Anterior</th>
                 <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em] w-72">Curso Nuevo (Ciclo Entrante)</th>
                 <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Estado</th>
               </tr>
@@ -386,7 +386,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
                       </td>
                       <td className="p-6 text-xs text-[var(--text2)] font-semibold">{al.dni}</td>
                       <td className="p-6">
-                        <span className="px-3 py-1 bg-[var(--bg3)] rounded-lg text-xs font-bold text-[var(--text2)]">
+                        <span className="inline-block text-center px-3 py-1.5 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text2)] leading-tight shadow-sm">
                           {al.curso}
                         </span>
                       </td>

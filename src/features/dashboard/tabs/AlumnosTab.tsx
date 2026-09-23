@@ -219,7 +219,7 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[var(--border)]/50">
                   <span className="font-mono text-[var(--text2)]">DNI: <strong className="text-[var(--text)]">{al.dni}</strong></span>
                   {al.curso && al.curso !== 'pendiente' ? (
-                    <span className="px-2.5 py-0.5 bg-[var(--bg3)] rounded-lg text-[10px] font-bold">{al.curso}</span>
+                    <span className="inline-block text-center px-2.5 py-0.5 bg-[var(--bg3)] border border-[var(--border)] rounded-lg text-[10px] font-bold leading-tight">{al.curso}</span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold">
                       <Clock size={10} strokeWidth={2.5} className="shrink-0" />
@@ -266,8 +266,8 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                       <td className="p-6 text-sm">{al.dni}</td>
                       <td className="p-6">
                         {al.curso && al.curso !== 'pendiente'
-                          ? <span className="px-3 py-1 bg-[var(--bg3)] rounded-lg text-xs font-bold">{al.curso}</span>
-                          : <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-xs font-bold">
+                          ? <span className="inline-block text-center px-3 py-1.5 bg-[var(--bg3)] border border-[var(--border)] rounded-xl text-xs font-bold leading-tight shadow-sm">{al.curso}</span>
+                          : <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-xl text-xs font-bold leading-tight shadow-sm">
                               <Clock size={11} strokeWidth={2.5} className="shrink-0" />
                               <span>Pendiente</span>
                             </span>

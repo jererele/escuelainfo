@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.3";
-export const APP_BUILD_DATE = "23/09/2026 15:38 hs";
+export const APP_VERSION = "v2.17.4";
+export const APP_BUILD_DATE = "23/09/2026 15:43 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Rediseño y Centrado de Insignias de Estado de Ingreso (ConfiguracionTab.tsx): Se transformó la insignia 'Registrado y Activo' en un contenedor rectangular unificado con bordes suavizados (rounded-xl) y borde temático, alineando vertical y horizontalmente 'Registrado' e 'y Activo' en dos líneas centradas para evitar solapamientos o fragmentaciones de fondo."
+  "Unificación y Centrado de Insignias de Curso (CicloLectivoTab.tsx y AlumnosTab.tsx): Se rediseñaron las insignias de curso (como 'Curso Anterior') transformándolas en contenedores rectangulares continuos (inline-block text-center) con bordes suaves (rounded-xl) y borde temático, asegurando que ante cursos de nombres compuestos o saltos de línea el texto se mantenga perfectamente centrado en una sola caja sin fragmentación de fondos."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.3",
+    date: "23/09/2026 15:38 hs",
+    notes: [
+      "Rediseño y Centrado de Insignias de Estado de Ingreso (ConfiguracionTab.tsx): Se transformó la insignia 'Registrado y Activo' en un contenedor rectangular unificado con bordes suavizados (rounded-xl) y borde temático, alineando vertical y horizontalmente 'Registrado' e 'y Activo' en dos líneas centradas para evitar solapamientos o fragmentaciones de fondo."
+    ]
+  },
   {
     version: "v2.17.2",
     date: "23/09/2026 15:26 hs",
