@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.4";
-export const APP_BUILD_DATE = "23/09/2026 15:43 hs";
+export const APP_VERSION = "v2.17.5";
+export const APP_BUILD_DATE = "23/09/2026 15:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Unificación y Centrado de Insignias de Curso (CicloLectivoTab.tsx y AlumnosTab.tsx): Se rediseñaron las insignias de curso (como 'Curso Anterior') transformándolas en contenedores rectangulares continuos (inline-block text-center) con bordes suaves (rounded-xl) y borde temático, asegurando que ante cursos de nombres compuestos o saltos de línea el texto se mantenga perfectamente centrado en una sola caja sin fragmentación de fondos."
+  "Separación Responsiva y Visualización Completa en Logs de Auditoría (AuditoriaTab.tsx): Se solucionó el recorte de columnas en dispositivos móviles implementando DOM separation con tarjetas individuales enriquecidas (md:hidden) que exhiben detalles completos sin truncamiento. Para escritorio (hidden md:block), se incorporó un contenedor con scroll horizontal (overflow-x-auto) y ancho mínimo garantizado, junto a un buscador dinámico y filtro por tipo de acción."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.4",
+    date: "23/09/2026 15:43 hs",
+    notes: [
+      "Unificación y Centrado de Insignias de Curso (CicloLectivoTab.tsx y AlumnosTab.tsx): Se rediseñaron las insignias de curso (como 'Curso Anterior') transformándolas en contenedores rectangulares continuos (inline-block text-center) con bordes suaves (rounded-xl) y borde temático, asegurando que ante cursos de nombres compuestos o saltos de línea el texto se mantenga perfectamente centrado en una sola caja sin fragmentación de fondos."
+    ]
+  },
   {
     version: "v2.17.3",
     date: "23/09/2026 15:38 hs",
