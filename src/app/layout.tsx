@@ -5,6 +5,7 @@ import TermsModal from "@/components/modals/TermsModal";
 import Footer from "@/components/layout/Footer";
 import SileoToaster from "@/components/ui/SileoToaster";
 import DatePickerEnhancer from "@/components/ui/DatePickerEnhancer";
+import NyanCatGamerOverlay from "@/components/easter-egg/NyanCatGamerOverlay";
 
 export const metadata: Metadata = {
   title: "EscuelaInfo — Registro de Ausencias",
@@ -71,6 +72,7 @@ export default function RootLayout({
           desaparece sin rastro del árbol de React.
         */}
         <TermsModal />
+        <NyanCatGamerOverlay />
         <SileoToaster />
         <DatePickerEnhancer />
 

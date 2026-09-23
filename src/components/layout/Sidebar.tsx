@@ -23,6 +23,7 @@ import {
   Edit3
 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
+import { gamerEasterEgg } from "@/lib/gamerEasterEgg";
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -81,6 +82,7 @@ export default function Sidebar({
   }, []);
 
   const toggleTheme = () => {
+    gamerEasterEgg.registerThemeToggle();
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
     if (nextTheme === "dark") {

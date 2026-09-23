@@ -28,6 +28,7 @@ import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
 import VersionModal from "@/components/modals/VersionModal";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { gamerEasterEgg } from "@/lib/gamerEasterEgg";
 
 interface TopNavSidebarProps {
   user: any;
@@ -170,6 +171,7 @@ export default function TopNavSidebar({
   };
 
   const toggleTheme = () => {
+    gamerEasterEgg.registerThemeToggle();
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");

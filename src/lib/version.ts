@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.17.7";
-export const APP_BUILD_DATE = "23/09/2026 16:11 hs";
+export const APP_VERSION = "v2.18.0";
+export const APP_BUILD_DATE = "23/09/2026 16:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Rediseño y Modernización Tipográfica de Código de Seguridad (api/auth/send-code): Se sustituyó la fuente Courier New del código numérico en los correos de verificación por una tipografía moderna, geométrica y de alto impacto ('Outfit' con fallback a fuentes del sistema, font-variant-numeric: tabular-nums y espaciado simétrico), garantizando una visualización nítida y profesional en todos los clientes de correo."
+  "Easter Egg Modo ARGB GAMER con Nyan Cats y Música Chiptune: Se integró una sorpresa interactiva que se dispara al alternar rápidamente 30 veces seguidas el tema (claro/oscuro) sin pausas prolongadas. Al activarse, la plataforma entra en modo ARGB Gamer con bordes y resplandores cromáticos animados en tiempo real, múltiples Nyan Cats cruzando la pantalla con estelas de arcoíris y estrellas flotantes de 8 bits, junto con la auténtica melodía de Nyan Cat sintetizada vía Web Audio API. Al alternar nuevamente el tema, el modo se cancela de inmediato, la música se detiene y el contador se reinicia."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.17.7",
+    date: "23/09/2026 16:11 hs",
+    notes: [
+      "Rediseño y Modernización Tipográfica de Código de Seguridad (api/auth/send-code): Se sustituyó la fuente Courier New del código numérico en los correos de verificación por una tipografía moderna, geométrica y de alto impacto ('Outfit' con fallback a fuentes del sistema, font-variant-numeric: tabular-nums y espaciado simétrico), garantizando una visualización nítida y profesional en todos los clientes de correo."
+    ]
+  },
   {
     version: "v2.17.6",
     date: "23/09/2026 16:02 hs",
