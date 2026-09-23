@@ -228,15 +228,18 @@ export default function TopNavSidebar({
             onClick={toggleSidebar}
             aria-expanded={isOpen}
             aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
-            className="w-9 h-9 flex items-center justify-center rounded-xl
+            className="relative w-9 h-9 flex items-center justify-center rounded-xl
               border border-[var(--border)] bg-[var(--bg3)]
               hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] hover:text-[var(--verde)]
-              text-[var(--text2)] transition-all duration-200 active:scale-90"
+              text-[var(--text2)] transition-all duration-200 active:scale-90 cursor-pointer"
           >
             {isOpen && !isExiting ? (
               <ChevronUp size={18} className="transition-transform duration-300" />
             ) : (
               <Menu size={18} className="transition-transform duration-300" />
+            )}
+            {(pendingAccessCount > 0 || pendingAlumnosCount > 0) && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--rojo)] rounded-full animate-pulse border-2 border-[var(--bg)]" />
             )}
           </button>
 

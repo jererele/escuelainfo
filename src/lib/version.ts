@@ -4,15 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.20.3";
-export const APP_BUILD_DATE = "23/09/2026 16:55 hs";
+export const APP_VERSION = "v2.20.4";
+export const APP_BUILD_DATE = "23/09/2026 17:05 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Asignación Simultánea de Curso al Aprobar Alumnos (ApproveStudentRoleModal, AlumnosTab y page.tsx): Al aprobar o asignar a un alumno desde las solicitudes de inscripción pendientes, ahora es posible seleccionar simultáneamente el curso oficial al que pertenecerá dentro del mismo modal de confirmación. El selector interactivo despliega todas las divisiones y cursos de la institución, pre-seleccionando el curso solicitado (si existe) o el primer curso disponible, y actualiza de inmediato el registro del alumno en la base de datos de Appwrite junto con la auditoría institucional.",
-  "Asignación y Reubicación Ágil desde el Listado de Alumnos (AlumnosTab.tsx y NewStudentModal.tsx): Directivos y preceptores ahora pueden hacer clic directamente en la insignia de curso ('Pendiente' o curso actual) de cualquier estudiante de la tabla para abrir el modal de asignación con el alumno ya seleccionado, agilizando la gestión de matrículas sin pasos intermedios."
+  "Optimización Total de Notificaciones en Celulares (SileoToaster.tsx y globals.css): Se corrigió la posición, z-index y adaptabilidad de las notificaciones toast en dispositivos móviles. En pantallas táctiles (< 640px) ahora se ubican centradas en la parte superior ('top-center') con margen seguro debajo de la barra de navegación (safe-area + 68px), eliminando el desborde horizontal que las cortaba fuera de pantalla y evitando colisiones con el notch/isla dinámica de los teléfonos. Se elevó su z-index a 999999 para que nunca queden ocultas detrás de modales, hojas inferiores o paneles de menú, y se sincronizó el tema automáticamente con el modo claro/oscuro de la aplicación.",
+  "Adaptabilidad Móvil en Envío de Avisos y Notificaciones (SendNoticeModal.tsx y TopNavSidebar.tsx): Se ajustaron los tamaños tipográficos de inputs a 16px para evitar el auto-zoom de iOS Safari al escribir, se perfeccionó la cuadrícula táctil de grupos de destinatarios y los botones de acción para pantallas compactas. Además, el botón de menú hamburguesa ahora incluye un punto indicador pulsante en tiempo real que alerta a los directivos cuando existen solicitudes de acceso o alumnos pendientes de revisión."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.20.3",
+    date: "23/09/2026 16:55 hs",
+    notes: [
+      "Asignación Simultánea de Curso al Aprobar Alumnos (ApproveStudentRoleModal, AlumnosTab y page.tsx): Al aprobar o asignar a un alumno desde las solicitudes de inscripción pendientes, ahora es posible seleccionar simultáneamente el curso oficial al que pertenecerá dentro del mismo modal de confirmación. El selector interactivo despliega todas las divisiones y cursos de la institución, pre-seleccionando el curso solicitado (si existe) o el primer curso disponible, y actualiza de inmediato el registro del alumno en la base de datos de Appwrite junto con la auditoría institucional.",
+      "Asignación y Reubicación Ágil desde el Listado de Alumnos (AlumnosTab.tsx y NewStudentModal.tsx): Directivos y preceptores ahora pueden hacer clic directamente en la insignia de curso ('Pendiente' o curso actual) de cualquier estudiante de la tabla para abrir el modal de asignación con el alumno ya seleccionado, agilizando la gestión de matrículas sin pasos intermedios."
+    ]
+  },
   {
     version: "v2.20.2",
     date: "23/09/2026 16:50 hs",

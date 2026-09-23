@@ -191,51 +191,53 @@ export default function SendNoticeModal({
     >
       <div className="bg-[var(--bg)] w-full max-w-2xl rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0">
         {/* HEADER */}
-        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center sticky top-0 bg-[var(--bg)] z-10">
+        <div className="p-4 sm:p-6 border-b border-[var(--border)] flex justify-between items-center sticky top-0 bg-[var(--bg)] z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[var(--verde-bg)] text-[var(--verde)] rounded-xl border border-[var(--verde-border)]">
-              <Mail size={20} />
+            <div className="p-2 sm:p-2.5 bg-[var(--verde-bg)] text-[var(--verde)] rounded-xl border border-[var(--verde-border)]">
+              <Mail size={18} className="sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-black title-font text-[var(--text)]">Enviar Aviso por Mail</h2>
-              <p className="text-xs text-[var(--text2)]">Envía comunicados a cuentas registradas en EscuelaInfo.</p>
+              <h2 className="text-lg sm:text-2xl font-black title-font text-[var(--text)]">Enviar Notificación / Aviso</h2>
+              <p className="text-[11px] sm:text-xs text-[var(--text2)]">Envía comunicados a cuentas registradas en EscuelaInfo.</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all"
+            className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {error && (
-          <div className="mx-6 mt-5 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-semibold">
+          <div className="mx-4 sm:mx-6 mt-4 sm:mt-5 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-semibold">
             <AlertCircle size={14} className="shrink-0" />
             {error}
           </div>
         )}
 
         {/* FORM */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Target Group */}
           <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-3 block">
+            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-2 sm:mb-3 block">
               Grupo de Destinatarios
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
               {[
                 { id: "todos", label: "Todos" },
                 { id: "alumnos", label: "Alumnos" },
                 { id: "profesores", label: "Profesores" },
                 { id: "usuarios", label: "Usuarios Reg." },
                 { id: "curso", label: "Por Curso" }
-              ].map(opt => (
+              ].map((opt, idx) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setDestino(opt.id as any)}
-                  className={`p-3 rounded-xl border font-bold text-xs transition-all active:scale-95 text-center ${
+                  className={`p-2.5 sm:p-3 rounded-xl border font-bold text-xs transition-all active:scale-95 text-center cursor-pointer ${
+                    idx === 4 ? "col-span-2 sm:col-span-1" : ""
+                  } ${
                     destino === opt.id
                       ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm"
                       : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
@@ -255,7 +257,7 @@ export default function SendNoticeModal({
               </label>
               <select
                 required
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold focus:border-[var(--verde)] transition-all text-base sm:text-sm text-[var(--text)]"
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
               >
@@ -270,9 +272,9 @@ export default function SendNoticeModal({
           )}
 
           {/* Recipient Counter Preview */}
-          <div className="bg-[var(--bg3)]/50 border border-[var(--border)] rounded-2xl p-4 flex items-center justify-between">
+          <div className="bg-[var(--bg3)]/50 border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between">
             <span className="text-xs text-[var(--text2)] font-bold">Destinatarios detectados con correo:</span>
-            <span className="px-3 py-1 bg-[var(--bg4)] border border-[var(--border)] rounded-lg text-xs font-black text-[var(--verde)]">
+            <span className="px-2.5 sm:px-3 py-1 bg-[var(--bg4)] border border-[var(--border)] rounded-lg text-xs font-black text-[var(--verde)]">
               {getRecipientsCount()} usuarios
             </span>
           </div>
@@ -286,7 +288,7 @@ export default function SendNoticeModal({
               type="text"
               required
               placeholder="Ej: Suspensión de clases / Reunión de padres"
-              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all text-sm text-[var(--text)]"
+              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold focus:border-[var(--verde)] transition-all text-base sm:text-sm text-[var(--text)]"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -299,9 +301,9 @@ export default function SendNoticeModal({
             </label>
             <textarea
               required
-              rows={6}
+              rows={5}
               placeholder="Escribí aquí el aviso institucional..."
-              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all text-sm text-[var(--text)] resize-none"
+              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 outline-none font-bold focus:border-[var(--verde)] transition-all text-base sm:text-sm text-[var(--text)] resize-none"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
@@ -314,29 +316,29 @@ export default function SendNoticeModal({
           </div>
 
           {/* ACTIONS */}
-          <div className="flex gap-4 pt-2 border-t border-[var(--border)]">
+          <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-4 pt-2 border-t border-[var(--border)]">
             <button
               type="button"
               onClick={onClose}
               disabled={isSending}
-              className="flex-1 p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95 disabled:opacity-50"
+              className="w-full sm:flex-1 p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] font-bold hover:bg-[var(--bg3)] transition-all active:scale-95 disabled:opacity-50 cursor-pointer text-sm"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSending}
-              className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
+              className="w-full sm:flex-1 p-3.5 sm:p-4 rounded-2xl bg-[var(--verde)] text-black font-black shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none cursor-pointer text-sm"
             >
               {isSending ? (
                 <>
-                  <Loader2 className="animate-spin" size={16} />
-                  Enviando en segundo plano...
+                  <Loader2 className="animate-spin shrink-0" size={16} />
+                  <span>Enviando aviso...</span>
                 </>
               ) : (
                 <>
-                  <Send size={16} />
-                  Enviar Comunicado
+                  <Send size={16} className="shrink-0" />
+                  <span>Enviar Notificación</span>
                 </>
               )}
             </button>
