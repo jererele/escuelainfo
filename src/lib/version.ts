@@ -4,15 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.22.2";
-export const APP_BUILD_DATE = "24/09/2026 14:45 hs";
+export const APP_VERSION = "v2.22.3";
+export const APP_BUILD_DATE = "24/09/2026 16:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Aislamiento Estricto de Solicitudes en Padrón de Alumnos (AlumnosTab.tsx): Se blindó el listado de Alumnos para excluir cualquier registro en estado 'pendiente' o sin división asignada. Los usuarios que se registran ya no aparecen prematuramente en el padrón estudiantil hasta que la administración o preceptoría apruebe oficialmente su matrícula y les asigne su curso.",
-  "Eliminación de Rango Preconcebido en Nuevas Solicitudes (page.tsx y UsuariosTab.tsx): Al registrarse, los nuevos usuarios quedan registrados con rol neutro 'pendiente' (Sin Rango Asignado) en lugar de asumir el rol de alumno de forma anticipada. En el centro de control de Usuarios, las solicitudes se identifican claramente como 'Sin Rango Asignado' y con curso 'A definir al aprobar', garantizando que las autoridades determinen el rol institucional correspondiente al momento de la aprobación."
+  "Blindaje Total de Acceso y Verificación de Solicitudes Pendientes (page.tsx y dashboard/page.tsx): Corrección crítica del control de acceso donde usuarios con solicitudes de registro sin aprobar o con rol neutro 'pendiente' lograban saltar al panel general al recargar la página. Se implementó el detector unificado isPendingRole, asegurando que cualquier cuenta no autorizada visualice estrictamente la pantalla institucional de 'Cuenta en Verificación' con actualización en tiempo real y desconexión segura, bloqueando la carga de datos escolares y cerrando automáticamente sesiones huérfanas de cuentas dadas de baja.",
+  "Endpoint Seguro de Servidor para Rechazo y Depuración en Cascada (/api/admin/reject-user): Resolución definitiva del error 'Error Al Rechazar Alumno' provocado por restricciones de permisos en el SDK cliente de Appwrite. La acción de rechazo ahora opera mediante una ruta de API de servidor con credenciales administrativas, eliminando de forma atómica y en cascada el documento de usuarios, la ficha de alumnos/profesores y la cuenta de Appwrite Auth con registro en auditoría."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.22.2",
+    date: "24/09/2026 14:45 hs",
+    notes: [
+      "Aislamiento Estricto de Solicitudes en Padrón de Alumnos (AlumnosTab.tsx): Se blindó el listado de Alumnos para excluir cualquier registro en estado 'pendiente' o sin división asignada. Los usuarios que se registran ya no aparecen prematuramente en el padrón estudiantil hasta que la administración o preceptoría apruebe oficialmente su matrícula y les asigne su curso.",
+      "Eliminación de Rango Preconcebido en Nuevas Solicitudes (page.tsx y UsuariosTab.tsx): Al registrarse, los nuevos usuarios quedan registrados con rol neutro 'pendiente' (Sin Rango Asignado) en lugar de asumir el rol de alumno de forma anticipada. En el centro de control de Usuarios, las solicitudes se identifican claramente como 'Sin Rango Asignado' y con curso 'A definir al aprobar', garantizando que las autoridades determinen el rol institucional correspondiente al momento de la aprobación."
+    ]
+  },
   {
     version: "v2.22.1",
     date: "24/09/2026 14:35 hs",

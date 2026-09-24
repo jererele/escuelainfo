@@ -95,6 +95,17 @@ export const fromDbRol = (r: string) => ROL_MAP[r] || r;
 export const toDbEstado = (e: string) => ESTADO_REVERSE[e] || e;
 export const fromDbEstado = (e: string) => ESTADO_MAP[e] || e;
 
+export const isPendingRole = (rol?: string | null): boolean => {
+  if (!rol) return true;
+  const clean = rol.trim().toLowerCase();
+  return clean === "pe" || clean === "p_a" || clean === "p_p" || clean === "pendiente" || clean.startsWith("pendiente");
+};
+
+export const isAuthorizedRole = (rol?: string | null): boolean => {
+  if (!rol) return false;
+  return !isPendingRole(rol) && ["admin", "directivo", "preceptor", "profesor", "alumno"].includes(rol.trim().toLowerCase());
+};
+
 // ─── MÓDULOS HORARIOS: Almacenado como número entero (1–16) en Appwrite ───────
 // Appwrite attribute type: INTEGER (size: 2)
 // El campo `hora` en la colección `horarios` guarda el número de módulo.

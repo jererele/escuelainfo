@@ -10,7 +10,8 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import {
   getUserProfile, createUserProfile,
   getUserProfileByEmail, updateUserProfile,
-  saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor, getProfesorByEmail
+  saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor, getProfesorByEmail,
+  isPendingRole
 } from "@/lib/dataService";
 import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
 
@@ -98,7 +99,12 @@ function LoginContent() {
       window.history.replaceState({ mode: initialMode }, "", window.location.href);
     }
 
-    // Auto-redirección si la sesión está activa — NUNCA destruir la sesión en segundo plano
+    // Verificar error en URL (por ejemplo si fue redirigido por cuenta no registrada)
+    if (searchParams.get("error") === "unregistered") {
+      setErrorMsg("Tu cuenta no se encuentra registrada en la institución o fue dada de baja.");
+    }
+
+    // Auto-redirección si la sesión está activa y la cuenta es válida
     const checkSession = async () => {
       let user;
       try {
@@ -111,32 +117,35 @@ function LoginContent() {
 
       try {
         const redirectTo = searchParams.get("redirect") || "/dashboard";
-        const profilePromise = getUserProfile(user.$id);
-        const timeoutPromise = new Promise<null>((resolve) =>
-          setTimeout(() => resolve(null), 4000)
-        );
-        const profile = await Promise.race([profilePromise, timeoutPromise]);
+        let profile = await getUserProfile(user.$id);
 
-        if (profile) {
-          router.replace(redirectTo);
-          return;
-        }
-
-        // Si no se encontró por uid, intentar resolver por correo
-        if (user.email) {
+        if (!profile && user.email) {
           const pre = await getUserProfileByEmail(user.email);
           if (pre?.id) {
             await updateUserProfile(pre.id, { uid: user.$id, nombre: user.name || "Usuario" }).catch(() => {});
-            router.replace(redirectTo);
-            return;
+            profile = { ...pre, uid: user.$id };
           }
         }
 
-        // Usuario autenticado en Appwrite: enviar directamente al dashboard
+        // Si la cuenta no existe en la base de datos de usuarios (ej: fue rechazada o eliminada)
+        if (!profile) {
+          try { await account.deleteSession("current"); } catch {}
+          setCheckingSession(false);
+          setErrorMsg("Tu cuenta no se encuentra registrada en la institución o fue dada de baja.");
+          return;
+        }
+
+        // Si la cuenta existe pero sigue pendiente de aprobación
+        if (isPendingRole(profile.rol)) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        // Usuario con rol oficial activo
         router.replace(redirectTo);
       } catch (err) {
-        console.warn("[EscuelaInfo] Error en checkSession, preservando sesión y enviando a dashboard:", err);
-        router.replace("/dashboard");
+        console.warn("[EscuelaInfo] Error en checkSession:", err);
+        setCheckingSession(false);
       }
     };
 
@@ -180,17 +189,25 @@ function LoginContent() {
 
       await account.createEmailPasswordSession(cleanEmail, password);
       const user = await account.get();
-      const profile = await getUserProfile(user.$id);
+      let profile = await getUserProfile(user.$id);
       if (!profile) {
         const pre = await getUserProfileByEmail(cleanEmail);
         if (pre?.id) {
           await updateUserProfile(pre.id, { uid: user.$id, nombre: user.name || "Usuario" });
+          profile = { ...pre, uid: user.$id };
         } else {
-          setErrorMsg("Tu cuenta no tiene perfil asignado. Contactá al administrador.");
-          await account.deleteSession("current");
+          setErrorMsg("Tu cuenta no se encuentra registrada en la institución o fue dada de baja.");
+          try { await account.deleteSession("current"); } catch {}
           setLoading(false); return;
         }
       }
+
+      if (isPendingRole(profile.rol)) {
+        // Redirigir a /dashboard donde se renderiza la pantalla de verificación institucional
+        router.replace("/dashboard");
+        return;
+      }
+
       const redirectTo = searchParams.get("redirect");
       if (redirectTo) {
         router.replace(redirectTo);

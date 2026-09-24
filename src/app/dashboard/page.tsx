@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -335,6 +335,12 @@ export default function Dashboard() {
 
         if (profile) {
           setUserProfile(profile);
+          // Si el usuario tiene rol pendiente, no suscribir a colecciones internas ni cargar datos sensibles
+          if (isPendingRole(profile.rol)) {
+            setLoading(false);
+            return;
+          }
+
           // Cargar datos condicionalmente según el rol con suscripciones en tiempo real
           if (profile.rol === 'admin' || profile.rol === 'directivo' || profile.rol === 'preceptor') {
             unsubscribes.push(subscribeToUsuarios(setUsuarios));
@@ -351,8 +357,12 @@ export default function Dashboard() {
           getHorarios().then(d => { if (isMounted) { setHorarios(d); stamp('horarios'); }});
           if (profile.rol === 'admin') getLogs().then(d => { if (isMounted) { setLogs(d); stamp('logs'); }});
         } else {
-          // Si no hay perfil, algo salió mal en el login, redirigir
-          if (isMounted) router.replace("/");
+          // Si no hay perfil en usuarios (ej. cuenta rechazada o eliminada), eliminar sesión activa de inmediato
+          try { await account.deleteSession("current"); } catch {}
+          if (isMounted) {
+            window.location.replace("/?error=unregistered");
+          }
+          return;
         }
       } catch (err) {
         if (isMounted) router.replace("/");
@@ -597,21 +607,39 @@ export default function Dashboard() {
   };
 
   const handleRejectRequest = async (u: UserProfile) => {
-    askConfirm(`¿Estás seguro de rechazar la solicitud de ${u.nombre}? Se eliminará su registro.`, async () => {
+    askConfirm(`¿Estás seguro de rechazar la solicitud de ${u.nombre}? Se eliminará su registro de la plataforma.`, async () => {
       try {
-        await deleteUserProfile(u.id!);
-        if ((u.rol as string) === "pendiente_profesor") {
-          const teachers = await getProfesores();
-          const t = teachers.find(item => item.email.toLowerCase() === u.email.toLowerCase());
-          if (t && t.id) {
-            await deleteProfesor(t.id);
-          }
+        setUsuarios(prev => prev.filter(userItem => userItem.id !== u.id && userItem.email.toLowerCase() !== u.email.toLowerCase()));
+        setProfesores(prev => prev.filter(t => t.email.toLowerCase() !== u.email.toLowerCase()));
+
+        const res = await fetch("/api/admin/reject-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: u.id,
+            email: u.email,
+            callerEmail: user?.email,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "No se pudo rechazar la solicitud");
         }
-        await logAction(user?.email || "desconocido", "RECHAZAR_SOLICITUD", `Email: ${u.email}, Rol: ${u.rol}`);
+
         showToast("Solicitud rechazada y eliminada", "success");
         getUsuarios().then(setUsuarios);
+        getProfesores().then(setProfesores);
       } catch (err) {
-        showToast("Error al rechazar solicitud", "error");
+        console.error("Error al rechazar solicitud:", err);
+        try {
+          if (u.id) await deleteUserProfile(u.id);
+          showToast("Solicitud rechazada", "success");
+          getUsuarios().then(setUsuarios);
+        } catch {
+          showToast("Error al rechazar solicitud", "error");
+          getUsuarios().then(setUsuarios);
+        }
       }
     });
   };
@@ -703,19 +731,45 @@ export default function Dashboard() {
   };
 
   const handleRejectStudent = async (u: UserProfile) => {
-    askConfirm(`¿Estás seguro de rechazar la matrícula de ${u.nombre}? Se eliminará su registro de alumno.`, async () => {
+    askConfirm(`¿Estás seguro de rechazar la solicitud de acceso de ${u.nombre}? Se eliminará su registro de la plataforma.`, async () => {
       try {
-        await deleteUserProfile(u.id!);
-        const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
-        if (studDetails && studDetails.id) {
-          await deleteAlumno(studDetails.id);
+        setUsuarios(prev => prev.filter(userItem => userItem.id !== u.id && userItem.email.toLowerCase() !== u.email.toLowerCase()));
+        setAlumnos(prev => prev.filter(al => al.email.toLowerCase() !== u.email.toLowerCase()));
+
+        const res = await fetch("/api/admin/reject-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: u.id,
+            email: u.email,
+            callerEmail: user?.email,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "No se pudo rechazar la solicitud en el servidor");
         }
-        await logAction(user?.email || "desconocido", "RECHAZAR_ALUMNO", `Email: ${u.email}`);
-        showToast("Matriculación rechazada", "success");
+
+        showToast(`Solicitud de ${u.nombre} rechazada y eliminada`, "success");
         getUsuarios().then(setUsuarios);
         getAlumnos().then(setAlumnos);
       } catch (err) {
-        showToast("Error al rechazar alumno", "error");
+        console.error("Error al rechazar alumno:", err);
+        try {
+          if (u.id) await deleteUserProfile(u.id);
+          const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+          if (studDetails && studDetails.id) {
+            await deleteAlumno(studDetails.id);
+          }
+          showToast(`Solicitud de ${u.nombre} rechazada`, "success");
+          getUsuarios().then(setUsuarios);
+          getAlumnos().then(setAlumnos);
+        } catch {
+          showToast("Error al rechazar alumno", "error");
+          getUsuarios().then(setUsuarios);
+          getAlumnos().then(setAlumnos);
+        }
       }
     });
   };
@@ -961,21 +1015,41 @@ export default function Dashboard() {
   };
 
   const handleRevokeAccess = (u: UserProfile) => {
-    askConfirm(`¿Revocar acceso a ${u.email}?`, async () => {
+    askConfirm(`¿Revocar acceso y eliminar la cuenta de ${u.email}?`, async () => {
       try {
-        await deleteUserProfile(u.id!);
-        await logAction(user?.email || "desconocido", "REVOCAR_ACCESO", `Email: ${u.email}, Rol: ${u.rol}`);
-        await getUsuarios().then(setUsuarios);
-        showToast("Acceso revocado", "success");
+        setUsuarios(prev => prev.filter(userItem => userItem.id !== u.id && userItem.email.toLowerCase() !== u.email.toLowerCase()));
+        const res = await fetch("/api/admin/reject-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: u.id,
+            email: u.email,
+            callerEmail: user?.email,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "No se pudo revocar acceso");
+        }
+        showToast("Acceso revocado y cuenta eliminada", "success");
+        getUsuarios().then(setUsuarios);
       } catch (err) {
-        showToast("Error al revocar acceso", "error");
+        console.error("Error al revocar acceso:", err);
+        try {
+          if (u.id) await deleteUserProfile(u.id);
+          showToast("Acceso revocado", "success");
+          getUsuarios().then(setUsuarios);
+        } catch {
+          showToast("Error al revocar acceso", "error");
+          getUsuarios().then(setUsuarios);
+        }
       }
     });
   };
 
   // Comprobación periódica automática para usuarios en espera de aprobación
   useEffect(() => {
-    if (!userProfile || !userProfile.rol.startsWith("pendiente_")) return;
+    if (!userProfile || !isPendingRole(userProfile.rol)) return;
     const interval = setInterval(() => {
       checkStatus(false);
     }, 10000);
@@ -996,7 +1070,7 @@ export default function Dashboard() {
       const profile = await getUserProfile(user.$id);
       if (profile) {
         setUserProfile(profile);
-        if (!profile.rol.startsWith("pendiente_")) {
+        if (!isPendingRole(profile.rol)) {
           showToast("¡Tu cuenta ha sido aprobada! Ingresando al panel...", "success");
           // Fetch relevant tables based on the newly approved role
           if (profile.rol === 'admin' || profile.rol === 'directivo' || profile.rol === 'preceptor') {
@@ -1032,19 +1106,22 @@ export default function Dashboard() {
   }
 
   // PANTALLA PREMIUM DE ESPERA DE APROBACIÓN POR JERARQUÍA
-  if (userProfile && userProfile.rol.startsWith("pendiente_")) {
-    const requestedCleanRole = userProfile.rol.replace("pendiente_", "");
+  if (userProfile && isPendingRole(userProfile.rol)) {
+    const rawRole = (userProfile.rol || "").replace("pendiente_", "").replace("pendiente", "").replace("pe", "").trim();
+    const requestedCleanRole = rawRole || "sin_rango";
     const roleLabels: {[key: string]: string} = {
       directivo: "Director / Directivo",
       preceptor: "Preceptor",
       profesor: "Profesor / Docente",
-      alumno: "Alumno / Estudiante"
+      alumno: "Alumno / Estudiante",
+      sin_rango: "Sin Rango Asignado"
     };
     const approverLabels: {[key: string]: string} = {
       directivo: "Dirección / Administrador",
       preceptor: "Equipo Directivo",
       profesor: "Equipo Directivo",
-      alumno: "Preceptores del Curso"
+      alumno: "Preceptores del Curso",
+      sin_rango: "Equipo Directivo / Preceptoría"
     };
 
     return (
@@ -1227,8 +1304,8 @@ export default function Dashboard() {
           onTabChange={(tabId) => {
             if (tabId === 'auditoria') getLogs().then(setLogs);
           }}
-          pendingUsersCount={usuarios.filter(u => u.rol.startsWith("pendiente_")).length}
-          pendingAccessCount={usuarios.filter(u => u.rol.startsWith("pendiente_") && u.rol !== "pendiente_alumno").length}
+          pendingUsersCount={usuarios.filter(u => isPendingRole(u.rol)).length}
+          pendingAccessCount={usuarios.filter(u => isPendingRole(u.rol) && u.rol !== "pendiente_alumno").length}
           pendingAlumnosCount={usuarios.filter(u => u.rol === "pendiente_alumno").length}
         />
 

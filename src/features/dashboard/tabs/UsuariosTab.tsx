@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { UserProfile, Alumno, Curso } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, isPendingRole } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
 
@@ -67,12 +67,12 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
 
   // Todas las solicitudes de acceso pendientes
   const pendingRequests = useMemo(() => {
-    return usuarios.filter(u => u.rol.startsWith("pendiente") || u.rol === "pe");
+    return usuarios.filter(u => isPendingRole(u.rol));
   }, [usuarios]);
 
   // Usuarios activos (con rol oficial asignado)
   const activeUsers = useMemo(() => {
-    return usuarios.filter(u => !u.rol.startsWith("pendiente") && u.rol !== "pe");
+    return usuarios.filter(u => !isPendingRole(u.rol));
   }, [usuarios]);
 
   // Filtrado de solicitudes pendientes por búsqueda

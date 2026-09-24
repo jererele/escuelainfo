@@ -1,6 +1,6 @@
 import React from "react";
 import { Trash2, Check, X, Zap, ArrowRight } from "lucide-react";
-import { UserProfile } from "@/lib/dataService";
+import { UserProfile, isPendingRole } from "@/lib/dataService";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -26,8 +26,8 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
   onRevokeAccess,
 }) => {
   const pendingRequests = usuarios.filter(u => {
-    if (!u.rol.startsWith("pendiente_")) return false;
-    if ((u.rol as string) === "pendiente_alumno") return false;
+    if (!isPendingRole(u.rol)) return false;
+    if ((u.rol as string) === "pendiente_alumno" || u.rol === "pendiente") return false;
     if (userProfile?.rol === 'admin') return true;
     if (userProfile?.rol === 'directivo') {
       return (u.rol as string) === 'pendiente_preceptor' || (u.rol as string) === 'pendiente_profesor';
@@ -36,7 +36,7 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
   });
 
   const activeCollaborators = usuarios.filter(u => {
-    if (u.rol.startsWith("pendiente_")) return false;
+    if (isPendingRole(u.rol)) return false;
     if (u.rol === "alumno") return false;
     if (userProfile?.rol === 'admin') return true;
     if (userProfile?.rol === 'directivo') {
