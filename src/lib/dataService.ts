@@ -234,6 +234,7 @@ export const LOG_CODE_MAP: Record<string, string> = {
   "C_ROL": "Cambió el rol de un usuario",
   // Notificaciones
   "EN_N": "Envió una notificación a usuarios",
+  "AV_HL": "Envió aviso de hora libre a alumnos",
   // Paridad / Sistema
   "RP_D": "Registró adhesión a paro docente",
   "RE_A": "Reinició todas las ausencias del ciclo lectivo",
@@ -277,6 +278,8 @@ const LEGACY_LOG_MAP: Record<string, string> = {
   "ACEPTAR_TERMINOS":          "AC_T",
   "ENVIAR_NOTIFICACION":       "EN_N",
   "ENVIAR":                    "EN_N",
+  "AVISO_HORA_LIBRE_EMAIL":    "AV_HL",
+  "AVISO_HORA_LIBRE":          "AV_HL",
   "AGREGAR_SUSPENSION_EDILICIA": "SUSP_E",
 };
 
@@ -357,6 +360,10 @@ export const ACTION_NAME_MAP: Record<string, string> = {
   "EN_N": "Enviar Notificación",
   "ENVIAR_NOTIFICACION": "Enviar Notificación",
   "ENVIAR": "Enviar Notificación",
+  "AV_HL": "Aviso de Hora Libre",
+  "AVISO_HORA_LIBRE_EMAIL": "Aviso de Hora Libre",
+  "AVISO_HORA_LIBRE": "Aviso de Hora Libre",
+  "AVISO_": "Aviso de Hora Libre",
 
   // Truncados históricos de Appwrite (failsafe slice(0, 6))
   "REGIST": "Registrar Docente",

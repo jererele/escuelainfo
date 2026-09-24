@@ -14,7 +14,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
-import { sendApprovalEmail } from "@/lib/emailService";
+import { sendApprovalEmail, sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia } from "@/lib/emailService";
 import {
   GeneralTab,
   UsuariosTab,
@@ -557,6 +557,45 @@ export default function Dashboard() {
       await updateAusenciaStatus(id, status);
       logAction(user?.email || "desconocido", "CAMBIO_ESTADO", `ID: ${id} -> Nuevo estado: ${status}`);
       showToast(`Estado actualizado a ${status}`, "success");
+
+      // Si la ausencia fue aprobada, despachar aviso por email a los alumnos del curso
+      if (status === "aprobada") {
+        const targetAusencia = ausencias.find(a => a.id === id);
+        if (targetAusencia) {
+          const affectedCourses = getAffectedCoursesFromAusencia(targetAusencia, horarios);
+          if (affectedCourses.length > 0) {
+            const cleanTargetCourses = affectedCourses.map(c => c.toLowerCase().trim());
+            const targetStudents = alumnos.filter(a =>
+              cleanTargetCourses.includes((a.curso || "").toLowerCase().trim())
+            );
+            const studentEmails = Array.from(
+              new Set(targetStudents.map(s => s.email?.trim().toLowerCase()).filter(Boolean) as string[])
+            );
+
+            if (studentEmails.length > 0) {
+              sendAbsenceNoticeEmail({
+                profesor: targetAusencia.profNombre,
+                tipo: targetAusencia.tipo,
+                inicio: targetAusencia.inicio,
+                fin: targetAusencia.fin,
+                materias: targetAusencia.materias,
+                cursos: affectedCourses,
+                motivo: targetAusencia.motivo,
+                studentEmails,
+              }).then(sent => {
+                if (sent) {
+                  showToast(`Aviso de hora libre despachado por mail a ${studentEmails.length} alumno(s)`, "success");
+                  logAction(
+                    user?.email || "desconocido",
+                    "AVISO_HORA_LIBRE_EMAIL",
+                    `Cursos: ${affectedCourses.join(", ")}, Destinatarios: ${studentEmails.length} alumnos`
+                  );
+                }
+              }).catch(err => console.error("Error al notificar alumnos por email:", err));
+            }
+          }
+        }
+      }
     } catch (error) {
       // Rollback on failure
       if (previousStatus) {

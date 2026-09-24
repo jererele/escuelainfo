@@ -29,18 +29,36 @@ export async function POST(request: Request) {
     });
 
     const mailOptions: any = {
-      from: process.env.SMTP_FROM || `"EscuelaInfo" <${process.env.SMTP_USER}>`,
+      from: process.env.SMTP_FROM || `"Escuela N° 713 - EscuelaInfo" <${user}>`,
       subject,
       text: text || "Notificación de EscuelaInfo",
       html: html || `<p>${text || "Notificación de EscuelaInfo"}</p>`,
     };
 
-    if (to) mailOptions.to = to;
-    if (bcc) mailOptions.bcc = Array.isArray(bcc) ? bcc.join(",") : bcc;
-    if (replyTo) mailOptions.replyTo = replyTo;
+    const bccList = Array.isArray(bcc) ? bcc.filter(Boolean) : (bcc ? [bcc] : []);
+
+    if (to) {
+      mailOptions.to = to;
+      if (bccList.length > 0) {
+        mailOptions.bcc = bccList.join(",");
+      }
+    } else if (bccList.length === 1) {
+      // Si hay un único destinatario en CCO, enviarlo como TO directo para máxima entregabilidad
+      mailOptions.to = bccList[0];
+    } else if (bccList.length > 1) {
+      // Múltiples destinatarios en CCO: usar un TO institucional válido
+      mailOptions.to = `"Comunidad Educativa N° 713" <${user}>`;
+      mailOptions.bcc = bccList.join(",");
+    }
+
+    if (replyTo) {
+      mailOptions.replyTo = replyTo;
+    } else {
+      mailOptions.replyTo = user;
+    }
 
     const info = await transporter.sendMail(mailOptions);
-    console.log("Mensaje enviado: %s", info.messageId);
+    console.log("Mensaje enviado exitosamente. ID: %s", info.messageId);
 
     return NextResponse.json({ success: true, messageId: info.messageId });
   } catch (error: any) {

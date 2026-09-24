@@ -70,8 +70,9 @@ export default function SendNoticeModal({
       return usuarios.filter(u => u.email).length;
     }
     if (destino === "curso") {
-      const targetCourse = selectedCourse.trim().toLowerCase();
-      return alumnos.filter(a => (a.curso || "").trim().toLowerCase() === targetCourse && a.email).length;
+      const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, " ").trim();
+      const targetCourse = normalize(selectedCourse);
+      return alumnos.filter(a => normalize(a.curso || "") === targetCourse && a.email).length;
     }
     return 0;
   };
@@ -89,30 +90,35 @@ export default function SendNoticeModal({
       return;
     }
 
+    const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, " ").trim();
     let emails: string[] = [];
     if (destino === "todos") {
       const all = [
-        ...alumnos.map(a => a.email),
-        ...profesores.map(p => p.email),
-        ...usuarios.map(u => u.email)
+        ...alumnos.map(a => a.email?.trim().toLowerCase()),
+        ...profesores.map(p => p.email?.trim().toLowerCase()),
+        ...usuarios.map(u => u.email?.trim().toLowerCase())
       ];
-      emails = Array.from(new Set(all.filter(Boolean)));
+      emails = Array.from(new Set(all.filter(Boolean) as string[]));
     } else if (destino === "alumnos") {
-      emails = alumnos.map(a => a.email).filter(Boolean);
+      emails = Array.from(new Set(alumnos.map(a => a.email?.trim().toLowerCase()).filter(Boolean) as string[]));
     } else if (destino === "profesores") {
-      emails = profesores.map(p => p.email).filter(Boolean);
+      emails = Array.from(new Set(profesores.map(p => p.email?.trim().toLowerCase()).filter(Boolean) as string[]));
     } else if (destino === "usuarios") {
-      emails = usuarios.map(u => u.email).filter(Boolean);
+      emails = Array.from(new Set(usuarios.map(u => u.email?.trim().toLowerCase()).filter(Boolean) as string[]));
     } else if (destino === "curso") {
       if (!selectedCourse) {
         setError("Por favor seleccioná un curso.");
         return;
       }
-      const targetCourse = selectedCourse.trim().toLowerCase();
-      emails = alumnos
-        .filter(a => (a.curso || "").trim().toLowerCase() === targetCourse)
-        .map(a => a.email)
-        .filter(Boolean);
+      const targetCourse = normalize(selectedCourse);
+      emails = Array.from(
+        new Set(
+          alumnos
+            .filter(a => normalize(a.curso || "") === targetCourse)
+            .map(a => a.email?.trim().toLowerCase())
+            .filter(Boolean) as string[]
+        )
+      );
     }
 
     if (emails.length === 0) {
@@ -133,7 +139,8 @@ export default function SendNoticeModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          bcc: emails,
+          to: emails.length === 1 ? emails[0] : undefined,
+          bcc: emails.length > 1 ? emails : undefined,
           subject: subject,
           text: message,
           html: `

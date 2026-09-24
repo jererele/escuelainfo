@@ -16,8 +16,10 @@ import {
   Curso,
   Horario,
   getCursos,
-  getHorarios
+  getHorarios,
+  getAlumnos
 } from "@/lib/dataService";
+import { sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia } from "@/lib/emailService";
 import { notify } from "@/lib/notify";
 import {
   X,
@@ -927,7 +929,39 @@ export default function NewAbsenceModal({
             })
           });
         } catch (err) {
-          console.error("No se pudo notificar por email", err);
+          console.error("No se pudo notificar a directivos por email", err);
+        }
+
+        // Si la licencia ingresa con estado aprobada (ej. cargada por directivo), notificar a los alumnos
+        if (newAusencia.estado === "aprobada") {
+          try {
+            const affectedCourses = getAffectedCoursesFromAusencia(newAusencia, horarios);
+            if (affectedCourses.length > 0) {
+              const allStudents = await getAlumnos();
+              const cleanTargetCourses = affectedCourses.map(c => c.toLowerCase().trim());
+              const targetStudents = allStudents.filter(a =>
+                cleanTargetCourses.includes((a.curso || "").toLowerCase().trim())
+              );
+              const studentEmails = Array.from(
+                new Set(targetStudents.map(s => s.email?.trim().toLowerCase()).filter(Boolean) as string[])
+              );
+
+              if (studentEmails.length > 0) {
+                sendAbsenceNoticeEmail({
+                  profesor: newAusencia.profNombre,
+                  tipo: newAusencia.tipo,
+                  inicio: newAusencia.inicio,
+                  fin: newAusencia.fin,
+                  materias: newAusencia.materias,
+                  cursos: affectedCourses,
+                  motivo: newAusencia.motivo,
+                  studentEmails,
+                }).catch(err => console.error("Error al notificar alumnos por mail:", err));
+              }
+            }
+          } catch (err) {
+            console.error("Error al despachar aviso a alumnos en NewAbsenceModal:", err);
+          }
         }
       };
 

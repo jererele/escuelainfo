@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { saveAusencia, Ausencia, Profesor, logAction } from "@/lib/dataService";
+import { saveAusencia, Ausencia, Profesor, logAction, getAlumnos, getHorarios } from "@/lib/dataService";
+import { sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia } from "@/lib/emailService";
 import { account } from "@/lib/appwrite";
 import { notify } from "@/lib/notify";
 import { X, Check, AlertCircle, ShieldAlert, AlertTriangle, FileText } from "lucide-react";
@@ -111,6 +112,38 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
         "AUTOGESTION_DOCENTE",
         `Profesor: ${currentProfesor.nombre}, Reporte: ${formData.tipo}, Fecha: ${formData.fecha}`
       );
+
+      // Si el reporte queda aprobado automáticamente (ej: Paro Docente), notificar a los alumnos
+      if (newAusencia.estado === "aprobada") {
+        try {
+          const [allHorarios, allAlumnos] = await Promise.all([getHorarios(), getAlumnos()]);
+          const affectedCourses = getAffectedCoursesFromAusencia(newAusencia, allHorarios);
+          if (affectedCourses.length > 0) {
+            const cleanCourses = affectedCourses.map(c => c.toLowerCase().trim());
+            const targetStudents = allAlumnos.filter(a =>
+              cleanCourses.includes((a.curso || "").toLowerCase().trim())
+            );
+            const studentEmails = Array.from(
+              new Set(targetStudents.map(s => s.email?.trim().toLowerCase()).filter(Boolean) as string[])
+            );
+
+            if (studentEmails.length > 0) {
+              sendAbsenceNoticeEmail({
+                profesor: newAusencia.profNombre,
+                tipo: newAusencia.tipo,
+                inicio: newAusencia.inicio,
+                fin: newAusencia.fin,
+                materias: newAusencia.materias,
+                cursos: affectedCourses,
+                motivo: newAusencia.motivo,
+                studentEmails,
+              }).catch(err => console.error("Error al notificar por email a los alumnos:", err));
+            }
+          }
+        } catch (err) {
+          console.error("Error al recopilar alumnos para notificación de paro:", err);
+        }
+      }
 
       onSuccess();
       onClose();
