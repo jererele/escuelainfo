@@ -4,15 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.23.2";
-export const APP_BUILD_DATE = "24/09/2026 19:35 hs";
+export const APP_VERSION = "v2.23.3";
+export const APP_BUILD_DATE = "24/09/2026 19:42 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Restricción de Edición Docente y Gestión Exclusiva de Materias para Preceptores (ProfesoresTab.tsx, NewTeacherModal.tsx y page.tsx): Se blindó la información personal de los profesores (nombre completo, DNI, correo electrónico institucional, alta y baja de docentes) restringiéndola de manera exclusiva a los Administradores y Directivos del establecimiento. Los usuarios con rol de Preceptor tienen estrictamente deshabilitada la modificación de datos personales y la eliminación de docentes, pudiendo únicamente asignar y modificar las materias que dicta cada profesor a través del panel interactivo de materias (AssignTeacherSubjectsModal). La interfaz incorpora para preceptores el botón directo 'Materias' en cada tarjeta docente, acceso a configuración de docentes sin materias asignadas y un banner de estado informativo.",
-  "Protección en Formulario Docente (NewTeacherModal.tsx): Si se accede a la edición de un docente con rol de preceptor, los campos de nombre, DNI y email quedan bloqueados en modo solo lectura con aviso explicativo, permitiendo únicamente el guardado de las materias que dicta."
+  "Corrección de Notificación Duplicada en Solicitudes de Registro (TopNavSidebar.tsx, Sidebar.tsx y page.tsx): Se eliminó el indicador de notificación (badge rojo) redundante que aparecía erróneamente sobre la pestaña 'Alumnos' cuando una persona enviaba su solicitud de registro. Dado que la gestión completa de solicitudes de acceso está centralizada en la pestaña 'Usuarios' (dentro del sub-panel 'Solicitudes de Acceso'), la alerta visual ahora se activa exclusiva y precisamente sobre el módulo de Usuarios y en el botón del menú superior, suprimiendo la confusión de alertas en el padrón estudiantil."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.23.2",
+    date: "24/09/2026 19:35 hs",
+    notes: [
+      "Restricción de Edición Docente y Gestión Exclusiva de Materias para Preceptores (ProfesoresTab.tsx, NewTeacherModal.tsx y page.tsx): Se blindó la información personal de los profesores (nombre completo, DNI, correo electrónico institucional, alta y baja de docentes) restringiéndola de manera exclusiva a los Administradores y Directivos del establecimiento. Los usuarios con rol de Preceptor tienen estrictamente deshabilitada la modificación de datos personales y la eliminación de docentes, pudiendo únicamente asignar y modificar las materias que dicta cada profesor a través del panel interactivo de materias (AssignTeacherSubjectsModal). La interfaz incorpora para preceptores el botón directo 'Materias' en cada tarjeta docente, acceso a configuración de docentes sin materias asignadas y un banner de estado informativo.",
+      "Protección en Formulario Docente (NewTeacherModal.tsx): Si se accede a la edición de un docente con rol de preceptor, los campos de nombre, DNI y email quedan bloqueados en modo solo lectura con aviso explicativo, permitiendo únicamente el guardado de las materias que dicta."
+    ]
+  },
   {
     version: "v2.23.1",
     date: "24/09/2026 19:25 hs",

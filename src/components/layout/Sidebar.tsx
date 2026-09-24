@@ -159,12 +159,6 @@ export default function Sidebar({
                 if (tab.id === 'usuarios' && pendingUsersCount > 0) {
                   showBadge = true;
                   badgeCount = pendingUsersCount;
-                } else if (tab.id === 'configuracion' && pendingAccessCount > 0) {
-                  showBadge = true;
-                  badgeCount = pendingAccessCount;
-                } else if (tab.id === 'alumnos' && pendingAlumnosCount > 0) {
-                  showBadge = true;
-                  badgeCount = pendingAlumnosCount;
                 }
 
                 return (

@@ -1411,8 +1411,6 @@ export default function Dashboard() {
             if (tabId === 'auditoria') getLogs().then(setLogs);
           }}
           pendingUsersCount={usuarios.filter(u => isPendingRole(u.rol)).length}
-          pendingAccessCount={usuarios.filter(u => isPendingRole(u.rol) && u.rol !== "pendiente_alumno").length}
-          pendingAlumnosCount={usuarios.filter(u => u.rol === "pendiente_alumno").length}
         />
 
       {/* MAIN CONTENT: flex-1 para ocupar el ancho disponible.

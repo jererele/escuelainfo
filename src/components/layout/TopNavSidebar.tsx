@@ -241,7 +241,7 @@ export default function TopNavSidebar({
             ) : (
               <Menu size={18} className="transition-transform duration-300" />
             )}
-            {(pendingUsersCount > 0 || pendingAccessCount > 0 || pendingAlumnosCount > 0) && (
+            {pendingUsersCount > 0 && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--rojo)] rounded-full animate-pulse border-2 border-[var(--bg)]" />
             )}
           </button>
@@ -355,16 +355,8 @@ export default function TopNavSidebar({
             <nav aria-label="Menú principal" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-5">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
-                const hasBadge =
-                  (tab.id === "usuarios" && pendingUsersCount > 0) ||
-                  (tab.id === "configuracion" && pendingAccessCount > 0) ||
-                  (tab.id === "alumnos" && pendingAlumnosCount > 0);
-                const badgeCount =
-                  tab.id === "usuarios"
-                    ? pendingUsersCount
-                    : tab.id === "configuracion"
-                    ? pendingAccessCount
-                    : pendingAlumnosCount;
+                const hasBadge = tab.id === "usuarios" && pendingUsersCount > 0;
+                const badgeCount = pendingUsersCount;
 
                 return (
                   <button
