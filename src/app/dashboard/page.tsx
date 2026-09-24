@@ -403,8 +403,13 @@ export default function Dashboard() {
       if (userProfile.rol === 'alumno') {
         setActiveTab("horarios");
       }
+      if (userProfile.rol === 'preceptor' && userProfile.cursos && userProfile.cursos.length > 0) {
+        if (!selectedCourse || !userProfile.cursos.includes(selectedCourse)) {
+          setSelectedCourse(userProfile.cursos[0]);
+        }
+      }
     }
-  }, [userProfile]);
+  }, [userProfile, selectedCourse]);
 
   // Sistema de Auto-Logout por Inactividad (15 Minutos)
   // Performance: mousemove is throttled to fire reset at most once every 5 seconds
@@ -685,9 +690,10 @@ export default function Dashboard() {
 
   // APROBACIONES DE ALUMNOS (Permite elegir rol: alumno, profesor o preceptor, y el curso en caso de alumno)
   const handleApproveStudent = async (
-    u: UserProfile,
+    u: UserProfile, 
     targetRole: "alumno" | "profesor" | "preceptor" = "alumno",
-    selectedCurso?: string
+    selectedCurso?: string,
+    preceptorCursos?: string[]
   ) => {
     const operatorRole = userProfile?.rol?.trim().toLowerCase();
     const allowedRoles = getAllowedAssignableRoles(operatorRole);
@@ -698,7 +704,11 @@ export default function Dashboard() {
     }
 
     try {
-      await updateUserProfile(u.id!, { rol: targetRole });
+      const updatePayload: Partial<UserProfile> = { rol: targetRole };
+      if (targetRole === "preceptor" && preceptorCursos) {
+        updatePayload.cursos = preceptorCursos;
+      }
+      await updateUserProfile(u.id!, updatePayload);
 
       const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
 
@@ -746,6 +756,8 @@ export default function Dashboard() {
 
       const logDesc = targetRole === "alumno" && selectedCurso
         ? `Email: ${u.email}, Rol: Alumno, Curso: ${selectedCurso}`
+        : targetRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
+        ? `Email: ${u.email}, Rol: Preceptor, Cursos: ${preceptorCursos.join(", ")}`
         : `Email: ${u.email}, Rol asignado: ${label}`;
 
       await logAction(
@@ -756,6 +768,8 @@ export default function Dashboard() {
 
       const toastMessage = targetRole === "alumno" && selectedCurso
         ? `Solicitud de ${u.nombre} aprobada en curso ${selectedCurso}`
+        : targetRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
+        ? `Solicitud de ${u.nombre} aprobada como Preceptor (${preceptorCursos.length} cursos)`
         : `Solicitud de ${u.nombre} aprobada como ${label}`;
       showToast(toastMessage, "success");
 
@@ -764,7 +778,11 @@ export default function Dashboard() {
         to: u.email,
         nombre: u.nombre,
         rol: targetRole,
-        curso: targetRole === "alumno" ? selectedCurso : undefined,
+        curso: targetRole === "alumno" 
+          ? selectedCurso 
+          : targetRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0 
+          ? preceptorCursos.join(", ") 
+          : undefined,
       }).catch(err => console.error("Error al enviar email de aprobación:", err));
 
       getUsuarios().then(setUsuarios);
@@ -825,7 +843,8 @@ export default function Dashboard() {
   const handleChangeUserRole = async (
     targetUser: UserProfile,
     newRole: UserProfile["rol"],
-    selectedCurso?: string
+    selectedCurso?: string,
+    preceptorCursos?: string[]
   ) => {
     const operatorRole = userProfile?.rol?.trim().toLowerCase();
 
@@ -856,10 +875,26 @@ export default function Dashboard() {
       const oldRole = targetUser.rol;
 
       // Actualizar en base de datos
-      await updateUserProfile(targetUser.id!, { rol: newRole });
+      const updatePayload: Partial<UserProfile> = { rol: newRole };
+      if (newRole === "preceptor" && preceptorCursos) {
+        updatePayload.cursos = preceptorCursos;
+      }
+      await updateUserProfile(targetUser.id!, updatePayload);
 
       // Actualización optimista local
-      setUsuarios(prev => prev.map(u => u.id === targetUser.id ? { ...u, rol: newRole } : u));
+      setUsuarios(prev => prev.map(u => u.id === targetUser.id ? { 
+        ...u, 
+        rol: newRole,
+        cursos: newRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
+      } : u));
+
+      if (userProfile?.id === targetUser.id || userProfile?.email?.toLowerCase() === targetUser.email.toLowerCase()) {
+        setUserProfile(prev => prev ? {
+          ...prev,
+          rol: newRole,
+          cursos: newRole === "preceptor" ? (preceptorCursos ?? prev.cursos) : prev.cursos
+        } : prev);
+      }
 
       // 1. Si el rol asignado es ALUMNO
       if (newRole === "alumno") {
@@ -921,10 +956,16 @@ export default function Dashboard() {
       const oldLabel = roleLabels[oldRole] || oldRole;
       const newLabel = roleLabels[newRole] || newRole;
 
+      const extraDetails = newRole === "alumno" && selectedCurso
+        ? ` (Curso: ${selectedCurso})`
+        : newRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
+        ? ` (Cursos: ${preceptorCursos.join(", ")})`
+        : "";
+
       await logAction(
         user?.email || "admin",
         "C_ROL",
-        `${targetUser.email}: de ${oldLabel} a ${newLabel}${newRole === "alumno" && selectedCurso ? ` (Curso: ${selectedCurso})` : ""}`
+        `${targetUser.email}: de ${oldLabel} a ${newLabel}${extraDetails}`
       );
 
       showToast(`Rol de ${targetUser.nombre} actualizado a ${newLabel}`, "success");

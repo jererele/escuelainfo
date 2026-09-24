@@ -490,7 +490,22 @@ export interface UserProfile {
   telefono?: string;
   direccion?: string;
   nombrePendiente?: string;
+  cursos?: string[];
 }
+
+export const parseUserCursos = (val: any): string[] => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      return val.split(",").map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
 
 export interface Curso {
   id?: string;
@@ -771,7 +786,12 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.equal("uid", uid)] });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
-      return { ...doc, id: doc.$id, rol: fromDbRol(doc.rol) } as unknown as UserProfile;
+      return { 
+        ...doc, 
+        id: doc.$id, 
+        rol: fromDbRol(doc.rol),
+        cursos: parseUserCursos(doc.cursos)
+      } as unknown as UserProfile;
     }
     return null;
   } catch (err) { devLog("getUserProfile", err); return null; }
@@ -782,7 +802,12 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
     const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.equal("email", sanitize(email, 200))] });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
-      return { ...doc, id: doc.$id, rol: fromDbRol(doc.rol) } as unknown as UserProfile;
+      return { 
+        ...doc, 
+        id: doc.$id, 
+        rol: fromDbRol(doc.rol),
+        cursos: parseUserCursos(doc.cursos)
+      } as unknown as UserProfile;
     }
     return null;
   } catch { return null; }
@@ -796,7 +821,12 @@ export const getUsuarios = async (forceRefresh = false): Promise<UserProfile[]> 
   try {
     const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
     const data = response.documents.map(doc => ({
-      id: doc.$id, uid: doc.uid, email: doc.email, nombre: doc.nombre, rol: fromDbRol(doc.rol)
+      id: doc.$id, 
+      uid: doc.uid, 
+      email: doc.email, 
+      nombre: doc.nombre, 
+      rol: fromDbRol(doc.rol),
+      cursos: parseUserCursos(doc.cursos)
     })) as unknown as UserProfile[];
     setCachedData("usuarios", data);
     return data;
@@ -806,13 +836,16 @@ export const getUsuarios = async (forceRefresh = false): Promise<UserProfile[]> 
 export const updateUserProfile = async (id: string, data: Partial<UserProfile>) => {
   await requireAuth();
   clearCache("usuarios");
-  const updateData = { ...data };
+  const updateData: any = { ...data };
   if (updateData.rol) updateData.rol = toDbRol(updateData.rol);
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
   if (updateData.uid) updateData.uid = sanitize(updateData.uid, 50);
   if (updateData.nombrePendiente !== undefined) {
     updateData.nombrePendiente = updateData.nombrePendiente ? sanitize(updateData.nombrePendiente, 200) : "";
+  }
+  if (updateData.cursos !== undefined) {
+    updateData.cursos = Array.isArray(updateData.cursos) ? JSON.stringify(updateData.cursos) : (updateData.cursos || "[]");
   }
   return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: id, data: updateData });
 };
@@ -852,11 +885,12 @@ export const createUserProfile = async (profile: UserProfile) => {
   await requireAuth();
   clearCache("usuarios");
   try {
-    const dataToSave = { 
+    const dataToSave: any = { 
       uid: sanitize(profile.uid, 50),
       nombre: sanitize(profile.nombre, 200),
       email: sanitize(profile.email, 200),
-      rol: toDbRol(profile.rol) 
+      rol: toDbRol(profile.rol),
+      cursos: Array.isArray(profile.cursos) ? JSON.stringify(profile.cursos) : "[]"
     };
     await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: ID.unique(), data: dataToSave });
   } catch (err) { devLog("createUserProfile", err); throw err; }

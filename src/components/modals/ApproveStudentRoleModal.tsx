@@ -10,7 +10,8 @@ interface ApproveStudentRoleModalProps {
   onClose: () => void;
   onConfirm: (
     targetRole: "alumno" | "profesor" | "preceptor",
-    selectedCurso?: string
+    selectedCurso?: string,
+    preceptorCursos?: string[]
   ) => Promise<void> | void;
   user: UserProfile | null;
   alumnoDetails?: Alumno | null;
@@ -29,10 +30,12 @@ export default function ApproveStudentRoleModal({
 }: ApproveStudentRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
+  const [selectedPreceptorCursos, setSelectedPreceptorCursos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const courseSectionRef = useRef<HTMLDivElement>(null);
   const courseSelectRef = useRef<HTMLSelectElement>(null);
+  const preceptorSectionRef = useRef<HTMLDivElement>(null);
 
   // Jerarquía de roles que el operador tiene permitido otorgar
   const allowedRoles = useMemo<UserRole[]>(() => {
@@ -107,6 +110,10 @@ export default function ApproveStudentRoleModal({
         courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         courseSelectRef.current?.focus();
       }, 60);
+    } else if (roleId === "preceptor") {
+      setTimeout(() => {
+        preceptorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 60);
     }
   };
 
@@ -119,7 +126,11 @@ export default function ApproveStudentRoleModal({
     }
     setLoading(true);
     try {
-      await onConfirm(selectedRole, selectedRole === "alumno" ? selectedCurso : undefined);
+      await onConfirm(
+        selectedRole,
+        selectedRole === "alumno" ? selectedCurso : undefined,
+        selectedRole === "preceptor" ? selectedPreceptorCursos : undefined
+      );
       onClose();
     } finally {
       setLoading(false);
@@ -276,6 +287,86 @@ export default function ApproveStudentRoleModal({
                 <p className="text-[10px] text-[var(--amarillo)] font-medium pl-1">
                   Nota: El alumno solicitó originalmente el curso <strong>{alumnoDetails.curso}</strong>.
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* Selector de Cursos Asignados para Preceptor */}
+          {selectedRole === "preceptor" && allowedRoles.includes("preceptor") && (
+            <div
+              ref={preceptorSectionRef}
+              className="space-y-2.5 p-3.5 rounded-2xl bg-[var(--azul-bg)]/30 border border-[var(--azul-border)] animate-fade-in ring-1 ring-[var(--azul)]/30"
+            >
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-wider text-[var(--azul)] flex items-center gap-1.5">
+                  <Users size={13} className="text-[var(--azul)]" />
+                  <span>Cursos Asignados a la Preceptoría</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreceptorCursos((cursos || []).map(c => c.nombre))}
+                    className="text-[10px] text-[var(--azul)] hover:underline font-bold cursor-pointer"
+                  >
+                    Todos
+                  </button>
+                  <span className="text-[10px] text-[var(--text3)]">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreceptorCursos([])}
+                    className="text-[10px] text-[var(--text3)] hover:underline font-bold cursor-pointer"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--text2)] leading-snug">
+                Seleccioná los cursos que este preceptor supervisa para conectar sus horarios y ausencias docentes.
+              </p>
+
+              {(!cursos || cursos.length === 0) ? (
+                <p className="text-xs text-[var(--text3)] italic">No hay cursos registrados.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar p-0.5">
+                  {cursos.map((c) => {
+                    const isSelected = selectedPreceptorCursos.includes(c.nombre);
+                    return (
+                      <button
+                        key={c.id || c.nombre}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPreceptorCursos(prev =>
+                            prev.includes(c.nombre)
+                              ? prev.filter(x => x !== c.nombre)
+                              : [...prev, c.nombre]
+                          );
+                        }}
+                        className={`p-2 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? "bg-[var(--azul-bg)] text-[var(--azul)] border-[var(--azul-border)] shadow-xs"
+                            : "bg-[var(--bg)] text-[var(--text2)] border-[var(--border)] hover:bg-[var(--bg3)]"
+                        }`}
+                      >
+                        <span className="truncate mr-2 text-[11px]">{c.nombre}</span>
+                        <div className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border transition-colors ${
+                          isSelected
+                            ? "bg-[var(--azul)] text-white border-[var(--azul)]"
+                            : "border-[var(--border)] bg-[var(--bg3)]"
+                        }`}>
+                          {isSelected && <Check size={10} strokeWidth={3} />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedPreceptorCursos.length > 0 && (
+                <div className="pt-0.5 flex items-center gap-1.5 text-[10px] font-bold text-[var(--azul)]">
+                  <Check size={11} strokeWidth={2.5} />
+                  <span>{selectedPreceptorCursos.length} división(es) vinculada(s)</span>
+                </div>
               )}
             </div>
           )}

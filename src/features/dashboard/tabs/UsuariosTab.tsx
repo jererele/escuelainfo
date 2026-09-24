@@ -34,13 +34,15 @@ interface UsuariosTabProps {
   onApproveStudent: (
     user: UserProfile,
     targetRole?: "alumno" | "profesor" | "preceptor",
-    selectedCurso?: string
+    selectedCurso?: string,
+    preceptorCursos?: string[]
   ) => Promise<void> | void;
   onRejectStudent: (user: UserProfile) => Promise<void> | void;
   onChangeUserRole?: (
     user: UserProfile,
     newRole: UserProfile["rol"],
-    selectedCurso?: string
+    selectedCurso?: string,
+    preceptorCursos?: string[]
   ) => Promise<void> | void;
   showToast: (message: string, type?: "success" | "error") => void;
   onRefreshUsuarios?: () => void;
@@ -513,6 +515,19 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                           )}
                         </div>
                       )}
+
+                      {u.rol === "preceptor" && (
+                        <div className="text-[11px] font-bold text-[var(--text2)]">
+                          {u.cursos && u.cursos.length > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--azul-bg)] text-[var(--azul)] border border-[var(--azul-border)] font-mono">
+                              <Users size={11} />
+                              {u.cursos.join(", ")}
+                            </span>
+                          ) : (
+                            <span className="text-[var(--amarillo)] italic">Sin cursos</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {canManageUserRole(userProfile?.rol, u.rol) && (
@@ -616,6 +631,22 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                               ) : (
                                 <span className="text-[var(--amarillo)] font-medium italic">Sin curso</span>
                               )
+                            ) : u.rol === "preceptor" ? (
+                              u.cursos && u.cursos.length > 0 ? (
+                                <div className="flex flex-wrap items-center gap-1.5 max-w-[280px]">
+                                  {u.cursos.map((c) => (
+                                    <span
+                                      key={c}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--azul-bg)] text-[var(--azul)] border border-[var(--azul-border)] font-bold text-[11px] font-mono"
+                                    >
+                                      <Users size={11} className="shrink-0" />
+                                      <span className="truncate">{c}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[var(--amarillo)] font-medium italic text-[11px]">Sin cursos asignados</span>
+                              )
                             ) : (
                               <span className="text-[var(--text3)] font-mono text-[11px]">—</span>
                             )}
@@ -665,8 +696,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             setIsApproveModalOpen(false);
             setApprovingUser(null);
           }}
-          onConfirm={(targetRole, selectedCurso) =>
-            onApproveStudent(approvingUser, targetRole, selectedCurso)
+          onConfirm={(targetRole, selectedCurso, preceptorCursos) =>
+            onApproveStudent(approvingUser, targetRole, selectedCurso, preceptorCursos)
           }
           user={approvingUser}
           alumnoDetails={alumnos.find(
@@ -685,9 +716,9 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             setIsChangeRoleModalOpen(false);
             setRoleChangingUser(null);
           }}
-          onConfirm={async (targetRole, selectedCurso) => {
+          onConfirm={async (targetRole, selectedCurso, preceptorCursos) => {
             if (onChangeUserRole) {
-              await onChangeUserRole(roleChangingUser, targetRole, selectedCurso);
+              await onChangeUserRole(roleChangingUser, targetRole, selectedCurso, preceptorCursos);
             }
           }}
           user={roleChangingUser}

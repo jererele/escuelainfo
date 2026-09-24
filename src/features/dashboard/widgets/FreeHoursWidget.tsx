@@ -5,6 +5,8 @@ import { Clock, ArrowRight, User, PartyPopper, AlertTriangle, Check, ArrowUpRigh
 interface FreeHoursWidgetProps {
   isStudent?: boolean;
   currentAlumno?: Alumno | null;
+  isPreceptor?: boolean;
+  preceptorCourses?: string[];
   ausencias: Ausencia[];
   horarios: Horario[];
   onNavigateToAusencias: (profNombre: string) => void;
@@ -14,6 +16,8 @@ interface FreeHoursWidgetProps {
 export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
   isStudent = false,
   currentAlumno,
+  isPreceptor = false,
+  preceptorCourses = [],
   ausencias,
   horarios,
   onNavigateToAusencias,
@@ -133,9 +137,12 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     if (isStudent && currentAlumno?.curso) {
       const studentCourse = currentAlumno.curso.trim().toLowerCase();
       list = list.filter(h => (h.curso || "").trim().toLowerCase() === studentCourse);
+    } else if (isPreceptor && preceptorCourses && preceptorCourses.length > 0) {
+      const normCourses = preceptorCourses.map(c => c.trim().toLowerCase());
+      list = list.filter(h => normCourses.includes((h.curso || "").trim().toLowerCase()));
     }
     return list;
-  }, [horarios, todayDayName, activeAbsencesToday, isStudent, currentAlumno]);
+  }, [horarios, todayDayName, activeAbsencesToday, isStudent, currentAlumno, isPreceptor, preceptorCourses]);
 
   const hasFreeHours = freeHoursToday.length > 0;
 
@@ -156,13 +163,19 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
             <h3 className="font-black text-lg text-[var(--text)] leading-tight">
               {isStudent 
                 ? `Tus Horas Libres de Hoy (${currentAlumno?.curso || "Tu Curso"})` 
+                : isPreceptor && preceptorCourses && preceptorCourses.length > 0
+                ? `Horas Libres en tus Cursos Asignados (${todayDayName})`
                 : `Horas Libres Activas Hoy (${todayDayName})`
               }
             </h3>
             <p className="text-xs text-[var(--text2)] mt-0.5">
               {hasFreeHours 
-                ? "Se detectaron los siguientes bloques libres debido a licencias docentes confirmadas." 
-                : "Todas las clases programadas para hoy se dictan con total normalidad."
+                ? (isPreceptor && preceptorCourses && preceptorCourses.length > 0
+                    ? "Se detectaron los siguientes bloques libres en tus cursos asignados por licencias docentes."
+                    : "Se detectaron los siguientes bloques libres debido a licencias docentes confirmadas.")
+                : (isPreceptor && preceptorCourses && preceptorCourses.length > 0
+                    ? "Todas las clases programadas para tus cursos asignados se dictan con total normalidad hoy."
+                    : "Todas las clases programadas para hoy se dictan con total normalidad.")
               }
             </p>
           </div>

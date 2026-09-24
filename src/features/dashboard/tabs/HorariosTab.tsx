@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, UserCheck } from "lucide-react";
-import { Horario, Curso, Ausencia, Alumno, UserProfile, Profesor } from "@/lib/dataService";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, UserCheck, Users, GraduationCap, AlertTriangle, Check } from "lucide-react";
+import { Horario, Curso, Ausencia, Alumno, UserProfile, Profesor, parseUserCursos } from "@/lib/dataService";
 import CustomSelect from "@/components/shared/CustomSelect";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 
@@ -42,8 +42,25 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
   const [selectedMobileDay, setSelectedMobileDay] = useState<string>("Lunes");
   const isTeacher = userProfile?.rol === 'profesor';
   const isStudent = userProfile?.rol === 'alumno';
+  const isPreceptor = userProfile?.rol === 'preceptor';
   const teacherName = currentProfesor?.nombre || userProfile?.nombre || "";
   const [teacherOnlyMine, setTeacherOnlyMine] = useState<boolean>(true);
+  const [preceptorOnlyMine, setPreceptorOnlyMine] = useState<boolean>(true);
+
+  // Cursos asignados a la preceptoría
+  const preceptorCursos = useMemo<string[]>(() => {
+    if (!userProfile?.cursos) return [];
+    return parseUserCursos(userProfile.cursos);
+  }, [userProfile?.cursos]);
+
+  // Si es preceptor, auto-seleccionar por defecto su primer curso asignado
+  useEffect(() => {
+    if (isPreceptor && preceptorOnlyMine && preceptorCursos.length > 0) {
+      if (!selectedCourse || !preceptorCursos.includes(selectedCourse)) {
+        setSelectedCourse(preceptorCursos[0]);
+      }
+    }
+  }, [isPreceptor, preceptorOnlyMine, preceptorCursos, selectedCourse, setSelectedCourse]);
 
   const morningSlots = [
     "07:40 - 08:20", 
@@ -140,6 +157,10 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
       const cleanProf = teacherName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, '_') || 'Docente';
       fileName = `Mi_Horario_${cleanProf}.xlsx`;
       sheetName = "Mi Horario";
+    } else if (isPreceptor && targetCourse) {
+      const cleanCourse = targetCourse.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, '_');
+      fileName = `Horario_Preceptoria_${cleanCourse}.xlsx`;
+      sheetName = targetCourse.slice(0, 31);
     } else if (targetCourse) {
       const cleanCourse = targetCourse.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, '_');
       fileName = isStudent ? `Mi_Horario_${cleanCourse}.xlsx` : `Horario_${cleanCourse}.xlsx`;
@@ -233,7 +254,24 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                 Mi Horario: {teacherName}
               </span>
             )}
+            {isPreceptor && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--azul-bg)] text-[var(--azul)] text-xs font-bold rounded-xl border border-[var(--azul-border)]">
+                <Users size={13} />
+                {preceptorCursos.length > 0 
+                  ? `Preceptoría: ${preceptorCursos.length === 1 ? preceptorCursos[0] : `${preceptorCursos.length} cursos a cargo`}`
+                  : "Preceptoría: Sin cursos asignados"}
+              </span>
+            )}
           </div>
+
+          {/* Banner si el preceptor no tiene cursos asignados */}
+          {isPreceptor && preceptorCursos.length === 0 && (
+            <div className="mt-3 p-3.5 rounded-2xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-xs text-[var(--amarillo)] font-bold flex items-center gap-2.5 animate-fade-in no-print">
+              <AlertTriangle size={16} className="shrink-0" />
+              <span>Tu cuenta de preceptor aún no tiene divisiones escolares asignadas. Un directivo o administrador puede vincular tus cursos desde la sección <strong>Usuarios</strong>.</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-3 z-30 relative no-print">
             <div className="flex flex-wrap items-center gap-3">
               {isTeacher && (
@@ -256,9 +294,35 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                 </button>
               )}
 
+              {isPreceptor && preceptorCursos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVal = !preceptorOnlyMine;
+                    setPreceptorOnlyMine(nextVal);
+                    if (nextVal && !preceptorCursos.includes(selectedCourse)) {
+                      setSelectedCourse(preceptorCursos[0]);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-2xl text-xs font-black transition-all border flex items-center gap-2 cursor-pointer ${
+                    preceptorOnlyMine
+                      ? "bg-[var(--azul-bg)] text-[var(--azul)] border-[var(--azul-border)] shadow-sm"
+                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:bg-[var(--bg4)]"
+                  }`}
+                  title={preceptorOnlyMine ? "Viendo tus divisiones asignadas" : "Ver todos los cursos de la escuela"}
+                >
+                  <Users size={15} className={preceptorOnlyMine ? "text-[var(--azul)]" : "text-[var(--text3)]"} />
+                  {preceptorOnlyMine ? "Viendo: Mis Cursos Asignados" : "Ver Todos los Cursos"}
+                </button>
+              )}
+
               <div className="flex items-center gap-3">
                 <p className="text-[var(--text2)] text-sm font-medium">
-                  {isTeacher && teacherOnlyMine ? "Explorar por curso:" : "Filtrar por curso:"}
+                  {isTeacher && teacherOnlyMine 
+                    ? "Explorar por curso:" 
+                    : isPreceptor && preceptorOnlyMine 
+                    ? "Cursos asignados:" 
+                    : "Filtrar por curso:"}
                 </p>
                 {userProfile?.rol === 'alumno' ? (
                   <span className="px-4 py-2 bg-[var(--bg3)] text-[var(--verde)] rounded-2xl border border-[var(--border)] font-bold text-sm">
@@ -269,17 +333,33 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                     value={teacherOnlyMine ? "" : selectedCourse} 
                     onChange={(val) => {
                       setSelectedCourse(val);
-                      if (val) setTeacherOnlyMine(false);
+                      if (val) {
+                        if (isTeacher) setTeacherOnlyMine(false);
+                      }
                     }}
-                    placeholder={teacherOnlyMine ? "Seleccionar curso..." : "Todos los cursos"}
-                    className="w-48"
-                    buttonClassName="text-[var(--verde)] bg-[var(--bg3)] text-xs"
-                    options={[
-                      { value: "", label: "Todos los cursos" },
-                      ...cursos.map(c => ({
-                        value: c.nombre, label: c.nombre
-                      }))
-                    ]}
+                    placeholder={
+                      teacherOnlyMine 
+                        ? "Seleccionar curso..." 
+                        : isPreceptor && preceptorOnlyMine 
+                        ? "Seleccionar curso..." 
+                        : "Todos los cursos"
+                    }
+                    className="w-48 sm:w-56"
+                    buttonClassName={
+                      isPreceptor && preceptorOnlyMine 
+                        ? "text-[var(--azul)] bg-[var(--bg3)] text-xs font-bold" 
+                        : "text-[var(--verde)] bg-[var(--bg3)] text-xs font-bold"
+                    }
+                    options={
+                      isPreceptor && preceptorOnlyMine && preceptorCursos.length > 0
+                        ? preceptorCursos.map(c => ({ value: c, label: c }))
+                        : [
+                            { value: "", label: "Todos los cursos" },
+                            ...cursos.map(c => ({
+                              value: c.nombre, label: c.nombre
+                            }))
+                          ]
+                    }
                   />
                 )}
               </div>
@@ -301,6 +381,36 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
               )}
             </div>
           </div>
+
+          {/* Quick chips para preceptor con múltiples cursos asignados */}
+          {isPreceptor && preceptorCursos.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-3 no-print">
+              <span className="text-[11px] text-[var(--text3)] font-semibold flex items-center gap-1 mr-1">
+                <GraduationCap size={13} className="text-[var(--azul)]" /> Cursos a cargo:
+              </span>
+              {preceptorCursos.map((c) => {
+                const isActive = selectedCourse === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCourse(c);
+                      setPreceptorOnlyMine(true);
+                    }}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? "bg-[var(--azul-bg)] text-[var(--azul)] border-[var(--azul-border)] shadow-xs"
+                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:bg-[var(--bg4)]"
+                    }`}
+                  >
+                    <span>{c}</span>
+                    {isActive && <Check size={11} strokeWidth={3} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="flex gap-4 w-full md:w-auto no-print">
           <button 
@@ -313,6 +423,8 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
               ? (teacherOnlyMine || !selectedCourse ? "Descargar Mi Horario (Excel)" : `Descargar Horario ${selectedCourse} (Excel)`)
               : isStudent 
               ? "Descargar Mi Horario (Excel)" 
+              : isPreceptor && selectedCourse
+              ? `Descargar Horario ${selectedCourse} (Excel)`
               : selectedCourse 
               ? `Descargar Horario ${selectedCourse} (Excel)` 
               : "Descargar Cronograma General (Excel)"}
@@ -333,6 +445,8 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
         <FreeHoursWidget 
           isStudent={userProfile?.rol === 'alumno'}
           currentAlumno={currentAlumno}
+          isPreceptor={isPreceptor}
+          preceptorCourses={preceptorCursos}
           ausencias={ausencias}
           horarios={horarios}
           onNavigateToAusencias={onNavigateToAusencias}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import { UserCheck, Check, X, AlertCircle, Calendar, Clock, Search, Printer, QrCode, Camera } from "lucide-react";
 import AttendanceTableResponsive from "@/components/shared/AttendanceTableResponsive";
@@ -53,11 +53,22 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     }
   }, [userProfile]);
 
+  const preceptorCursos = useMemo<string[]>(() => {
+    if (!userProfile?.cursos) return [];
+    return parseUserCursos(userProfile.cursos);
+  }, [userProfile?.cursos]);
+
   useEffect(() => {
     if (userProfile) {
       setRole(userProfile.rol);
     }
   }, [userProfile]);
+
+  useEffect(() => {
+    if (role === "preceptor" && preceptorCursos.length > 0 && !selectedCurso) {
+      setSelectedCurso(preceptorCursos[0]);
+    }
+  }, [role, preceptorCursos, selectedCurso]);
 
   // Cargar datos básicos según el rol
   useEffect(() => {
@@ -233,7 +244,24 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                 onChange={(e) => setSelectedCurso(e.target.value)}
               >
                 <option value="">— Seleccionar Curso —</option>
-                {cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                {role === "preceptor" && preceptorCursos.length > 0 ? (
+                  <>
+                    <optgroup label="Mis Cursos Asignados">
+                      {cursos
+                        .filter(c => preceptorCursos.includes(c.nombre))
+                        .map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
+                      }
+                    </optgroup>
+                    <optgroup label="Otros Cursos Institucionales">
+                      {cursos
+                        .filter(c => !preceptorCursos.includes(c.nombre))
+                        .map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
+                      }
+                    </optgroup>
+                  </>
+                ) : (
+                  cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
+                )}
               </select>
             </div>
           </div>

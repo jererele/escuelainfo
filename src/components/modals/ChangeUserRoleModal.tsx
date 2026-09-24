@@ -9,12 +9,13 @@ import {
   UserCheck, 
   GraduationCap, 
   User, 
+  Users,
   AlertTriangle,
   Info,
   Lock,
   ArrowRight
 } from "lucide-react";
-import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, parseUserCursos } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ChangeUserRoleModalProps {
@@ -22,7 +23,8 @@ interface ChangeUserRoleModalProps {
   onClose: () => void;
   onConfirm: (
     targetRole: UserProfile["rol"],
-    selectedCurso?: string
+    selectedCurso?: string,
+    preceptorCursos?: string[]
   ) => Promise<void> | void;
   user: UserProfile | null;
   alumnoDetails?: Alumno | null;
@@ -45,11 +47,13 @@ export default function ChangeUserRoleModal({
 }: ChangeUserRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<AssignableRole>("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
+  const [selectedPreceptorCursos, setSelectedPreceptorCursos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmAdminEscalation, setConfirmAdminEscalation] = useState(false);
 
   const courseSectionRef = useRef<HTMLDivElement>(null);
   const courseSelectRef = useRef<HTMLSelectElement>(null);
+  const preceptorSectionRef = useRef<HTMLDivElement>(null);
   const adminSectionRef = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +86,10 @@ export default function ChangeUserRoleModal({
     setSelectedRole(initialRole);
     setConfirmAdminEscalation(false);
 
+    // Si ya tiene cursos asignados como preceptor o usuario
+    const preceptorAssigned = user.cursos ? parseUserCursos(user.cursos) : [];
+    setSelectedPreceptorCursos(preceptorAssigned);
+
     // Si ya tiene curso asignado en alumnoDetails
     const currentCourse = alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? alumnoDetails.curso : "";
     if (currentCourse && cursos.some(c => c.nombre.trim().toLowerCase() === currentCourse.trim().toLowerCase())) {
@@ -112,6 +120,10 @@ export default function ChangeUserRoleModal({
         courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         courseSelectRef.current?.focus();
       }, 60);
+    } else if (roleId === "preceptor") {
+      setTimeout(() => {
+        preceptorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 60);
     } else if (roleId === "admin" && user.rol !== "admin") {
       setTimeout(() => {
         adminSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -139,7 +151,8 @@ export default function ChangeUserRoleModal({
     try {
       await onConfirm(
         selectedRole,
-        selectedRole === "alumno" ? (selectedCurso || undefined) : undefined
+        selectedRole === "alumno" ? (selectedCurso || undefined) : undefined,
+        selectedRole === "preceptor" ? selectedPreceptorCursos : undefined
       );
       onClose();
     } finally {
@@ -403,6 +416,86 @@ export default function ChangeUserRoleModal({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* SELECCIÓN DE CURSOS ASIGNADOS PARA PRECEPTOR */}
+          {selectedRole === "preceptor" && allowedRoles.includes("preceptor") && (
+            <div
+              ref={preceptorSectionRef}
+              className="p-3.5 sm:p-4 rounded-2xl bg-[var(--azul-bg)]/30 border border-[var(--azul-border)] space-y-3 animate-fade-in"
+            >
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black uppercase text-[var(--azul)] flex items-center gap-2">
+                  <Users size={14} className="text-[var(--azul)]" />
+                  <span>Cursos Asignados a la Preceptoría</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreceptorCursos(cursos.map(c => c.nombre))}
+                    className="text-[10px] text-[var(--azul)] hover:underline font-bold cursor-pointer"
+                  >
+                    Todos
+                  </button>
+                  <span className="text-[10px] text-[var(--text3)]">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreceptorCursos([])}
+                    className="text-[10px] text-[var(--text3)] hover:underline font-bold cursor-pointer"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--text2)] leading-snug">
+                Seleccioná las divisiones que este preceptor supervisa. Podrá consultar sus horarios de clases, ausencias docentes y horas libres.
+              </p>
+
+              {cursos.length === 0 ? (
+                <p className="text-xs text-[var(--text3)] italic">No hay cursos registrados en el sistema.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                  {cursos.map((c) => {
+                    const isSelected = selectedPreceptorCursos.includes(c.nombre);
+                    return (
+                      <button
+                        key={c.id || c.nombre}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPreceptorCursos(prev =>
+                            prev.includes(c.nombre)
+                              ? prev.filter(x => x !== c.nombre)
+                              : [...prev, c.nombre]
+                          );
+                        }}
+                        className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? "bg-[var(--azul-bg)] text-[var(--azul)] border-[var(--azul-border)] shadow-xs"
+                            : "bg-[var(--bg)] text-[var(--text2)] border-[var(--border)] hover:bg-[var(--bg3)]"
+                        }`}
+                      >
+                        <span className="truncate mr-2">{c.nombre}</span>
+                        <div className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 border transition-colors ${
+                          isSelected
+                            ? "bg-[var(--azul)] text-white border-[var(--azul)]"
+                            : "border-[var(--border)] bg-[var(--bg3)]"
+                        }`}>
+                          {isSelected && <Check size={11} strokeWidth={3} />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedPreceptorCursos.length > 0 && (
+                <div className="pt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[var(--azul)]">
+                  <Check size={12} strokeWidth={2.5} />
+                  <span>{selectedPreceptorCursos.length} división(es) seleccionada(s)</span>
+                </div>
+              )}
             </div>
           )}
 

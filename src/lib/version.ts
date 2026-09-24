@@ -4,15 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.23.0";
-export const APP_BUILD_DATE = "24/09/2026 18:00 hs";
+export const APP_VERSION = "v2.23.1";
+export const APP_BUILD_DATE = "24/09/2026 19:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Matriz Jerárquica de Asignación y Gestión de Roles Institucionales (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, UsuariosTab.tsx y page.tsx): Implementación de la gobernanza de roles según la jerarquía del operador. Los Administradores pueden asignar cualquier rol; los Directivos pueden asignar los roles de Preceptor, Profesor y Alumno (con protección estricta sobre cuentas de Administradores y otros Directivos); los Preceptores pueden asignar los roles de Profesor y Alumno (sin posibilidad de alterar Preceptores, Directivos ni Administradores); y los Profesores y Alumnos no cuentan con permisos para modificar ningún rol ni acceder a la gestión de usuarios.",
-  "Blindaje Total para Cuentas sin Rol Definido (page.tsx, dashboard/page.tsx y dataService.ts): Se reforzó la verificación de acceso con el detector unificado isAuthorizedRole. Cualquier cuenta sin rol oficial definido, en estado pendiente o con datos incompletos queda estrictamente impedida de acceder al contenido interno o cargar datos escolares, siendo retenida en la pantalla institucional de 'Cuenta en Verificación'."
+  "Visualización Exclusiva y Filtrado de Horarios para Preceptores (HorariosTab.tsx y FreeHoursWidget.tsx): Los usuarios con rol de Preceptor ahora visualizan de forma prioritaria y filtrada el cronograma y los horarios de clase de las divisiones y cursos escolares a los cuales fueron asignados. La interfaz incorpora selector inteligente acotado a sus divisiones, selector de 1 toque mediante botones táctiles rápidos (chips) para alternar entre sus cursos asignados, botón de alternancia 'Mis Cursos Asignados' / 'Ver Todos los Cursos' y exportación personalizada a Excel (Horario_Preceptoria_Curso.xlsx). Además, el panel de Horas Libres detecta y exhibe exclusivamente las inasistencias docentes que impactan a sus cursos a cargo.",
+  "Asignación y Gestión Multicurso de Preceptorías (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, UsuariosTab.tsx, StudentAttendanceManager.tsx y dataService.ts): Administradores y directivos ahora pueden asignar una o múltiples divisiones escolares a los preceptores tanto al aprobar nuevas solicitudes como al modificar o actualizar roles en el centro de control de Usuarios. Se añadió almacenamiento de cursos asignados en la base de datos de Appwrite, visualización de insignias de cursos a cargo en el directorio de usuarios (escritorio y móviles), y agrupación prioritaria 'Mis Cursos Asignados' en la planilla de toma de asistencia diaria."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.23.0",
+    date: "24/09/2026 18:00 hs",
+    notes: [
+      "Matriz Jerárquica de Asignación y Gestión de Roles Institucionales (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, UsuariosTab.tsx y page.tsx): Implementación de la gobernanza de roles según la jerarquía del operador. Los Administradores pueden asignar cualquier rol; los Directivos pueden asignar los roles de Preceptor, Profesor y Alumno (con protección estricta sobre cuentas de Administradores y otros Directivos); los Preceptores pueden asignar los roles de Profesor y Alumno (sin posibilidad de alterar Preceptores, Directivos ni Administradores); y los Profesores y Alumnos no cuentan con permisos para modificar ningún rol ni acceder a la gestión de usuarios.",
+      "Blindaje Total para Cuentas sin Rol Definido (page.tsx, dashboard/page.tsx y dataService.ts): Se reforzó la verificación de acceso con el detector unificado isAuthorizedRole. Cualquier cuenta sin rol oficial definido, en estado pendiente o con datos incompletos queda estrictamente impedida de acceder al contenido interno o cargar datos escolares, siendo retenida en la pantalla institucional de 'Cuenta en Verificación'."
+    ]
+  },
   {
     version: "v2.22.5",
     date: "24/09/2026 17:40 hs",
