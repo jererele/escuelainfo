@@ -4,15 +4,40 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.21.0";
-export const APP_BUILD_DATE = "23/09/2026 17:45 hs";
+export const APP_VERSION = "v2.22.2";
+export const APP_BUILD_DATE = "24/09/2026 14:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Nuevo Módulo y Pestaña Dedicada de Usuarios (UsuariosTab.tsx, Sidebar.tsx y TopNavSidebar.tsx): Se creó la pestaña principal 'Usuarios' en la navegación institucional (accesible para Administradores, Directivos y Preceptores). En esta vista centralizada se gestionan todas las solicitudes de personas que quieren ingresar a la plataforma, integrando el flujo de aprobación con selector interactivo de rol (Alumno, Profesor, Preceptor) y asignación simultánea de división/curso, buscador predictivo por nombre, email, DNI y curso solicitado, y tarjetas táctiles para celulares. Además, incluye un directorio navegable de usuarios activos con insignias temáticas por rol institucional.",
-  "Desacoplamiento y Limpieza en Alumnos (AlumnosTab.tsx): La pestaña de Alumnos ahora se enfoca con exclusividad en el padrón oficial de estudiantes matriculados por curso, habiendo trasladado las solicitudes de registro pendientes al nuevo centro de control de Usuarios."
+  "Aislamiento Estricto de Solicitudes en Padrón de Alumnos (AlumnosTab.tsx): Se blindó el listado de Alumnos para excluir cualquier registro en estado 'pendiente' o sin división asignada. Los usuarios que se registran ya no aparecen prematuramente en el padrón estudiantil hasta que la administración o preceptoría apruebe oficialmente su matrícula y les asigne su curso.",
+  "Eliminación de Rango Preconcebido en Nuevas Solicitudes (page.tsx y UsuariosTab.tsx): Al registrarse, los nuevos usuarios quedan registrados con rol neutro 'pendiente' (Sin Rango Asignado) en lugar de asumir el rol de alumno de forma anticipada. En el centro de control de Usuarios, las solicitudes se identifican claramente como 'Sin Rango Asignado' y con curso 'A definir al aprobar', garantizando que las autoridades determinen el rol institucional correspondiente al momento de la aprobación."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.22.1",
+    date: "24/09/2026 14:35 hs",
+    notes: [
+      "Simplificación del Mensaje de Registro (page.tsx): Al completar el formulario de registro de usuario, el modal ahora indica de forma concisa y neutra 'Tu solicitud fue enviada.' y 'Esperá a ser aprobado por la administración para poder ingresar a la plataforma.', removiendo referencias rígidas a roles específicos en la pantalla de espera.",
+      "Notificación Automática por Correo al Aprobar Usuarios (emailService.ts y page.tsx): Al aprobar una solicitud de acceso desde el panel de control (tanto de alumnos como de colaboradores), el sistema despacha automáticamente un correo electrónico institucional al usuario informándole que su cuenta fue aceptada, detallando su rol oficial asignado, división/curso correspondiente (en caso de alumnos) y el enlace directo para iniciar sesión en la plataforma."
+    ]
+  },
+  {
+    version: "v2.22.0",
+    date: "24/09/2026 14:30 hs",
+    notes: [
+      "Cambio y Reasignación de Roles Institucionales para Administradores (ChangeUserRoleModal.tsx, UsuariosTab.tsx y page.tsx): Se habilitó la capacidad exclusiva para Administradores de cambiar el rol de cualquier usuario activo de la escuela entre todas las jerarquías disponibles: Administrador, Directivo, Preceptor, Profesor y Alumno. El sistema despliega un modal interactivo con detalles del usuario, descripción de permisos por rol, alertas de confirmación al otorgar privilegios de administrador y asignación directa de división/curso cuando se selecciona el rol de Alumno. Además, sincroniza automáticamente las tablas auxiliares (crea la ficha docente al asignar rol de Profesor o desvincula del padrón estudiantil al promover a roles institucionales) y registra cada cambio en la auditoría con el código compacto 'C_ROL'.",
+      "Seguridad de Cuenta y Prevención de Bloqueo de Administradores: Se introdujo una salvaguarda automática que impide que un administrador en sesión activa se degrade o retire sus propios permisos de administrador por accidente, señalizando visualmente su cuenta con la insignia '(Tu Cuenta)'.",
+      "Adaptabilidad Móvil Completa en Directorio de Usuarios Activos (UsuariosTab.tsx): Se implementó la vista separada para dispositivos móviles (< md) con tarjetas táctiles para todos los usuarios activos, facilitando la consulta de emails, roles, cursos asignados y el acceso al botón de cambio de rol desde cualquier teléfono celular."
+    ]
+  },
+  {
+    version: "v2.21.0",
+    date: "23/09/2026 17:45 hs",
+    notes: [
+      "Nuevo Módulo y Pestaña Dedicada de Usuarios (UsuariosTab.tsx, Sidebar.tsx y TopNavSidebar.tsx): Se creó la pestaña principal 'Usuarios' en la navegación institucional (accesible para Administradores, Directivos y Preceptores). En esta vista centralizada se gestionan todas las solicitudes de personas que quieren ingresar a la plataforma, integrando el flujo de aprobación con selector interactivo de rol (Alumno, Profesor, Preceptor) y asignación simultánea de división/curso, buscador predictivo por nombre, email, DNI y curso solicitado, y tarjetas táctiles para celulares. Además, incluye un directorio navegable de usuarios activos con insignias temáticas por rol institucional.",
+      "Desacoplamiento y Limpieza en Alumnos (AlumnosTab.tsx): La pestaña de Alumnos ahora se enfoca con exclusividad en el padrón oficial de estudiantes matriculados por curso, habiendo trasladado las solicitudes de registro pendientes al nuevo centro de control de Usuarios."
+    ]
+  },
   {
     version: "v2.20.7",
     date: "23/09/2026 17:35 hs",

@@ -77,6 +77,7 @@ const ROL_MAP: Record<string, string> = {
   "p": "profesor",
   "pp": "preceptor",
   "d": "directivo",
+  "pe": "pendiente",
   "p_a": "pendiente_alumno",
   "p_p": "pendiente_profesor"
 };
@@ -219,6 +220,7 @@ export const LOG_CODE_MAP: Record<string, string> = {
   "RC_A": "Rechazó la matriculación de un alumno",
   "AU_C": "Autorizó un nuevo colaborador",
   "RV_A": "Revocó el acceso de un usuario",
+  "C_ROL": "Cambió el rol de un usuario",
   // Notificaciones
   "EN_N": "Envió una notificación a usuarios",
   // Paridad / Sistema
@@ -241,6 +243,8 @@ const LEGACY_LOG_MAP: Record<string, string> = {
   "RECHAZAR_ALUMNO":           "RC_A",
   "AUTORIZAR_COLABORADOR":     "AU_C",
   "REVOCAR_ACCESO":            "RV_A",
+  "CAMBIAR_ROL":               "C_ROL",
+  "CAMBIO_ROL":                "C_ROL",
   "EDITAR_DOCENTE":            "M_D",
   "REGISTRAR_DOCENTE":         "C_D",
   "ELIMINAR_DOCENTE":          "E_D",
@@ -279,6 +283,9 @@ export const ACTION_NAME_MAP: Record<string, string> = {
   "AUTORIZAR_COLABORADOR": "Autorizar Colaborador",
   "RV_A": "Revocar Acceso",
   "REVOCAR_ACCESO": "Revocar Acceso",
+  "C_ROL": "Cambio de Rol",
+  "CAMBIAR_ROL": "Cambio de Rol",
+  "CAMBIO_ROL": "Cambio de Rol",
 
   // Ausencias y Licencias
   "C_A": "Registrar Ausencia",

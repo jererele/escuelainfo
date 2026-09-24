@@ -29,6 +29,9 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
   onDeleteAlumno,
 }) => {
   const filteredAlumnos = alumnos.filter(al => {
+    // Solo mostrar estudiantes matriculados en un curso oficial (excluir registros pendientes de aprobación)
+    if (!al.curso || al.curso === "pendiente") return false;
+
     const q = studentSearchQuery.toLowerCase().trim();
     return (
       (al.nombre || "").toLowerCase().includes(q) ||

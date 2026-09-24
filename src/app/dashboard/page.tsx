@@ -14,6 +14,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
+import { sendApprovalEmail } from "@/lib/emailService";
 import {
   GeneralTab,
   UsuariosTab,
@@ -583,6 +584,13 @@ export default function Dashboard() {
       showToast(`Solicitud de ${u.nombre} aprobada como ${cleanRole}`, "success");
       // Optimistic local update instead of refetch
       setUsuarios(prev => prev.map(usr => usr.id === u.id ? { ...usr, rol: cleanRole } : usr));
+
+      // Enviar correo de notificación al colaborador aceptado
+      sendApprovalEmail({
+        to: u.email,
+        nombre: u.nombre,
+        rol: cleanRole,
+      }).catch(err => console.error("Error al enviar email de aprobación:", err));
     } catch (err) {
       showToast("Error al aprobar solicitud", "error");
     }
@@ -676,6 +684,14 @@ export default function Dashboard() {
         : `Solicitud de ${u.nombre} aprobada como ${label}`;
       showToast(toastMessage, "success");
 
+      // Enviar correo de notificación a la persona aceptada
+      sendApprovalEmail({
+        to: u.email,
+        nombre: u.nombre,
+        rol: targetRole,
+        curso: targetRole === "alumno" ? selectedCurso : undefined,
+      }).catch(err => console.error("Error al enviar email de aprobación:", err));
+
       getUsuarios().then(setUsuarios);
       getAlumnos().then(setAlumnos);
       if (targetRole === "profesor") {
@@ -702,6 +718,107 @@ export default function Dashboard() {
         showToast("Error al rechazar alumno", "error");
       }
     });
+  };
+
+  // CAMBIO DE ROL DIRECTO (Exclusivo Administrador)
+  const handleChangeUserRole = async (
+    targetUser: UserProfile,
+    newRole: UserProfile["rol"],
+    selectedCurso?: string
+  ) => {
+    if (!isAdmin) {
+      showToast("Solo los administradores pueden cambiar roles de usuario", "error");
+      return;
+    }
+
+    if (
+      (targetUser.id === userProfile?.id || targetUser.email.toLowerCase() === userProfile?.email?.toLowerCase()) &&
+      newRole !== "admin"
+    ) {
+      showToast("No podés modificar o quitarte tu propio rol de Administrador", "error");
+      return;
+    }
+
+    try {
+      const oldRole = targetUser.rol;
+
+      // Actualizar en base de datos
+      await updateUserProfile(targetUser.id!, { rol: newRole });
+
+      // Actualización optimista local
+      setUsuarios(prev => prev.map(u => u.id === targetUser.id ? { ...u, rol: newRole } : u));
+
+      // 1. Si el rol asignado es ALUMNO
+      if (newRole === "alumno") {
+        const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+        if (studDetails && studDetails.id) {
+          if (selectedCurso) {
+            await updateAlumno(studDetails.id, { curso: selectedCurso });
+            setAlumnos(prev => prev.map(a => a.id === studDetails.id ? { ...a, curso: selectedCurso } : a));
+          }
+        } else {
+          await saveAlumno({
+            nombre: targetUser.nombre,
+            dni: "",
+            curso: selectedCurso || "pendiente",
+            email: targetUser.email.toLowerCase().trim()
+          });
+          getAlumnos().then(setAlumnos);
+        }
+      }
+
+      // 2. Si el rol asignado es PROFESOR
+      if (newRole === "profesor") {
+        const teachers = await getProfesores();
+        const alreadyExists = teachers.some(t => t.email.toLowerCase() === targetUser.email.toLowerCase());
+        if (!alreadyExists) {
+          const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+          await saveProfesor({
+            nombre: targetUser.nombre,
+            dni: studDetails?.dni || "",
+            materias: [],
+            email: targetUser.email.toLowerCase().trim()
+          });
+          getProfesores().then(setProfesores);
+        }
+        // Desvincular de lista de alumnos si existía
+        const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+        if (studDetails && studDetails.id) {
+          await deleteAlumno(studDetails.id);
+          getAlumnos().then(setAlumnos);
+        }
+      }
+
+      // 3. Si el rol asignado es ADMIN, DIRECTIVO o PRECEPTOR
+      if (newRole === "admin" || newRole === "directivo" || newRole === "preceptor") {
+        const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+        if (studDetails && studDetails.id) {
+          await deleteAlumno(studDetails.id);
+          getAlumnos().then(setAlumnos);
+        }
+      }
+
+      const roleLabels: Record<string, string> = {
+        admin: "Administrador",
+        directivo: "Directivo",
+        preceptor: "Preceptor",
+        profesor: "Profesor",
+        alumno: "Alumno",
+      };
+      const oldLabel = roleLabels[oldRole] || oldRole;
+      const newLabel = roleLabels[newRole] || newRole;
+
+      await logAction(
+        user?.email || "admin",
+        "C_ROL",
+        `${targetUser.email}: de ${oldLabel} a ${newLabel}${newRole === "alumno" && selectedCurso ? ` (Curso: ${selectedCurso})` : ""}`
+      );
+
+      showToast(`Rol de ${targetUser.nombre} actualizado a ${newLabel}`, "success");
+      getUsuarios().then(setUsuarios);
+    } catch (err) {
+      showToast("Error al actualizar el rol del usuario", "error");
+    }
   };
 
   // Memoized derived state — avoids costly recalculations on every render
@@ -1262,6 +1379,7 @@ export default function Dashboard() {
               userProfile={userProfile}
               onApproveStudent={handleApproveStudent}
               onRejectStudent={handleRejectStudent}
+              onChangeUserRole={handleChangeUserRole}
               showToast={showToast}
               onRefreshUsuarios={() => getUsuarios().then(setUsuarios)}
             />

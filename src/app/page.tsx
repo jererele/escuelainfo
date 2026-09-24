@@ -365,7 +365,7 @@ function LoginContent() {
       if (preProfile?.id) {
         await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName });
 
-        if (!preProfile.rol.startsWith("pendiente_")) {
+        if (!preProfile.rol.startsWith("pendiente") && preProfile.rol !== "pe") {
           // Pre-authorized role (admin, directivo, preceptor, etc.) — enter directly
           setSuccessMsg(`¡Registro exitoso! Ingresando al panel como ${preProfile.rol}...`);
           setTimeout(() => {
@@ -374,10 +374,9 @@ function LoginContent() {
           return;
         }
 
-        // Pre-existing but still pending — treat as student standby
+        // Pre-existing but still pending
         await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
         await account.deleteSession("current");
-        setSuccessRole("alumno");
         setRequestSuccess(true);
         setTimeout(() => {
           setActiveMode("login");
@@ -388,12 +387,11 @@ function LoginContent() {
         return;
       }
 
-      // No pre-existing profile — register as pending student
-      await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "pendiente_alumno" as any });
+      // No pre-existing profile — register as pending request without pre-assigned rank
+      await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "pendiente" as any });
       await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
       await account.deleteSession("current");
 
-      setSuccessRole("alumno");
       setRequestSuccess(true);
       setTimeout(() => {
         setActiveMode("login");
@@ -430,16 +428,10 @@ function LoginContent() {
             </div>
             <h2 className="text-2xl font-black mb-2 text-[var(--text)]">¡Solicitud Enviada!</h2>
             <p className="text-[var(--text2)] text-sm font-medium mb-4">
-              Tu solicitud como{" "}
-              <span className="text-[var(--verde)] font-bold uppercase">
-                {successRole === "alumno" ? "Alumno" : "Docente"}
-              </span>{" "}
-              fue registrada.
+              Tu solicitud fue enviada.
             </p>
             <p className="text-[var(--text3)] text-xs">
-              {successRole === "alumno"
-                ? "Esperá a ser aprobado por la administración para poder ingresar."
-                : "La dirección revisará tu solicitud y habilitará tu acceso docente."}
+              Esperá a ser aprobado por la administración para poder ingresar a la plataforma.
             </p>
           </div>
         ) : (

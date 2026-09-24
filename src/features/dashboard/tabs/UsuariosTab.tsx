@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { 
   Users, 
   Search, 
@@ -20,6 +21,10 @@ import { UserProfile, Alumno, Curso } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
 
+const ChangeUserRoleModal = dynamic(() => import("@/components/modals/ChangeUserRoleModal"), {
+  ssr: false,
+});
+
 interface UsuariosTabProps {
   usuarios: UserProfile[];
   alumnos: Alumno[];
@@ -32,6 +37,11 @@ interface UsuariosTabProps {
     selectedCurso?: string
   ) => Promise<void> | void;
   onRejectStudent: (user: UserProfile) => Promise<void> | void;
+  onChangeUserRole?: (
+    user: UserProfile,
+    newRole: UserProfile["rol"],
+    selectedCurso?: string
+  ) => Promise<void> | void;
   showToast: (message: string, type?: "success" | "error") => void;
   onRefreshUsuarios?: () => void;
 }
@@ -44,6 +54,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   userProfile,
   onApproveStudent,
   onRejectStudent,
+  onChangeUserRole,
   showToast,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<"solicitudes" | "activos">("solicitudes");
@@ -51,15 +62,17 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const [roleFilter, setRoleFilter] = useState<string>("todos");
   const [approvingUser, setApprovingUser] = useState<UserProfile | null>(null);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [roleChangingUser, setRoleChangingUser] = useState<UserProfile | null>(null);
+  const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
 
-  // Todas las solicitudes de acceso pendientes (alumnos, profesores, preceptores)
+  // Todas las solicitudes de acceso pendientes
   const pendingRequests = useMemo(() => {
-    return usuarios.filter(u => u.rol.startsWith("pendiente_"));
+    return usuarios.filter(u => u.rol.startsWith("pendiente") || u.rol === "pe");
   }, [usuarios]);
 
   // Usuarios activos (con rol oficial asignado)
   const activeUsers = useMemo(() => {
-    return usuarios.filter(u => !u.rol.startsWith("pendiente_"));
+    return usuarios.filter(u => !u.rol.startsWith("pendiente") && u.rol !== "pe");
   }, [usuarios]);
 
   // Filtrado de solicitudes pendientes por búsqueda
@@ -135,12 +148,11 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           </span>
         );
       default:
-        if (rol.startsWith("pendiente_")) {
-          const type = rol.replace("pendiente_", "");
+        if (rol.startsWith("pendiente") || rol === "pe") {
           return (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)]">
               <Clock size={11} strokeWidth={2.5} />
-              <span>Pendiente ({type})</span>
+              <span>Sin Rango · Pendiente</span>
             </span>
           );
         }
@@ -273,7 +285,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                         </div>
                       </div>
                       <span className="px-2.5 py-0.5 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-lg text-[10px] font-bold uppercase shrink-0">
-                        {requestedRole}
+                        Sin Rango
                       </span>
                     </div>
 
@@ -288,7 +300,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] text-[var(--text3)] font-semibold">
                           <Clock size={10} className="shrink-0" />
-                          <span>Sin curso</span>
+                          <span>Por asignar</span>
                         </span>
                       )}
                     </div>
@@ -328,8 +340,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                   <tr>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Solicitante</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">DNI</th>
-                    <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Rol Solicitado</th>
-                    <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Curso Solicitado</th>
+                    <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Estado de Acceso</th>
+                    <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">División / Curso</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -346,7 +358,6 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                     filteredPending.map(u => {
                       const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
                       const cursoLabel = studDetails?.curso && studDetails.curso !== "pendiente" ? studDetails.curso : null;
-                      const requestedRole = u.rol.replace("pendiente_", "");
 
                       return (
                         <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
@@ -363,8 +374,9 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                             {studDetails?.dni || "—"}
                           </td>
                           <td className="p-6">
-                            <span className="px-3 py-1 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-lg text-xs font-bold uppercase">
-                              {requestedRole}
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] rounded-lg text-xs font-bold uppercase">
+                              <Clock size={11} strokeWidth={2.5} className="shrink-0" />
+                              <span>Sin rango asignado</span>
                             </span>
                           </td>
                           <td className="p-6">
@@ -373,9 +385,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                                 {cursoLabel}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-xs font-bold uppercase">
-                                <Clock size={11} strokeWidth={2.5} className="shrink-0" />
-                                <span>Sin asignar</span>
+                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text3)] rounded-lg text-xs font-medium">
+                                <span>A definir al aprobar</span>
                               </span>
                             )}
                           </td>
@@ -414,54 +425,190 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
       {/* ─── VISTA 2: USUARIOS ACTIVOS ──────────────────────────────────────── */}
       {activeSubTab === "activos" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black title-font text-[var(--text)] flex items-center gap-2">
-              <UserCheck size={20} className="text-[var(--verde)]" />
-              Directorio Institucional de Usuarios ({filteredActive.length})
-            </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-lg font-black title-font text-[var(--text)] flex items-center gap-2">
+                <UserCheck size={20} className="text-[var(--verde)]" />
+                <span>Directorio Institucional de Usuarios ({filteredActive.length})</span>
+              </h3>
+              <p className="text-xs text-[var(--text3)] mt-0.5">
+                {isAdmin
+                  ? "Como administrador podés reasignar el rol de cualquier usuario en la plataforma (desde Alumno hasta Administrador)."
+                  : "Listado de miembros con acceso habilitado al sistema escolar."}
+              </p>
+            </div>
+            {isAdmin && (
+              <span className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-[11px] font-black uppercase tracking-wider">
+                <ShieldCheck size={13} strokeWidth={2.5} />
+                <span>Gestión de Roles Activa</span>
+              </span>
+            )}
           </div>
 
-          <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+          {/* VISTA MÓVIL: Tarjetas táctiles (< md) */}
+          <div className="md:hidden space-y-3">
+            {filteredActive.length === 0 ? (
+              <div className="card glass rounded-2xl border border-[var(--border)] p-12 text-center text-[var(--text3)] italic text-sm">
+                No se encontraron usuarios con ese criterio.
+              </div>
+            ) : (
+              filteredActive.map((u) => {
+                const studDetails = alumnos.find((a) => a.email.toLowerCase() === u.email.toLowerCase());
+                const isCurrentAccount =
+                  (userProfile?.email && u.email.toLowerCase() === userProfile.email.toLowerCase()) ||
+                  (userProfile?.id && u.id === userProfile.id);
+
+                return (
+                  <div key={u.id} className="card glass rounded-2xl border border-[var(--border)] p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar name={u.nombre} email={u.email} size={38} />
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-[var(--text)] truncate flex items-center gap-1.5">
+                            <span className="truncate">{u.nombre}</span>
+                            {isCurrentAccount && (
+                              <span className="shrink-0 px-1.5 py-0.2 rounded-md bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] text-[9px] font-black uppercase">
+                                Vos
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-[var(--text3)] font-mono truncate">{u.email}</div>
+                        </div>
+                      </div>
+                      <div className="shrink-0">{getRoleBadge(u.rol)}</div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-[var(--text2)] pt-1 border-t border-[var(--border)]/50">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--verde)]">
+                        <span className="w-2 h-2 rounded-full bg-[var(--verde)]" />
+                        Activo
+                      </span>
+
+                      {u.rol === "alumno" && (
+                        <div className="text-[11px] font-bold text-[var(--text2)]">
+                          {studDetails?.curso && studDetails.curso !== "pendiente" ? (
+                            <span className="px-2 py-0.5 rounded-lg bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] uppercase font-mono">
+                              {studDetails.curso}
+                            </span>
+                          ) : (
+                            <span className="text-[var(--amarillo)] italic">Sin curso</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {isAdmin && (
+                      <div className="pt-1 border-t border-[var(--border)]/50">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRoleChangingUser(u);
+                            setIsChangeRoleModalOpen(true);
+                          }}
+                          className="w-full min-h-[44px] flex items-center justify-center gap-2 bg-[var(--bg3)] hover:bg-[var(--bg2)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-xs"
+                        >
+                          <UserCog size={15} strokeWidth={2.2} />
+                          <span>Cambiar Rol</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
+          <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-[550px]">
+              <table className="w-full text-left min-w-[650px]">
                 <thead className="bg-[var(--bg3)]/50">
                   <tr>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Usuario</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Email</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Rol Asignado</th>
+                    <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Detalle / Curso</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Estado</th>
+                    {isAdmin && (
+                      <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredActive.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-20 text-center text-[var(--text3)] italic">
+                      <td colSpan={isAdmin ? 6 : 5} className="p-20 text-center text-[var(--text3)] italic">
                         No se encontraron usuarios con ese criterio.
                       </td>
                     </tr>
                   ) : (
-                    filteredActive.map(u => (
-                      <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
-                        <td className="p-6">
-                          <div className="flex items-center gap-3">
-                            <UserAvatar name={u.nombre} email={u.email} size={36} />
-                            <div className="font-bold text-[var(--text)]">{u.nombre}</div>
-                          </div>
-                        </td>
-                        <td className="p-6 text-sm text-[var(--text2)] font-mono">
-                          {u.email}
-                        </td>
-                        <td className="p-6">
-                          {getRoleBadge(u.rol)}
-                        </td>
-                        <td className="p-6">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--verde)]">
-                            <span className="w-2 h-2 rounded-full bg-[var(--verde)]" />
-                            Activo
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+                    filteredActive.map((u) => {
+                      const studDetails = alumnos.find((a) => a.email.toLowerCase() === u.email.toLowerCase());
+                      const isCurrentAccount =
+                        (userProfile?.email && u.email.toLowerCase() === userProfile.email.toLowerCase()) ||
+                        (userProfile?.id && u.id === userProfile.id);
+
+                      return (
+                        <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
+                          <td className="p-6">
+                            <div className="flex items-center gap-3">
+                              <UserAvatar name={u.nombre} email={u.email} size={36} />
+                              <div>
+                                <div className="font-bold text-[var(--text)] flex items-center gap-2">
+                                  <span>{u.nombre}</span>
+                                  {isCurrentAccount && (
+                                    <span className="px-2 py-0.5 rounded-md bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] text-[9px] font-black uppercase">
+                                      Tu Cuenta
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-6 text-sm text-[var(--text2)] font-mono">
+                            {u.email}
+                          </td>
+                          <td className="p-6">
+                            {getRoleBadge(u.rol)}
+                          </td>
+                          <td className="p-6 text-xs">
+                            {u.rol === "alumno" ? (
+                              studDetails?.curso && studDetails.curso !== "pendiente" ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[var(--bg3)] border border-[var(--border)] font-bold text-[var(--text)] uppercase font-mono">
+                                  {studDetails.curso}
+                                </span>
+                              ) : (
+                                <span className="text-[var(--amarillo)] font-medium italic">Sin curso</span>
+                              )
+                            ) : (
+                              <span className="text-[var(--text3)] font-mono text-[11px]">—</span>
+                            )}
+                          </td>
+                          <td className="p-6">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--verde)]">
+                              <span className="w-2 h-2 rounded-full bg-[var(--verde)]" />
+                              Activo
+                            </span>
+                          </td>
+                          {isAdmin && (
+                            <td className="p-6 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRoleChangingUser(u);
+                                  setIsChangeRoleModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--bg3)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                                title="Cambiar rol y permisos de este usuario"
+                              >
+                                <UserCog size={13} strokeWidth={2.2} />
+                                <span>Cambiar Rol</span>
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -486,6 +633,31 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             (a) => a.email.toLowerCase() === approvingUser.email.toLowerCase()
           )}
           cursos={cursos}
+        />
+      )}
+
+      {/* MODAL DE CAMBIO DE ROL INSTITUCIONAL (Solo Administradores) */}
+      {isChangeRoleModalOpen && roleChangingUser && (
+        <ChangeUserRoleModal
+          isOpen={isChangeRoleModalOpen}
+          onClose={() => {
+            setIsChangeRoleModalOpen(false);
+            setRoleChangingUser(null);
+          }}
+          onConfirm={async (targetRole, selectedCurso) => {
+            if (onChangeUserRole) {
+              await onChangeUserRole(roleChangingUser, targetRole, selectedCurso);
+            }
+          }}
+          user={roleChangingUser}
+          alumnoDetails={alumnos.find(
+            (a) => a.email.toLowerCase() === roleChangingUser.email.toLowerCase()
+          )}
+          cursos={cursos}
+          isCurrentUser={
+            userProfile?.email?.toLowerCase() === roleChangingUser.email.toLowerCase() ||
+            userProfile?.id === roleChangingUser.id
+          }
         />
       )}
     </div>
