@@ -106,6 +106,53 @@ export const isAuthorizedRole = (rol?: string | null): boolean => {
   return !isPendingRole(rol) && ["admin", "directivo", "preceptor", "profesor", "alumno"].includes(rol.trim().toLowerCase());
 };
 
+export type UserRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
+
+/**
+ * Retorna los roles que un operador puede asignar según su propia jerarquía:
+ * - Admin: puede asignar todos ("admin", "directivo", "preceptor", "profesor", "alumno")
+ * - Directivo: puede asignar "preceptor", "profesor", "alumno"
+ * - Preceptor: puede asignar "profesor", "alumno"
+ * - Profesor, Alumno o sin rol: ninguno ([])
+ */
+export const getAllowedAssignableRoles = (operatorRole?: string | null): UserRole[] => {
+  if (!operatorRole) return [];
+  const clean = operatorRole.trim().toLowerCase();
+  if (clean === "admin") {
+    return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+  }
+  if (clean === "directivo") {
+    return ["preceptor", "profesor", "alumno"];
+  }
+  if (clean === "preceptor") {
+    return ["profesor", "alumno"];
+  }
+  return [];
+};
+
+/**
+ * Determina si un operador tiene jerarquía para modificar el rol de un usuario objetivo:
+ * - Admin: puede modificar a cualquiera (excepto auto-degradar su propia cuenta de admin).
+ * - Directivo: puede modificar a usuarios con rol preceptor, profesor o alumno (NO a otros directivos ni admins).
+ * - Preceptor: puede modificar a usuarios con rol profesor o alumno (NO a otros preceptores, directivos ni admins).
+ * - Otros: no pueden modificar ningún rol.
+ */
+export const canManageUserRole = (operatorRole?: string | null, targetRole?: string | null): boolean => {
+  if (!operatorRole) return false;
+  const op = operatorRole.trim().toLowerCase();
+  const tgt = (targetRole || "").trim().toLowerCase();
+
+  if (op === "admin") return true;
+  if (op === "directivo") {
+    return tgt !== "admin" && tgt !== "directivo";
+  }
+  if (op === "preceptor") {
+    return tgt !== "admin" && tgt !== "directivo" && tgt !== "preceptor";
+  }
+  return false;
+};
+
+
 // ─── MÓDULOS HORARIOS: Almacenado como número entero (1–16) en Appwrite ───────
 // Appwrite attribute type: INTEGER (size: 2)
 // El campo `hora` en la colección `horarios` guarda el número de módulo.

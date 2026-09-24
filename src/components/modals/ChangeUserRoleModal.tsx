@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { 
   X, 
   Check, 
@@ -14,7 +14,7 @@ import {
   Lock,
   ArrowRight
 } from "lucide-react";
-import { UserProfile, Alumno, Curso } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ChangeUserRoleModalProps {
@@ -28,6 +28,7 @@ interface ChangeUserRoleModalProps {
   alumnoDetails?: Alumno | null;
   cursos?: Curso[];
   isCurrentUser?: boolean;
+  operatorRole?: string | null;
 }
 
 export type AssignableRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
@@ -40,6 +41,7 @@ export default function ChangeUserRoleModal({
   alumnoDetails,
   cursos = [],
   isCurrentUser = false,
+  operatorRole = "admin",
 }: ChangeUserRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<AssignableRole>("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -50,6 +52,11 @@ export default function ChangeUserRoleModal({
   const courseSelectRef = useRef<HTMLSelectElement>(null);
   const adminSectionRef = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
+
+  // Jerarquía de roles que el operador activo tiene permitido asignar
+  const allowedRoles = useMemo<UserRole[]>(() => {
+    return getAllowedAssignableRoles(operatorRole);
+  }, [operatorRole]);
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -66,6 +73,11 @@ export default function ChangeUserRoleModal({
     else if (rawRole === "preceptor") initialRole = "preceptor";
     else if (rawRole === "profesor") initialRole = "profesor";
     else initialRole = "alumno";
+
+    // Si el rol actual no está dentro de los que este operador puede asignar, seleccionar el primer rol permitido
+    if (!allowedRoles.includes(initialRole as UserRole) && allowedRoles.length > 0) {
+      initialRole = allowedRoles[0] as AssignableRole;
+    }
 
     setSelectedRole(initialRole);
     setConfirmAdminEscalation(false);
@@ -86,7 +98,7 @@ export default function ChangeUserRoleModal({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, user, alumnoDetails, cursos, onClose]);
+  }, [isOpen, user, alumnoDetails, cursos, onClose, allowedRoles]);
 
   if (!isOpen || !user) return null;
 
@@ -111,6 +123,9 @@ export default function ChangeUserRoleModal({
     if (isCurrentUser && selectedRole !== "admin") {
       return;
     }
+    if (!allowedRoles.includes(selectedRole as UserRole)) {
+      return;
+    }
     // Si se asciende a admin y no se confirmó la alerta
     if (selectedRole === "admin" && user.rol !== "admin" && !confirmAdminEscalation) {
       setConfirmAdminEscalation(true);
@@ -132,7 +147,7 @@ export default function ChangeUserRoleModal({
     }
   };
 
-  const roleDefinitions: Array<{
+  const allRoleDefinitions: Array<{
     id: AssignableRole;
     name: string;
     badgeLabel: string;
@@ -194,7 +209,27 @@ export default function ChangeUserRoleModal({
     },
   ];
 
+  // Filtrar estrictamente solo los roles que el operador tiene derecho a otorgar
+  const visibleRoleDefinitions = useMemo(() => {
+    return allRoleDefinitions.filter(r => allowedRoles.includes(r.id as UserRole));
+  }, [allRoleDefinitions, allowedRoles]);
+
   const currentRoleIsSame = user.rol === selectedRole;
+
+  // Mensaje explicativo según la jerarquía del operador
+  const operatorHierarchyNotice = useMemo(() => {
+    const op = (operatorRole || "").toLowerCase();
+    if (op === "admin") {
+      return "Como Administrador tenés permisos para asignar cualquier rol institucional.";
+    }
+    if (op === "directivo") {
+      return "Como Directivo podés asignar los roles de Preceptor, Profesor o Alumno.";
+    }
+    if (op === "preceptor") {
+      return "Como Preceptor podés asignar los roles de Profesor o Alumno.";
+    }
+    return "No contás con permisos para modificar roles institucionales.";
+  }, [operatorRole]);
 
   return (
     <div
@@ -250,87 +285,92 @@ export default function ChangeUserRoleModal({
           ) : (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-xs text-[var(--text2)]">
               <Info size={14} className="text-[var(--text3)] shrink-0" />
-              <span>
-                Seleccioná el nuevo rol. Los cambios impactan de inmediato en permisos y accesos.
-              </span>
+              <span>{operatorHierarchyNotice}</span>
             </div>
           )}
 
-          {/* SELECTOR DE ROLES: Cuadrícula compacta de 2 columnas en desktop */}
+          {/* SELECTOR DE ROLES: Cuadrícula compacta de roles permitidos */}
           <div className="space-y-2">
             <div className="flex items-center justify-between ml-1">
               <label className="text-[10px] font-black uppercase text-[var(--text3)] tracking-wider">
-                Roles Institucionales
+                Roles Permitidos ({visibleRoleDefinitions.length})
               </label>
-              <span className="text-[10px] text-[var(--text3)] font-semibold">
-                5 Jerarquías Disponibles
+              <span className="text-[10px] text-[var(--text3)] font-semibold capitalize">
+                Operador: {operatorRole || "Sin Rango"}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-              {roleDefinitions.map((role) => {
-                const isSelected = selectedRole === role.id;
-                const isCurrent = user.rol === role.id;
-                const isDisabled = isCurrentUser && role.id !== "admin";
-                const isAlumno = role.id === "alumno";
+            {visibleRoleDefinitions.length === 0 ? (
+              <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg2)] text-center text-xs text-[var(--text3)] italic">
+                No tenés permisos para asignar roles en el sistema.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                {visibleRoleDefinitions.map((role) => {
+                  const isSelected = selectedRole === role.id;
+                  const isCurrent = user.rol === role.id;
+                  const isDisabled = isCurrentUser && role.id !== "admin";
+                  const isAlumno = role.id === "alumno";
+                  const isOddSingle = visibleRoleDefinitions.length % 2 !== 0 && isAlumno;
 
-                return (
-                  <button
-                    key={role.id}
-                    type="button"
-                    disabled={isDisabled}
-                    onClick={() => handleSelectRole(role.id)}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-2.5 relative select-none ${
-                      isAlumno ? "sm:col-span-2" : ""
-                    } ${
-                      isDisabled
-                        ? "opacity-40 cursor-not-allowed bg-[var(--bg2)] border-[var(--border)]"
-                        : isSelected
-                        ? `bg-[var(--bg2)] ${role.borderClass} ring-2 ring-[var(--verde)]/40 shadow-sm`
-                        : `bg-[var(--bg)] border-[var(--border)] ${role.bgHoverClass}`
-                    }`}
-                  >
-                    <div className="p-2 rounded-xl bg-[var(--bg3)] border border-[var(--border)] shrink-0 mt-0.5">
-                      {role.icon}
-                    </div>
-
-                    <div className="flex-1 min-w-0 pr-4">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-black text-xs sm:text-sm text-[var(--text)]">
-                          {role.name}
-                        </span>
-                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-md bg-[var(--bg3)] border border-[var(--border)] ${role.colorClass}`}>
-                          {role.badgeLabel}
-                        </span>
-                        {isCurrent && (
-                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-md bg-[var(--bg2)] text-[var(--text3)] border border-[var(--border)]">
-                            Actual
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[var(--text2)] mt-0.5 font-medium line-clamp-2 leading-snug">
-                        {role.shortDesc}
-                      </p>
-                    </div>
-
-                    {/* Indicador de Selección */}
-                    <div
-                      className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 transition-all ${
-                        isSelected
-                          ? "bg-[var(--verde)] border-[var(--verde)] text-black"
-                          : "border-[var(--border)] bg-transparent"
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => handleSelectRole(role.id)}
+                      className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-2.5 relative select-none ${
+                        isOddSingle ? "sm:col-span-2" : ""
+                      } ${
+                        isDisabled
+                          ? "opacity-40 cursor-not-allowed bg-[var(--bg2)] border-[var(--border)]"
+                          : isSelected
+                          ? `bg-[var(--bg2)] ${role.borderClass} ring-2 ring-[var(--verde)]/40 shadow-sm`
+                          : `bg-[var(--bg)] border-[var(--border)] ${role.bgHoverClass}`
                       }`}
                     >
-                      {isSelected && <Check size={10} strokeWidth={3.5} />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      <div className="p-2 rounded-xl bg-[var(--bg3)] border border-[var(--border)] shrink-0 mt-0.5">
+                        {role.icon}
+                      </div>
+
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-black text-xs sm:text-sm text-[var(--text)]">
+                            {role.name}
+                          </span>
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-md bg-[var(--bg3)] border border-[var(--border)] ${role.colorClass}`}>
+                            {role.badgeLabel}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-md bg-[var(--bg2)] text-[var(--text3)] border border-[var(--border)]">
+                              Actual
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[var(--text2)] mt-0.5 font-medium line-clamp-2 leading-snug">
+                          {role.shortDesc}
+                        </p>
+                      </div>
+
+                      {/* Indicador de Selección */}
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 transition-all ${
+                          isSelected
+                            ? "bg-[var(--verde)] border-[var(--verde)] text-black"
+                            : "border-[var(--border)] bg-transparent"
+                        }`}
+                      >
+                        {isSelected && <Check size={10} strokeWidth={3.5} />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* SI SELECCIONA ALUMNO: SELECTOR DE CURSO/DIVISIÓN (Auto-scrolled) */}
-          {selectedRole === "alumno" && (
+          {selectedRole === "alumno" && allowedRoles.includes("alumno") && (
             <div
               ref={courseSectionRef}
               className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg2)] border border-[var(--border)] space-y-2.5 animate-fade-in ring-1 ring-[var(--verde)]/30"
@@ -367,7 +407,7 @@ export default function ChangeUserRoleModal({
           )}
 
           {/* ALERTA DE ASCENSO A ADMINISTRADOR */}
-          {selectedRole === "admin" && user.rol !== "admin" && (
+          {selectedRole === "admin" && allowedRoles.includes("admin") && user.rol !== "admin" && (
             <div
               ref={adminSectionRef}
               className="p-3.5 sm:p-4 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-2 animate-fade-in"
@@ -403,7 +443,7 @@ export default function ChangeUserRoleModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={loading || (isCurrentUser && selectedRole !== "admin")}
+            disabled={loading || (isCurrentUser && selectedRole !== "admin") || !allowedRoles.includes(selectedRole as UserRole)}
             className="w-full sm:w-auto flex-1 min-h-[42px] px-4 py-2.5 rounded-xl bg-[var(--verde)] text-black text-xs font-black hover:brightness-105 active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (

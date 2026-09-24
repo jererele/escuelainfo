@@ -11,7 +11,7 @@ import {
   getUserProfile, createUserProfile,
   getUserProfileByEmail, updateUserProfile,
   saveAlumno, checkAlumnoDNI, getProfesores, updateProfesor, getProfesorByEmail,
-  isPendingRole
+  isPendingRole, isAuthorizedRole
 } from "@/lib/dataService";
 import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
 
@@ -135,8 +135,8 @@ function LoginContent() {
           return;
         }
 
-        // Si la cuenta existe pero sigue pendiente de aprobación
-        if (isPendingRole(profile.rol)) {
+        // Si la cuenta existe pero no cuenta con un rol oficial asignado (pendiente o sin rol)
+        if (!isAuthorizedRole(profile.rol)) {
           router.replace("/dashboard");
           return;
         }
@@ -202,7 +202,7 @@ function LoginContent() {
         }
       }
 
-      if (isPendingRole(profile.rol)) {
+      if (!isAuthorizedRole(profile.rol)) {
         // Redirigir a /dashboard donde se renderiza la pantalla de verificación institucional
         router.replace("/dashboard");
         return;

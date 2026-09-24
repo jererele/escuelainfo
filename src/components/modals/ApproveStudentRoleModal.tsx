@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { X, Check, GraduationCap, BookOpen, Users, Clock, AlertCircle } from "lucide-react";
-import { UserProfile, Alumno, Curso } from "@/lib/dataService";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { X, Check, GraduationCap, BookOpen, Users, AlertCircle } from "lucide-react";
+import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ApproveStudentRoleModalProps {
@@ -15,6 +15,7 @@ interface ApproveStudentRoleModalProps {
   user: UserProfile | null;
   alumnoDetails?: Alumno | null;
   cursos?: Curso[];
+  operatorRole?: string | null;
 }
 
 export default function ApproveStudentRoleModal({
@@ -24,6 +25,7 @@ export default function ApproveStudentRoleModal({
   user,
   alumnoDetails,
   cursos,
+  operatorRole = "admin",
 }: ApproveStudentRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -32,59 +34,12 @@ export default function ApproveStudentRoleModal({
   const courseSectionRef = useRef<HTMLDivElement>(null);
   const courseSelectRef = useRef<HTMLSelectElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedRole("alumno");
-      setSelectedCurso("");
-      setLoading(false);
-      return;
-    }
-    setSelectedRole("alumno");
+  // Jerarquía de roles que el operador tiene permitido otorgar
+  const allowedRoles = useMemo<UserRole[]>(() => {
+    return getAllowedAssignableRoles(operatorRole);
+  }, [operatorRole]);
 
-    // Pre-seleccionar curso solicitado si existe en cursos, o el primer curso disponible
-    const requested = alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? alumnoDetails.curso : "";
-    if (requested && cursos && cursos.some(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase())) {
-      const matched = cursos.find(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase());
-      setSelectedCurso(matched ? matched.nombre : requested);
-    } else if (cursos && cursos.length > 0) {
-      setSelectedCurso(cursos[0].nombre);
-    } else {
-      setSelectedCurso(requested || "");
-    }
-
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, alumnoDetails, cursos, onClose]);
-
-  if (!isOpen || !user) return null;
-
-  const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor") => {
-    setSelectedRole(roleId);
-    if (roleId === "alumno") {
-      setTimeout(() => {
-        courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        courseSelectRef.current?.focus();
-      }, 60);
-    }
-  };
-
-  const handleConfirm = async () => {
-    if (selectedRole === "alumno" && cursos && cursos.length > 0 && !selectedCurso) {
-      return;
-    }
-    setLoading(true);
-    try {
-      await onConfirm(selectedRole, selectedRole === "alumno" ? selectedCurso : undefined);
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const roles = [
+  const allRoles = [
     {
       id: "alumno" as const,
       label: "Alumno",
@@ -104,6 +59,72 @@ export default function ApproveStudentRoleModal({
       icon: <Users size={18} className="text-[var(--azul)]" />,
     },
   ];
+
+  // Filtrar los roles según los permisos jerárquicos del operador
+  const availableRoles = useMemo(() => {
+    return allRoles.filter((r) => allowedRoles.includes(r.id as UserRole));
+  }, [allRoles, allowedRoles]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedRole("alumno");
+      setSelectedCurso("");
+      setLoading(false);
+      return;
+    }
+
+    // Pre-seleccionar rol inicial válido
+    if (availableRoles.some((r) => r.id === "alumno")) {
+      setSelectedRole("alumno");
+    } else if (availableRoles.length > 0) {
+      setSelectedRole(availableRoles[0].id);
+    }
+
+    // Pre-seleccionar curso solicitado si existe en cursos, o el primer curso disponible
+    const requested = alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? alumnoDetails.curso : "";
+    if (requested && cursos && cursos.some(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase())) {
+      const matched = cursos.find(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase());
+      setSelectedCurso(matched ? matched.nombre : requested);
+    } else if (cursos && cursos.length > 0) {
+      setSelectedCurso(cursos[0].nombre);
+    } else {
+      setSelectedCurso(requested || "");
+    }
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isOpen, alumnoDetails, cursos, onClose, availableRoles]);
+
+  if (!isOpen || !user) return null;
+
+  const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor") => {
+    setSelectedRole(roleId);
+    if (roleId === "alumno") {
+      setTimeout(() => {
+        courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        courseSelectRef.current?.focus();
+      }, 60);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (selectedRole === "alumno" && cursos && cursos.length > 0 && !selectedCurso) {
+      return;
+    }
+    if (!allowedRoles.includes(selectedRole as UserRole)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await onConfirm(selectedRole, selectedRole === "alumno" ? selectedCurso : undefined);
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -158,47 +179,59 @@ export default function ApproveStudentRoleModal({
 
           {/* Selector de Rol */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)] block ml-1">
-              Seleccionar Rol a Asignar
-            </label>
-            <div className="space-y-2">
-              {roles.map((r) => {
-                const isSelected = selectedRole === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => handleSelectRole(r.id)}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
-                      isSelected
-                        ? "border-[var(--verde)] bg-[var(--verde-bg)]/40 shadow-xs ring-1 ring-[var(--verde)]/40"
-                        : "border-[var(--border)] bg-[var(--bg2)] hover:border-[var(--border-hover)]"
-                    }`}
-                  >
-                    <div className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] shrink-0 mt-0.5">
-                      {r.icon}
-                    </div>
-                    <div className="flex-1 min-w-0 pr-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs sm:text-sm text-[var(--text)]">{r.label}</span>
-                        {isSelected && (
-                          <span className="w-4 h-4 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
-                            <Check size={10} strokeWidth={3.5} />
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[var(--text2)] mt-0.5 leading-snug">
-                        {r.description}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)]">
+                Seleccionar Rol a Asignar
+              </label>
+              <span className="text-[9px] text-[var(--text3)] font-semibold capitalize">
+                Jerarquía: {operatorRole || "Sin Rango"}
+              </span>
             </div>
+
+            {availableRoles.length === 0 ? (
+              <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--bg2)] text-center text-xs text-[var(--text3)] italic">
+                No tenés permisos para aprobar con ningún rol.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {availableRoles.map((r) => {
+                  const isSelected = selectedRole === r.id;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => handleSelectRole(r.id)}
+                      className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                        isSelected
+                          ? "border-[var(--verde)] bg-[var(--verde-bg)]/40 shadow-xs ring-1 ring-[var(--verde)]/40"
+                          : "border-[var(--border)] bg-[var(--bg2)] hover:border-[var(--border-hover)]"
+                      }`}
+                    >
+                      <div className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] shrink-0 mt-0.5">
+                        {r.icon}
+                      </div>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs sm:text-sm text-[var(--text)]">{r.label}</span>
+                          {isSelected && (
+                            <span className="w-4 h-4 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
+                              <Check size={10} strokeWidth={3.5} />
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[var(--text2)] mt-0.5 leading-snug">
+                          {r.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Selector de Curso (solo si el rol seleccionado es Alumno) */}
-          {selectedRole === "alumno" && (
+          {selectedRole === "alumno" && allowedRoles.includes("alumno") && (
             <div
               ref={courseSectionRef}
               className="space-y-2 p-3.5 rounded-2xl bg-[var(--bg3)]/60 border border-[var(--border)] animate-fade-in ring-1 ring-[var(--verde)]/30"
@@ -261,7 +294,7 @@ export default function ApproveStudentRoleModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={loading || (selectedRole === "alumno" && Boolean(cursos && cursos.length > 0 && !selectedCurso))}
+            disabled={loading || (selectedRole === "alumno" && Boolean(cursos && cursos.length > 0 && !selectedCurso)) || !allowedRoles.includes(selectedRole as UserRole)}
             className="flex-1 min-h-[42px] px-3.5 py-2 rounded-xl bg-[var(--verde)] text-black font-black text-xs disabled:opacity-50 shadow-md hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Check size={14} strokeWidth={2.5} />

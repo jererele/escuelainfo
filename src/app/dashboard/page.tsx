@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -335,8 +335,8 @@ export default function Dashboard() {
 
         if (profile) {
           setUserProfile(profile);
-          // Si el usuario tiene rol pendiente, no suscribir a colecciones internas ni cargar datos sensibles
-          if (isPendingRole(profile.rol)) {
+          // Si el usuario no cuenta con un rol oficial autorizado, no suscribir a colecciones internas ni cargar datos sensibles
+          if (!isAuthorizedRole(profile.rol)) {
             setLoading(false);
             return;
           }
@@ -689,6 +689,14 @@ export default function Dashboard() {
     targetRole: "alumno" | "profesor" | "preceptor" = "alumno",
     selectedCurso?: string
   ) => {
+    const operatorRole = userProfile?.rol?.trim().toLowerCase();
+    const allowedRoles = getAllowedAssignableRoles(operatorRole);
+
+    if (!allowedRoles.includes(targetRole as UserRole)) {
+      showToast(`Tu jerarquía no tiene permisos para aprobar solicitudes con el rol de ${targetRole}`, "error");
+      return;
+    }
+
     try {
       await updateUserProfile(u.id!, { rol: targetRole });
 
@@ -819,14 +827,26 @@ export default function Dashboard() {
     newRole: UserProfile["rol"],
     selectedCurso?: string
   ) => {
-    if (!isAdmin) {
-      showToast("Solo los administradores pueden cambiar roles de usuario", "error");
+    const operatorRole = userProfile?.rol?.trim().toLowerCase();
+
+    // 1. Validar que el operador tenga permisos jerárquicos sobre el usuario destino
+    if (!canManageUserRole(operatorRole, targetUser.rol)) {
+      showToast("No contás con permisos jerárquicos para modificar el rol de este usuario", "error");
       return;
     }
 
+    // 2. Validar que el rol a asignar esté dentro de los permitidos para su jerarquía
+    const allowedRoles = getAllowedAssignableRoles(operatorRole);
+    if (!allowedRoles.includes(newRole as UserRole)) {
+      showToast(`Tu rol de ${operatorRole || "usuario"} no puede otorgar la jerarquía de ${newRole}`, "error");
+      return;
+    }
+
+    // 3. Salvaguarda: No auto-degradar la propia cuenta de Administrador
     if (
       (targetUser.id === userProfile?.id || targetUser.email.toLowerCase() === userProfile?.email?.toLowerCase()) &&
-      newRole !== "admin"
+      newRole !== "admin" &&
+      targetUser.rol === "admin"
     ) {
       showToast("No podés modificar o quitarte tu propio rol de Administrador", "error");
       return;
@@ -1144,8 +1164,8 @@ export default function Dashboard() {
     );
   }
 
-  // PANTALLA PREMIUM DE ESPERA DE APROBACIÓN POR JERARQUÍA
-  if (userProfile && isPendingRole(userProfile.rol)) {
+  // PANTALLA PREMIUM DE ESPERA DE APROBACIÓN POR JERARQUÍA (Para roles pendientes o no autorizados)
+  if (userProfile && !isAuthorizedRole(userProfile.rol)) {
     const rawRole = (userProfile.rol || "").replace("pendiente_", "").replace("pendiente", "").replace("pe", "").trim();
     const requestedCleanRole = rawRole || "sin_rango";
     const roleLabels: {[key: string]: string} = {

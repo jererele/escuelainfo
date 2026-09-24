@@ -4,15 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.22.5";
-export const APP_BUILD_DATE = "24/09/2026 17:40 hs";
+export const APP_VERSION = "v2.23.0";
+export const APP_BUILD_DATE = "24/09/2026 18:00 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Automatización de Interfaz y Eliminación de Desplazamiento en Cambio de Rol (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx y UsuariosTab.tsx): Reestructuración arquitectónica de los modales de asignación y cambio de roles con cabecera fija, cuerpo desplazable y barra de acciones inferior fija (sticky footer). La botonera de confirmación ('Guardar Nuevo Rol' / 'Aprobar y Asignar') permanece siempre visible en pantalla sin necesidad de desplazar la página ni la ventana modal. Además, se reorganizó el selector de roles en una cuadrícula compacta y se implementó deslizamiento suave automatizado (smooth auto-scroll) y foco inmediato sobre el selector de cursos al seleccionar el rol de 'Alumno', o sobre la advertencia de permisos al seleccionar 'Administrador'.",
-  "Acceso Directo Ágil a Modificación de Roles (UsuariosTab.tsx): Se habilitó la interacción directa sobre las insignias de rol institucional en la tabla y tarjetas del directorio de usuarios, permitiendo abrir el modal de cambio de jerarquía con un solo clic sobre el rol del usuario sin necesidad de desplazarse horizontalmente por la tabla hasta la columna de acciones."
+  "Matriz Jerárquica de Asignación y Gestión de Roles Institucionales (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, UsuariosTab.tsx y page.tsx): Implementación de la gobernanza de roles según la jerarquía del operador. Los Administradores pueden asignar cualquier rol; los Directivos pueden asignar los roles de Preceptor, Profesor y Alumno (con protección estricta sobre cuentas de Administradores y otros Directivos); los Preceptores pueden asignar los roles de Profesor y Alumno (sin posibilidad de alterar Preceptores, Directivos ni Administradores); y los Profesores y Alumnos no cuentan con permisos para modificar ningún rol ni acceder a la gestión de usuarios.",
+  "Blindaje Total para Cuentas sin Rol Definido (page.tsx, dashboard/page.tsx y dataService.ts): Se reforzó la verificación de acceso con el detector unificado isAuthorizedRole. Cualquier cuenta sin rol oficial definido, en estado pendiente o con datos incompletos queda estrictamente impedida de acceder al contenido interno o cargar datos escolares, siendo retenida en la pantalla institucional de 'Cuenta en Verificación'."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.22.5",
+    date: "24/09/2026 17:40 hs",
+    notes: [
+      "Automatización de Interfaz y Eliminación de Desplazamiento en Cambio de Rol (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx y UsuariosTab.tsx): Reestructuración arquitectónica de los modales de asignación y cambio de roles con cabecera fija, cuerpo desplazable y barra de acciones inferior fija (sticky footer). La botonera de confirmación ('Guardar Nuevo Rol' / 'Aprobar y Asignar') permanece siempre visible en pantalla sin necesidad de desplazar la página ni la ventana modal. Además, se reorganizó el selector de roles en una cuadrícula compacta y se implementó deslizamiento suave automatizado (smooth auto-scroll) y foco inmediato sobre el selector de cursos al seleccionar el rol de 'Alumno', o sobre la advertencia de permisos al seleccionar 'Administrador'.",
+      "Acceso Directo Ágil a Modificación de Roles (UsuariosTab.tsx): Se habilitó la interacción directa sobre las insignias de rol institucional en la tabla y tarjetas del directorio de usuarios, permitiendo abrir el modal de cambio de jerarquía con un solo clic sobre el rol del usuario sin necesidad de desplazarse horizontalmente por la tabla hasta la columna de acciones."
+    ]
+  },
   {
     version: "v2.22.4",
     date: "24/09/2026 17:20 hs",

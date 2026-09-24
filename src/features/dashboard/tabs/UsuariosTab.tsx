@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { UserProfile, Alumno, Curso, isPendingRole } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, isPendingRole, canManageUserRole, getAllowedAssignableRoles } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
 
@@ -476,7 +476,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                         </div>
                       </div>
                       <div className="shrink-0">
-                        {isAdmin ? (
+                        {canManageUserRole(userProfile?.rol, u.rol) ? (
                           <button
                             type="button"
                             onClick={() => {
@@ -515,7 +515,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       )}
                     </div>
 
-                    {isAdmin && (
+                    {canManageUserRole(userProfile?.rol, u.rol) && (
                       <div className="pt-1 border-t border-[var(--border)]/50">
                         <button
                           type="button"
@@ -547,7 +547,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Rol Asignado</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Detalle / Curso</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Estado</th>
-                    {isAdmin && (
+                    {(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
                       <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
                     )}
                   </tr>
@@ -555,7 +555,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                 <tbody>
                   {filteredActive.length === 0 ? (
                     <tr>
-                      <td colSpan={isAdmin ? 6 : 5} className="p-20 text-center text-[var(--text3)] italic">
+                      <td colSpan={(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') ? 6 : 5} className="p-20 text-center text-[var(--text3)] italic">
                         No se encontraron usuarios con ese criterio.
                       </td>
                     </tr>
@@ -565,6 +565,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       const isCurrentAccount =
                         (userProfile?.email && u.email.toLowerCase() === userProfile.email.toLowerCase()) ||
                         (userProfile?.id && u.id === userProfile.id);
+                      const canModifyThisUser = canManageUserRole(userProfile?.rol, u.rol);
 
                       return (
                         <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
@@ -587,7 +588,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                             {u.email}
                           </td>
                           <td className="p-6">
-                            {isAdmin ? (
+                            {canModifyThisUser ? (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -625,20 +626,24 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                               Activo
                             </span>
                           </td>
-                          {isAdmin && (
+                          {(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
                             <td className="p-6 text-right">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRoleChangingUser(u);
-                                  setIsChangeRoleModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--bg3)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
-                                title="Cambiar rol y permisos de este usuario"
-                              >
-                                <UserCog size={13} strokeWidth={2.2} />
-                                <span>Cambiar Rol</span>
-                              </button>
+                              {canModifyThisUser ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRoleChangingUser(u);
+                                    setIsChangeRoleModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--bg3)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                                  title="Cambiar rol y permisos de este usuario"
+                                >
+                                  <UserCog size={13} strokeWidth={2.2} />
+                                  <span>Cambiar Rol</span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] font-mono text-[var(--text3)]" title="Jerarquía protegida">—</span>
+                              )}
                             </td>
                           )}
                         </tr>
@@ -668,10 +673,11 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             (a) => a.email.toLowerCase() === approvingUser.email.toLowerCase()
           )}
           cursos={cursos}
+          operatorRole={userProfile?.rol}
         />
       )}
 
-      {/* MODAL DE CAMBIO DE ROL INSTITUCIONAL (Solo Administradores) */}
+      {/* MODAL DE CAMBIO DE ROL INSTITUCIONAL (Según jerarquía permitida) */}
       {isChangeRoleModalOpen && roleChangingUser && (
         <ChangeUserRoleModal
           isOpen={isChangeRoleModalOpen}
@@ -693,6 +699,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             userProfile?.email?.toLowerCase() === roleChangingUser.email.toLowerCase() ||
             userProfile?.id === roleChangingUser.id
           }
+          operatorRole={userProfile?.rol}
         />
       )}
     </div>
