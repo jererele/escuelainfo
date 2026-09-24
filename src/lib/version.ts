@@ -4,15 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.22.4";
-export const APP_BUILD_DATE = "24/09/2026 17:20 hs";
+export const APP_VERSION = "v2.22.5";
+export const APP_BUILD_DATE = "24/09/2026 17:40 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Notificación Automática por Correo de Días Libres e Inasistencias Docentes a Alumnos (emailService.ts, page.tsx, NewTeacherReportModal.tsx, NewAbsenceModal.tsx): Implementación del sistema integral de aviso automático a estudiantes. Al aprobarse una licencia docente, declararse un día libre o registrarse un paro docente, el sistema detecta de forma autónoma los cursos y divisiones afectadas a partir de la materia o los horarios escolares del profesor, recopila los correos electrónicos de los alumnos matriculados y despacha un comunicado institucional formal por email con fecha, materias impactadas y detalles de la jornada libre.",
-  "Garantía de Entregabilidad SMTP y Prevención de Filtros Anti-Spam (/api/send-email, SendNoticeModal.tsx, dataService.ts): Reestructuración de cabeceras de correo para envíos masivos e individuales. En envíos con destinatario único se asigna entrega directa en el campo TO para asegurar entrada directa al buzón principal, y en envíos grupales a cursos se asigna un destinatario institucional visible en TO con copia oculta (BCC), eliminando el descarte o filtrado de mensajes por parte de Gmail y Outlook. Se incorporó el código de auditoría 'AV_HL' para trazabilidad completa de los comunicados despachados."
+  "Automatización de Interfaz y Eliminación de Desplazamiento en Cambio de Rol (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx y UsuariosTab.tsx): Reestructuración arquitectónica de los modales de asignación y cambio de roles con cabecera fija, cuerpo desplazable y barra de acciones inferior fija (sticky footer). La botonera de confirmación ('Guardar Nuevo Rol' / 'Aprobar y Asignar') permanece siempre visible en pantalla sin necesidad de desplazar la página ni la ventana modal. Además, se reorganizó el selector de roles en una cuadrícula compacta y se implementó deslizamiento suave automatizado (smooth auto-scroll) y foco inmediato sobre el selector de cursos al seleccionar el rol de 'Alumno', o sobre la advertencia de permisos al seleccionar 'Administrador'.",
+  "Acceso Directo Ágil a Modificación de Roles (UsuariosTab.tsx): Se habilitó la interacción directa sobre las insignias de rol institucional en la tabla y tarjetas del directorio de usuarios, permitiendo abrir el modal de cambio de jerarquía con un solo clic sobre el rol del usuario sin necesidad de desplazarse horizontalmente por la tabla hasta la columna de acciones."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.22.4",
+    date: "24/09/2026 17:20 hs",
+    notes: [
+      "Notificación Automática por Correo de Días Libres e Inasistencias Docentes a Alumnos (emailService.ts, page.tsx, NewTeacherReportModal.tsx, NewAbsenceModal.tsx): Implementación del sistema integral de aviso automático a estudiantes. Al aprobarse una licencia docente, declararse un día libre o registrarse un paro docente, el sistema detecta de forma autónoma los cursos y divisiones afectadas a partir de la materia o los horarios escolares del profesor, recopila los correos electrónicos de los alumnos matriculados y despacha un comunicado institucional formal por email con fecha, materias impactadas y detalles de la jornada libre.",
+      "Garantía de Entregabilidad SMTP y Prevención de Filtros Anti-Spam (/api/send-email, SendNoticeModal.tsx, dataService.ts): Reestructuración de cabeceras de correo para envíos masivos e individuales. En envíos con destinatario único se asigna entrega directa en el campo TO para asegurar entrada directa al buzón principal, y en envíos grupales a cursos se asigna un destinatario institucional visible en TO con copia oculta (BCC), eliminando el descarte o filtrado de mensajes por parte de Gmail y Outlook. Se incorporó el código de auditoría 'AV_HL' para trazabilidad completa de los comunicados despachados."
+    ]
+  },
   {
     version: "v2.22.3",
     date: "24/09/2026 16:50 hs",

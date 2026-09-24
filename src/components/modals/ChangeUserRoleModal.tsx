@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   X, 
   Check, 
@@ -9,7 +9,6 @@ import {
   UserCheck, 
   GraduationCap, 
   User, 
-  AlertCircle, 
   AlertTriangle,
   Info,
   Lock,
@@ -46,6 +45,11 @@ export default function ChangeUserRoleModal({
   const [selectedCurso, setSelectedCurso] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [confirmAdminEscalation, setConfirmAdminEscalation] = useState(false);
+
+  const courseSectionRef = useRef<HTMLDivElement>(null);
+  const courseSelectRef = useRef<HTMLSelectElement>(null);
+  const adminSectionRef = useRef<HTMLDivElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -86,6 +90,23 @@ export default function ChangeUserRoleModal({
 
   if (!isOpen || !user) return null;
 
+  const handleSelectRole = (roleId: AssignableRole) => {
+    setSelectedRole(roleId);
+    setConfirmAdminEscalation(false);
+
+    // Automatización de desplazamiento suave (smooth scroll) y foco inmediato
+    if (roleId === "alumno") {
+      setTimeout(() => {
+        courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        courseSelectRef.current?.focus();
+      }, 60);
+    } else if (roleId === "admin" && user.rol !== "admin") {
+      setTimeout(() => {
+        adminSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 60);
+    }
+  };
+
   const handleConfirm = async () => {
     if (isCurrentUser && selectedRole !== "admin") {
       return;
@@ -93,6 +114,9 @@ export default function ChangeUserRoleModal({
     // Si se asciende a admin y no se confirmó la alerta
     if (selectedRole === "admin" && user.rol !== "admin" && !confirmAdminEscalation) {
       setConfirmAdminEscalation(true);
+      setTimeout(() => {
+        adminSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 50);
       return;
     }
 
@@ -112,7 +136,7 @@ export default function ChangeUserRoleModal({
     id: AssignableRole;
     name: string;
     badgeLabel: string;
-    description: string;
+    shortDesc: string;
     icon: React.ReactNode;
     colorClass: string;
     borderClass: string;
@@ -122,18 +146,18 @@ export default function ChangeUserRoleModal({
       id: "admin",
       name: "Administrador",
       badgeLabel: "Acceso Total",
-      description: "Control absoluto de la plataforma: gestión de usuarios, auditoría, roles y configuración del sistema.",
-      icon: <ShieldCheck size={22} strokeWidth={2.5} className="text-[var(--rojo)]" />,
+      shortDesc: "Gestión total de usuarios, roles, auditoría y configuración.",
+      icon: <ShieldCheck size={20} strokeWidth={2.5} className="text-[var(--rojo)]" />,
       colorClass: "text-[var(--rojo)]",
       borderClass: "border-[var(--rojo-border)]",
       bgHoverClass: "hover:border-[var(--rojo)]/40 hover:bg-[var(--rojo-bg)]/30",
     },
     {
       id: "directivo",
-      name: "Directivo / Equipo Directivo",
-      badgeLabel: "Gestión Institucional",
-      description: "Supervisión institucional, control de ausencias docentes, aprobación de matrículas y estadísticas generales.",
-      icon: <UserCog size={22} strokeWidth={2.5} className="text-[var(--violeta)]" />,
+      name: "Directivo",
+      badgeLabel: "Dirección",
+      shortDesc: "Supervisión institucional, control docente y estadísticas.",
+      icon: <UserCog size={20} strokeWidth={2.5} className="text-[var(--violeta)]" />,
       colorClass: "text-[var(--violeta)]",
       borderClass: "border-[var(--violeta-border)]",
       bgHoverClass: "hover:border-[var(--violeta)]/40 hover:bg-[var(--violeta-bg)]/30",
@@ -141,29 +165,29 @@ export default function ChangeUserRoleModal({
     {
       id: "preceptor",
       name: "Preceptor",
-      badgeLabel: "Control y Asistencia",
-      description: "Toma de asistencia por jornada escolar, administración de cursos asignados, avisos y seguimiento de alumnos.",
-      icon: <UserCheck size={22} strokeWidth={2.5} className="text-[var(--cyan)]" />,
+      badgeLabel: "Asistencia",
+      shortDesc: "Toma de asistencia diaria, avisos y seguimiento de cursos.",
+      icon: <UserCheck size={20} strokeWidth={2.5} className="text-[var(--cyan)]" />,
       colorClass: "text-[var(--cyan)]",
       borderClass: "border-[var(--cyan-border)]",
       bgHoverClass: "hover:border-[var(--cyan)]/40 hover:bg-[var(--cyan-bg)]/30",
     },
     {
       id: "profesor",
-      name: "Profesor / Docente",
-      badgeLabel: "Cuerpo Docente",
-      description: "Gestión de materias asignadas, registro de asistencia por hora/clase, horarios docentes y mesas de examen.",
-      icon: <GraduationCap size={22} strokeWidth={2.5} className="text-[var(--azul)]" />,
+      name: "Profesor",
+      badgeLabel: "Docente",
+      shortDesc: "Asistencia por clase, materias asignadas y horarios.",
+      icon: <GraduationCap size={20} strokeWidth={2.5} className="text-[var(--azul)]" />,
       colorClass: "text-[var(--azul)]",
       borderClass: "border-[var(--azul-border)]",
       bgHoverClass: "hover:border-[var(--azul)]/40 hover:bg-[var(--azul-bg)]/30",
     },
     {
       id: "alumno",
-      name: "Alumno / Estudiante",
-      badgeLabel: "Estudiante Matriculado",
-      description: "Acceso como alumno para consultar horarios de clase, materias de su división, ausencias docentes y avisos.",
-      icon: <User size={22} strokeWidth={2.5} className="text-[var(--verde)]" />,
+      name: "Alumno",
+      badgeLabel: "Estudiante",
+      shortDesc: "Consulta de horarios de su división, avisos y materias.",
+      icon: <User size={20} strokeWidth={2.5} className="text-[var(--verde)]" />,
       colorClass: "text-[var(--verde)]",
       borderClass: "border-[var(--verde-border)]",
       bgHoverClass: "hover:border-[var(--verde)]/40 hover:bg-[var(--verde-bg)]/30",
@@ -179,18 +203,19 @@ export default function ChangeUserRoleModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full sm:max-w-xl rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0 space-y-6">
-        {/* Cabecera */}
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <UserAvatar name={user.nombre} email={user.email} size={48} showRing={true} />
+      <div className="bg-[var(--bg)] w-full sm:max-w-xl rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden mt-auto sm:mt-0">
+        
+        {/* CABECERA FIJA (Sticky top) */}
+        <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-[var(--border)]/70 flex justify-between items-center shrink-0 bg-[var(--bg)] gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <UserAvatar name={user.nombre} email={user.email} size={42} showRing={true} />
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-black title-font text-[var(--text)]">
+                <h2 className="text-lg sm:text-xl font-black title-font text-[var(--text)]">
                   Cambiar Rol de Usuario
                 </h2>
                 {isCurrentUser && (
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]">
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]">
                     Tu Cuenta
                   </span>
                 )}
@@ -205,155 +230,172 @@ export default function ChangeUserRoleModal({
             className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer shrink-0"
             title="Cerrar modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* ALERTA: Seguridad para la propia cuenta del administrador */}
-        {isCurrentUser ? (
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--text)] text-xs font-medium">
-            <Lock size={18} className="text-[var(--amarillo)] shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-[var(--amarillo)]">Protección de Cuenta Activa</p>
-              <p className="text-[var(--text2)] mt-0.5">
-                Estás visualizando tu propia cuenta de Administrador. Para evitar bloqueos accidentales de acceso al sistema, no podés quitarte el rol de Administrador desde este panel.
-              </p>
+        {/* CONTENIDO INTERNO DESPLAZABLE CON SCROLLBAR ELEGANTE */}
+        <div ref={modalBodyRef} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+          {/* ALERTA: Seguridad para la propia cuenta del administrador */}
+          {isCurrentUser ? (
+            <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--text)] text-xs font-medium">
+              <Lock size={16} className="text-[var(--amarillo)] shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-[var(--amarillo)]">Protección de Cuenta Activa</p>
+                <p className="text-[var(--text2)] mt-0.5 leading-snug">
+                  Estás visualizando tu propia cuenta de Administrador. Para evitar bloqueos accidentales, no podés degradar tu propio rol.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-xs text-[var(--text2)]">
-            <Info size={15} className="text-[var(--text3)] shrink-0" />
-            <span>
-              Seleccioná el nuevo rol institucional que tendrá este usuario en la plataforma.
-            </span>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-xs text-[var(--text2)]">
+              <Info size={14} className="text-[var(--text3)] shrink-0" />
+              <span>
+                Seleccioná el nuevo rol. Los cambios impactan de inmediato en permisos y accesos.
+              </span>
+            </div>
+          )}
 
-        {/* SELECTOR DE ROLES */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-black uppercase text-[var(--text3)] tracking-wider block ml-1">
-            Rol Institucional
-          </label>
-          <div className="grid grid-cols-1 gap-2.5">
-            {roleDefinitions.map((role) => {
-              const isSelected = selectedRole === role.id;
-              const isCurrent = user.rol === role.id;
-              const isDisabled = isCurrentUser && role.id !== "admin";
-
-              return (
-                <button
-                  key={role.id}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => {
-                    setSelectedRole(role.id);
-                    setConfirmAdminEscalation(false);
-                  }}
-                  className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 relative ${
-                    isDisabled
-                      ? "opacity-40 cursor-not-allowed bg-[var(--bg2)] border-[var(--border)]"
-                      : isSelected
-                      ? `bg-[var(--bg2)] ${role.borderClass} ring-2 ring-[var(--verde)]/30 shadow-md`
-                      : `bg-[var(--bg)] border-[var(--border)] ${role.bgHoverClass}`
-                  }`}
-                >
-                  <div className="p-2.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] shrink-0 mt-0.5">
-                    {role.icon}
-                  </div>
-
-                  <div className="flex-1 min-w-0 pr-6">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-sm text-[var(--text)]">
-                        {role.name}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[var(--bg3)] border border-[var(--border)] ${role.colorClass}`}>
-                        {role.badgeLabel}
-                      </span>
-                      {isCurrent && (
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[var(--bg2)] text-[var(--text3)] border border-[var(--border)]">
-                          Rol Actual
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[var(--text2)] mt-1 font-medium leading-relaxed">
-                      {role.description}
-                    </p>
-                  </div>
-
-                  {/* Check Indicator */}
-                  <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-1 transition-all ${
-                      isSelected
-                        ? "bg-[var(--verde)] border-[var(--verde)] text-black"
-                        : "border-[var(--border)] bg-transparent"
-                    }`}
-                  >
-                    {isSelected && <Check size={12} strokeWidth={3} />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* SI SELECCIONA ALUMNO: SELECTOR DE CURSO/DIVISIÓN */}
-        {selectedRole === "alumno" && (
-          <div className="p-4 rounded-2xl bg-[var(--bg2)] border border-[var(--border)] space-y-3 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-black uppercase text-[var(--text)] tracking-wider flex items-center gap-2">
-                <User size={14} className="text-[var(--verde)]" />
-                <span>División / Curso a Asignar</span>
+          {/* SELECTOR DE ROLES: Cuadrícula compacta de 2 columnas en desktop */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-[10px] font-black uppercase text-[var(--text3)] tracking-wider">
+                Roles Institucionales
               </label>
               <span className="text-[10px] text-[var(--text3)] font-semibold">
-                Padrón Escolar
+                5 Jerarquías Disponibles
               </span>
             </div>
 
-            <p className="text-xs text-[var(--text2)] leading-relaxed">
-              Seleccioná el curso al que pertenecerá el estudiante para sincronizar sus horarios de materias y asistencia diaria.
-            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+              {roleDefinitions.map((role) => {
+                const isSelected = selectedRole === role.id;
+                const isCurrent = user.rol === role.id;
+                const isDisabled = isCurrentUser && role.id !== "admin";
+                const isAlumno = role.id === "alumno";
 
-            <select
-              value={selectedCurso}
-              onChange={(e) => setSelectedCurso(e.target.value)}
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 px-3.5 outline-none focus:border-[var(--verde)] text-sm font-bold text-[var(--text)] transition-all cursor-pointer"
-            >
-              <option value="">Sin curso (Pendiente / A confirmar)</option>
-              {cursos.map((c) => (
-                <option key={c.id || c.nombre} value={c.nombre}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => handleSelectRole(role.id)}
+                    className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-2.5 relative select-none ${
+                      isAlumno ? "sm:col-span-2" : ""
+                    } ${
+                      isDisabled
+                        ? "opacity-40 cursor-not-allowed bg-[var(--bg2)] border-[var(--border)]"
+                        : isSelected
+                        ? `bg-[var(--bg2)] ${role.borderClass} ring-2 ring-[var(--verde)]/40 shadow-sm`
+                        : `bg-[var(--bg)] border-[var(--border)] ${role.bgHoverClass}`
+                    }`}
+                  >
+                    <div className="p-2 rounded-xl bg-[var(--bg3)] border border-[var(--border)] shrink-0 mt-0.5">
+                      {role.icon}
+                    </div>
 
-        {/* ALERTA DE ASCENSO A ADMINISTRADOR */}
-        {selectedRole === "admin" && user.rol !== "admin" && (
-          <div className="p-4 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-2 animate-fade-in">
-            <div className="flex items-center gap-2 text-[var(--rojo)] font-black text-xs uppercase tracking-wider">
-              <AlertTriangle size={16} strokeWidth={2.5} />
-              <span>Privilegios Elevados de Administrador</span>
+                    <div className="flex-1 min-w-0 pr-4">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-black text-xs sm:text-sm text-[var(--text)]">
+                          {role.name}
+                        </span>
+                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-md bg-[var(--bg3)] border border-[var(--border)] ${role.colorClass}`}>
+                          {role.badgeLabel}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-md bg-[var(--bg2)] text-[var(--text3)] border border-[var(--border)]">
+                            Actual
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[var(--text2)] mt-0.5 font-medium line-clamp-2 leading-snug">
+                        {role.shortDesc}
+                      </p>
+                    </div>
+
+                    {/* Indicador de Selección */}
+                    <div
+                      className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 transition-all ${
+                        isSelected
+                          ? "bg-[var(--verde)] border-[var(--verde)] text-black"
+                          : "border-[var(--border)] bg-transparent"
+                      }`}
+                    >
+                      {isSelected && <Check size={10} strokeWidth={3.5} />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-xs text-[var(--text)] leading-relaxed">
-              Estás por otorgarle acceso total a este usuario. Podrá gestionar todos los usuarios, consultar registros de auditoría y configurar el sistema.
-            </p>
-            {confirmAdminEscalation && (
-              <div className="pt-2 flex items-center gap-2 text-xs font-bold text-[var(--rojo)]">
-                <Check size={14} strokeWidth={3} />
-                <span>Presioná &quot;Confirmar y Asignar Rol&quot; para proceder.</span>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* ACCIONES Y BOTONES */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-[var(--border)]">
+          {/* SI SELECCIONA ALUMNO: SELECTOR DE CURSO/DIVISIÓN (Auto-scrolled) */}
+          {selectedRole === "alumno" && (
+            <div
+              ref={courseSectionRef}
+              className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg2)] border border-[var(--border)] space-y-2.5 animate-fade-in ring-1 ring-[var(--verde)]/30"
+            >
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase text-[var(--text)] tracking-wider flex items-center gap-1.5">
+                  <User size={13} className="text-[var(--verde)]" />
+                  <span>División / Curso del Estudiante</span>
+                  <span className="text-[var(--rojo)]">*</span>
+                </label>
+                <span className="text-[10px] text-[var(--text3)] font-semibold font-mono">
+                  Sincronización Padrón
+                </span>
+              </div>
+
+              <p className="text-[11px] text-[var(--text2)] leading-snug">
+                Asigná la división escolar para conectar automáticamente los horarios de clase y ausencias docentes del alumno.
+              </p>
+
+              <select
+                ref={courseSelectRef}
+                value={selectedCurso}
+                onChange={(e) => setSelectedCurso(e.target.value)}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-2.5 px-3 outline-none focus:border-[var(--verde)] text-xs font-bold text-[var(--text)] transition-all cursor-pointer shadow-xs"
+              >
+                <option value="">Sin curso asignado (Pendiente / A confirmar)</option>
+                {cursos.map((c) => (
+                  <option key={c.id || c.nombre} value={c.nombre}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ALERTA DE ASCENSO A ADMINISTRADOR */}
+          {selectedRole === "admin" && user.rol !== "admin" && (
+            <div
+              ref={adminSectionRef}
+              className="p-3.5 sm:p-4 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-2 animate-fade-in"
+            >
+              <div className="flex items-center gap-2 text-[var(--rojo)] font-black text-xs uppercase tracking-wider">
+                <AlertTriangle size={15} strokeWidth={2.5} />
+                <span>Privilegios Elevados de Administrador</span>
+              </div>
+              <p className="text-xs text-[var(--text)] leading-relaxed">
+                Estás por otorgarle acceso total a este usuario. Podrá gestionar usuarios, auditar registros y modificar la configuración global.
+              </p>
+              {confirmAdminEscalation && (
+                <div className="pt-1 flex items-center gap-1.5 text-xs font-bold text-[var(--rojo)]">
+                  <Check size={14} strokeWidth={3} />
+                  <span>Presioná &quot;Confirmar y Asignar Rol&quot; para proceder.</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ACCIONES Y BOTONES FIJOS (Sticky Bottom - Siempre visible sin scroll) */}
+        <div className="p-3.5 sm:p-4 border-t border-[var(--border)] bg-[var(--bg2)]/80 backdrop-blur-md shrink-0 flex flex-col sm:flex-row items-center gap-2.5">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="w-full sm:w-auto flex-1 min-h-[46px] px-5 py-3 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--text)] hover:bg-[var(--bg3)] active:scale-95 transition-all cursor-pointer"
+            className="w-full sm:w-auto flex-1 min-h-[42px] px-4 py-2.5 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--text)] hover:bg-[var(--bg3)] active:scale-95 transition-all cursor-pointer"
           >
             Cancelar
           </button>
@@ -362,7 +404,7 @@ export default function ChangeUserRoleModal({
             type="button"
             onClick={handleConfirm}
             disabled={loading || (isCurrentUser && selectedRole !== "admin")}
-            className="w-full sm:w-auto flex-1 min-h-[46px] px-5 py-3 rounded-xl bg-[var(--verde)] text-black text-xs font-black hover:brightness-105 active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full sm:w-auto flex-1 min-h-[42px] px-4 py-2.5 rounded-xl bg-[var(--verde)] text-black text-xs font-black hover:brightness-105 active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <span>Actualizando rol...</span>

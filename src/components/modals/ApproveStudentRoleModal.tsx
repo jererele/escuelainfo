@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Check, GraduationCap, BookOpen, Users, Clock, AlertCircle } from "lucide-react";
 import { UserProfile, Alumno, Curso } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -28,6 +28,9 @@ export default function ApproveStudentRoleModal({
   const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
   const [loading, setLoading] = useState(false);
+
+  const courseSectionRef = useRef<HTMLDivElement>(null);
+  const courseSelectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -58,6 +61,16 @@ export default function ApproveStudentRoleModal({
 
   if (!isOpen || !user) return null;
 
+  const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor") => {
+    setSelectedRole(roleId);
+    if (roleId === "alumno") {
+      setTimeout(() => {
+        courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        courseSelectRef.current?.focus();
+      }, 60);
+    }
+  };
+
   const handleConfirm = async () => {
     if (selectedRole === "alumno" && cursos && cursos.length > 0 && !selectedCurso) {
       return;
@@ -75,20 +88,20 @@ export default function ApproveStudentRoleModal({
     {
       id: "alumno" as const,
       label: "Alumno",
-      description: "Se matricula como estudiante con acceso a sus cursos, materias y horarios.",
-      icon: <GraduationCap size={20} className="text-[var(--verde)]" />,
+      description: "Acceso a horarios, materias y avisos de su división escolar.",
+      icon: <GraduationCap size={18} className="text-[var(--verde)]" />,
     },
     {
       id: "profesor" as const,
       label: "Profesor",
-      description: "Se incorpora al cuerpo docente con acceso a materias, licencias y horarios docentes.",
-      icon: <BookOpen size={20} className="text-[var(--amarillo)]" />,
+      description: "Cuerpo docente: licencias, asistencias y materias.",
+      icon: <BookOpen size={18} className="text-[var(--amarillo)]" />,
     },
     {
       id: "preceptor" as const,
       label: "Preceptor",
-      description: "Control de asistencia diaria, gestión de cursos y avisos institucionales.",
-      icon: <Users size={20} className="text-[var(--azul)]" />,
+      description: "Control de asistencia diaria y seguimiento de cursos.",
+      icon: <Users size={18} className="text-[var(--azul)]" />,
     },
   ];
 
@@ -99,140 +112,149 @@ export default function ApproveStudentRoleModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0 space-y-5">
-        {/* Cabecera */}
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            <UserAvatar name={user.nombre} email={user.email} size={44} showRing={true} />
-            <div>
-              <h2 className="text-xl font-black title-font text-[var(--text)]">
+      <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden mt-auto sm:mt-0">
+        
+        {/* Cabecera Fija */}
+        <div className="p-4 sm:p-5 border-b border-[var(--border)]/70 flex justify-between items-center shrink-0 bg-[var(--bg)]">
+          <div className="flex items-center gap-3 min-w-0">
+            <UserAvatar name={user.nombre} email={user.email} size={40} showRing={true} />
+            <div className="min-w-0">
+              <h2 className="text-lg font-black title-font text-[var(--text)]">
                 Aprobar Solicitud
               </h2>
-              <p className="text-xs text-[var(--text2)] font-semibold truncate max-w-[230px]">
-                {user.nombre} · <span className="text-[var(--text3)]">{user.email}</span>
+              <p className="text-xs text-[var(--text2)] font-semibold truncate max-w-[220px]">
+                {user.nombre} · <span className="text-[var(--text3)] font-mono">{user.email}</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer shrink-0"
             title="Cerrar"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Ficha rápida del solicitante */}
-        <div className="bg-[var(--bg3)] p-3.5 rounded-2xl border border-[var(--border)] text-xs flex items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <div className="text-[10px] font-black uppercase text-[var(--text3)]">DNI Registrado</div>
-            <div className="font-bold text-[var(--text)]">{alumnoDetails?.dni || "No especificado"}</div>
-          </div>
-          <div className="space-y-0.5 text-right">
-            <div className="text-[10px] font-black uppercase text-[var(--text3)]">Curso Solicitado</div>
-            <div className="font-bold text-[var(--text)]">
-              {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? (
-                alumnoDetails.curso
-              ) : (
-                <span className="text-[var(--amarillo)]">Sin asignar</span>
-              )}
+        {/* Contenido Desplazable */}
+        <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
+          {/* Ficha rápida del solicitante */}
+          <div className="bg-[var(--bg3)] p-3 rounded-2xl border border-[var(--border)] text-xs flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="text-[10px] font-black uppercase text-[var(--text3)]">DNI Registrado</div>
+              <div className="font-bold text-[var(--text)] font-mono">{alumnoDetails?.dni || "No especificado"}</div>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <div className="text-[10px] font-black uppercase text-[var(--text3)]">Curso Solicitado</div>
+              <div className="font-bold text-[var(--text)]">
+                {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? (
+                  <span className="font-mono">{alumnoDetails.curso}</span>
+                ) : (
+                  <span className="text-[var(--amarillo)] italic">Sin asignar</span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Selector de Rol */}
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)] mb-2 block ml-1">
-            Seleccionar Rol a Asignar
-          </label>
-          <div className="space-y-2.5">
-            {roles.map((r) => {
-              const isSelected = selectedRole === r.id;
-              return (
-                <div
-                  key={r.id}
-                  onClick={() => setSelectedRole(r.id)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
-                    isSelected
-                      ? "border-[var(--verde)] bg-[var(--verde-bg)]/40 shadow-xs"
-                      : "border-[var(--border)] bg-[var(--bg2)] hover:border-[var(--border-hover)]"
-                  }`}
-                >
-                  <div className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] shrink-0 mt-0.5">
-                    {r.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-[var(--text)]">{r.label}</span>
-                      {isSelected && (
-                        <span className="w-5 h-5 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
-                          <Check size={12} strokeWidth={3} />
-                        </span>
-                      )}
+          {/* Selector de Rol */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)] block ml-1">
+              Seleccionar Rol a Asignar
+            </label>
+            <div className="space-y-2">
+              {roles.map((r) => {
+                const isSelected = selectedRole === r.id;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleSelectRole(r.id)}
+                    className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                      isSelected
+                        ? "border-[var(--verde)] bg-[var(--verde-bg)]/40 shadow-xs ring-1 ring-[var(--verde)]/40"
+                        : "border-[var(--border)] bg-[var(--bg2)] hover:border-[var(--border-hover)]"
+                    }`}
+                  >
+                    <div className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] shrink-0 mt-0.5">
+                      {r.icon}
                     </div>
-                    <p className="text-[11px] text-[var(--text2)] mt-0.5 leading-snug">
-                      {r.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs sm:text-sm text-[var(--text)]">{r.label}</span>
+                        {isSelected && (
+                          <span className="w-4 h-4 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
+                            <Check size={10} strokeWidth={3.5} />
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[var(--text2)] mt-0.5 leading-snug">
+                        {r.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Selector de Curso (solo si el rol seleccionado es Alumno) */}
-        {selectedRole === "alumno" && (
-          <div className="space-y-2.5 p-4 rounded-2xl bg-[var(--bg3)]/60 border border-[var(--border)] animate-fade-in">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
-                <GraduationCap size={14} className="text-[var(--verde)]" />
-                <span>Curso a Asignar</span>
-                <span className="text-[var(--rojo)]">*</span>
-              </label>
-              {selectedCurso && (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
-                  {selectedCurso}
-                </span>
+          {/* Selector de Curso (solo si el rol seleccionado es Alumno) */}
+          {selectedRole === "alumno" && (
+            <div
+              ref={courseSectionRef}
+              className="space-y-2 p-3.5 rounded-2xl bg-[var(--bg3)]/60 border border-[var(--border)] animate-fade-in ring-1 ring-[var(--verde)]/30"
+            >
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
+                  <GraduationCap size={13} className="text-[var(--verde)]" />
+                  <span>División / Curso a Asignar</span>
+                  <span className="text-[var(--rojo)]">*</span>
+                </label>
+                {selectedCurso && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-mono">
+                    {selectedCurso}
+                  </span>
+                )}
+              </div>
+
+              {cursos && cursos.length > 0 ? (
+                <div className="relative">
+                  <select
+                    ref={courseSelectRef}
+                    value={selectedCurso}
+                    onChange={(e) => setSelectedCurso(e.target.value)}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] focus:border-[var(--verde)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text)] outline-none transition-all cursor-pointer shadow-xs"
+                  >
+                    <option value="" disabled>-- Seleccionar Curso Obligatorio --</option>
+                    {cursos.map((c) => (
+                      <option key={c.id || c.nombre} value={c.nombre}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="text-xs text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-2.5 rounded-xl flex items-center gap-2">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>No hay cursos dados de alta. Podrás asignarlo luego desde Ciclo Lectivo.</span>
+                </div>
+              )}
+
+              {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" && alumnoDetails.curso !== selectedCurso && (
+                <p className="text-[10px] text-[var(--amarillo)] font-medium pl-1">
+                  Nota: El alumno solicitó originalmente el curso <strong>{alumnoDetails.curso}</strong>.
+                </p>
               )}
             </div>
+          )}
+        </div>
 
-            {cursos && cursos.length > 0 ? (
-              <div className="relative">
-                <select
-                  value={selectedCurso}
-                  onChange={(e) => setSelectedCurso(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] focus:border-[var(--verde)] rounded-2xl p-3.5 text-sm font-bold text-[var(--text)] outline-none transition-all cursor-pointer"
-                >
-                  <option value="" disabled>-- Seleccionar Curso Obligatorio --</option>
-                  {cursos.map((c) => (
-                    <option key={c.id || c.nombre} value={c.nombre}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="text-xs text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-3 rounded-xl flex items-center gap-2">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>No hay cursos dados de alta. Podrás asignarlo luego desde Ciclo Lectivo.</span>
-              </div>
-            )}
-
-            {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" && alumnoDetails.curso !== selectedCurso && (
-              <p className="text-[11px] text-[var(--amarillo)] font-medium pl-1">
-                Nota: El alumno solicitó originalmente el curso <strong>{alumnoDetails.curso}</strong>.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Acciones */}
-        <div className="flex gap-3 pt-2">
+        {/* Acciones Fijas (Sticky bottom) */}
+        <div className="p-3.5 sm:p-4 border-t border-[var(--border)] bg-[var(--bg2)]/80 backdrop-blur-md shrink-0 flex items-center gap-2.5">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 p-3.5 rounded-2xl border border-[var(--border)] font-bold text-sm hover:bg-[var(--bg3)] text-[var(--text)] transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            className="flex-1 min-h-[42px] px-3.5 py-2 rounded-xl border border-[var(--border)] font-bold text-xs hover:bg-[var(--bg3)] text-[var(--text)] transition-all active:scale-95 cursor-pointer disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -240,9 +262,9 @@ export default function ApproveStudentRoleModal({
             type="button"
             onClick={handleConfirm}
             disabled={loading || (selectedRole === "alumno" && Boolean(cursos && cursos.length > 0 && !selectedCurso))}
-            className="flex-1 p-3.5 rounded-2xl bg-[var(--verde)] text-black font-black text-sm disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 min-h-[42px] px-3.5 py-2 rounded-xl bg-[var(--verde)] text-black font-black text-xs disabled:opacity-50 shadow-md hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <Check size={16} strokeWidth={2.5} />
+            <Check size={14} strokeWidth={2.5} />
             <span>
               {loading
                 ? "Aprobando..."

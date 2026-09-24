@@ -475,7 +475,25 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                           <div className="text-xs text-[var(--text3)] font-mono truncate">{u.email}</div>
                         </div>
                       </div>
-                      <div className="shrink-0">{getRoleBadge(u.rol)}</div>
+                      <div className="shrink-0">
+                        {isAdmin ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRoleChangingUser(u);
+                              setIsChangeRoleModalOpen(true);
+                            }}
+                            className="cursor-pointer text-left active:scale-95 transition-transform group"
+                            title="Hacé clic para cambiar rol institucional"
+                          >
+                            <span className="flex items-center gap-1">
+                              {getRoleBadge(u.rol)}
+                            </span>
+                          </button>
+                        ) : (
+                          getRoleBadge(u.rol)
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-[var(--text2)] pt-1 border-t border-[var(--border)]/50">
@@ -569,7 +587,24 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                             {u.email}
                           </td>
                           <td className="p-6">
-                            {getRoleBadge(u.rol)}
+                            {isAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRoleChangingUser(u);
+                                  setIsChangeRoleModalOpen(true);
+                                }}
+                                className="group cursor-pointer text-left focus:outline-none"
+                                title="Hacé clic para cambiar el rol de este usuario"
+                              >
+                                <span className="inline-flex items-center gap-1.5 transition-transform group-hover:scale-105 active:scale-95">
+                                  {getRoleBadge(u.rol)}
+                                  <UserCog size={12} className="text-[var(--text3)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </span>
+                              </button>
+                            ) : (
+                              getRoleBadge(u.rol)
+                            )}
                           </td>
                           <td className="p-6 text-xs">
                             {u.rol === "alumno" ? (
