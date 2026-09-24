@@ -30,6 +30,9 @@ interface ProfesoresTabProps {
   horarios?: Horario[];
   isAdmin: boolean;
   canManage?: boolean;
+  canManageInfo?: boolean;
+  canManageMaterias?: boolean;
+  userRole?: string;
   onOpenAddTeacher: () => void;
   onEditTeacher: (p: Profesor) => void;
   onDeleteTeacher: (p: Profesor) => void;
@@ -44,6 +47,9 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
   horarios = [],
   isAdmin,
   canManage = isAdmin,
+  canManageInfo,
+  canManageMaterias,
+  userRole,
   onOpenAddTeacher,
   onEditTeacher,
   onDeleteTeacher,
@@ -51,6 +57,12 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
   onRefreshProfesores,
   showToast,
 }) => {
+  const isPreceptor = userRole === "preceptor";
+  // canManageInfo: Solo administradores y directivos pueden editar datos personales (nombre, DNI, email), dar de alta o eliminar docentes. Preceptores NO.
+  const effectiveCanManageInfo = canManageInfo !== undefined ? canManageInfo : (isAdmin && !isPreceptor);
+  // canManageMaterias: Administradores, directivos y preceptores pueden asignar y modificar materias de docentes.
+  const effectiveCanManageMaterias = canManageMaterias !== undefined ? canManageMaterias : (isAdmin || isPreceptor || canManage);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTeacherForMaterias, setSelectedTeacherForMaterias] = useState<{
     id?: string;
@@ -132,8 +144,14 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
             Gestión de profesores, asignación de materias oficiales y consultas de historial.
           </p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
-          {canManage && (
+        <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end items-center">
+          {isPreceptor && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs">
+              <BookOpen size={16} strokeWidth={2.5} />
+              <span className="text-xs font-bold">Gestión de Materias Docentes</span>
+            </div>
+          )}
+          {effectiveCanManageInfo && (
             <button
               onClick={onOpenAddTeacher}
               className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer text-xs sm:text-sm text-center active:scale-95"
@@ -145,7 +163,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
       </div>
 
       {/* SECCIÓN DESTACADA: DOCENTES REGISTRADOS SIN MATERIAS ASIGNADAS */}
-      {canManage && pendingConfigTeachers.length > 0 && (
+      {effectiveCanManageMaterias && pendingConfigTeachers.length > 0 && (
         <div className="card glass rounded-[28px] p-5 sm:p-6 border border-[var(--amarillo-border)] bg-[var(--amarillo-bg)] space-y-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -251,8 +269,8 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                 className="glass p-6 sm:p-7 rounded-[32px] border border-[var(--border)] hover:border-[var(--verde)] transition-all group relative cursor-pointer flex flex-col justify-between hover:shadow-lg active:scale-[0.99]"
                 title={`Ver ausencias y asistencias de ${p.nombre}`}
               >
-                {/* BOTONES DE EDICIÓN / BORRADO */}
-                {canManage && (
+                {/* BOTONES DE EDICIÓN / BORRADO (ADMIN / DIRECTIVO) O GESTIÓN DE MATERIAS (PRECEPTOR) */}
+                {effectiveCanManageInfo && (
                   <div
                     className="absolute top-4 right-4 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
                     onClick={(e) => e.stopPropagation()}
@@ -270,6 +288,23 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                       title="Eliminar docente"
                     >
                       <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {!effectiveCanManageInfo && effectiveCanManageMaterias && (
+                  <div
+                    className="absolute top-4 right-4 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAssignModal(p)}
+                      className="inline-flex items-center gap-1.5 text-[var(--verde)] px-3 py-1.5 bg-[var(--verde-bg)] rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[var(--verde-border)]/50 shadow-xs text-xs font-bold"
+                      title={`Modificar materias de ${p.nombre}`}
+                    >
+                      <BookOpen size={13} strokeWidth={2.5} />
+                      <span>Materias</span>
                     </button>
                   </div>
                 )}
@@ -295,7 +330,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                         <BookOpen size={11} className="text-[var(--verde)]" />
                         <span>Materias ({p.materias ? p.materias.length : 0})</span>
                       </span>
-                      {canManage && (
+                      {effectiveCanManageMaterias && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -314,20 +349,20 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                     {!hasMaterias ? (
                       <div
                         onClick={(e) => {
-                          if (canManage) {
+                          if (effectiveCanManageMaterias) {
                             e.stopPropagation();
                             handleOpenAssignModal(p);
                           }
                         }}
                         className={`p-3 rounded-2xl border border-dashed border-[var(--amarillo-border)] bg-[var(--amarillo-bg)] flex items-center justify-between gap-2 ${
-                          canManage ? "cursor-pointer hover:opacity-90 active:scale-[0.99] transition-all" : ""
+                          effectiveCanManageMaterias ? "cursor-pointer hover:opacity-90 active:scale-[0.99] transition-all" : ""
                         }`}
                       >
                         <div className="flex items-center gap-2 text-[var(--amarillo)]">
                           <AlertCircle size={14} className="shrink-0" />
                           <span className="text-xs font-bold">Sin materias asignadas</span>
                         </div>
-                        {canManage && (
+                        {effectiveCanManageMaterias && (
                           <span className="text-[10px] font-black uppercase text-[var(--amarillo)] bg-[var(--bg)] px-2.5 py-1 rounded-xl border border-[var(--amarillo-border)] shadow-xs">
                             + Asignar
                           </span>
@@ -343,7 +378,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                             {m}
                           </span>
                         ))}
-                        {canManage && (
+                        {effectiveCanManageMaterias && (
                           <button
                             type="button"
                             onClick={(e) => {

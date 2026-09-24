@@ -4,15 +4,23 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.23.1";
-export const APP_BUILD_DATE = "24/09/2026 19:25 hs";
+export const APP_VERSION = "v2.23.2";
+export const APP_BUILD_DATE = "24/09/2026 19:35 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Visualización Exclusiva y Filtrado de Horarios para Preceptores (HorariosTab.tsx y FreeHoursWidget.tsx): Los usuarios con rol de Preceptor ahora visualizan de forma prioritaria y filtrada el cronograma y los horarios de clase de las divisiones y cursos escolares a los cuales fueron asignados. La interfaz incorpora selector inteligente acotado a sus divisiones, selector de 1 toque mediante botones táctiles rápidos (chips) para alternar entre sus cursos asignados, botón de alternancia 'Mis Cursos Asignados' / 'Ver Todos los Cursos' y exportación personalizada a Excel (Horario_Preceptoria_Curso.xlsx). Además, el panel de Horas Libres detecta y exhibe exclusivamente las inasistencias docentes que impactan a sus cursos a cargo.",
-  "Asignación y Gestión Multicurso de Preceptorías (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, UsuariosTab.tsx, StudentAttendanceManager.tsx y dataService.ts): Administradores y directivos ahora pueden asignar una o múltiples divisiones escolares a los preceptores tanto al aprobar nuevas solicitudes como al modificar o actualizar roles en el centro de control de Usuarios. Se añadió almacenamiento de cursos asignados en la base de datos de Appwrite, visualización de insignias de cursos a cargo en el directorio de usuarios (escritorio y móviles), y agrupación prioritaria 'Mis Cursos Asignados' en la planilla de toma de asistencia diaria."
+  "Restricción de Edición Docente y Gestión Exclusiva de Materias para Preceptores (ProfesoresTab.tsx, NewTeacherModal.tsx y page.tsx): Se blindó la información personal de los profesores (nombre completo, DNI, correo electrónico institucional, alta y baja de docentes) restringiéndola de manera exclusiva a los Administradores y Directivos del establecimiento. Los usuarios con rol de Preceptor tienen estrictamente deshabilitada la modificación de datos personales y la eliminación de docentes, pudiendo únicamente asignar y modificar las materias que dicta cada profesor a través del panel interactivo de materias (AssignTeacherSubjectsModal). La interfaz incorpora para preceptores el botón directo 'Materias' en cada tarjeta docente, acceso a configuración de docentes sin materias asignadas y un banner de estado informativo.",
+  "Protección en Formulario Docente (NewTeacherModal.tsx): Si se accede a la edición de un docente con rol de preceptor, los campos de nombre, DNI y email quedan bloqueados en modo solo lectura con aviso explicativo, permitiendo únicamente el guardado de las materias que dicta."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.23.1",
+    date: "24/09/2026 19:25 hs",
+    notes: [
+      "Visualización Exclusiva y Filtrado de Horarios para Preceptores (HorariosTab.tsx y FreeHoursWidget.tsx): Los usuarios con rol de Preceptor ahora visualizan de forma prioritaria y filtrada el cronograma y los horarios de clase de las divisiones y cursos escolares a los cuales fueron asignados. La interfaz incorpora selector inteligente acotado a sus divisiones, selector de 1 toque mediante botones táctiles rápidos (chips) para alternar entre sus cursos asignados, botón de alternancia 'Mis Cursos Asignados' / 'Ver Todos los Cursos' y exportación personalizada a Excel (Horario_Preceptoria_Curso.xlsx). Además, el panel de Horas Libres detecta y exhibe exclusivamente las inasistencias docentes que impactan a sus cursos a cargo.",
+      "Asignación y Gestión Multicurso de Preceptorías (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, UsuariosTab.tsx, StudentAttendanceManager.tsx y dataService.ts): Administradores y directivos ahora pueden asignar una o múltiples divisiones escolares a los preceptores tanto al aprobar nuevas solicitudes como al modificar o actualizar roles en el centro de control de Usuarios. Se añadió almacenamiento de cursos asignados en la base de datos de Appwrite, visualización de insignias de cursos a cargo en el directorio de usuarios (escritorio y móviles), y agrupación prioritaria 'Mis Cursos Asignados' en la planilla de toma de asistencia diaria."
+    ]
+  },
   {
     version: "v2.23.0",
     date: "24/09/2026 18:00 hs",

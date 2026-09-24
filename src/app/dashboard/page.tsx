@@ -486,6 +486,12 @@ export default function Dashboard() {
   const canManageAusencias = isSuperAdmin || isDirector;
   const canManageColaboradores = isSuperAdmin || isDirector;
 
+  // Jerarquía docente:
+  // Administrador y Directivo pueden dar de alta, editar información personal (nombre, DNI, email) y eliminar docentes.
+  // Preceptores no pueden modificar información del profesor; solo pueden modificar las materias.
+  const canManageTeacherInfo = isSuperAdmin || isDirector;
+  const canManageTeacherMaterias = isSuperAdmin || isDirector || isPreceptor;
+
   const askConfirm = (
     message: string,
     onConfirm: () => void,
@@ -1537,10 +1543,29 @@ export default function Dashboard() {
               usuarios={usuarios}
               horarios={horarios}
               isAdmin={isAdmin}
-              canManage={isAdmin || userProfile?.rol === 'preceptor'}
-              onOpenAddTeacher={() => setIsTeacherModalOpen(true)}
-              onEditTeacher={(p: Profesor) => { setEditingProfesor(p); setIsTeacherModalOpen(true); }}
-              onDeleteTeacher={handleDeleteProfesor}
+              canManage={canManageTeacherInfo}
+              canManageInfo={canManageTeacherInfo}
+              canManageMaterias={canManageTeacherMaterias}
+              userRole={userProfile?.rol}
+              onOpenAddTeacher={() => {
+                if (!canManageTeacherInfo) return;
+                setIsTeacherModalOpen(true);
+              }}
+              onEditTeacher={(p: Profesor) => {
+                if (!canManageTeacherInfo) {
+                  showToast("Solo administradores y directivos pueden modificar la información del docente.", "error");
+                  return;
+                }
+                setEditingProfesor(p);
+                setIsTeacherModalOpen(true);
+              }}
+              onDeleteTeacher={(p: Profesor) => {
+                if (!canManageTeacherInfo) {
+                  showToast("Solo administradores y directivos pueden eliminar docentes.", "error");
+                  return;
+                }
+                handleDeleteProfesor(p);
+              }}
               onNavigateToAusencias={(search: string) => { setActiveTab("ausencias"); setSearchQuery(search); }}
               onRefreshProfesores={() => getProfesores().then(setProfesores)}
               showToast={showToast}
@@ -1664,6 +1689,7 @@ export default function Dashboard() {
       <NewTeacherModal 
         isOpen={isTeacherModalOpen} 
         editingProfesor={editingProfesor}
+        userRole={userProfile?.rol}
         onClose={() => { setIsTeacherModalOpen(false); setEditingProfesor(null); }} 
         onSuccess={() => { getProfesores().then(setProfesores); showToast(editingProfesor ? "Docente actualizado" : "Profesor agregado", "success"); setEditingProfesor(null); }}
       />
