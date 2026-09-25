@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Client, Databases, Users, Query } from 'node-appwrite';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +8,21 @@ export async function POST(request: Request) {
 
     if (!userId && !email) {
       return NextResponse.json({ error: "Falta userId o email" }, { status: 400 });
+    }
+
+    // 🛡️ SECURITY AUDIT REF: Broken Access Control (OWASP A01)
+    // El solicitante debe autenticarse y poseer un rol jerárquico autorizado
+    if (!callerEmail || typeof callerEmail !== "string") {
+      return NextResponse.json({ error: "Petición no autorizada: falta identificación del operador solicitante." }, { status: 401 });
+    }
+
+    const cleanCallerEmail = callerEmail.toLowerCase().trim();
+
+    // Rate limiting para evitar borrado masivo automatizado
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`reject-user:${clientIp}`, 15, 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: "Demasiadas operaciones consecutivas. Esperá un minuto." }, { status: 429 });
     }
 
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -21,6 +37,18 @@ export async function POST(request: Request) {
     const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
     const db = new Databases(client);
     const usersService = new Users(client);
+
+    // Comprobación de privilegios en el servidor con la base de datos de usuarios
+    const callerDocs = await db.listDocuments(dbId, 'usuarios', [Query.equal('email', cleanCallerEmail)]);
+    if (callerDocs.total === 0 || !callerDocs.documents[0]) {
+      return NextResponse.json({ error: "El operador solicitante no está registrado en el sistema." }, { status: 403 });
+    }
+
+    const callerRole = (callerDocs.documents[0].rol || '').toLowerCase();
+    const authorizedRoles = ['admin', 'directivo', 'preceptor'];
+    if (!authorizedRoles.includes(callerRole)) {
+      return NextResponse.json({ error: "No tenés los permisos institucionales necesarios para rechazar o eliminar usuarios." }, { status: 403 });
+    }
 
     const cleanEmail = email ? String(email).toLowerCase().trim() : "";
     let userUid = "";

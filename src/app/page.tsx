@@ -7,6 +7,7 @@ import { ID } from "appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound, Info, BookOpen } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
+import OtpVerificationInput from "@/components/ui/OtpVerificationInput";
 import {
   getUserProfile, createUserProfile,
   getUserProfileByEmail, updateUserProfile,
@@ -39,6 +40,12 @@ function LoginContent() {
   const [forgotTimer, setForgotTimer] = useState(0);
   const [showForgotPass, setShowForgotPass] = useState(false);
 
+  // Registro con verificación previa de código OTP al Gmail
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const [registerOtpCode, setRegisterOtpCode] = useState("");
+  const [registerOtpToken, setRegisterOtpToken] = useState("");
+  const [registerTimer, setRegisterTimer] = useState(0);
+
   // Login
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +70,7 @@ function LoginContent() {
   const resetRegisterForm = useCallback(() => {
     setNombres(""); setApellidos(""); setTelefono("");
     setDni(""); setPassword("");
+    setRegisterStep(1); setRegisterOtpCode(""); setRegisterOtpToken(""); setRegisterTimer(0);
     setShowPassword(false); setErrorMsg(""); setSuccessMsg("");
   }, []);
 
@@ -185,12 +193,13 @@ function LoginContent() {
   }, [resetForgotForm, resetRegisterForm]);
 
   useEffect(() => {
-    if (forgotTimer <= 0) return;
+    if (forgotTimer <= 0 && registerTimer <= 0) return;
     const interval = setInterval(() => {
-      setForgotTimer(prev => prev - 1);
+      setForgotTimer(prev => (prev > 0 ? prev - 1 : 0));
+      setRegisterTimer(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, [forgotTimer]);
+  }, [forgotTimer, registerTimer]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -320,10 +329,10 @@ function LoginContent() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendRegisterCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
-    // Shared validations
+    // Validaciones de formulario
     if (!nombres || !apellidos || !email || !telefono || !dni || !password) {
       setErrorMsg("Completá todos los campos obligatorios."); return;
     }
@@ -344,18 +353,13 @@ function LoginContent() {
       setErrorMsg("El teléfono debe tener un formato válido con código de país."); return;
     }
 
-    setLoading(true); setErrorMsg("");
+    setLoading(true); setErrorMsg(""); setSuccessMsg("");
     try {
       const cleanEmail = email.toLowerCase().trim();
-      const fullName = `${nombres.trim()} ${apellidos.trim()}`;
 
-      // 🛡️ SECURITY AUDIT REF: Information Leakage Mitigation
-      // Eliminada la descarga masiva de la colección 'profesores'. Se consulta un único registro.
+      // Verificar si el alumno ya existe por DNI
       const preRegisteredTeacher = await getProfesorByEmail(cleanEmail);
-
-      const isTeacher = !!preRegisteredTeacher;
-
-      if (!isTeacher) {
+      if (!preRegisteredTeacher) {
         const exists = await checkAlumnoDNI(dni);
         if (exists) {
           setErrorMsg("Ya existe un alumno con ese DNI. Si ya te registraste, iniciá sesión.");
@@ -364,23 +368,79 @@ function LoginContent() {
         }
       }
 
+      // Despachar código OTP al Gmail del alumno/docente
+      const res = await fetch("/api/auth/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, type: "register" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo enviar el código de verificación al correo.");
+      }
+
+      if (data.token) setRegisterOtpToken(data.token);
+      setRegisterStep(2);
+      setRegisterTimer(60);
+      setSuccessMsg("¡Código de 6 dígitos enviado a tu correo! Ingresalo para validar tu casilla.");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error al solicitar el código de verificación.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendRegisterCode = async () => {
+    if (registerTimer > 0) return;
+    await handleSendRegisterCode();
+  };
+
+  const handleVerifyAndCompleteRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!registerOtpCode || registerOtpCode.trim().length !== 6) {
+      setErrorMsg("Ingresá el código numérico de 6 dígitos recibido.");
+      return;
+    }
+
+    setLoading(true); setErrorMsg(""); setSuccessMsg("");
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanCode = registerOtpCode.trim();
+
+    try {
+      // 1. Validar código OTP contra la API de verificación
+      const verifyRes = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: cleanEmail,
+          code: cleanCode,
+          token: registerOtpToken,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        throw new Error(verifyData.error || "Código de verificación incorrecto o expirado.");
+      }
+
+      // 2. Proceder a la creación de cuenta oficial en Appwrite
+      const fullName = `${nombres.trim()} ${apellidos.trim()}`;
+      const preRegisteredTeacher = await getProfesorByEmail(cleanEmail);
+      const isTeacher = !!preRegisteredTeacher;
+
       const user = await account.create({ userId: ID.unique(), email: cleanEmail, password: password, name: fullName });
       await account.createEmailPasswordSession(cleanEmail, password);
 
       // Check if there is already a profile in the 'usuarios' collection
       let preProfile = await getUserProfileByEmail(cleanEmail);
-      console.debug("[REGISTRO] Email buscado:", cleanEmail);
-      console.debug("[REGISTRO] Perfil pre-existente encontrado:", preProfile);
 
       if (isTeacher) {
-        // Teachers go in directly and get the active 'profesor' role
         if (preProfile?.id) {
           await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName, rol: "profesor" });
         } else {
           await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "profesor" });
         }
 
-        // Auto-update DNI and Name in the profesores collection
         if (preRegisteredTeacher && preRegisteredTeacher.id) {
           await updateProfesor(preRegisteredTeacher.id, { nombre: fullName, dni });
         }
@@ -397,7 +457,6 @@ function LoginContent() {
         await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName });
 
         if (!preProfile.rol.startsWith("pendiente") && preProfile.rol !== "pe") {
-          // Pre-authorized role (admin, directivo, preceptor, etc.) — enter directly
           setSuccessMsg(`¡Registro exitoso! Ingresando al panel como ${preProfile.rol}...`);
           setTimeout(() => {
             router.replace("/dashboard");
@@ -405,7 +464,6 @@ function LoginContent() {
           return;
         }
 
-        // Pre-existing but still pending
         await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
         await account.deleteSession("current");
         setRequestSuccess(true);
@@ -497,6 +555,19 @@ function LoginContent() {
                   Paso {forgotStep} de 2
                 </span>
               </div>
+            ) : activeMode === "register" && registerStep === 2 ? (
+              <div className="flex items-center justify-between mb-6 pb-2 border-b border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => setRegisterStep(1)}
+                  className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                >
+                  <ArrowLeft size={16} /> Modificar Datos
+                </button>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-full border border-[var(--verde-border)]">
+                  Paso 2 de 2: Código OTP
+                </span>
+              </div>
             ) : (
               <div className="bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)] flex mb-6">
                 {(["login", "register"] as const).map(mode => (
@@ -581,19 +652,15 @@ function LoginContent() {
                       </button>
                     </div>
 
-                    <div className="space-y-1 text-center">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block">
+                    <div className="space-y-2 py-1">
+                      <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block text-center">
                         Código de Verificación (6 dígitos)
                       </label>
-                      <input
-                        required
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={6}
-                        placeholder="••••••"
+                      <OtpVerificationInput
                         value={forgotCode}
-                        onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        className="w-full text-center font-mono text-2xl tracking-[0.4em] font-black bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 outline-none text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                        onChange={setForgotCode}
+                        autoFocus={true}
+                        hasError={!!errorMsg}
                       />
                     </div>
 
@@ -696,13 +763,12 @@ function LoginContent() {
                   <span className="text-[9px] text-[var(--text3)] uppercase font-black tracking-[0.2em]">Acceso institucional y jerárquico</span>
                 </div>
               </form>
-            ) : (
-              /* REGISTRO — Alumno o Profesor */
-              <form onSubmit={handleRegister} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar animate-fade-in">
+            ) : registerStep === 1 ? (
+              /* REGISTRO — Paso 1: Datos Personales */
+              <form onSubmit={handleSendRegisterCode} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar animate-fade-in">
 
                 {/* Nombres y Apellidos con Avatar 100% redondo de costado */}
                 <div className="flex items-center gap-3.5 sm:gap-4">
-                  {/* Avatar dinámico circular, sin estrellita */}
                   <div className="shrink-0" title="Tu avatar institucional se actualiza en vivo al escribir">
                     <UserAvatar
                       name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
@@ -753,8 +819,6 @@ function LoginContent() {
                   </div>
                 </div>
 
-                {/* Course selector removed — students are placed in standby and assigned by preceptor */}
-
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Contraseña (Mín. 8 caracteres)</label>
                   <div className="relative">
@@ -772,7 +836,10 @@ function LoginContent() {
                   className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2">
                   {loading
                     ? <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
-                    : "Crear Cuenta / Registrarse"}
+                    : <>
+                        <Mail size={18} />
+                        Continuar: Verificar Correo
+                      </>}
                 </button>
 
                 {/* Texto de registro institucional sutil / pop-out en la parte inferior */}
@@ -796,6 +863,67 @@ function LoginContent() {
                       </p>
                     </div>
                   )}
+                </div>
+              </form>
+            ) : (
+              /* REGISTRO — Paso 2: Verificación OTP con casilla animada v3 */
+              <form onSubmit={handleVerifyAndCompleteRegister} className="space-y-4 animate-fade-in">
+                <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-between">
+                  <div className="truncate mr-2">
+                    <span className="opacity-75 font-normal block text-[10px]">Código de validación enviado a:</span>
+                    <span className="font-mono font-bold text-xs">{email}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setRegisterStep(1); setErrorMsg(""); }}
+                    className="text-[10px] uppercase font-black underline hover:opacity-80 shrink-0"
+                  >
+                    Modificar
+                  </button>
+                </div>
+
+                <div className="space-y-2 py-2">
+                  <label className="text-[10px] font-black uppercase text-[var(--text3)] block text-center">
+                    Ingresá el código numérico de 6 dígitos
+                  </label>
+                  <OtpVerificationInput
+                    value={registerOtpCode}
+                    onChange={setRegisterOtpCode}
+                    autoFocus={true}
+                    hasError={!!errorMsg}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    disabled={loading || registerTimer > 0}
+                    onClick={handleResendRegisterCode}
+                    className="text-[11px] font-bold text-[var(--text3)] hover:text-[var(--verde)] disabled:opacity-50 transition-colors"
+                  >
+                    {registerTimer > 0 ? `Reenviar código en ${registerTimer}s` : "¿No te llegó? Reenviar código"}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || registerOtpCode.length !== 6}
+                  className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles size={18} />
+                      Validar y Completar Registro
+                    </>
+                  )}
+                </button>
+
+                <div className="pt-2 text-center">
+                  <span className="text-[10px] text-[var(--text3)]">
+                    Al confirmar, validaremos tu casilla institucional y crearemos tu usuario de acceso.
+                  </span>
                 </div>
               </form>
             )}

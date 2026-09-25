@@ -29,6 +29,27 @@ export function generateOtpToken(email: string, code: string, ttlMinutes = DEFAU
   return `${expiresAt}.${hmac}`;
 }
 
+// Registro en memoria de tokens ya consumidos para prevenir ataques de repetición (Replay Attacks)
+const usedTokensMap = new Map<string, number>();
+
+function purgeExpiredUsedTokens(): void {
+  const now = Date.now();
+  for (const [t, exp] of usedTokensMap.entries()) {
+    if (now > exp) usedTokensMap.delete(t);
+  }
+}
+
+/**
+ * Invalida un token OTP tras su uso exitoso.
+ */
+export function markTokenUsed(token: string): void {
+  try {
+    const [expiresAtStr] = token.split('.');
+    const exp = parseInt(expiresAtStr, 10) || (Date.now() + DEFAULT_TTL_MINUTES * 60 * 1000);
+    usedTokensMap.set(token, exp);
+  } catch {}
+}
+
 /**
  * Valida un código OTP contra el token firmado recibido.
  * Es 100% independiente de instancias en memoria y funciona perfecto en Vercel Serverless.
@@ -38,6 +59,12 @@ export function verifyOtpToken(email: string, code: string, token: string): { va
     if (!token || typeof token !== 'string') {
       return { valid: false, error: 'No se encontró el token de verificación. Solicitá un nuevo código.' };
     }
+
+    purgeExpiredUsedTokens();
+    if (usedTokensMap.has(token)) {
+      return { valid: false, error: 'Este código de verificación ya ha sido utilizado. Solicitá uno nuevo.' };
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
     const cleanCode = code.trim();
     const [expiresAtStr, hmac] = token.split('.');

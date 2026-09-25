@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Client, Users, Databases, ID, Query } from 'node-appwrite';
-import { verifyOtp, verifyOtpToken } from '@/lib/otpStore';
+import { verifyOtp, verifyOtpToken, markTokenUsed, clearOtp } from '@/lib/otpStore';
+import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,24 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanCode = code.trim();
+
+    // 🛡️ SECURITY AUDIT REF: Detección y bloqueo contra Ataques de Fuerza Bruta en Códigos OTP
+    const clientIp = getClientIp(request);
+    const ipCheck = checkRateLimit(`verify-otp:ip:${clientIp}`, 10, 10 * 60 * 1000);
+    if (!ipCheck.allowed) {
+      return NextResponse.json(
+        { error: `Demasiados intentos fallidos desde esta conexión. Por favor esperá ${Math.ceil(ipCheck.retryAfterSeconds / 60)} minuto(s).` },
+        { status: 429 }
+      );
+    }
+
+    const emailAttemptCheck = checkRateLimit(`verify-otp:email:${cleanEmail}`, 6, 10 * 60 * 1000);
+    if (!emailAttemptCheck.allowed) {
+      return NextResponse.json(
+        { error: `Demasiados intentos fallidos para esta cuenta. Por seguridad, solicitá un nuevo código en ${Math.ceil(emailAttemptCheck.retryAfterSeconds / 60)} minuto(s).` },
+        { status: 429 }
+      );
+    }
 
     // Conectar a Appwrite Server SDK con Admin Key
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -94,6 +113,13 @@ export async function POST(request: Request) {
 
     // 4. Actualizar la contraseña en el servicio de Auth de Appwrite
     await users.updatePassword(targetUser.$id, newPassword);
+
+    // 🛡️ SECURITY AUDIT REF: Invalida el token de un solo uso y limpia el caché de verificación
+    if (verificationToken) {
+      markTokenUsed(verificationToken);
+    }
+    clearOtp(cleanEmail);
+    resetRateLimit(`verify-otp:email:${cleanEmail}`);
 
     // 5. Registrar log de auditoría
     try {

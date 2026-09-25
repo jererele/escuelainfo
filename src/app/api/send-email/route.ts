@@ -1,13 +1,51 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export async function POST(request: Request) {
   try {
+    // 🛡️ SECURITY AUDIT REF: Prevención de Open Mail Relay y Abuso de Recursos
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`send-email:${clientIp}`, 12, 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Límite de envíos excedido. Esperá ${rateCheck.retryAfterSeconds} segundos antes de enviar más correos.` },
+        { status: 429 }
+      );
+    }
+
+    // Validación de Same-Origin para mitigar CSRF
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      const originHost = origin.replace(/^https?:\/\//, '').split(':')[0];
+      const requestHost = host.split(':')[0];
+      if (originHost !== requestHost && originHost !== 'localhost') {
+        return NextResponse.json({ error: "Origen de petición no permitido." }, { status: 403 });
+      }
+    }
+
     const { to, bcc, replyTo, subject, text, html } = await request.json();
 
     if ((!to && !bcc) || !subject) {
       return NextResponse.json({ error: "Faltan parámetros de destinatario ('to' o 'bcc') o 'subject'" }, { status: 400 });
     }
+
+    // Sanitizar asunto contra Header Injection (remover saltos de línea)
+    const cleanSubject = String(subject).replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
+
+    // Validar destinatario(s)
+    if (to && !EMAIL_REGEX.test(String(to).trim())) {
+      return NextResponse.json({ error: "El correo destinatario 'to' no tiene un formato válido." }, { status: 400 });
+    }
+
+    const rawBccList = Array.isArray(bcc) ? bcc.filter(Boolean) : (bcc ? [bcc] : []);
+    const bccList = rawBccList
+      .map(e => String(e).trim().toLowerCase())
+      .filter(e => EMAIL_REGEX.test(e))
+      .slice(0, 300); // Límite máximo de seguridad de 300 destinatarios por lote
 
     const user = process.env.SMTP_USER?.trim();
     const pass = process.env.SMTP_PASS?.replace(/\s+/g, "");
@@ -30,12 +68,10 @@ export async function POST(request: Request) {
 
     const mailOptions: any = {
       from: process.env.SMTP_FROM || `"Escuela N° 713 - EscuelaInfo" <${user}>`,
-      subject,
+      subject: cleanSubject,
       text: text || "Notificación de EscuelaInfo",
       html: html || `<p>${text || "Notificación de EscuelaInfo"}</p>`,
     };
-
-    const bccList = Array.isArray(bcc) ? bcc.filter(Boolean) : (bcc ? [bcc] : []);
 
     if (to) {
       mailOptions.to = to;

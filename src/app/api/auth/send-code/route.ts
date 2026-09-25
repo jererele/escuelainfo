@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { Client, Users, Databases, Query } from 'node-appwrite';
 import nodemailer from 'nodemailer';
 import { setOtp, generateOtpToken } from '@/lib/otpStore';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, type = 'reset' } = await request.json();
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'Debes proporcionar un correo electrónico válido.' }, { status: 400 });
@@ -13,7 +14,25 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Verificar si el usuario existe en Appwrite
+    // 🛡️ SECURITY AUDIT REF: Protección contra Fuerza Bruta y Spam (Rate Limiting)
+    const clientIp = getClientIp(request);
+    const ipCheck = checkRateLimit(`send-code:ip:${clientIp}`, 8, 10 * 60 * 1000);
+    if (!ipCheck.allowed) {
+      return NextResponse.json(
+        { error: `Demasiadas solicitudes desde esta conexión. Por favor esperá ${Math.ceil(ipCheck.retryAfterSeconds / 60)} minuto(s).` },
+        { status: 429 }
+      );
+    }
+
+    const emailCheck = checkRateLimit(`send-code:email:${cleanEmail}`, 3, 10 * 60 * 1000);
+    if (!emailCheck.allowed) {
+      return NextResponse.json(
+        { error: `Se superó el límite de códigos enviados a esta casilla. Por favor esperá ${Math.ceil(emailCheck.retryAfterSeconds / 60)} minuto(s).` },
+        { status: 429 }
+      );
+    }
+
+    // 1. Verificar existencia del usuario en Appwrite
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
     const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
     const apiKey = process.env.APPWRITE_API_KEY;
@@ -35,7 +54,14 @@ export async function POST(request: Request) {
       console.error('Error buscando usuario en Appwrite:', e?.message);
     }
 
-    if (!userFound) {
+    if (type === 'register' && userFound) {
+      return NextResponse.json(
+        { error: 'Ya existe una cuenta registrada con este correo. Por favor iniciá sesión con tu contraseña.' },
+        { status: 409 }
+      );
+    }
+
+    if (type === 'reset' && !userFound) {
       return NextResponse.json(
         { error: 'No se encontró ninguna cuenta registrada con este correo electrónico.' },
         { status: 404 }
@@ -66,6 +92,19 @@ export async function POST(request: Request) {
     const smtpUser = process.env.SMTP_USER?.trim();
     const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '');
 
+    const isRegister = type === 'register';
+    const emailSubtitle = isRegister ? 'Escuela N° 713 · Validación de Correo' : 'Escuela N° 713 · Seguridad';
+    const emailTitle = isRegister ? 'Código de Registro Institucional' : 'Código de Verificación';
+    const emailText = isRegister
+      ? 'Recibimos una solicitud para crear tu cuenta en la plataforma escolar EscuelaInfo. Utilizá el siguiente código de seguridad de 6 dígitos para validar tu correo electrónico y completar tu registro:'
+      : 'Recibimos una solicitud para modificar la contraseña de tu cuenta institucional. Utilizá el siguiente código de seguridad de 6 dígitos para confirmar tu identidad:';
+    const emailInstructions = isRegister
+      ? 'Ingresá este código en el formulario de registro para verificar tu casilla y activar tu cuenta.'
+      : 'Ingresá este código en la pantalla donde estabas realizando el trámite para establecer tu nueva clave.';
+    const emailSubject = isRegister
+      ? `Tu código de verificación de registro en EscuelaInfo: ${code}`
+      : `Tu código de verificación de EscuelaInfo: ${code}`;
+
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="es">
@@ -89,21 +128,20 @@ export async function POST(request: Request) {
       <body>
         <div class="container">
           <div class="logo">Escuela<span>Info</span></div>
-          <div class="subtitle">Escuela N° 713 · Seguridad</div>
-          <div class="title">Código de Verificación</div>
+          <div class="subtitle">${emailSubtitle}</div>
+          <div class="title">${emailTitle}</div>
           <div class="text">
-            Recibimos una solicitud para modificar la contraseña de tu cuenta institucional.
-            Utilizá el siguiente código de seguridad de 6 dígitos para confirmar tu identidad:
+            ${emailText}
           </div>
           <div class="code-box">
             <div class="code" style="font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 44px; font-weight: 800; letter-spacing: 12px; padding-left: 12px; color: #10B981; margin: 0; font-variant-numeric: tabular-nums; line-height: 1.2;">${code}</div>
             <div class="expiry">Válido durante 10 minutos</div>
           </div>
           <div class="text" style="font-size: 12px; color: #94a3b8;">
-            Ingresá este código en la pantalla donde estabas realizando el trámite para establecer tu nueva clave.
+            ${emailInstructions}
           </div>
           <div class="footer">
-            Si vos no solicitaste este código, podés ignorar este correo de forma segura. Tu contraseña actual no será modificada.<br>
+            Si vos no solicitaste este código, podés ignorar este correo de forma segura.<br>
             © ${new Date().getFullYear()} Escuela N° 713 &quot;Juan Abdala Chayep&quot; · Esquel, Chubut.
           </div>
         </div>
@@ -112,7 +150,7 @@ export async function POST(request: Request) {
     `;
 
     if (!smtpUser || !smtpPass) {
-      console.log(`[CÓDIGO OTP SIMULADO] Email: ${cleanEmail} -> Código: ${code}`);
+      console.log(`[CÓDIGO OTP SIMULADO] Email: ${cleanEmail} (${type}) -> Código: ${code}`);
       const res = NextResponse.json({
         success: true,
         message: 'Código de verificación generado (Modo simulación local).',
@@ -140,8 +178,8 @@ export async function POST(request: Request) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || `"EscuelaInfo Seguridad" <${smtpUser}>`,
       to: cleanEmail,
-      subject: `Tu código de verificación de EscuelaInfo: ${code}`,
-      text: `Tu código de verificación de EscuelaInfo es: ${code}. Tiene una validez de 10 minutos. Si no solicitaste este código, ignorá este mensaje.`,
+      subject: emailSubject,
+      text: `${emailTitle}: ${code}. Válido por 10 minutos.`,
       html: htmlContent,
     });
 

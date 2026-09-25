@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
+import OtpVerificationInput from "@/components/ui/OtpVerificationInput";
 
 interface Props {
   isOpen: boolean;
@@ -393,17 +394,17 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
                     )}
                   </div>
 
-                  <Field label="Código de 6 dígitos" icon={<KeyRound size={11} />}>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      inputMode="numeric"
-                      placeholder="123456"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 text-center tracking-[8px] font-black text-xl text-[var(--verde)] outline-none focus:border-[var(--verde)] transition-all font-mono"
+                  <div className="space-y-1 text-center py-1">
+                    <label className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center justify-center gap-1.5 mb-1.5">
+                      <KeyRound size={11} />
+                      <span>Código de 6 dígitos</span>
+                    </label>
+                    <OtpVerificationInput
                       value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                      onChange={setOtpCode}
+                      autoFocus={true}
                     />
-                  </Field>
+                  </div>
 
                   <Field label="Nueva Contraseña" icon={<Lock size={11} />}>
                     <div className="relative">
