@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.27.1";
-export const APP_BUILD_DATE = "25/09/2026 16:35 hs";
+export const APP_VERSION = "v2.27.2";
+export const APP_BUILD_DATE = "25/09/2026 16:40 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección Crítica de Posicionamiento y Desplazamiento en Modales de Roles y Gestión Institucional (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, PreceptoresTab.tsx, AssignTeacherSubjectsModal.tsx y globals.css): Se resolvió la anomalía reportada donde al abrir el modal para cambiar el rol de un usuario ('Cambiar Rol de Usuario') o al aprobar solicitudes en escritorio y celulares, la ventana modal quedaba desplazada fuera de la pantalla en la parte inferior obligando al usuario a scrollear hacia abajo para interactuar con ella. 1) Implementación de Portal Nativo (createPortal): Se desacoplaron todos los modales de la jerarquía interna de las pestañas (UsuariosTab, PreceptoresTab, ProfesoresTab) montándolos directamente sobre 'document.body'. Esto erradica la trampa de contexto generada por contenedores con transformaciones CSS (animate-fade-in), garantizando que 'position: fixed' se alinee al 100% de la ventana visible (viewport) del navegador. 2) Centrado Absoluto y Adaptabilidad Móvil Fluida: En computadoras, la ventana modal aparece centrada en el medio exacto del monitor con backdrop desenfocado (backdrop-blur-sm); en celulares, se ancla de forma inmediata y suave como panel inferior táctil ('bottom-sheet') sin desfasajes verticales. 3) Bloqueo de Scroll de Fondo y Foco Seguro: Se integró bloqueo automático de desplazamiento en el cuerpo de la página (overflow: hidden) mientras cualquier modal esté abierto, y se modificó el auto-scroll de selección de roles para que actúe exclusivamente dentro del contenedor interno del modal (modalBodyRef.scrollTo) con preventScroll: true en el selector de cursos, eliminando cualquier salto de pantalla no deseado."
+  "Privacidad y Protección de Cuentas de Administrador en el Directorio de Usuarios (UsuariosTab.tsx): Se implementó la restricción de visibilidad para cuentas con rol de Administrador en el centro de control de Usuarios. Cuando el operador que navega la sección posee rol de Preceptor o Directivo (o cualquier rango no administrativo), los administradores institucionales no figuran en el listado de usuarios activos ni en solicitudes pendientes, se ocultan del filtro por rol institucional y se recalculan los contadores generales, garantizando que las cuentas de administradores solo sean visibles y gestionables cuando quien consulta la plataforma es un Administrador."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.27.1",
+    date: "25/09/2026 16:35 hs",
+    notes: [
+      "Corrección Crítica de Posicionamiento y Desplazamiento en Modales de Roles y Gestión Institucional (ChangeUserRoleModal.tsx, ApproveStudentRoleModal.tsx, PreceptoresTab.tsx, AssignTeacherSubjectsModal.tsx y globals.css): Se resolvió la anomalía reportada donde al abrir el modal para cambiar el rol de un usuario ('Cambiar Rol de Usuario') o al aprobar solicitudes en escritorio y celulares, la ventana modal quedaba desplazada fuera de la pantalla en la parte inferior obligando al usuario a scrollear hacia abajo para interactuar con ella. 1) Implementación de Portal Nativo (createPortal): Se desacoplaron todos los modales de la jerarquía interna de las pestañas (UsuariosTab, PreceptoresTab, ProfesoresTab) montándolos directamente sobre 'document.body'. Esto erradica la trampa de contexto generada por contenedores con transformaciones CSS (animate-fade-in), garantizando que 'position: fixed' se alinee al 100% de la ventana visible (viewport) del navegador. 2) Centrado Absoluto y Adaptabilidad Móvil Fluida: En computadoras, la ventana modal aparece centrada en el medio exacto del monitor con backdrop desenfocado (backdrop-blur-sm); en celulares, se ancla de forma inmediata y suave como panel inferior táctil ('bottom-sheet') sin desfasajes verticales. 3) Bloqueo de Scroll de Fondo y Foco Seguro: Se integró bloqueo automático de desplazamiento en el cuerpo de la página (overflow: hidden) mientras cualquier modal esté abierto, y se modificó el auto-scroll de selección de roles para que actúe exclusivamente dentro del contenedor interno del modal (modalBodyRef.scrollTo) con preventScroll: true en el selector de cursos, eliminando cualquier salto de pantalla no deseado."
+    ]
+  },
   {
     version: "v2.27.0",
     date: "25/09/2026 16:10 hs",

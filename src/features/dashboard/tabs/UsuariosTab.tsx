@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { 
   Users, 
@@ -67,15 +67,35 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const [roleChangingUser, setRoleChangingUser] = useState<UserProfile | null>(null);
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
 
+  // Determinar si el usuario autenticado tiene rol de Administrador
+  const isOperatorAdmin = Boolean(
+    isAdmin || (userProfile?.rol && userProfile.rol.toLowerCase().trim() === "admin")
+  );
+
+  useEffect(() => {
+    if (!isOperatorAdmin && roleFilter === "admin") {
+      setRoleFilter("todos");
+    }
+  }, [isOperatorAdmin, roleFilter]);
+
   // Todas las solicitudes de acceso pendientes
   const pendingRequests = useMemo(() => {
-    return usuarios.filter(u => isPendingRole(u.rol));
-  }, [usuarios]);
+    return usuarios.filter(u => {
+      if (!isPendingRole(u.rol)) return false;
+      if (!isOperatorAdmin && (u.rol === "admin" || u.rol === "pendiente_admin")) return false;
+      return true;
+    });
+  }, [usuarios, isOperatorAdmin]);
 
   // Usuarios activos (con rol oficial asignado)
+  // Los administradores solo son visibles si quien consulta el directorio es Administrador
   const activeUsers = useMemo(() => {
-    return usuarios.filter(u => !isPendingRole(u.rol));
-  }, [usuarios]);
+    return usuarios.filter(u => {
+      if (isPendingRole(u.rol)) return false;
+      if (!isOperatorAdmin && u.rol === "admin") return false;
+      return true;
+    });
+  }, [usuarios, isOperatorAdmin]);
 
   // Filtrado de solicitudes pendientes por búsqueda
   const filteredPending = useMemo(() => {
@@ -247,7 +267,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             <option value="profesor">Profesores</option>
             <option value="preceptor">Preceptores</option>
             {activeSubTab === "activos" && <option value="directivo">Directivos</option>}
-            {activeSubTab === "activos" && <option value="admin">Administradores</option>}
+            {activeSubTab === "activos" && isOperatorAdmin && <option value="admin">Administradores</option>}
           </select>
         </div>
       </div>
