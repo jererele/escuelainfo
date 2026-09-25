@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Mail } from 'lucide-react';
 import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
+import { APP_VERSION } from '@/lib/version';
 
 // ─── Footer global de EscuelaInfo — SKBCraft ─────────────────────────────────
 
@@ -76,26 +78,50 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* ── Bloque derecho: Links legales ────────────────────────────────── */}
-          <nav
-            aria-label="Links legales"
-            className="flex items-center gap-1"
-          >
-            <FooterLink href="/terminos" label="Términos de Servicio" />
-            <Separator />
-            <FooterLink href="/contacto" label="Consultas Legales" />
-            <Separator />
-            <FooterLink href="/privacidad" label="Privacidad" />
-          </nav>
+          {/* ── Bloque derecho: Email oficial y Links legales ───────────────── */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5">
+            <a
+              href="mailto:skbcraft.info@gmail.com"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
+              style={{
+                color: 'var(--text2)',
+                background: 'var(--bg2)',
+                border: '1px solid var(--border)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--verde)';
+                e.currentTarget.style.borderColor = 'var(--verde-border)';
+                e.currentTarget.style.background = 'var(--verde-bg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text2)';
+                e.currentTarget.style.borderColor = 'var(--border)';
+                e.currentTarget.style.background = 'var(--bg2)';
+              }}
+              aria-label="Correo oficial de contacto: skbcraft.info@gmail.com"
+            >
+              <Mail size={13} style={{ color: 'var(--verde)' }} className="shrink-0" />
+              <span>skbcraft.info@gmail.com</span>
+            </a>
+
+            <nav
+              aria-label="Links legales"
+              className="flex items-center gap-1"
+            >
+              <FooterLink href="/terminos" label="Términos de Servicio" />
+              <Separator />
+              <FooterLink href="/privacidad" label="Privacidad" />
+            </nav>
+          </div>
 
         </div>
 
-        {/* ── Línea inferior: tagline ──────────────────────────────────────────── */}
+        {/* ── Línea inferior: tagline con versión ─────────────────────────────── */}
         <p
           className="text-center text-[10px] mt-3"
           style={{ color: 'var(--text3)', opacity: 0.65 }}
         >
-          EscuelaInfo · Tecnología con propósito educativo · Desarrollado por{' '}
+          EscuelaInfo {APP_VERSION} · Tecnología con propósito educativo · Desarrollado por{' '}
           <span style={{ color: 'var(--verde)', opacity: 1 }}>SKBCraft</span>
         </p>
       </div>

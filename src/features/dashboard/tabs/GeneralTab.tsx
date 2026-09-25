@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { Ausencia, Horario, Alumno, Profesor } from "@/lib/dataService";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
-import ContactForm from "@/components/ContactForm";
 import { TiltCard, GravityText } from "@/components/ui/rare";
 
 interface GeneralTabProps {
@@ -201,11 +200,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* FORMULARIO DE CONSULTAS CONTROLADO */}
-      <div className="mt-12 max-w-2xl mx-auto animate-fade-in">
-        <ContactForm showToast={showToast} />
       </div>
     </div>
   );

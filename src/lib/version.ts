@@ -4,15 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.24.0";
-export const APP_BUILD_DATE = "24/09/2026 19:50 hs";
+export const APP_VERSION = "v2.24.1";
+export const APP_BUILD_DATE = "24/09/2026 21:15 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Nueva Pestaña y Módulo de Preceptores para Directivos y Administradores (PreceptoresTab.tsx, TopNavSidebar.tsx, Sidebar.tsx y page.tsx): Se desarrolló una sección exclusiva y reservada únicamente para los roles Directivo y Administrador orientada al control integral del cuerpo de preceptoría. Permite visualizar información completa de cada preceptor (nombre, correo institucional, divisiones a cargo), métricas de cobertura escolar (total de preceptores, cursos cubiertos, cursos sin preceptor y porcentaje de cobertura institucional), una matriz interactiva con todas las divisiones escolares y un modal de asignación rápida que permite vincular o desvincular múltiples cursos a cada preceptor con persistencia inmediata y registro en auditoría.",
-  "Gobernanza Estricta de Comunicados Institucionales (SendNoticeModal.tsx y page.tsx): Se blindó el sistema de envío de avisos y notificaciones por correo. Los Preceptores ahora tienen habilitado el despacho de comunicados única y exclusivamente a las divisiones que tienen asignadas a su cargo (con opción individual por curso o masiva a todos sus cursos asignados), quedando estrictamente inhabilitados para emitir avisos globales a toda la escuela. La emisión de comunicados generales a toda la comunidad educativa (Toda la Escuela, Todos los Alumnos, Todos los Profesores y Usuarios Registrados) queda reservada de forma exclusiva para el Equipo Directivo y Administradores."
+  "Integración de Correo Oficial en el Footer y Remoción de Formulario de Consultas (GeneralTab.tsx y Footer.tsx): Se retiró el formulario de 'Email de Consultas' del pie del panel de inicio (GeneralTab.tsx) para limpiar la interfaz del dashboard. Se incorporó el correo oficial de contacto institucional ('skbcraft.info@gmail.com') directamente en el pie de página global (Footer.tsx) con enlace interactivo mailto, icono vectorial de Lucide y estilizado dinámico, además de integrar la constante APP_VERSION en el tagline oficial del pie de página."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.24.0",
+    date: "24/09/2026 19:50 hs",
+    notes: [
+      "Nueva Pestaña y Módulo de Preceptores para Directivos y Administradores (PreceptoresTab.tsx, TopNavSidebar.tsx, Sidebar.tsx y page.tsx): Se desarrolló una sección exclusiva y reservada únicamente para los roles Directivo y Administrador orientada al control integral del cuerpo de preceptoría. Permite visualizar información completa de cada preceptor (nombre, correo institucional, divisiones a cargo), métricas de cobertura escolar (total de preceptores, cursos cubiertos, cursos sin preceptor y porcentaje de cobertura institucional), una matriz interactiva con todas las divisiones escolares y un modal de asignación rápida que permite vincular o desvincular múltiples cursos a cada preceptor con persistencia inmediata y registro en auditoría.",
+      "Gobernanza Estricta de Comunicados Institucionales (SendNoticeModal.tsx y page.tsx): Se blindó el sistema de envío de avisos y notificaciones por correo. Los Preceptores ahora tienen habilitado el despacho de comunicados única y exclusivamente a las divisiones que tienen asignadas a su cargo (con opción individual por curso o masiva a todos sus cursos asignados), quedando estrictamente inhabilitados para emitir avisos globales a toda la escuela. La emisión de comunicados generales a toda la comunidad educativa (Toda la Escuela, Todos los Alumnos, Todos los Profesores y Usuarios Registrados) queda reservada de forma exclusiva para el Equipo Directivo y Administradores."
+    ]
+  },
   {
     version: "v2.23.3",
     date: "24/09/2026 19:42 hs",
