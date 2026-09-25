@@ -66,9 +66,10 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const refreshData = async () => {
     setLoading(true);
     try {
+      const canManage = role === "admin" || role === "directivo" || role === "preceptor";
       const [profs, als, mesasData] = await Promise.all([
         getProfesores(),
-        getAlumnos(),
+        canManage ? getAlumnos() : Promise.resolve([]),
         getMesasExamen(true),
       ]);
       setProfesores(profs);
@@ -444,9 +445,22 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                   </div>
 
                   <div>
-                    <span className="font-bold text-[var(--text3)] uppercase text-[9px] tracking-wider block">Alumnos ({(m.alumnosInscriptos || []).length})</span>
+                    <span className="font-bold text-[var(--text3)] uppercase text-[9px] tracking-wider block">
+                      Alumnos ({(m.alumnosInscriptos || []).length})
+                    </span>
                     <p className="text-[var(--text2)] truncate font-medium">
-                      {(m.alumnosInscriptos && m.alumnosInscriptos.length > 0) ? m.alumnosInscriptos.join(", ") : "Sin inscriptos"}
+                      {role === "alumno" ? (
+                        (m.alumnosInscriptos && m.alumnosInscriptos.length > 0) ? (
+                          <span>
+                            {m.alumnosInscriptos.length} inscripto(s)
+                            {userProfile?.nombre && m.alumnosInscriptos.some(a => a.toLowerCase().includes((userProfile.nombre || "").toLowerCase())) && (
+                              <span className="text-[var(--verde)] ml-1 font-bold">· (Estás inscripto)</span>
+                            )}
+                          </span>
+                        ) : "Sin inscriptos"
+                      ) : (
+                        (m.alumnosInscriptos && m.alumnosInscriptos.length > 0) ? m.alumnosInscriptos.join(", ") : "Sin inscriptos"
+                      )}
                     </p>
                   </div>
                 </div>

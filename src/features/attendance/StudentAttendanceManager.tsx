@@ -70,16 +70,18 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     }
   }, [role, preceptorCursos, selectedCurso]);
 
-  // Cargar datos básicos según el rol
+  // Cargar datos condicionalmente según el rol (Privacidad estricta para alumnos)
   useEffect(() => {
-    getCursos().then(setCursos);
-    getAlumnos().then(setAlumnos);
-
-    if (role === "alumno" && userProfile?.email) {
+    if (role !== "alumno") {
+      getCursos().then(setCursos);
+      getAlumnos().then(setAlumnos);
+    } else if (userProfile?.email) {
+      // Privacidad absoluta: el alumno solo obtiene su propio registro y nunca el de los demás
       getAlumnos().then(als => {
         const al = als.find(a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase());
         if (al) {
           setAlumnoRecord(al);
+          setAlumnos([al]);
           cargarHistorialAlumno(al.id || al.dni);
         }
       });

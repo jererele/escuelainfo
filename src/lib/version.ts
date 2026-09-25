@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.25.0";
-export const APP_BUILD_DATE = "24/09/2026 21:55 hs";
+export const APP_VERSION = "v2.26.0";
+export const APP_BUILD_DATE = "24/09/2026 22:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Asignación Bidireccional de Cursos y Preceptores (PreceptoresTab.tsx, CursosTab.tsx y dashboard/page.tsx): Se potenció la gestión de asignaciones de preceptoría permitiendo la vinculación tanto desde el preceptor hacia los cursos como desde cada curso hacia los preceptores. En PreceptoresTab, se añadió un botón principal de asignación en la cabecera, un selector rápido de preceptores dentro del modal para alternar sin salir, y se hicieron interactivas todas las tarjetas de divisiones escolares del 'Mapa General de Divisiones' (permitiendo hacer clic en cualquier curso, especialmente los que figuran 'Sin Preceptor', para asignar preceptores con un solo clic). Asimismo, en CursosTab se integró la visualización en tiempo real del preceptor a cargo en cada tarjeta de aula junto con un acceso directo para gestionar su asignación de inmediato."
+  "Privacidad Estricta y Protección de Datos Personales (TopNavSidebar.tsx, Sidebar.tsx, AusenciasTab.tsx, StudentAttendanceManager.tsx, ExamBoardManager.tsx y dashboard/page.tsx): Se implementó un blindaje de privacidad para alumnos y profesores en toda la plataforma. Para alumnos: se restringió la carga de datos en memoria para que nunca descarguen ni almacenen la lista de otros compañeros (DNI, email, teléfono y nombre); en Mesas de Examen y Asistencias, los alumnos solo visualizan su propio estado o confirmación sin exponer los datos de los demás estudiantes. Para profesores: se bloqueó el acceso a la pestaña 'Profesores' (reservada a Directivos, Admins y Preceptores), protegiendo DNI, email y teléfono de todo el cuerpo docente; en la pestaña 'Ausencias', los profesores únicamente pueden ver su propio historial y solicitudes; asimismo, se protegió la confidencialidad médica de motivos y certificados adjuntos, quedando accesibles exclusivamente para el docente titular y el Equipo Directivo/Administrador."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.25.0",
+    date: "24/09/2026 21:55 hs",
+    notes: [
+      "Asignación Bidireccional de Cursos y Preceptores (PreceptoresTab.tsx, CursosTab.tsx y dashboard/page.tsx): Se potenció la gestión de asignaciones de preceptoría permitiendo la vinculación tanto desde el preceptor hacia los cursos como desde cada curso hacia los preceptores. En PreceptoresTab, se añadió un botón principal de asignación en la cabecera, un selector rápido de preceptores dentro del modal para alternar sin salir, y se hicieron interactivas todas las tarjetas de divisiones escolares del 'Mapa General de Divisiones' (permitiendo hacer clic en cualquier curso, especialmente los que figuran 'Sin Preceptor', para asignar preceptores con un solo clic). Asimismo, en CursosTab se integró la visualización en tiempo real del preceptor a cargo en cada tarjeta de aula junto con un acceso directo para gestionar su asignación de inmediato."
+    ]
+  },
   {
     version: "v2.24.3",
     date: "24/09/2026 21:30 hs",

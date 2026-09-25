@@ -105,7 +105,7 @@ export default function Sidebar({
     { id: "ausencias", label: "Ausencias", icon: <ClipboardList size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "mesas-examen", label: "Mesas Examen", icon: <ClipboardCheck size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "horarios", label: "Horarios", icon: <CalendarDays size={20} />, roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
-    { id: "profesores", label: "Profesores", icon: <GraduationCap size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "profesores", label: "Profesores", icon: <GraduationCap size={20} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "preceptores", label: "Preceptores", icon: <ShieldCheck size={20} />, roles: ["admin", "directivo"] },
     { id: "alumnos", label: "Alumnos", icon: <Users size={20} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "cursos", label: "Cursos", icon: <FolderOpen size={20} />, roles: ["admin", "directivo", "preceptor"] },

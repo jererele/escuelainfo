@@ -342,15 +342,36 @@ export default function Dashboard() {
             return;
           }
 
-          // Cargar datos condicionalmente según el rol con suscripciones en tiempo real
+          // Cargar datos condicionalmente según el rol con suscripciones en tiempo real y privacidad estricta
           if (profile.rol === 'admin' || profile.rol === 'directivo' || profile.rol === 'preceptor') {
             unsubscribes.push(subscribeToUsuarios(setUsuarios));
             unsubscribes.push(subscribeToProfesores(setProfesores));
             unsubscribes.push(subscribeToAlumnos(setAlumnos));
           } else if (profile.rol === 'profesor') {
-            unsubscribes.push(subscribeToProfesores(setProfesores));
+            // Privacidad docente: no exponer DNI, teléfono ni email personal de otros profesores
+            getProfesores().then(profs => {
+              if (!isMounted) return;
+              const myEmail = (currentUser.email || profile.email || "").toLowerCase();
+              const sanitized = profs.map(p => {
+                if (p.email.toLowerCase() === myEmail) return p;
+                return {
+                  id: p.id,
+                  nombre: p.nombre,
+                  materias: p.materias,
+                  dni: "",
+                  email: "",
+                };
+              });
+              setProfesores(sanitized);
+            });
           } else if (profile.rol === 'alumno') {
-            unsubscribes.push(subscribeToAlumnos(setAlumnos));
+            // Privacidad estricta del alumno: NUNCA descargar el padrón de los demás compañeros
+            getAlumnos().then(als => {
+              if (!isMounted) return;
+              const myEmail = (currentUser.email || profile.email || "").toLowerCase();
+              const myRecord = als.find(a => (a.email || "").toLowerCase() === myEmail);
+              setAlumnos(myRecord ? [myRecord] : []);
+            });
           }
           
           unsubscribes.push(subscribeToCursos(setCursos));
@@ -453,8 +474,8 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  const currentProfesor = profesores.find(p => p.email.toLowerCase() === user?.email?.toLowerCase());
-  const currentAlumno = alumnos.find(a => a.email.toLowerCase() === user?.email?.toLowerCase());
+  const currentProfesor = profesores.find(p => p.email && p.email.toLowerCase() === (user?.email || userProfile?.email || "").toLowerCase());
+  const currentAlumno = alumnos.find(a => a.email && a.email.toLowerCase() === (user?.email || userProfile?.email || "").toLowerCase());
 
 
 
@@ -1002,11 +1023,13 @@ export default function Dashboard() {
     const q = searchQuery.toLowerCase().trim();
 
     return ausencias.filter(a => {
-      // Si es profesor, debe ver todo su historial (incluso licencias pasadas)
+      // Si es profesor, debe ver ÚNICAMENTE sus propias solicitudes y licencias (privacidad docente absoluta)
       if (userProfile?.rol === 'profesor') {
-        const isCurrentTeacher = currentProfesor && (
-          (a.profId && String(a.profId) === String(currentProfesor.id)) ||
-          (a.profNombre && currentProfesor.nombre && a.profNombre.trim().toLowerCase() === currentProfesor.nombre.trim().toLowerCase())
+        const targetId = currentProfesor?.id ? String(currentProfesor.id) : null;
+        const targetNombre = (currentProfesor?.nombre || userProfile?.nombre || "").trim().toLowerCase();
+        const isCurrentTeacher = Boolean(
+          (targetId && a.profId && String(a.profId) === targetId) ||
+          (targetNombre && a.profNombre && a.profNombre.trim().toLowerCase() === targetNombre)
         );
         if (!isCurrentTeacher) return false;
         return q === "" || (a.tipo || "").toLowerCase().includes(q) || (a.motivo || "").toLowerCase().includes(q);
@@ -1020,7 +1043,7 @@ export default function Dashboard() {
 
       return (a.profNombre || "").toLowerCase().includes(q) || (a.tipo || "").toLowerCase().includes(q);
     });
-  }, [ausencias, userProfile?.rol, currentProfesor, searchQuery]);
+  }, [ausencias, userProfile?.rol, userProfile?.nombre, currentProfesor, searchQuery]);
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -1552,7 +1575,7 @@ export default function Dashboard() {
             />
           )}
 
-          {activeTab === "profesores" && userProfile?.rol !== "alumno" && (
+          {activeTab === "profesores" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
             <ProfesoresTab
               profesores={profesores}
               usuarios={usuarios}
