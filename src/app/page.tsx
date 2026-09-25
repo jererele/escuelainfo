@@ -44,6 +44,7 @@ function LoginContent() {
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
   const [registerOtpCode, setRegisterOtpCode] = useState("");
   const [registerOtpToken, setRegisterOtpToken] = useState("");
+  const [registerOtpTokens, setRegisterOtpTokens] = useState<string[]>([]);
   const [registerTimer, setRegisterTimer] = useState(0);
 
   // Login
@@ -70,7 +71,7 @@ function LoginContent() {
   const resetRegisterForm = useCallback(() => {
     setNombres(""); setApellidos(""); setTelefono("");
     setDni(""); setPassword("");
-    setRegisterStep(1); setRegisterOtpCode(""); setRegisterOtpToken(""); setRegisterTimer(0);
+    setRegisterStep(1); setRegisterOtpCode(""); setRegisterOtpToken(""); setRegisterOtpTokens([]); setRegisterTimer(0);
     setShowPassword(false); setErrorMsg(""); setSuccessMsg("");
   }, []);
 
@@ -384,7 +385,10 @@ function LoginContent() {
         throw new Error(data.error || "No se pudo enviar el código de verificación al correo.");
       }
 
-      if (data.token) setRegisterOtpToken(data.token);
+      if (data.token) {
+        setRegisterOtpToken(data.token);
+        setRegisterOtpTokens(prev => [...prev.filter(t => t !== data.token), data.token]);
+      }
       setRegisterStep(2);
       setRegisterTimer(60);
       if (data.simulated && data.code) {
@@ -418,79 +422,43 @@ function LoginContent() {
     const cleanCode = registerOtpCode.trim();
 
     try {
-      // 1. Validar código OTP contra la API de verificación
-      const verifyRes = await fetch("/api/auth/verify-code", {
+      // 1. Validar código OTP y procesar alta institucional en el servidor de forma atómica y segura
+      const allTokens = registerOtpTokens.length > 0
+        ? registerOtpTokens
+        : (registerOtpToken ? [registerOtpToken] : []);
+
+      const registerRes = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: cleanEmail,
           code: cleanCode,
-          token: registerOtpToken,
+          tokens: allTokens,
+          nombres: nombres.trim(),
+          apellidos: apellidos.trim(),
+          dni: dni.trim(),
+          telefono: telefono.trim(),
+          password,
         }),
       });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok || !verifyData.success) {
-        throw new Error(verifyData.error || "Código de verificación incorrecto o expirado.");
+
+      const data = await registerRes.json();
+      if (!registerRes.ok || !data.success) {
+        throw new Error(data.error || "No se pudo completar el registro.");
       }
 
-      // 2. Proceder a la creación de cuenta oficial en Appwrite
-      const fullName = `${nombres.trim()} ${apellidos.trim()}`;
-      const preRegisteredTeacher = await getProfesorByEmail(cleanEmail);
-      const isTeacher = !!preRegisteredTeacher;
-
-      const user = await account.create({ userId: ID.unique(), email: cleanEmail, password: password, name: fullName });
-      await account.createEmailPasswordSession(cleanEmail, password);
-
-      // Check if there is already a profile in the 'usuarios' collection
-      let preProfile = await getUserProfileByEmail(cleanEmail);
-
-      if (isTeacher) {
-        if (preProfile?.id) {
-          await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName, rol: "profesor" });
-        } else {
-          await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "profesor" });
-        }
-
-        if (preRegisteredTeacher && preRegisteredTeacher.id) {
-          await updateProfesor(preRegisteredTeacher.id, { nombre: fullName, dni });
-        }
-
-        setSuccessMsg("¡Registro docente exitoso! Ingresando al panel...");
+      // Si es docente pre-registrado, iniciar sesión automáticamente
+      if (data.isTeacher) {
+        try { await account.deleteSession("current"); } catch {}
+        await account.createEmailPasswordSession(cleanEmail, password);
+        setSuccessMsg("¡Registro docente exitoso! Ingresando al panel institucional...");
         setTimeout(() => {
           router.replace("/dashboard");
         }, 1500);
         return;
       }
 
-      // Standard workflow for students/pre-authorized users
-      if (preProfile?.id) {
-        await updateUserProfile(preProfile.id, { uid: user.$id, nombre: fullName });
-
-        if (!preProfile.rol.startsWith("pendiente") && preProfile.rol !== "pe") {
-          setSuccessMsg(`¡Registro exitoso! Ingresando al panel como ${preProfile.rol}...`);
-          setTimeout(() => {
-            router.replace("/dashboard");
-          }, 1500);
-          return;
-        }
-
-        await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
-        await account.deleteSession("current");
-        setRequestSuccess(true);
-        setTimeout(() => {
-          setActiveMode("login");
-          setRequestSuccess(false);
-          resetRegisterForm();
-          setLoading(false);
-        }, 3500);
-        return;
-      }
-
-      // No pre-existing profile — register as pending request without pre-assigned rank
-      await createUserProfile({ uid: user.$id, email: cleanEmail, nombre: fullName, rol: "pendiente" as any });
-      await saveAlumno({ nombre: fullName, dni, curso: "pendiente", email: cleanEmail });
-      await account.deleteSession("current");
-
+      // Alumnos / Usuarios estándar: Notificación de éxito y redirección a login
       setRequestSuccess(true);
       setTimeout(() => {
         setActiveMode("login");
@@ -930,9 +898,12 @@ function LoginContent() {
                   )}
                 </button>
 
-                <div className="pt-2 text-center">
-                  <span className="text-[10px] text-[var(--text3)]">
+                <div className="pt-2 text-center space-y-1">
+                  <span className="text-[10px] text-[var(--text3)] block">
                     Al confirmar, validaremos tu casilla institucional y crearemos tu usuario de acceso.
+                  </span>
+                  <span className="text-[10px] text-[var(--verde)] opacity-90 block font-medium">
+                    Si el correo llegó a la carpeta Spam, el código de 6 dígitos es 100% válido.
                   </span>
                 </div>
               </form>

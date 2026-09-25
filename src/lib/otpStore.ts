@@ -15,7 +15,12 @@ const otpMap = new Map<string, OtpEntry>();
 
 const MAX_ATTEMPTS = 5;
 const DEFAULT_TTL_MINUTES = 10;
-const OTP_SECRET = process.env.APPWRITE_API_KEY || process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || 'escuelainfo-secure-otp-secret-key-2026';
+const OTP_SECRET = (
+  process.env.OTP_SECRET ||
+  process.env.APPWRITE_API_KEY ||
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ||
+  'escuelainfo-secure-otp-secret-key-2026'
+).trim();
 
 /**
  * Genera un token HMAC criptográficamente firmado que viaja de forma segura
@@ -51,43 +56,67 @@ export function markTokenUsed(token: string): void {
 }
 
 /**
- * Valida un código OTP contra el token firmado recibido.
+ * Valida un código OTP contra uno o múltiples tokens firmados.
  * Es 100% independiente de instancias en memoria y funciona perfecto en Vercel Serverless.
+ * Admite array de tokens para aceptar códigos válidos cuando el usuario solicitó reenvío.
  */
-export function verifyOtpToken(email: string, code: string, token: string): { valid: boolean; error?: string } {
+export function verifyOtpToken(
+  email: string,
+  code: string,
+  tokens: string | string[]
+): { valid: boolean; token?: string; error?: string } {
   try {
-    if (!token || typeof token !== 'string') {
+    const tokenList = Array.isArray(tokens)
+      ? tokens.filter(t => typeof t === 'string' && t.trim().length > 0)
+      : (typeof tokens === 'string' && tokens.trim() ? [tokens.trim()] : []);
+
+    if (tokenList.length === 0) {
       return { valid: false, error: 'No se encontró el token de verificación. Solicitá un nuevo código.' };
     }
 
     purgeExpiredUsedTokens();
-    if (usedTokensMap.has(token)) {
-      return { valid: false, error: 'Este código de verificación ya ha sido utilizado. Solicitá uno nuevo.' };
-    }
-
     const normalizedEmail = email.trim().toLowerCase();
     const cleanCode = code.trim();
-    const [expiresAtStr, hmac] = token.split('.');
-    if (!expiresAtStr || !hmac) {
-      return { valid: false, error: 'Token de verificación corrupto o inválido. Solicitá un nuevo código.' };
+
+    let hasExpired = false;
+    let hasUsed = false;
+
+    for (const singleToken of tokenList) {
+      if (usedTokensMap.has(singleToken)) {
+        hasUsed = true;
+        continue;
+      }
+
+      const [expiresAtStr, hmac] = singleToken.split('.');
+      if (!expiresAtStr || !hmac) continue;
+
+      const expiresAt = parseInt(expiresAtStr, 10);
+      if (isNaN(expiresAt) || Date.now() > expiresAt) {
+        hasExpired = true;
+        continue;
+      }
+
+      const data = `${normalizedEmail}:${cleanCode}:${expiresAt}`;
+      const expectedHmac = crypto.createHmac('sha256', OTP_SECRET).update(data).digest('hex');
+
+      try {
+        const hmacBuf = Buffer.from(hmac, 'hex');
+        const expectedBuf = Buffer.from(expectedHmac, 'hex');
+
+        if (hmacBuf.length === expectedBuf.length && crypto.timingSafeEqual(hmacBuf, expectedBuf)) {
+          return { valid: true, token: singleToken };
+        }
+      } catch {}
     }
 
-    const expiresAt = parseInt(expiresAtStr, 10);
-    if (isNaN(expiresAt) || Date.now() > expiresAt) {
+    if (hasUsed) {
+      return { valid: false, error: 'Este código de verificación ya ha sido utilizado. Solicitá uno nuevo.' };
+    }
+    if (hasExpired) {
       return { valid: false, error: 'El código de verificación ha expirado (validez de 10 min). Solicitá uno nuevo.' };
     }
 
-    const data = `${normalizedEmail}:${cleanCode}:${expiresAt}`;
-    const expectedHmac = crypto.createHmac('sha256', OTP_SECRET).update(data).digest('hex');
-
-    const hmacBuf = Buffer.from(hmac, 'hex');
-    const expectedBuf = Buffer.from(expectedHmac, 'hex');
-
-    if (hmacBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(hmacBuf, expectedBuf)) {
-      return { valid: false, error: 'Código de verificación incorrecto. Verificá los 6 dígitos recibidos en tu correo.' };
-    }
-
-    return { valid: true };
+    return { valid: false, error: 'Código de verificación incorrecto. Verificá los 6 dígitos recibidos en tu correo.' };
   } catch {
     return { valid: false, error: 'Código o token de verificación inválido. Solicitá uno nuevo.' };
   }

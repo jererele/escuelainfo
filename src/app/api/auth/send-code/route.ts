@@ -44,17 +44,27 @@ export async function POST(request: Request) {
     const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
     const users = new Users(client);
 
+    const databases = new Databases(client);
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'escuelainfodb';
+
     let userFound = false;
+    let hasCompleteProfile = false;
     try {
       const list = await users.list([Query.equal('email', cleanEmail)]);
       if (list.total > 0) {
         userFound = true;
+        // Comprobar si existe perfil en la colección usuarios
+        const uDocs = await databases.listDocuments(dbId, 'usuarios', [Query.equal('email', cleanEmail)]);
+        if (uDocs.total > 0) {
+          hasCompleteProfile = true;
+        }
       }
     } catch (e: any) {
       console.error('Error buscando usuario en Appwrite:', e?.message);
     }
 
-    if (type === 'register' && userFound) {
+    // Solo bloquear si el usuario existe y además tiene su perfil formalmente creado
+    if (type === 'register' && userFound && hasCompleteProfile) {
       return NextResponse.json(
         { error: 'Ya existe una cuenta registrada con este correo. Por favor iniciá sesión con tu contraseña.' },
         { status: 409 }
@@ -73,9 +83,7 @@ export async function POST(request: Request) {
     setOtp(cleanEmail, code, 10);
     const token = generateOtpToken(cleanEmail, code, 10);
 
-    // Guardar también en la base de datos Appwrite como respaldo persistente
-    const databases = new Databases(client);
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'escuelainfodb';
+    // Guardar también en la base de datos Appwrite como respaldo persistente si existe
     try {
       const uDocs = await databases.listDocuments(dbId, 'usuarios', [Query.equal('email', cleanEmail)]);
       if (uDocs.total > 0) {
@@ -102,8 +110,8 @@ export async function POST(request: Request) {
       ? 'Ingresá este código en el formulario de registro para verificar tu casilla y activar tu cuenta.'
       : 'Ingresá este código en la pantalla donde estabas realizando el trámite para establecer tu nueva clave.';
     const emailSubject = isRegister
-      ? `Tu código de verificación de registro en EscuelaInfo: ${code}`
-      : `Tu código de verificación de EscuelaInfo: ${code}`;
+      ? `Tu código de verificación de EscuelaInfo: ${code}`
+      : `Código de restablecimiento de contraseña: ${code} · EscuelaInfo`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -139,6 +147,8 @@ export async function POST(request: Request) {
           </div>
           <div class="text" style="font-size: 12px; color: #94a3b8;">
             ${emailInstructions}
+            <br><br>
+            <span style="color: #64748b; font-size: 11px;">(Si solicitaste más de un código por reenvío, podés utilizar cualquiera de los recibidos recientemente).</span>
           </div>
           <div class="footer">
             Si vos no solicitaste este código, podés ignorar este correo de forma segura.<br>
@@ -184,11 +194,16 @@ export async function POST(request: Request) {
     });
 
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"EscuelaInfo Seguridad" <${smtpUser}>`,
+      from: process.env.SMTP_FROM || `"Escuela N° 713 (EscuelaInfo)" <${smtpUser}>`,
       to: cleanEmail,
       subject: emailSubject,
-      text: `${emailTitle}: ${code}. Válido por 10 minutos.`,
+      text: `${emailTitle}: ${code}. Válido por 10 minutos. Si solicitaste múltiples envíos, cualquiera de los códigos recientes es válido.`,
       html: htmlContent,
+      headers: {
+        'X-Priority': '1',
+        'Priority': 'Urgent',
+        'X-Mailer': 'EscuelaInfo Official Authentication System',
+      },
     });
 
     const res = NextResponse.json({

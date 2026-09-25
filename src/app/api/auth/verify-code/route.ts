@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
-    const { email, code, token } = await request.json();
+    const { email, code, token, tokens } = await request.json();
 
     if (!email || !code) {
       return NextResponse.json(
@@ -41,20 +41,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Validar por HMAC Token firmado
-    let verificationToken = typeof token === 'string' ? token.trim() : '';
-    if (!verificationToken) {
+    // 1. Validar por HMAC Token firmado (admite lista de tokens de reenvío)
+    let tokensList: string[] = [];
+    if (Array.isArray(tokens)) {
+      tokensList = tokens.filter(t => typeof t === 'string' && t.trim().length > 0);
+    } else if (typeof token === 'string' && token.trim()) {
+      tokensList = [token.trim()];
+    }
+
+    if (tokensList.length === 0) {
       const cookieHeader = request.headers.get('cookie') || '';
       const match = cookieHeader.match(/escuelainfo_otp_token=([^;]+)/);
       if (match) {
-        verificationToken = decodeURIComponent(match[1]);
+        tokensList = [decodeURIComponent(match[1])];
       }
     }
 
-    let verification: { valid: boolean; error?: string } = { valid: false };
+    let verification: { valid: boolean; token?: string; error?: string } = { valid: false };
 
-    if (verificationToken) {
-      verification = verifyOtpToken(cleanEmail, cleanCode, verificationToken);
+    if (tokensList.length > 0) {
+      verification = verifyOtpToken(cleanEmail, cleanCode, tokensList);
     }
 
     // 2. Fallback de validación en memoria

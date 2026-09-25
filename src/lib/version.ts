@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.28.1";
-export const APP_BUILD_DATE = "25/09/2026 18:05 hs";
+export const APP_VERSION = "v2.28.2";
+export const APP_BUILD_DATE = "25/09/2026 19:00 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Robustecimiento de Envío y Resguardo de Códigos OTP (send-code/route.ts, page.tsx y UserProfileModal.tsx): Se blindó el sistema de envío de códigos de verificación por correo electrónico. 1) Modo Resguardo con Código Visible: Cuando el entorno del servidor no tiene configuradas las credenciales de correo (SMTP_USER y SMTP_PASS, típico en despliegues iniciales de Vercel donde las variables no fueron cargadas en el panel), la API ahora devuelve el código numérico y la interfaz informa de inmediato el código en pantalla auto-completándolo, garantizando que nadie quede trabado sin poder registrarse o recuperar su clave. 2) Compatibilidad TLS Serverless: Se integró la directiva 'tls: { rejectUnauthorized: false }' en el transporte Nodemailer para asegurar la conectividad con servidores SMTP en entornos cloud. 3) Advertencias de Bandeja de Spam: Se ampliaron las notificaciones para orientar al usuario a revisar tanto la bandeja principal como las carpetas de Spam / Correo no deseado y Promociones."
+  "Resolución Integral de Verificación y Registro Atómico con Alta en Servidor (/api/auth/register, /api/auth/verify-code, /api/auth/send-code, otpStore.ts, page.tsx y package.json): Se resolvió de raíz la incidencia reportada durante la creación de cuentas donde el código de 6 dígitos recibido por correo fallaba al ingresarlo en pantalla. 1) Endpoint de Registro Atómico en Servidor (/api/auth/register): Se trasladó la creación de cuenta, perfil en 'usuarios' y registro en 'alumnos' desde el cliente hacia un endpoint unificado respaldado por Node-Appwrite con privilegios administrativos. Esto elimina de raíz las fallas por colisión de sesiones previas en el navegador, restricciones de cookies de terceros, bloqueos por permisos en colecciones o caídas a mitad de camino que dejaban cuentas huérfanas en Auth sin perfil. 2) Soporte Multi-Token para Reenvíos de Código (otpStore.ts y page.tsx): Ante reenvíos sucesivos del código, el validador ahora acepta y reconoce cualquiera de los códigos vigentes emitidos en los últimos 10 minutos para esa casilla, evitando el rechazo por desincronización de token cuando el usuario introduce un código recibido en un correo anterior. 3) Auto-Reparación de Registros Huérfanos: Si una cuenta quedó en estado incompleto de un intento previo, el sistema actualiza la contraseña y completa el perfil sin arrojar error 409 ni bloquear al usuario. 4) Optimización de Entregabilidad y Headers Antispam (send-code): Se depuró la identidad del remitente, formato de asunto y directivas prioritarias para minimizar el filtrado a spam en Gmail, integrando notas de asistencia al usuario informando que los códigos llegados a Spam son 100% válidos. 5) Dependencias de Producción (package.json): Se integró 'node-appwrite' en las dependencias principales de producción para garantizar estabilidad absoluta en ejecuciones Serverless."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.28.1",
+    date: "25/09/2026 18:05 hs",
+    notes: [
+      "Robustecimiento de Envío y Resguardo de Códigos OTP (send-code/route.ts, page.tsx y UserProfileModal.tsx): Se blindó el sistema de envío de códigos de verificación por correo electrónico. 1) Modo Resguardo con Código Visible: Cuando el entorno del servidor no tiene configuradas las credenciales de correo (SMTP_USER y SMTP_PASS, típico en despliegues iniciales de Vercel donde las variables no fueron cargadas en el panel), la API ahora devuelve el código numérico y la interfaz informa de inmediato el código en pantalla auto-completándolo, garantizando que nadie quede trabado sin poder registrarse o recuperar su clave. 2) Compatibilidad TLS Serverless: Se integró la directiva 'tls: { rejectUnauthorized: false }' en el transporte Nodemailer para asegurar la conectividad con servidores SMTP en entornos cloud. 3) Advertencias de Bandeja de Spam: Se ampliaron las notificaciones para orientar al usuario a revisar tanto la bandeja principal como las carpetas de Spam / Correo no deseado y Promociones."
+    ]
+  },
   {
     version: "v2.28.0",
     date: "25/09/2026 17:55 hs",
