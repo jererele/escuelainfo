@@ -360,13 +360,14 @@ export default function Dashboard() {
         } else {
           // Si no hay perfil en usuarios (ej. cuenta rechazada o eliminada), eliminar sesión activa de inmediato
           try { await account.deleteSession("current"); } catch {}
+          try { sessionStorage.clear(); } catch {}
           if (isMounted) {
             window.location.replace("/?error=unregistered");
           }
           return;
         }
       } catch (err) {
-        if (isMounted) router.replace("/");
+        if (isMounted) window.location.replace("/");
       }
     };
     checkSession();

@@ -5,8 +5,8 @@ const nextConfig = {
   ...(isGithubPages ? {
     output: 'export',
     basePath: '/escuelainfo',
+    trailingSlash: true,
   } : {}),
-  trailingSlash: true,
   images: {
     unoptimized: true,
   },

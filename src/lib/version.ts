@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.24.2";
-export const APP_BUILD_DATE = "24/09/2026 21:25 hs";
+export const APP_VERSION = "v2.24.3";
+export const APP_BUILD_DATE = "24/09/2026 21:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Blindaje de Jerarquía: Inhabilitación Estricta de Asignación del Rol de Preceptor para Preceptores (ApproveStudentRoleModal.tsx, ChangeUserRoleModal.tsx, UsuariosTab.tsx, NewUserModal.tsx, dataService.ts y page.tsx): Se bloquearon todos los puntos del sistema donde un usuario con rol de Preceptor pudiera otorgar o promover a otro usuario como Preceptor. En el modal de aprobación de solicitudes y en el modal de cambio de roles, la opción de rol 'Preceptor' queda terminantemente excluida y bloqueada con salvaguardas tanto en cliente como en servidor. Asimismo, los preceptores no pueden aprobar solicitudes dirigidas a preceptoría (las cuales quedan reservadas exclusivamente con la insignia 'Requiere Directivo' para Directivos y Administradores), ni autorizar colaboradores como preceptores en NewUserModal."
+  "Solución a Pantalla con Código HTML/RSC en Error de Autenticación (page.tsx, dashboard/page.tsx y next.config.js): Se identificó y resolvió el bucle de redirección cíclico que ocurría cuando un usuario ingresaba datos erróneos o una cuenta dada de baja/no registrada. Al detectar parámetros de error en la URL, el portal de inicio (page.tsx) ahora cancela de inmediato cualquier auto-redirección hacia el Dashboard y purga la sesión activa. Adicionalmente, se restringió la propiedad 'trailingSlash: true' exclusivamente para la exportación estática de GitHub Pages, evitando redirecciones 308 en modo servidor que provocaban la impresión del código fuente HTML de hidratación en el navegador."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.24.2",
+    date: "24/09/2026 21:25 hs",
+    notes: [
+      "Blindaje de Jerarquía: Inhabilitación Estricta de Asignación del Rol de Preceptor para Preceptores (ApproveStudentRoleModal.tsx, ChangeUserRoleModal.tsx, UsuariosTab.tsx, NewUserModal.tsx, dataService.ts y page.tsx): Se bloquearon todos los puntos del sistema donde un usuario con rol de Preceptor pudiera otorgar o promover a otro usuario como Preceptor. En el modal de aprobación de solicitudes y en el modal de cambio de roles, la opción de rol 'Preceptor' queda terminantemente excluida y bloqueada con salvaguardas tanto en cliente como en servidor. Asimismo, los preceptores no pueden aprobar solicitudes dirigidas a preceptoría (las cuales quedan reservadas exclusivamente con la insignia 'Requiere Directivo' para Directivos y Administradores), ni autorizar colaboradores como preceptores en NewUserModal."
+    ]
+  },
   {
     version: "v2.24.1",
     date: "24/09/2026 21:15 hs",

@@ -100,12 +100,26 @@ function LoginContent() {
     }
 
     // Verificar error en URL (por ejemplo si fue redirigido por cuenta no registrada)
-    if (searchParams.get("error") === "unregistered") {
-      setErrorMsg("Tu cuenta no se encuentra registrada en la institución o fue dada de baja.");
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      if (urlError === "unregistered") {
+        setErrorMsg("Tu cuenta no se encuentra registrada en la institución o fue dada de baja.");
+      } else {
+        setErrorMsg("Se produjo un error al acceder. Por favor iniciá sesión nuevamente.");
+      }
+      try { account.deleteSession("current").catch(() => {}); } catch {}
+      setCheckingSession(false);
+      return;
     }
 
     // Auto-redirección si la sesión está activa y la cuenta es válida
     const checkSession = async () => {
+      // Salvaguarda: Si hay error en la URL, no intentar auto-redirección
+      if (searchParams.get("error")) {
+        setCheckingSession(false);
+        return;
+      }
+
       let user;
       try {
         user = await account.get();
