@@ -1483,6 +1483,7 @@ export default function Dashboard() {
               <h1 className="text-xl sm:text-2xl font-black title-font tracking-tight">
                 {{
                   asistencia: "Asistencia",
+                  "monitor-asistencia": "Monitor y Alerta Temprana (SATDE)",
                   ausencias: "Ausencias",
                   "mesas-examen": "Mesas de Examen",
                   horarios: "Horarios",
@@ -1650,6 +1651,8 @@ export default function Dashboard() {
               }}
               onDeleteAlumno={handleDeleteAlumno}
               cursos={cursos}
+              userProfile={userProfile}
+              onRefreshAlumnos={() => getAlumnos().then(setAlumnos)}
             />
           )}
 

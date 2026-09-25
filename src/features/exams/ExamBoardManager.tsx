@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { AppwriteException } from "appwrite";
 import { UserProfile, Profesor, Alumno, MesaExamen, getProfesores, getAlumnos, getMesasExamen, saveMesaExamen, deleteMesaExamen, logAction, subscribeToMesasExamen } from "@/lib/dataService";
 import { ClipboardCheck, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Search, Check, Trash2, Edit, Printer } from "lucide-react";
+
+const OfficialDocumentExportModal = dynamic(
+  () => import("@/components/modals/OfficialDocumentExportModal"),
+  { ssr: false }
+);
 
 interface Props {
   user: any;
@@ -18,6 +24,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const [profesores, setProfesores] = useState<Profesor[]>([]);
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   
   // Estado para búsqueda y filtrado
   const [searchQuery, setSearchQuery] = useState("");
@@ -382,10 +389,11 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                 </button>
               )}
               <button
-                onClick={() => window.print()}
-                className="flex-1 sm:flex-initial bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[var(--bg4)] transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 no-print cursor-pointer"
+                onClick={() => setIsExportModalOpen(true)}
+                className="flex-1 sm:flex-initial bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[var(--bg4)] hover:border-[var(--verde)] hover:text-[var(--verde)] transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 no-print cursor-pointer"
+                title="Generar acta volante oficial de examen con libro, folio y firmas o exportar a Excel"
               >
-                <Printer size={16} /> <span>Imprimir</span>
+                <Printer size={16} /> <span>Actas Oficiales (PDF/Excel)</span>
               </button>
             </div>
           </div>
@@ -666,6 +674,16 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
         </div>,
         document.body
       )}
+
+      {/* MODAL EXPORTADOR OFICIAL DE ACTAS Y PLANILLAS */}
+      <OfficialDocumentExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        alumnos={alumnos}
+        cursos={[]}
+        mesas={mesas}
+        initialDocType="acta"
+      />
     </div>
   );
 }

@@ -13,6 +13,11 @@ const StudentQRScannerModal = dynamic(
   { ssr: false, loading: () => null }
 );
 
+const OfficialDocumentExportModal = dynamic(
+  () => import("@/components/modals/OfficialDocumentExportModal"),
+  { ssr: false }
+);
+
 interface Props {
   user: any;
   userProfile: UserProfile | null;
@@ -37,6 +42,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
   const [historialJornada, setHistorialJornada] = useState<AsistenciaJornada[]>([]);
   const [alumnoRecord, setAlumnoRecord] = useState<Alumno | null>(null);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const refrescarDatosAlumno = useCallback(async () => {
     if (userProfile?.email) {
@@ -282,10 +288,12 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                   />
                 </div>
                 <button
-                  onClick={() => window.print()}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[var(--bg4)] transition-all active:scale-95"
+                  type="button"
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[var(--bg4)] hover:border-[var(--verde)] hover:text-[var(--verde)] transition-all active:scale-95 cursor-pointer shadow-xs"
+                  title="Generar planilla mensual oficial con membrete ministerial o exportar a Excel"
                 >
-                  <Printer size={16} /> Imprimir Planilla
+                  <Printer size={16} /> Planilla Oficial (PDF/Excel)
                 </button>
               </div>
 
@@ -422,6 +430,15 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
         onClose={() => setIsQRScannerOpen(false)}
         userProfile={userProfile}
         onSuccess={refrescarDatosAlumno}
+      />
+
+      {/* Modal Exportador Oficial de Planillas y Actas */}
+      <OfficialDocumentExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        alumnos={alumnos}
+        cursos={cursos}
+        initialDocType="asistencia"
       />
     </div>
   );

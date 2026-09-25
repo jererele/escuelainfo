@@ -1272,6 +1272,27 @@ export const getAsistenciasJornada = async (fecha: string): Promise<AsistenciaJo
   }
 };
 
+export const getAllAsistenciasJornada = async (limit = 1000): Promise<AsistenciaJornada[]> => {
+  try {
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+      queries: [Query.limit(limit), Query.orderDesc("fecha")]
+    });
+    return response.documents.map(doc => ({
+      id: doc.$id,
+      alumnoId: doc.alumnoId,
+      alumnoNombre: doc.alumnoNombre,
+      fecha: doc.fecha,
+      estado: doc.estado as any,
+      preceptorId: doc.preceptorId
+    }));
+  } catch (err: any) {
+    devLog("getAllAsistenciasJornada (LocalStorage fallback)", err);
+    return getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+  }
+};
+
 export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) => {
   await requireAuth();
   for (const a of asistencias) {

@@ -23,6 +23,7 @@ import {
   X,
   Pencil,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 import { UserProfile } from "@/lib/dataService";
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
@@ -156,6 +157,7 @@ export default function TopNavSidebar({
     { id: "general",       label: "Inicio",            icon: <LayoutDashboard size={18} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "usuarios",      label: "Usuarios",          icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor"] },
     { id: "asistencia",    label: "Asistencia",        icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
+    { id: "monitor-asistencia", label: "Monitor y Alerta Temprana", icon: <Activity size={18} />, roles: ["admin", "directivo", "preceptor"] },
     { id: "ausencias",     label: "Ausencias",         icon: <ClipboardList size={18} />,   roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "mesas-examen",  label: "Mesas de Examen",   icon: <ClipboardCheck size={18} />,  roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "horarios",      label: "Horarios",          icon: <CalendarDays size={18} />,    roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
@@ -234,6 +236,7 @@ export default function TopNavSidebar({
             general: "Inicio",
             usuarios: "Usuarios",
             asistencia: "Asistencia",
+            "monitor-asistencia": "Monitor y Alerta",
             ausencias: "Ausencias",
             "mesas-examen": "Mesas de Examen",
             horarios: "Horarios",

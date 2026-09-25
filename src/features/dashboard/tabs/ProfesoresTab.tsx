@@ -14,13 +14,19 @@ import {
   Users, 
   Check, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  UploadCloud
 } from "lucide-react";
 import { Profesor, UserProfile, Horario, getProfesores } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 const AssignTeacherSubjectsModal = dynamic(
   () => import("@/components/modals/AssignTeacherSubjectsModal"),
+  { ssr: false }
+);
+
+const BulkDataImportModal = dynamic(
+  () => import("@/components/modals/BulkDataImportModal"),
   { ssr: false }
 );
 
@@ -72,6 +78,11 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
     materias: string[];
   } | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  const existingDnis = useMemo(() => {
+    return new Set(profesores.map((p) => p.dni).filter(Boolean));
+  }, [profesores]);
 
   // Docentes registrados en el sistema (usuarios con rol profesor) que aún no tienen registro en la colección profesores
   const pendingConfigTeachers = useMemo(() => {
@@ -152,12 +163,24 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
             </div>
           )}
           {effectiveCanManageInfo && (
-            <button
-              onClick={onOpenAddTeacher}
-              className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer text-xs sm:text-sm text-center active:scale-95"
-            >
-              + Agregar Profesor
-            </button>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="w-full md:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] text-xs sm:text-sm font-black text-[var(--verde)] hover:bg-[var(--verde)] hover:text-black transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-sm"
+                title="Carga masiva de docentes desde planilla Excel (.xlsx, .csv)"
+              >
+                <UploadCloud size={16} />
+                <span>Importar Excel</span>
+              </button>
+
+              <button
+                onClick={onOpenAddTeacher}
+                className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer text-xs sm:text-sm text-center active:scale-95"
+              >
+                + Agregar Profesor
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -424,6 +447,20 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
           teacher={selectedTeacherForMaterias}
           suggestedMaterias={allSchoolSubjects}
           showToast={showToast}
+        />
+      )}
+
+      {/* MODAL DE IMPORTACIÓN MASIVA DE PROFESORES */}
+      {isImportModalOpen && (
+        <BulkDataImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          entityType="profesores"
+          existingDnis={existingDnis}
+          userEmail={userRole || "admin"}
+          onSuccess={() => {
+            if (onRefreshProfesores) onRefreshProfesores();
+          }}
         />
       )}
     </div>

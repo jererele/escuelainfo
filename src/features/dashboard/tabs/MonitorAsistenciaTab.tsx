@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { getCursos, getAlumnos, getAsistenciasJornada, Curso, Alumno, AsistenciaJornada } from "@/lib/dataService";
 import { Activity, Users, CheckCircle, XCircle } from "lucide-react";
 import { SkeletonCourseCards } from "@/components/shared/SkeletonLoaders";
+
+const EarlyWarningDropoutWidget = dynamic(
+  () => import("@/features/attendance/EarlyWarningDropoutWidget"),
+  { ssr: false }
+);
 
 export const MonitorAsistenciaTab = () => {
   const [cursos, setCursos] = useState<Curso[]>([]);
@@ -132,6 +138,11 @@ export const MonitorAsistenciaTab = () => {
           ))}
         </div>
       )}
+
+      {/* SECCIÓN SATDE: SISTEMA DE ALERTA TEMPRANA DE DESERCIÓN ESCOLAR */}
+      <div className="pt-2">
+        <EarlyWarningDropoutWidget alumnos={alumnos} cursos={cursos} />
+      </div>
     </div>
   );
 };

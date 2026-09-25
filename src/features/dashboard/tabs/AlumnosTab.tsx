@@ -1,7 +1,18 @@
-import React from "react";
-import { Search, Trash2, Clock } from "lucide-react";
-import { Alumno, UserProfile, Curso } from "@/lib/dataService";
+import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { Search, Trash2, Clock, UploadCloud, FileSpreadsheet, FileText, Printer } from "lucide-react";
+import { Alumno, UserProfile, Curso, getAlumnos } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
+
+const BulkDataImportModal = dynamic(
+  () => import("@/components/modals/BulkDataImportModal"),
+  { ssr: false }
+);
+
+const OfficialDocumentExportModal = dynamic(
+  () => import("@/components/modals/OfficialDocumentExportModal"),
+  { ssr: false }
+);
 
 interface AlumnosTabProps {
   alumnos: Alumno[];
@@ -18,6 +29,8 @@ interface AlumnosTabProps {
   onRejectStudent?: (u: UserProfile) => void;
   onDeleteAlumno: (al: Alumno) => void;
   cursos?: Curso[];
+  userProfile?: UserProfile | null;
+  onRefreshAlumnos?: () => void;
 }
 
 export const AlumnosTab: React.FC<AlumnosTabProps> = ({
@@ -27,7 +40,17 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
   setStudentSearchQuery,
   onOpenAddStudent,
   onDeleteAlumno,
+  cursos = [],
+  userProfile,
+  onRefreshAlumnos,
 }) => {
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const existingDnis = useMemo(() => {
+    return new Set(alumnos.map(a => a.dni).filter(Boolean));
+  }, [alumnos]);
+
   const filteredAlumnos = alumnos.filter(al => {
     // Solo mostrar estudiantes matriculados en un curso oficial (excluir registros pendientes de aprobación)
     if (!al.curso || al.curso === "pendiente") return false;
@@ -43,10 +66,34 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
   return (
     <div className="animate-fade-in space-y-10">
       <div>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black title-font">Gestión de Alumnos</h2>
-            <p className="text-xs sm:text-sm text-[var(--text2)]">Listado oficial de estudiantes por curso.</p>
+            <p className="text-xs sm:text-sm text-[var(--text2)]">Listado oficial de estudiantes matriculados por curso.</p>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex-1 md:flex-initial px-4 py-2.5 rounded-2xl bg-[var(--bg3)] border border-[var(--border)] text-xs font-bold text-[var(--text)] hover:border-[var(--verde)] hover:text-[var(--verde)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-xs"
+              title="Emitir padrón oficial con membrete o exportar a Excel"
+            >
+              <Printer size={15} />
+              <span>Exportar Padrón</span>
+            </button>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex-1 md:flex-initial px-4 py-2.5 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] text-xs font-black text-[var(--verde)] hover:bg-[var(--verde)] hover:text-black transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-sm"
+                title="Carga masiva de alumnos desde planilla Excel (.xlsx, .csv)"
+              >
+                <UploadCloud size={16} />
+                <span>Importar Excel</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -203,6 +250,25 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
           </div>
         </div>
       </div>
+
+      <BulkDataImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        entityType="alumnos"
+        existingDnis={existingDnis}
+        userEmail={userProfile?.email || "admin"}
+        onSuccess={() => {
+          if (onRefreshAlumnos) onRefreshAlumnos();
+        }}
+      />
+
+      <OfficialDocumentExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        alumnos={alumnos}
+        cursos={cursos}
+        initialDocType="padron"
+      />
     </div>
   );
 };
