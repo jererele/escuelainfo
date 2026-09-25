@@ -76,27 +76,14 @@ export default function TopNavSidebar({
     document.documentElement.classList.toggle("light", active === "light");
   }, []);
 
-  // Bloquear scroll de body y evitar el rebote/desgarro del fondo en móviles
+  // Bloquear scroll de body mientras el menú está abierto
   useEffect(() => {
     if (!isOpen) return;
     const prevOverflow = document.body.style.overflow;
-    const prevOverscroll = document.body.style.overscrollBehavior;
     document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
     return () => {
       document.body.style.overflow = prevOverflow;
-      document.body.style.overscrollBehavior = prevOverscroll;
     };
-  }, [isOpen]);
-
-  // Si la página o ventana detecta cualquier desplazamiento, cerrar inmediatamente la sidebar
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleScroll = () => {
-      closeSidebar();
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
   }, [isOpen]);
 
   // Close on outside click
@@ -129,33 +116,6 @@ export default function TopNavSidebar({
   }, [isOpen]);
 
   const panelRef = useRef<HTMLDivElement>(null);
-  const touchStartY = useRef<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - touchStartY.current;
-
-    // Al deslizar hacia abajo en la parte superior del panel, salir de la sidebar
-    if (diff > 35) {
-      if (!panelRef.current || panelRef.current.scrollTop <= 5) {
-        touchStartY.current = null;
-        closeSidebar();
-      }
-    } else if (diff < -45) {
-      // Al deslizar hacia arriba en dirección a la barra superior
-      touchStartY.current = null;
-      closeSidebar();
-    }
-  };
-
-  const handleTouchEnd = () => {
-    touchStartY.current = null;
-  };
 
   const closeSidebar = () => {
     setIsExiting(true);
@@ -222,9 +182,9 @@ export default function TopNavSidebar({
   return (
     <div ref={navRef} className="relative z-[500]">
       {/* ── BARRA SUPERIOR FIJA ───────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 md:px-6
+      <header className="fixed top-0 left-0 right-0 h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex items-center justify-between px-4 md:px-6
         bg-[var(--bg)]/95 border-b border-[var(--border)]
-        shadow-[0_2px_20px_-8px_rgba(0,0,0,0.12)] z-[500]">
+        shadow-[0_2px_20px_-8px_rgba(0,0,0,0.12)] z-[500] backdrop-blur-md">
 
         {/* Left: hamburger + logo */}
         <div className="flex items-center gap-3">
@@ -320,19 +280,11 @@ export default function TopNavSidebar({
         </div>
       </header>
 
-      {/* ── OVERLAY (filtro de oscuridad con protección táctil total) ──────── */}
+      {/* ── OVERLAY (filtro de oscuridad para cerrar al tocar afuera) ──────── */}
       {isOpen && (
         <div
-          className={`fixed inset-0 top-14 h-[calc(100dvh-3.5rem)] bg-black/60 backdrop-blur-xs z-[490] touch-none overscroll-none select-none transition-opacity duration-300 ${isExiting ? "opacity-0" : "opacity-100"}`}
+          className={`fixed inset-0 top-[calc(3.5rem+env(safe-area-inset-top,0px))] bg-black/60 backdrop-blur-xs z-[490] select-none transition-opacity duration-300 ${isExiting ? "opacity-0" : "opacity-100"}`}
           onClick={closeSidebar}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            closeSidebar();
-          }}
-          onTouchMove={(e) => {
-            e.preventDefault();
-            closeSidebar();
-          }}
         />
       )}
 
@@ -340,18 +292,22 @@ export default function TopNavSidebar({
       {isOpen && (
         <div
           ref={panelRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          className={`fixed top-14 left-0 right-0 z-[499] will-change-gpu
+          className={`fixed top-[calc(3.5rem+env(safe-area-inset-top,0px))] left-0 right-0 z-[499] will-change-gpu
             bg-[var(--bg)] border-b border-[var(--border)]
             shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)]
-            max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain custom-scrollbar
+            max-h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain custom-scrollbar
             ${isExiting ? "top-nav-exit" : "top-nav-enter"}`}
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 sm:py-5">
+          <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 sm:py-5 pb-8 safe-bottom">
             {/* Tirador táctil visual para móviles */}
-            <div className="sm:hidden w-12 h-1 bg-[var(--border)] rounded-full mx-auto -mt-1 mb-3 opacity-60" />
+            <div
+              onClick={closeSidebar}
+              className="sm:hidden flex items-center justify-center py-1 -mt-1 mb-3 cursor-pointer select-none active:opacity-60"
+              title="Tocar para cerrar menú"
+            >
+              <div className="w-12 h-1.5 bg-[var(--border)] rounded-full opacity-70" />
+            </div>
 
             {/* Grid de tabs */}
             <nav aria-label="Menú principal" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-5">
@@ -364,7 +320,7 @@ export default function TopNavSidebar({
                   <button
                     key={tab.id}
                     onClick={() => handleTabClick(tab.id, tab.isExternal, (tab as any).url)}
-                    className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold
+                    className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold
                       transition-all duration-200 active:scale-95 text-left
                       ${isActive
                         ? "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-sm font-black"

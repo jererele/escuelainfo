@@ -1451,10 +1451,10 @@ export default function Dashboard() {
           pendingUsersCount={usuarios.filter(u => isPendingRole(u.rol)).length}
         />
 
-      {/* MAIN CONTENT: flex-1 para ocupar el ancho disponible.
-          overflow-y-auto aquí para scroll interno del contenido (sin atrapar el Footer).
-          pt-14 para compensar el TopNav fijo. */}
-      <main className="flex-1 min-w-0 overflow-y-auto relative pt-14">
+      {/* CONTENIDO PRINCIPAL: flex-1 para ocupar el ancho disponible.
+          Scroll natural de ventana (60-120 FPS sin contenedores anidados en móvil).
+          pt con soporte para safe-area-inset de dispositivos notch. */}
+      <div className="flex-1 min-w-0 relative pt-[calc(3.5rem+env(safe-area-inset-top,0px))]">
 
         <div className="p-3.5 sm:p-6 md:p-12 pb-20 max-w-[1400px] mx-auto">
           {/* HEADER: saludo solo en inicio, título de sección en el resto */}
@@ -1725,7 +1725,7 @@ export default function Dashboard() {
             />
           )}
         </div>
-</main>
+      </div>
 
       <NewAbsenceModal 
         isOpen={isModalOpen} 

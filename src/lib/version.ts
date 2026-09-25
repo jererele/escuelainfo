@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.26.0";
-export const APP_BUILD_DATE = "24/09/2026 22:25 hs";
+export const APP_VERSION = "v2.26.1";
+export const APP_BUILD_DATE = "24/09/2026 22:48 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Privacidad Estricta y Protección de Datos Personales (TopNavSidebar.tsx, Sidebar.tsx, AusenciasTab.tsx, StudentAttendanceManager.tsx, ExamBoardManager.tsx y dashboard/page.tsx): Se implementó un blindaje de privacidad para alumnos y profesores en toda la plataforma. Para alumnos: se restringió la carga de datos en memoria para que nunca descarguen ni almacenen la lista de otros compañeros (DNI, email, teléfono y nombre); en Mesas de Examen y Asistencias, los alumnos solo visualizan su propio estado o confirmación sin exponer los datos de los demás estudiantes. Para profesores: se bloqueó el acceso a la pestaña 'Profesores' (reservada a Directivos, Admins y Preceptores), protegiendo DNI, email y teléfono de todo el cuerpo docente; en la pestaña 'Ausencias', los profesores únicamente pueden ver su propio historial y solicitudes; asimismo, se protegió la confidencialidad médica de motivos y certificados adjuntos, quedando accesibles exclusivamente para el docente titular y el Equipo Directivo/Administrador."
+  "Overhaul Integral de Rendimiento y Experiencia Táctil en Celulares (TopNavSidebar.tsx, globals.css, dashboard/page.tsx, layout.tsx, ExamBoardManager.tsx y UserProfileModal.tsx): Se identificó y resolvió por completo la causa raíz de la sensación errática e incómoda en celulares. En la barra de navegación superior (TopNavSidebar.tsx), se erradicó el detector de scroll en ventana que cerraba violentamente el menú ante cualquier microdesplazamiento del viewport y se eliminaron los umbrales rígidos de 35px/45px de 'handleTouchMove' que impedían scrollear las opciones del menú; se activó la inercia táctil nativa con '-webkit-overflow-scrolling: touch', tirador táctil para cierre voluntario y soporte de áreas seguras ('safe-area-inset') para pantallas con notch o Dynamic Island. En el panel principal (dashboard/page.tsx), se eliminó el contenedor anidado con 'overflow-y-auto' habilitando el scroll nativo directo de la ventana (garantizando 60 a 120 FPS fluidos y retracción natural de la barra de direcciones del navegador en iOS y Android). En estilos globales (globals.css), se incorporó la regla de 16px en campos de entrada en móviles para evitar el molesto auto-zoom de Safari al escribir, y en layout.tsx se integró la configuración 'viewport' con 'viewportFit: cover'. Finalmente, en ExamBoardManager y UserProfileModal se eliminaron los conflictos de doble scroll en el backdrop transformándolos en elegantes paneles inferiores ('bottom-sheet') adaptables para móviles."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.26.0",
+    date: "24/09/2026 22:25 hs",
+    notes: [
+      "Privacidad Estricta y Protección de Datos Personales (TopNavSidebar.tsx, Sidebar.tsx, AusenciasTab.tsx, StudentAttendanceManager.tsx, ExamBoardManager.tsx y dashboard/page.tsx): Se implementó un blindaje de privacidad para alumnos y profesores en toda la plataforma. Para alumnos: se restringió la carga de datos en memoria para que nunca descarguen ni almacenen la lista de otros compañeros (DNI, email, teléfono y nombre); en Mesas de Examen y Asistencias, los alumnos solo visualizan su propio estado o confirmación sin exponer los datos de los demás estudiantes. Para profesores: se bloqueó el acceso a la pestaña 'Profesores' (reservada a Directivos, Admins y Preceptores), protegiendo DNI, email y teléfono de todo el cuerpo docente; en la pestaña 'Ausencias', los profesores únicamente pueden ver su propio historial y solicitudes; asimismo, se protegió la confidencialidad médica de motivos y certificados adjuntos, quedando accesibles exclusivamente para el docente titular y el Equipo Directivo/Administrador."
+    ]
+  },
   {
     version: "v2.25.0",
     date: "24/09/2026 21:55 hs",

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CosmosBackground from "@/components/layout/CosmosBackground";
 import TermsModal from "@/components/modals/TermsModal";
@@ -6,6 +6,16 @@ import Footer from "@/components/layout/Footer";
 import SileoToaster from "@/components/ui/SileoToaster";
 import DatePickerEnhancer from "@/components/ui/DatePickerEnhancer";
 import NyanCatGamerOverlay from "@/components/easter-egg/NyanCatGamerOverlay";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#090d16" },
+    { media: "(prefers-color-scheme: light)", color: "#edf2f7" },
+  ],
+};
 
 export const metadata: Metadata = {
   title: "EscuelaInfo — Registro de Ausencias",
