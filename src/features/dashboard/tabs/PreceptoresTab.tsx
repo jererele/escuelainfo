@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { 
   UserCheck, 
   Users, 
@@ -54,6 +55,22 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
   const [selectedPreceptorsForCourse, setSelectedPreceptorsForCourse] = useState<string[]>([]);
   const [isCourseAssignModalOpen, setIsCourseAssignModalOpen] = useState(false);
   const [savingCoursePreceptors, setSavingCoursePreceptors] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Bloqueo de scroll en el fondo mientras algún modal está abierto
+  useEffect(() => {
+    if (isModalOpen || isCourseAssignModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isModalOpen, isCourseAssignModalOpen]);
 
   // Obtener listado de preceptores
   const preceptores = useMemo(() => {
@@ -640,9 +657,9 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       </div>
 
       {/* MODAL DE ASIGNACIÓN DE CURSOS AL PRECEPTOR */}
-      {isModalOpen && editingPreceptor && (
+      {mounted && isModalOpen && editingPreceptor && createPortal(
         <div 
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget && !saving) {
               setIsModalOpen(false);
@@ -650,7 +667,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             }
           }}
         >
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden mt-auto sm:mt-0">
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
             {/* Cabecera del modal */}
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -807,13 +824,14 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL DE ASIGNACIÓN DE PRECEPTORES A UN CURSO SELECCIONADO */}
-      {isCourseAssignModalOpen && selectedCourseForModal && (
+      {mounted && isCourseAssignModalOpen && selectedCourseForModal && createPortal(
         <div 
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget && !savingCoursePreceptors) {
               setIsCourseAssignModalOpen(false);
@@ -821,7 +839,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             }
           }}
         >
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden mt-auto sm:mt-0">
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
             {/* Cabecera del modal */}
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -951,7 +969,8 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

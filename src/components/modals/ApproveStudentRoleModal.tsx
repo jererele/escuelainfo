@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { X, Check, GraduationCap, BookOpen, Users, AlertCircle } from "lucide-react";
 import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -36,6 +37,22 @@ export default function ApproveStudentRoleModal({
   const courseSectionRef = useRef<HTMLDivElement>(null);
   const courseSelectRef = useRef<HTMLSelectElement>(null);
   const preceptorSectionRef = useRef<HTMLDivElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Bloqueo de scroll en el fondo mientras el modal está abierto
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
 
   // Jerarquía de roles que el operador tiene permitido otorgar
   const allowedRoles = useMemo<UserRole[]>(() => {
@@ -106,18 +123,24 @@ export default function ApproveStudentRoleModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, alumnoDetails, cursos, onClose, availableRoles]);
 
-  if (!isOpen || !user) return null;
+  if (!isOpen || !user || !mounted) return null;
 
   const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor") => {
     setSelectedRole(roleId);
     if (roleId === "alumno") {
       setTimeout(() => {
-        courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        courseSelectRef.current?.focus();
+        if (courseSectionRef.current && modalBodyRef.current) {
+          const topPos = courseSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+        }
+        courseSelectRef.current?.focus({ preventScroll: true });
       }, 60);
     } else if (roleId === "preceptor") {
       setTimeout(() => {
-        preceptorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (preceptorSectionRef.current && modalBodyRef.current) {
+          const topPos = preceptorSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+        }
       }, 60);
     }
   };
@@ -146,14 +169,14 @@ export default function ApproveStudentRoleModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden mt-auto sm:mt-0">
+      <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden my-0 sm:my-auto">
         
         {/* Cabecera Fija */}
         <div className="p-4 sm:p-5 border-b border-[var(--border)]/70 flex justify-between items-center shrink-0 bg-[var(--bg)]">
@@ -178,7 +201,7 @@ export default function ApproveStudentRoleModal({
         </div>
 
         {/* Contenido Desplazable */}
-        <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
+        <div ref={modalBodyRef} className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
           {/* Ficha rápida del solicitante */}
           <div className="bg-[var(--bg3)] p-3 rounded-2xl border border-[var(--border)] text-xs flex items-center justify-between gap-3">
             <div className="space-y-0.5">
@@ -408,6 +431,7 @@ export default function ApproveStudentRoleModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

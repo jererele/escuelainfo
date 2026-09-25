@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { X, Plus, BookOpen, Check, AlertCircle, Sparkles } from "lucide-react";
 import { updateProfesor, saveProfesor, logAction, Profesor } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
@@ -33,6 +34,21 @@ export default function AssignTeacherSubjectsModal({
   const [inputVal, setInputVal] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Bloqueo de scroll en el fondo mientras el modal está abierto
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !teacher) {
@@ -139,14 +155,16 @@ export default function AssignTeacherSubjectsModal({
     }
   };
 
-  return (
+  if (!isOpen || !teacher || !mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full sm:max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0">
+      <div className="bg-[var(--bg)] w-full sm:max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar my-0 sm:my-auto">
         {/* Cabecera del Modal */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3.5">
@@ -304,6 +322,7 @@ export default function AssignTeacherSubjectsModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

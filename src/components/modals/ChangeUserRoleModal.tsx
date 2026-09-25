@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { 
   X, 
   Check, 
@@ -108,25 +109,50 @@ export default function ChangeUserRoleModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, user, alumnoDetails, cursos, onClose, allowedRoles]);
 
-  if (!isOpen || !user) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Bloqueo de scroll en el fondo mientras el modal está abierto
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !user || !mounted) return null;
 
   const handleSelectRole = (roleId: AssignableRole) => {
     setSelectedRole(roleId);
     setConfirmAdminEscalation(false);
 
-    // Automatización de desplazamiento suave (smooth scroll) y foco inmediato
+    // Automatización de desplazamiento suave dentro del cuerpo del modal (sin mover la ventana principal)
     if (roleId === "alumno") {
       setTimeout(() => {
-        courseSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        courseSelectRef.current?.focus();
+        if (courseSectionRef.current && modalBodyRef.current) {
+          const topPos = courseSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+        }
+        courseSelectRef.current?.focus({ preventScroll: true });
       }, 60);
     } else if (roleId === "preceptor") {
       setTimeout(() => {
-        preceptorSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (preceptorSectionRef.current && modalBodyRef.current) {
+          const topPos = preceptorSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+        }
       }, 60);
     } else if (roleId === "admin" && user.rol !== "admin") {
       setTimeout(() => {
-        adminSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (adminSectionRef.current && modalBodyRef.current) {
+          const topPos = adminSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+        }
       }, 60);
     }
   };
@@ -146,7 +172,10 @@ export default function ChangeUserRoleModal({
     if (selectedRole === "admin" && user.rol !== "admin" && !confirmAdminEscalation) {
       setConfirmAdminEscalation(true);
       setTimeout(() => {
-        adminSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (adminSectionRef.current && modalBodyRef.current) {
+          const topPos = adminSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+        }
       }, 50);
       return;
     }
@@ -253,14 +282,14 @@ export default function ChangeUserRoleModal({
     return "No contás con permisos para modificar roles institucionales.";
   }, [operatorRole]);
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full sm:max-w-xl rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden mt-auto sm:mt-0">
+      <div className="bg-[var(--bg)] w-full sm:max-w-xl rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden my-0 sm:my-auto">
         
         {/* CABECERA FIJA (Sticky top) */}
         <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-[var(--border)]/70 flex justify-between items-center shrink-0 bg-[var(--bg)] gap-3">
@@ -565,6 +594,7 @@ export default function ChangeUserRoleModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
