@@ -4,14 +4,22 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.23.3";
-export const APP_BUILD_DATE = "24/09/2026 19:42 hs";
+export const APP_VERSION = "v2.24.0";
+export const APP_BUILD_DATE = "24/09/2026 19:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Corrección de Notificación Duplicada en Solicitudes de Registro (TopNavSidebar.tsx, Sidebar.tsx y page.tsx): Se eliminó el indicador de notificación (badge rojo) redundante que aparecía erróneamente sobre la pestaña 'Alumnos' cuando una persona enviaba su solicitud de registro. Dado que la gestión completa de solicitudes de acceso está centralizada en la pestaña 'Usuarios' (dentro del sub-panel 'Solicitudes de Acceso'), la alerta visual ahora se activa exclusiva y precisamente sobre el módulo de Usuarios y en el botón del menú superior, suprimiendo la confusión de alertas en el padrón estudiantil."
+  "Nueva Pestaña y Módulo de Preceptores para Directivos y Administradores (PreceptoresTab.tsx, TopNavSidebar.tsx, Sidebar.tsx y page.tsx): Se desarrolló una sección exclusiva y reservada únicamente para los roles Directivo y Administrador orientada al control integral del cuerpo de preceptoría. Permite visualizar información completa de cada preceptor (nombre, correo institucional, divisiones a cargo), métricas de cobertura escolar (total de preceptores, cursos cubiertos, cursos sin preceptor y porcentaje de cobertura institucional), una matriz interactiva con todas las divisiones escolares y un modal de asignación rápida que permite vincular o desvincular múltiples cursos a cada preceptor con persistencia inmediata y registro en auditoría.",
+  "Gobernanza Estricta de Comunicados Institucionales (SendNoticeModal.tsx y page.tsx): Se blindó el sistema de envío de avisos y notificaciones por correo. Los Preceptores ahora tienen habilitado el despacho de comunicados única y exclusivamente a las divisiones que tienen asignadas a su cargo (con opción individual por curso o masiva a todos sus cursos asignados), quedando estrictamente inhabilitados para emitir avisos globales a toda la escuela. La emisión de comunicados generales a toda la comunidad educativa (Toda la Escuela, Todos los Alumnos, Todos los Profesores y Usuarios Registrados) queda reservada de forma exclusiva para el Equipo Directivo y Administradores."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.23.3",
+    date: "24/09/2026 19:42 hs",
+    notes: [
+      "Corrección de Notificación Duplicada en Solicitudes de Registro (TopNavSidebar.tsx, Sidebar.tsx y page.tsx): Se eliminó el indicador de notificación (badge rojo) redundante que aparecía erróneamente sobre la pestaña 'Alumnos' cuando una persona enviaba su solicitud de registro. Dado que la gestión completa de solicitudes de acceso está centralizada en la pestaña 'Usuarios' (dentro del sub-panel 'Solicitudes de Acceso'), la alerta visual ahora se activa exclusiva y precisamente sobre el módulo de Usuarios y en el botón del menú superior, suprimiendo la confusión de alertas en el padrón estudiantil."
+    ]
+  },
   {
     version: "v2.23.2",
     date: "24/09/2026 19:35 hs",

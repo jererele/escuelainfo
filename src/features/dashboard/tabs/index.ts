@@ -10,4 +10,5 @@ export { CicloLectivoTab } from "./CicloLectivoTab";
 export { MonitorAsistenciaTab } from "./MonitorAsistenciaTab";
 export { CalendarioTab } from "./CalendarioTab";
 export { UsuariosTab } from "./UsuariosTab";
+export { PreceptoresTab } from "./PreceptoresTab";
 

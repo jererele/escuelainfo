@@ -20,6 +20,7 @@ import {
   UsuariosTab,
   AusenciasTab,
   ProfesoresTab,
+  PreceptoresTab,
   AlumnosTab,
   HorariosTab,
   ConfiguracionTab,
@@ -1434,7 +1435,7 @@ export default function Dashboard() {
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 sm:py-3.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black rounded-2xl font-bold text-xs sm:text-sm transition-all duration-300 shadow-md active:scale-95 cursor-pointer"
                 >
                   <Mail size={16} />
-                  <span>Enviar Aviso por Mail</span>
+                  <span>{userProfile?.rol === 'preceptor' ? "Enviar Aviso a mis Cursos" : "Enviar Aviso por Mail"}</span>
                 </button>
               )}
             </header>
@@ -1448,7 +1449,9 @@ export default function Dashboard() {
                   horarios: "Horarios",
                   alumnos: "Alumnos",
                   profesores: "Profesores",
+                  preceptores: "Preceptores",
                   cursos: "Cursos",
+                  usuarios: "Usuarios",
                   configuracion: "Configuración",
                   auditoria: "Auditoría",
                   "ciclo-lectivo": "Ciclo Lectivo",
@@ -1566,6 +1569,17 @@ export default function Dashboard() {
               }}
               onNavigateToAusencias={(search: string) => { setActiveTab("ausencias"); setSearchQuery(search); }}
               onRefreshProfesores={() => getProfesores().then(setProfesores)}
+              showToast={showToast}
+            />
+          )}
+
+          {activeTab === "preceptores" && (isSuperAdmin || isDirector) && (
+            <PreceptoresTab
+              usuarios={usuarios}
+              cursos={cursos}
+              userProfile={userProfile}
+              isAdmin={isAdmin}
+              onRefreshUsuarios={() => getUsuarios().then(setUsuarios)}
               showToast={showToast}
             />
           )}
@@ -1734,6 +1748,7 @@ export default function Dashboard() {
         profesores={profesores}
         usuarios={usuarios}
         cursos={cursos}
+        userProfile={userProfile}
       />
 
       {isTeacherReportModalOpen && currentProfesor && (
