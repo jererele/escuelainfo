@@ -703,6 +703,13 @@ export default function Dashboard() {
     preceptorCursos?: string[]
   ) => {
     const operatorRole = userProfile?.rol?.trim().toLowerCase();
+
+    // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
+    if (operatorRole === "preceptor" && targetRole === "preceptor") {
+      showToast("Los preceptores no tienen permisos para designar usuarios como preceptor", "error");
+      return;
+    }
+
     const allowedRoles = getAllowedAssignableRoles(operatorRole);
 
     if (!allowedRoles.includes(targetRole as UserRole)) {
@@ -854,6 +861,12 @@ export default function Dashboard() {
     preceptorCursos?: string[]
   ) => {
     const operatorRole = userProfile?.rol?.trim().toLowerCase();
+
+    // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
+    if (operatorRole === "preceptor" && newRole === "preceptor") {
+      showToast("Los preceptores no tienen permisos para asignar el rol de preceptor", "error");
+      return;
+    }
 
     // 1. Validar que el operador tenga permisos jerárquicos sobre el usuario destino
     if (!canManageUserRole(operatorRole, targetUser.rol)) {
@@ -1589,7 +1602,7 @@ export default function Dashboard() {
               usuarios={usuarios}
               alumnos={alumnos}
               cursos={cursos}
-              isAdmin={isAdmin}
+              isAdmin={isSuperAdmin}
               userProfile={userProfile}
               onApproveStudent={handleApproveStudent}
               onRejectStudent={handleRejectStudent}

@@ -26,7 +26,7 @@ export default function ApproveStudentRoleModal({
   user,
   alumnoDetails,
   cursos,
-  operatorRole = "admin",
+  operatorRole = "",
 }: ApproveStudentRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -65,8 +65,13 @@ export default function ApproveStudentRoleModal({
 
   // Filtrar los roles según los permisos jerárquicos del operador
   const availableRoles = useMemo(() => {
-    return allRoles.filter((r) => allowedRoles.includes(r.id as UserRole));
-  }, [allRoles, allowedRoles]);
+    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    return allRoles.filter((r) => {
+      // Un preceptor bajo ninguna circunstancia puede asignar el rol de preceptor
+      if (isOpPreceptor && r.id === "preceptor") return false;
+      return allowedRoles.includes(r.id as UserRole);
+    });
+  }, [allRoles, allowedRoles, operatorRole]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -119,6 +124,10 @@ export default function ApproveStudentRoleModal({
 
   const handleConfirm = async () => {
     if (selectedRole === "alumno" && cursos && cursos.length > 0 && !selectedCurso) {
+      return;
+    }
+    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    if (isOpPreceptor && selectedRole === "preceptor") {
       return;
     }
     if (!allowedRoles.includes(selectedRole as UserRole)) {

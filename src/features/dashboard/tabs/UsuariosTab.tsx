@@ -308,17 +308,27 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border)]/50">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setApprovingUser(u);
-                          setIsApproveModalOpen(true);
-                        }}
-                        className="min-h-[44px] flex items-center justify-center gap-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer"
-                      >
-                        <Check size={14} strokeWidth={2.5} />
-                        <span>Aprobar</span>
-                      </button>
+                      {userProfile?.rol === 'preceptor' && u.rol === 'pendiente_preceptor' ? (
+                        <div
+                          className="min-h-[44px] flex items-center justify-center gap-1 bg-[var(--bg3)] text-[var(--text3)] border border-[var(--border)] rounded-xl text-[11px] font-semibold text-center px-2"
+                          title="Solo directivos y administradores pueden aprobar y dar de alta preceptores"
+                        >
+                          <Clock size={12} className="shrink-0" />
+                          <span>Requiere Directivo</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setApprovingUser(u);
+                            setIsApproveModalOpen(true);
+                          }}
+                          className="min-h-[44px] flex items-center justify-center gap-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Check size={14} strokeWidth={2.5} />
+                          <span>Aprobar</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => onRejectStudent(u)}
@@ -393,17 +403,27 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                             )}
                           </td>
                           <td className="p-6 text-right space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setApprovingUser(u);
-                                setIsApproveModalOpen(true);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer shadow-xs active:scale-95"
-                            >
-                              <Check size={13} strokeWidth={2.5} />
-                              <span>Aprobar</span>
-                            </button>
+                            {userProfile?.rol === 'preceptor' && u.rol === 'pendiente_preceptor' ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--bg3)] text-[var(--text3)] border border-[var(--border)] text-[11px] font-semibold"
+                                title="Solo directivos y administradores pueden aprobar y dar de alta preceptores"
+                              >
+                                <Clock size={11} className="shrink-0" />
+                                <span>Requiere Directivo</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setApprovingUser(u);
+                                  setIsApproveModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer shadow-xs active:scale-95"
+                              >
+                                <Check size={13} strokeWidth={2.5} />
+                                <span>Aprobar</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => onRejectStudent(u)}

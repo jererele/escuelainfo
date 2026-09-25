@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.24.1";
-export const APP_BUILD_DATE = "24/09/2026 21:15 hs";
+export const APP_VERSION = "v2.24.2";
+export const APP_BUILD_DATE = "24/09/2026 21:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Integración de Correo Oficial en el Footer y Remoción de Formulario de Consultas (GeneralTab.tsx y Footer.tsx): Se retiró el formulario de 'Email de Consultas' del pie del panel de inicio (GeneralTab.tsx) para limpiar la interfaz del dashboard. Se incorporó el correo oficial de contacto institucional ('skbcraft.info@gmail.com') directamente en el pie de página global (Footer.tsx) con enlace interactivo mailto, icono vectorial de Lucide y estilizado dinámico, además de integrar la constante APP_VERSION en el tagline oficial del pie de página."
+  "Blindaje de Jerarquía: Inhabilitación Estricta de Asignación del Rol de Preceptor para Preceptores (ApproveStudentRoleModal.tsx, ChangeUserRoleModal.tsx, UsuariosTab.tsx, NewUserModal.tsx, dataService.ts y page.tsx): Se bloquearon todos los puntos del sistema donde un usuario con rol de Preceptor pudiera otorgar o promover a otro usuario como Preceptor. En el modal de aprobación de solicitudes y en el modal de cambio de roles, la opción de rol 'Preceptor' queda terminantemente excluida y bloqueada con salvaguardas tanto en cliente como en servidor. Asimismo, los preceptores no pueden aprobar solicitudes dirigidas a preceptoría (las cuales quedan reservadas exclusivamente con la insignia 'Requiere Directivo' para Directivos y Administradores), ni autorizar colaboradores como preceptores en NewUserModal."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.24.1",
+    date: "24/09/2026 21:15 hs",
+    notes: [
+      "Integración de Correo Oficial en el Footer y Remoción de Formulario de Consultas (GeneralTab.tsx y Footer.tsx): Se retiró el formulario de 'Email de Consultas' del pie del panel de inicio (GeneralTab.tsx) para limpiar la interfaz del dashboard. Se incorporó el correo oficial de contacto institucional ('skbcraft.info@gmail.com') directamente en el pie de página global (Footer.tsx) con enlace interactivo mailto, icono vectorial de Lucide y estilizado dinámico, además de integrar la constante APP_VERSION en el tagline oficial del pie de página."
+    ]
+  },
   {
     version: "v2.24.0",
     date: "24/09/2026 19:50 hs",

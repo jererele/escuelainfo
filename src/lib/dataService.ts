@@ -144,10 +144,17 @@ export const canManageUserRole = (operatorRole?: string | null, targetRole?: str
 
   if (op === "admin") return true;
   if (op === "directivo") {
-    return tgt !== "admin" && tgt !== "directivo";
+    return tgt !== "admin" && tgt !== "directivo" && tgt !== "pendiente_admin" && tgt !== "pendiente_directivo";
   }
   if (op === "preceptor") {
-    return tgt !== "admin" && tgt !== "directivo" && tgt !== "preceptor";
+    return (
+      tgt !== "admin" &&
+      tgt !== "directivo" &&
+      tgt !== "preceptor" &&
+      tgt !== "pendiente_admin" &&
+      tgt !== "pendiente_directivo" &&
+      tgt !== "pendiente_preceptor"
+    );
   }
   return false;
 };

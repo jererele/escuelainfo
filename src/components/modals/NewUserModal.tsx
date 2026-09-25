@@ -18,7 +18,8 @@ const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRole }: Props) {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
-  const [rol, setRol] = useState<UserProfile["rol"]>("preceptor");
+  const isDirectivoOrAdmin = currentUserRole === "admin" || currentUserRole === "directivo";
+  const [rol, setRol] = useState<UserProfile["rol"]>(isDirectivoOrAdmin ? "preceptor" : "profesor");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +37,11 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
     if (!email) { setError("Por favor ingresá un email."); return; }
     if (!isValidEmail(email)) { setError("El formato del email no es válido."); return; }
 
+    if (!isDirectivoOrAdmin && rol === "preceptor") {
+      setError("No tenés permisos para designar usuarios como preceptor.");
+      return;
+    }
+
     setLoading(true);
     try {
       await promoteUserToRole(email, rol);
@@ -45,7 +51,7 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
       await logAction(userEmail, "AUTORIZAR_COLABORADOR", `Email: ${email}, Rol: ${rol}`);
 
       onSuccess(); onClose();
-      setEmail(""); setRol("preceptor");
+      setEmail(""); setRol(isDirectivoOrAdmin ? "preceptor" : "profesor");
     } catch { setError("Error al autorizar al colaborador. Intentá de nuevo."); }
     finally { setLoading(false); }
   };
@@ -86,7 +92,9 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
                   <option value="directivo">Directivo / Director (Gestión Institucional)</option>
                 </>
               )}
-              <option value="preceptor">Preceptor (Control de Asistencia y Cursos)</option>
+              {isDirectivoOrAdmin && (
+                <option value="preceptor">Preceptor (Control de Asistencia y Cursos)</option>
+              )}
               <option value="profesor">Profesor / Docente (Acceso Personal)</option>
             </select>
           </div>

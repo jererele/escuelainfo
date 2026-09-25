@@ -43,7 +43,7 @@ export default function ChangeUserRoleModal({
   alumnoDetails,
   cursos = [],
   isCurrentUser = false,
-  operatorRole = "admin",
+  operatorRole = "",
 }: ChangeUserRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<AssignableRole>("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -135,6 +135,10 @@ export default function ChangeUserRoleModal({
     if (isCurrentUser && selectedRole !== "admin") {
       return;
     }
+    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    if (isOpPreceptor && selectedRole === "preceptor") {
+      return;
+    }
     if (!allowedRoles.includes(selectedRole as UserRole)) {
       return;
     }
@@ -224,8 +228,13 @@ export default function ChangeUserRoleModal({
 
   // Filtrar estrictamente solo los roles que el operador tiene derecho a otorgar
   const visibleRoleDefinitions = useMemo(() => {
-    return allRoleDefinitions.filter(r => allowedRoles.includes(r.id as UserRole));
-  }, [allRoleDefinitions, allowedRoles]);
+    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    return allRoleDefinitions.filter(r => {
+      // Un preceptor bajo ninguna circunstancia puede otorgar el rol de preceptor
+      if (isOpPreceptor && r.id === "preceptor") return false;
+      return allowedRoles.includes(r.id as UserRole);
+    });
+  }, [allRoleDefinitions, allowedRoles, operatorRole]);
 
   const currentRoleIsSame = user.rol === selectedRole;
 
@@ -239,7 +248,7 @@ export default function ChangeUserRoleModal({
       return "Como Directivo podés asignar los roles de Preceptor, Profesor o Alumno.";
     }
     if (op === "preceptor") {
-      return "Como Preceptor podés asignar los roles de Profesor o Alumno.";
+      return "Como Preceptor podés asignar los roles de Profesor o Alumno (no podés asignar Preceptores, Directivos ni Administradores).";
     }
     return "No contás con permisos para modificar roles institucionales.";
   }, [operatorRole]);
