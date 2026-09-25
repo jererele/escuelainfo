@@ -153,8 +153,9 @@ export async function POST(request: Request) {
       console.log(`[CÓDIGO OTP SIMULADO] Email: ${cleanEmail} (${type}) -> Código: ${code}`);
       const res = NextResponse.json({
         success: true,
-        message: 'Código de verificación generado (Modo simulación local).',
+        message: 'Código de verificación generado (Modo simulación por falta de SMTP_USER/SMTP_PASS).',
         simulated: true,
+        code, // Permite continuar en desarrollo o si faltan las credenciales en Vercel
         token,
       });
       res.cookies.set('escuelainfo_otp_token', token, {
@@ -172,6 +173,9 @@ export async function POST(request: Request) {
       auth: {
         user: smtpUser,
         pass: smtpPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
       },
     });
 

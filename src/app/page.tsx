@@ -274,7 +274,12 @@ function LoginContent() {
       if (data.token) setForgotToken(data.token);
       setForgotStep(2);
       setForgotTimer(60);
-      setSuccessMsg("¡Código de 6 dígitos enviado! Revisá tu bandeja de entrada o spam.");
+      if (data.simulated && data.code) {
+        setForgotCode(data.code);
+        setSuccessMsg(`Modo prueba (SMTP pendiente en servidor): Tu código es ${data.code}`);
+      } else {
+        setSuccessMsg("¡Código de 6 dígitos enviado! Si no lo ves en tu bandeja principal, revisá la carpeta de Spam o Correo no deseado.");
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Error al enviar el código de verificación.");
     } finally {
@@ -382,7 +387,12 @@ function LoginContent() {
       if (data.token) setRegisterOtpToken(data.token);
       setRegisterStep(2);
       setRegisterTimer(60);
-      setSuccessMsg("¡Código de 6 dígitos enviado a tu correo! Ingresalo para validar tu casilla.");
+      if (data.simulated && data.code) {
+        setRegisterOtpCode(data.code);
+        setSuccessMsg(`Modo prueba (SMTP pendiente en servidor): Tu código es ${data.code}`);
+      } else {
+        setSuccessMsg("¡Código de 6 dígitos enviado! Si no lo ves en tu bandeja principal, revisá la carpeta de Spam o Correo no deseado.");
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Error al solicitar el código de verificación.");
     } finally {

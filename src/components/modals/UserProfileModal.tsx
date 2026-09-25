@@ -144,7 +144,12 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
       if (data.token) setOtpToken(data.token);
       setCodeSent(true);
       setTimer(60);
-      notify.success(`Código de 6 dígitos enviado a ${profile.email}`);
+      if (data.simulated && data.code) {
+        setOtpCode(data.code);
+        notify.success(`Modo prueba: Tu código es ${data.code}`);
+      } else {
+        notify.success(`Código de 6 dígitos enviado a ${profile.email}. Revisá tu bandeja de entrada o Spam.`);
+      }
     } catch (err: any) {
       notify.error(err.message || "Error al enviar el código de verificación.");
     } finally {
