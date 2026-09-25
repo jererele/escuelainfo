@@ -1,24 +1,34 @@
-import React from "react";
-import { Users, Trash2, Plus, GraduationCap } from "lucide-react";
-import { Curso, Alumno } from "@/lib/dataService";
+import React, { useMemo } from "react";
+import { Users, Trash2, Plus, GraduationCap, UserCheck } from "lucide-react";
+import { Curso, Alumno, UserProfile } from "@/lib/dataService";
 import { TiltCard, FluidOrb } from "@/components/ui/rare";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface CursosTabProps {
   cursos: Curso[];
   alumnos: Alumno[];
+  usuarios?: UserProfile[];
+  userProfile?: UserProfile | null;
   onOpenCourseModal: () => void;
   onAssignAlumnos: (curso: Curso) => void;
   onDeleteCurso: (curso: Curso) => void;
+  onNavigateToPreceptores?: () => void;
 }
 
 export const CursosTab: React.FC<CursosTabProps> = ({
   cursos,
   alumnos,
+  usuarios,
+  userProfile,
   onOpenCourseModal,
   onAssignAlumnos,
   onDeleteCurso,
+  onNavigateToPreceptores,
 }) => {
+  // Preceptores de la institución
+  const preceptores = useMemo(() => {
+    return (usuarios || []).filter(u => u.rol === "preceptor");
+  }, [usuarios]);
   return (
     <div className="animate-fade-in space-y-8">
       {/* HEADER CON FLUID ORB */}
@@ -51,6 +61,7 @@ export const CursosTab: React.FC<CursosTabProps> = ({
             const alumnosCurso = alumnos.filter((a) => a.curso === c.nombre);
             const totalAlumnos = alumnosCurso.length;
             const previewAlumnos = alumnosCurso.slice(0, 4);
+            const assignedPreceptores = preceptores.filter(p => (p.cursos || []).includes(c.nombre));
 
             return (
               <TiltCard
@@ -108,6 +119,43 @@ export const CursosTab: React.FC<CursosTabProps> = ({
                     <span className="text-xs font-bold text-[var(--text2)] bg-[var(--bg3)] border border-[var(--border)] px-2.5 py-1 rounded-xl shrink-0">
                       {totalAlumnos} {totalAlumnos === 1 ? "alumno" : "alumnos"}
                     </span>
+                  </div>
+                  {/* PRECEPTORÍA ASIGNADA */}
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-[var(--bg3)]/50 border border-[var(--border)] mb-4 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                        assignedPreceptores.length > 0
+                          ? "bg-[var(--verde-bg)] text-[var(--verde)]"
+                          : "bg-[var(--amarillo-bg)] text-[var(--amarillo)]"
+                      }`}>
+                        <UserCheck size={14} strokeWidth={2.5} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)] block leading-none mb-0.5">
+                          Preceptoría:
+                        </span>
+                        {assignedPreceptores.length > 0 ? (
+                          <span className="font-black text-xs text-[var(--text)] block truncate" title={assignedPreceptores.map(p => p.nombre).join(", ")}>
+                            {assignedPreceptores.map(p => p.nombre.split(" ")[0]).join(", ")}
+                          </span>
+                        ) : (
+                          <span className="font-bold text-[11px] text-[var(--amarillo)] block italic">
+                            Sin preceptor asignado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') && onNavigateToPreceptores && (
+                      <button
+                        type="button"
+                        onClick={onNavigateToPreceptores}
+                        className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black border border-[var(--verde-border)] transition-all cursor-pointer shrink-0"
+                        title="Ir a gestionar asignación de cursos a preceptores"
+                      >
+                        {assignedPreceptores.length > 0 ? "Modificar" : "+ Asignar"}
+                      </button>
+                    )}
                   </div>
                 </div>
 

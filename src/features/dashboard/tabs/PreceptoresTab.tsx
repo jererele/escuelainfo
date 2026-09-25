@@ -49,6 +49,12 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Estado para asignación rápida de preceptores a un curso seleccionado
+  const [selectedCourseForModal, setSelectedCourseForModal] = useState<string | null>(null);
+  const [selectedPreceptorsForCourse, setSelectedPreceptorsForCourse] = useState<string[]>([]);
+  const [isCourseAssignModalOpen, setIsCourseAssignModalOpen] = useState(false);
+  const [savingCoursePreceptors, setSavingCoursePreceptors] = useState(false);
+
   // Obtener listado de preceptores
   const preceptores = useMemo(() => {
     return usuarios.filter(u => u.rol === "preceptor");
@@ -179,6 +185,71 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
     }
   };
 
+  // Apertura de modal para asignar preceptores a una división específica
+  const handleOpenCoursePreceptorModal = (cursoNombre: string) => {
+    setSelectedCourseForModal(cursoNombre);
+    const assignedIds = preceptores
+      .filter(p => (p.cursos || []).includes(cursoNombre))
+      .map(p => p.id!)
+      .filter(Boolean);
+    setSelectedPreceptorsForCourse(assignedIds);
+    setIsCourseAssignModalOpen(true);
+  };
+
+  const handleTogglePreceptorForCourse = (preceptorId: string) => {
+    setSelectedPreceptorsForCourse(prev =>
+      prev.includes(preceptorId)
+        ? prev.filter(id => id !== preceptorId)
+        : [...prev, preceptorId]
+    );
+  };
+
+  const handleSavePreceptorsForCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourseForModal) return;
+
+    setSavingCoursePreceptors(true);
+    try {
+      const updates = preceptores.map(async (p) => {
+        if (!p.id) return;
+        const currentCursos = p.cursos ? [...p.cursos] : [];
+        const isSelected = selectedPreceptorsForCourse.includes(p.id);
+        const hasCourse = currentCursos.includes(selectedCourseForModal);
+
+        if (isSelected && !hasCourse) {
+          const newCursos = [...currentCursos, selectedCourseForModal];
+          return updateUserProfile(p.id, { cursos: newCursos });
+        } else if (!isSelected && hasCourse) {
+          const newCursos = currentCursos.filter(c => c !== selectedCourseForModal);
+          return updateUserProfile(p.id, { cursos: newCursos });
+        }
+      });
+
+      await Promise.all(updates);
+
+      let adminEmail = "desconocido";
+      try {
+        const u = await account.get();
+        adminEmail = u.email;
+      } catch {}
+
+      await logAction(
+        adminEmail,
+        "ASIGNAR_CURSOS_PRECEPTOR",
+        `Curso: ${selectedCourseForModal} - Preceptores actualizados: ${selectedPreceptorsForCourse.length}`
+      );
+
+      showToast(`Asignación de preceptoría guardada para ${selectedCourseForModal}`, "success");
+      onRefreshUsuarios();
+      setIsCourseAssignModalOpen(false);
+      setSelectedCourseForModal(null);
+    } catch (err) {
+      showToast("Error al guardar la asignación de preceptoría", "error");
+    } finally {
+      setSavingCoursePreceptors(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in space-y-8">
       {/* CABECERA PRINCIPAL */}
@@ -195,6 +266,21 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             Gestión integral de preceptores, asignación de cursos a cargo y control de cobertura escolar.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (preceptores.length > 0) {
+              handleOpenAssignModal(preceptores[0]);
+            } else {
+              showToast("No hay usuarios con rol de preceptor registrados aún.", "error");
+            }
+          }}
+          className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[var(--verde)] text-black font-black text-xs sm:text-sm hover:scale-105 active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
+        >
+          <Plus size={16} strokeWidth={3} />
+          <span>Asignar Cursos a Preceptor</span>
+        </button>
       </div>
 
       {/* TARJETAS DE ESTADÍSTICAS Y MÉTRICAS */}
@@ -319,22 +405,24 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             return (
               <div 
                 key={c.id || c.nombre}
-                className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2 ${
+                onClick={() => handleOpenCoursePreceptorModal(c.nombre)}
+                className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2 cursor-pointer active:scale-[0.98] group hover:shadow-md ${
                   isCovered
                     ? "bg-[var(--bg)]/80 border-[var(--border)] hover:border-[var(--verde)] shadow-xs"
-                    : "bg-[var(--amarillo-bg)]/40 border-[var(--amarillo-border)]"
+                    : "bg-[var(--amarillo-bg)]/40 border-[var(--amarillo-border)] hover:border-[var(--amarillo)]"
                 }`}
+                title={`Hacé clic para asignar o modificar preceptores de ${c.nombre}`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-black text-[var(--text)] truncate">
+                  <span className="text-xs font-black text-[var(--text)] truncate group-hover:text-[var(--verde)] transition-colors">
                     {c.nombre}
                   </span>
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border ${
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border flex items-center gap-1 transition-all ${
                     isCovered 
-                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]" 
-                      : "bg-[var(--amarillo-bg)] text-[var(--amarillo)] border-[var(--amarillo-border)]"
+                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] group-hover:bg-[var(--verde)] group-hover:text-black" 
+                      : "bg-[var(--amarillo-bg)] text-[var(--amarillo)] border-[var(--amarillo-border)] group-hover:bg-[var(--amarillo)] group-hover:text-black"
                   }`}>
-                    {isCovered ? "Asignado" : "Sin Preceptor"}
+                    {isCovered ? "Asignado" : "+ Asignar"}
                   </span>
                 </div>
 
@@ -353,8 +441,9 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
                       ))}
                     </div>
                   ) : (
-                    <span className="text-[10px] text-[var(--amarillo)] font-bold italic">
-                      Requiere preceptor a cargo
+                    <span className="text-[10px] text-[var(--amarillo)] font-bold italic flex items-center gap-1">
+                      <AlertCircle size={12} className="shrink-0" />
+                      <span>Clic para asignar preceptor</span>
                     </span>
                   )}
                 </div>
@@ -589,6 +678,32 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
                 </button>
               </div>
 
+              {/* Selector de preceptor si hay más de 1 registrado */}
+              {preceptores.length > 1 && (
+                <div className="mb-3">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)] mb-1 block">
+                    Cambiar Preceptor a Gestionar:
+                  </label>
+                  <select
+                    value={editingPreceptor.id}
+                    onChange={(e) => {
+                      const found = preceptores.find(p => p.id === e.target.value);
+                      if (found) {
+                        setEditingPreceptor(found);
+                        setSelectedCursos(found.cursos ? [...found.cursos] : []);
+                      }
+                    }}
+                    className="w-full bg-[var(--bg2)] border border-[var(--border)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text)] outline-none focus:border-[var(--verde)] cursor-pointer"
+                  >
+                    {preceptores.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre} ({p.cursos?.length || 0} cursos a cargo)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Atajos de selección */}
               <div className="flex items-center justify-between gap-2 p-2.5 bg-[var(--bg2)] rounded-2xl border border-[var(--border)] mb-4">
                 <span className="text-xs font-bold text-[var(--text2)] ml-1">
@@ -689,6 +804,150 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
                 className="flex-1 py-3.5 rounded-2xl bg-[var(--verde)] text-black font-black text-xs sm:text-sm shadow-md hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
               >
                 {saving ? "Guardando..." : "Guardar Asignación"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE ASIGNACIÓN DE PRECEPTORES A UN CURSO SELECCIONADO */}
+      {isCourseAssignModalOpen && selectedCourseForModal && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !savingCoursePreceptors) {
+              setIsCourseAssignModalOpen(false);
+              setSelectedCourseForModal(null);
+            }
+          }}
+        >
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden mt-auto sm:mt-0">
+            {/* Cabecera del modal */}
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] flex items-center justify-center shrink-0">
+                    <Layers size={22} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-black title-font text-[var(--text)]">
+                      Asignar Preceptores a {selectedCourseForModal}
+                    </h3>
+                    <p className="text-xs text-[var(--text2)] font-semibold">
+                      Seleccioná qué preceptor o preceptores tendrán a cargo esta división.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCourseAssignModalOpen(false);
+                    setSelectedCourseForModal(null);
+                  }}
+                  disabled={savingCoursePreceptors}
+                  className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Atajos de selección */}
+              <div className="flex items-center justify-between gap-2 p-2.5 bg-[var(--bg2)] rounded-2xl border border-[var(--border)] mb-4">
+                <span className="text-xs font-bold text-[var(--text2)] ml-1">
+                  Preceptores seleccionados: <strong className="text-[var(--verde)]">{selectedPreceptorsForCourse.length}</strong> de {preceptores.length}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreceptorsForCourse(preceptores.map(p => p.id!).filter(Boolean))}
+                    className="px-2.5 py-1 rounded-lg bg-[var(--bg3)] hover:bg-[var(--verde-bg)] hover:text-[var(--verde)] text-[11px] font-bold text-[var(--text)] transition-all cursor-pointer"
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreceptorsForCourse([])}
+                    className="px-2.5 py-1 rounded-lg bg-[var(--bg3)] hover:bg-[var(--rojo-bg)] hover:text-[var(--rojo)] text-[11px] font-bold text-[var(--text)] transition-all cursor-pointer"
+                  >
+                    Ninguno
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Listado de preceptores con checkboxes */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 my-2 max-h-[46dvh] space-y-2">
+              {preceptores.length === 0 ? (
+                <div className="p-8 text-center text-xs text-[var(--text3)] italic">
+                  No hay usuarios con rol de preceptor registrados en la institución.
+                </div>
+              ) : (
+                preceptores.map(p => {
+                  const isChecked = selectedPreceptorsForCourse.includes(p.id!);
+                  const otherCourses = (p.cursos || []).filter(c => c !== selectedCourseForModal);
+
+                  return (
+                    <label
+                      key={p.id}
+                      onClick={() => handleTogglePreceptorForCourse(p.id!)}
+                      className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer select-none ${
+                        isChecked
+                          ? "bg-[var(--verde-bg)] border-[var(--verde-border)] shadow-xs"
+                          : "bg-[var(--bg3)]/60 border-[var(--border)] hover:border-[var(--text3)]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-5 h-5 rounded-lg flex items-center justify-center border transition-all shrink-0 ${
+                          isChecked
+                            ? "bg-[var(--verde)] border-[var(--verde)] text-black"
+                            : "border-[var(--border)] bg-[var(--bg)]"
+                        }`}>
+                          {isChecked && <Check size={13} strokeWidth={3} />}
+                        </div>
+                        <UserAvatar name={p.nombre} email={p.email} size={34} showRing={false} />
+                        <div className="min-w-0">
+                          <span className={`text-xs font-bold block truncate ${
+                            isChecked ? "text-[var(--text)]" : "text-[var(--text2)]"
+                          }`}>
+                            {p.nombre}
+                          </span>
+                          <span className="text-[10px] text-[var(--text3)] block truncate">
+                            {p.email} · {otherCourses.length > 0 ? `${otherCourses.length} otros cursos` : "Sin otros cursos"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isChecked && (
+                        <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] shrink-0">
+                          Asignado
+                        </span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Botones de acción */}
+            <div className="pt-4 border-t border-[var(--border)] flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCourseAssignModalOpen(false);
+                  setSelectedCourseForModal(null);
+                }}
+                disabled={savingCoursePreceptors}
+                className="flex-1 py-3.5 rounded-2xl border border-[var(--border)] font-bold text-xs sm:text-sm hover:bg-[var(--bg3)] transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePreceptorsForCourse}
+                disabled={savingCoursePreceptors}
+                className="flex-1 py-3.5 rounded-2xl bg-[var(--verde)] text-black font-black text-xs sm:text-sm shadow-md hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {savingCoursePreceptors ? "Guardando..." : "Guardar Asignación"}
               </button>
             </div>
           </div>

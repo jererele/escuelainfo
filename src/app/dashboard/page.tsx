@@ -1671,9 +1671,12 @@ export default function Dashboard() {
             <CursosTab
               cursos={cursos}
               alumnos={alumnos}
+              usuarios={usuarios}
+              userProfile={userProfile}
               onOpenCourseModal={() => setIsCourseModalOpen(true)}
               onAssignAlumnos={(curso: Curso) => { setAssigningCurso(curso); setIsAssignModalOpen(true); }}
               onDeleteCurso={handleDeleteCurso}
+              onNavigateToPreceptores={() => setActiveTab("preceptores")}
             />
           )}
 
