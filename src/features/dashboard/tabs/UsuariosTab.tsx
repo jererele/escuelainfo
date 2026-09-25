@@ -20,10 +20,7 @@ import {
 import { UserProfile, Alumno, Curso, isPendingRole, canManageUserRole, getAllowedAssignableRoles } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
-
-const ChangeUserRoleModal = dynamic(() => import("@/components/modals/ChangeUserRoleModal"), {
-  ssr: false,
-});
+import ChangeUserRoleModal from "@/components/modals/ChangeUserRoleModal";
 
 interface UsuariosTabProps {
   usuarios: UserProfile[];
@@ -101,7 +98,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const filteredPending = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return pendingRequests.filter(u => {
-      const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+      const uEmail = (u.email || "").toLowerCase();
+      const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === uEmail);
       const dni = studDetails?.dni || "";
       const curso = studDetails?.curso || "";
       const matchesSearch = 
@@ -292,7 +290,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
               </div>
             ) : (
               filteredPending.map(u => {
-                const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+                const uEmail = (u.email || "").toLowerCase();
+                const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === uEmail);
                 const cursoLabel = studDetails?.curso && studDetails.curso !== "pendiente" ? studDetails.curso : null;
                 const requestedRole = u.rol.replace("pendiente_", "");
 
@@ -495,9 +494,10 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
               </div>
             ) : (
               filteredActive.map((u) => {
-                const studDetails = alumnos.find((a) => a.email.toLowerCase() === u.email.toLowerCase());
+                const uEmail = (u.email || "").toLowerCase();
+                const studDetails = alumnos.find((a) => (a.email || "").toLowerCase() === uEmail);
                 const isCurrentAccount =
-                  (userProfile?.email && u.email.toLowerCase() === userProfile.email.toLowerCase()) ||
+                  (userProfile?.email && uEmail === (userProfile.email || "").toLowerCase()) ||
                   (userProfile?.id && u.id === userProfile.id);
 
                 return (
@@ -616,9 +616,10 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                     </tr>
                   ) : (
                     filteredActive.map((u) => {
-                      const studDetails = alumnos.find((a) => a.email.toLowerCase() === u.email.toLowerCase());
+                      const uEmail = (u.email || "").toLowerCase();
+                      const studDetails = alumnos.find((a) => (a.email || "").toLowerCase() === uEmail);
                       const isCurrentAccount =
-                        (userProfile?.email && u.email.toLowerCase() === userProfile.email.toLowerCase()) ||
+                        (userProfile?.email && uEmail === (userProfile.email || "").toLowerCase()) ||
                         (userProfile?.id && u.id === userProfile.id);
                       const canModifyThisUser = canManageUserRole(userProfile?.rol, u.rol);
 
@@ -741,7 +742,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           }
           user={approvingUser}
           alumnoDetails={alumnos.find(
-            (a) => a.email.toLowerCase() === approvingUser.email.toLowerCase()
+            (a) => (a.email || "").toLowerCase() === (approvingUser.email || "").toLowerCase()
           )}
           cursos={cursos}
           operatorRole={userProfile?.rol}
@@ -763,12 +764,14 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           }}
           user={roleChangingUser}
           alumnoDetails={alumnos.find(
-            (a) => a.email.toLowerCase() === roleChangingUser.email.toLowerCase()
+            (a) => (a.email || "").toLowerCase() === (roleChangingUser.email || "").toLowerCase()
           )}
           cursos={cursos}
           isCurrentUser={
-            userProfile?.email?.toLowerCase() === roleChangingUser.email.toLowerCase() ||
-            userProfile?.id === roleChangingUser.id
+            Boolean(
+              (userProfile?.email && roleChangingUser.email && userProfile.email.toLowerCase() === roleChangingUser.email.toLowerCase()) ||
+              (userProfile?.id && roleChangingUser.id && userProfile.id === roleChangingUser.id)
+            )
           }
           operatorRole={userProfile?.rol}
         />

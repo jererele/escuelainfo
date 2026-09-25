@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.27.2";
-export const APP_BUILD_DATE = "25/09/2026 16:40 hs";
+export const APP_VERSION = "v2.27.3";
+export const APP_BUILD_DATE = "25/09/2026 17:15 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Privacidad y Protección de Cuentas de Administrador en el Directorio de Usuarios (UsuariosTab.tsx): Se implementó la restricción de visibilidad para cuentas con rol de Administrador en el centro de control de Usuarios. Cuando el operador que navega la sección posee rol de Preceptor o Directivo (o cualquier rango no administrativo), los administradores institucionales no figuran en el listado de usuarios activos ni en solicitudes pendientes, se ocultan del filtro por rol institucional y se recalculan los contadores generales, garantizando que las cuentas de administradores solo sean visibles y gestionables cuando quien consulta la plataforma es un Administrador."
+  "Resolución de Navegación 404 al Modificar Roles y Robustecimiento de Carga Modular (ChangeUserRoleModal.tsx, UsuariosTab.tsx, dashboard/page.tsx, layout.tsx y not-found.tsx): Se erradicó la anomalía donde un administrador al intentar cambiar el rol de un usuario era redirigido a una página de error 404 ('This page could not be found'). 1) Eliminación de Vulnerabilidad por Desfase de Chunks: Se convirtió la importación diferida de 'ChangeUserRoleModal' en importación estática directa dentro de 'UsuariosTab.tsx', empaquetándolo junto con la pestaña de usuarios y evitando peticiones dinámicas de red asíncronas que derivaban en 404 cuando el navegador solicitaba hashes desactualizados de despliegues previos de Vercel. 2) Auto-Recuperación de Despliegues en Vivo (layout.tsx): Se integró un listener global en la cabecera que intercepta fallos de carga de chunks (ChunkLoadError) originados por actualizaciones en producción y recarga automáticamente la aplicación con los activos vigentes sin interrumpir la sesión del operador. 3) Sanitización y Resguardo ante Correos Indefinidos: Se reforzó la búsqueda de detalles del alumno y coincidencias de correo en 'UsuariosTab' y 'handleChangeUserRole' con operadores de coalescencia nula ('(email || \"\").toLowerCase()'), impidiendo excepciones de ejecución que interrumpían el flujo de cambio de jerarquía. 4) Nueva Pantalla Institucional 404 (not-found.tsx): Se diseñó e implementó la página personalizada de ruta no encontrada con la identidad visual de EscuelaInfo, iconografía SVG accesible de 'lucide-react' y botones de retorno inmediato al panel de control y al inicio."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.27.2",
+    date: "25/09/2026 16:40 hs",
+    notes: [
+      "Privacidad y Protección de Cuentas de Administrador en el Directorio de Usuarios (UsuariosTab.tsx): Se implementó la restricción de visibilidad para cuentas con rol de Administrador en el centro de control de Usuarios. Cuando el operador que navega la sección posee rol de Preceptor o Directivo (o cualquier rango no administrativo), los administradores institucionales no figuran en el listado de usuarios activos ni en solicitudes pendientes, se ocultan del filtro por rol institucional y se recalculan los contadores generales, garantizando que las cuentas de administradores solo sean visibles y gestionables cuando quien consulta la plataforma es un Administrador."
+    ]
+  },
   {
     version: "v2.27.1",
     date: "25/09/2026 16:35 hs",

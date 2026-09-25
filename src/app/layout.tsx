@@ -38,7 +38,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
           rel="stylesheet"
         />
-        {/* Script de tema */}
+        {/* Script de tema y recuperación automática de chunks tras nuevo despliegue */}
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
@@ -50,6 +50,25 @@ export default function RootLayout({
                 }
                 document.documentElement.classList.add(t);
               } catch (e) {}
+
+              // Auto-recuperación ante ChunkLoadError por actualización de versión en Vercel
+              if (typeof window !== 'undefined') {
+                window.addEventListener('error', function(e) {
+                  var msg = (e && (e.message || (e.error && e.error.message))) || '';
+                  if (
+                    msg.indexOf('Loading chunk') !== -1 ||
+                    msg.indexOf('ChunkLoadError') !== -1 ||
+                    msg.indexOf('Failed to fetch dynamically imported module') !== -1
+                  ) {
+                    var now = Date.now();
+                    var lastReload = parseInt(sessionStorage.getItem('last_chunk_reload') || '0', 10);
+                    if (now - lastReload > 8000) {
+                      sessionStorage.setItem('last_chunk_reload', String(now));
+                      window.location.reload();
+                    }
+                  }
+                });
+              }
             `,
           }}
         />

@@ -904,8 +904,10 @@ export default function Dashboard() {
     }
 
     // 3. Salvaguarda: No auto-degradar la propia cuenta de Administrador
+    const targetUserEmail = (targetUser.email || "").toLowerCase();
+    const currentUserEmail = (userProfile?.email || "").toLowerCase();
     if (
-      (targetUser.id === userProfile?.id || targetUser.email.toLowerCase() === userProfile?.email?.toLowerCase()) &&
+      (targetUser.id === userProfile?.id || (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)) &&
       newRole !== "admin" &&
       targetUser.rol === "admin"
     ) {
@@ -930,7 +932,7 @@ export default function Dashboard() {
         cursos: newRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
       } : u));
 
-      if (userProfile?.id === targetUser.id || userProfile?.email?.toLowerCase() === targetUser.email.toLowerCase()) {
+      if (userProfile?.id === targetUser.id || (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)) {
         setUserProfile(prev => prev ? {
           ...prev,
           rol: newRole,
@@ -940,7 +942,7 @@ export default function Dashboard() {
 
       // 1. Si el rol asignado es ALUMNO
       if (newRole === "alumno") {
-        const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+        const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
         if (studDetails && studDetails.id) {
           if (selectedCurso) {
             await updateAlumno(studDetails.id, { curso: selectedCurso });
@@ -960,9 +962,9 @@ export default function Dashboard() {
       // 2. Si el rol asignado es PROFESOR
       if (newRole === "profesor") {
         const teachers = await getProfesores();
-        const alreadyExists = teachers.some(t => t.email.toLowerCase() === targetUser.email.toLowerCase());
+        const alreadyExists = teachers.some(t => (t.email || "").toLowerCase() === targetUserEmail);
         if (!alreadyExists) {
-          const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+          const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
           await saveProfesor({
             nombre: targetUser.nombre,
             dni: studDetails?.dni || "",
@@ -972,7 +974,7 @@ export default function Dashboard() {
           getProfesores().then(setProfesores);
         }
         // Desvincular de lista de alumnos si existía
-        const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+        const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
         if (studDetails && studDetails.id) {
           await deleteAlumno(studDetails.id);
           getAlumnos().then(setAlumnos);
@@ -981,7 +983,7 @@ export default function Dashboard() {
 
       // 3. Si el rol asignado es ADMIN, DIRECTIVO o PRECEPTOR
       if (newRole === "admin" || newRole === "directivo" || newRole === "preceptor") {
-        const studDetails = alumnos.find(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+        const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
         if (studDetails && studDetails.id) {
           await deleteAlumno(studDetails.id);
           getAlumnos().then(setAlumnos);
