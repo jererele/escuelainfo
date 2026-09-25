@@ -89,8 +89,8 @@ export async function POST(request: Request) {
     }
 
     // 3. Preparar y enviar el correo con Nodemailer
-    const smtpUser = process.env.SMTP_USER?.trim();
-    const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '');
+    const smtpUser = process.env.SMTP_USER?.replace(/['"\s]/g, '');
+    const smtpPass = process.env.SMTP_PASS?.replace(/['"\s]/g, '');
 
     const isRegister = type === 'register';
     const emailSubtitle = isRegister ? 'Escuela N° 713 · Validación de Correo' : 'Escuela N° 713 · Seguridad';
@@ -169,7 +169,9 @@ export async function POST(request: Request) {
     }
 
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: smtpUser,
         pass: smtpPass,
@@ -177,6 +179,8 @@ export async function POST(request: Request) {
       tls: {
         rejectUnauthorized: false,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
     });
 
     await transporter.sendMail({

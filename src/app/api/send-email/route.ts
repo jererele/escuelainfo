@@ -47,8 +47,8 @@ export async function POST(request: Request) {
       .filter(e => EMAIL_REGEX.test(e))
       .slice(0, 300); // Límite máximo de seguridad de 300 destinatarios por lote
 
-    const user = process.env.SMTP_USER?.trim();
-    const pass = process.env.SMTP_PASS?.replace(/\s+/g, "");
+    const user = process.env.SMTP_USER?.replace(/['"\s]/g, "");
+    const pass = process.env.SMTP_PASS?.replace(/['"\s]/g, "");
 
     // Validar configuración
     if (!user || !pass) {
@@ -59,11 +59,18 @@ export async function POST(request: Request) {
 
     // Configurar el transporter para Gmail
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user,
         pass,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
     });
 
     const mailOptions: any = {
