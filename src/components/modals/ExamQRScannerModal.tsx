@@ -43,6 +43,11 @@ export default function ExamQRScannerModal({
   const [successInfo, setSuccessInfo] = useState<{ title: string; detail: string } | null>(null);
   const [cameras, setCameras] = useState<any[]>([]);
   const [activeCameraIndex, setActiveCameraIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isProcessingRef = useRef(false);
@@ -217,7 +222,7 @@ export default function ExamQRScannerModal({
     }
   }, [isOpen, startScanner, stopScanner]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted || typeof document === "undefined" || !document.body) return null;
 
   return createPortal(
     <div

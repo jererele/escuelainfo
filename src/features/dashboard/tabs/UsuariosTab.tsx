@@ -21,6 +21,7 @@ import { UserProfile, Alumno, Curso, isPendingRole, canManageUserRole, getAllowe
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
 import ChangeUserRoleModal from "@/components/modals/ChangeUserRoleModal";
+import ErrorBoundary from "@/components/shared/ErrorBoundary";
 
 interface UsuariosTabProps {
   usuarios: UserProfile[];
@@ -46,9 +47,9 @@ interface UsuariosTabProps {
 }
 
 export const UsuariosTab: React.FC<UsuariosTabProps> = ({
-  usuarios,
-  alumnos,
-  cursos,
+  usuarios = [],
+  alumnos = [],
+  cursos = [],
   isAdmin,
   userProfile,
   onApproveStudent,
@@ -99,7 +100,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
     const q = searchQuery.toLowerCase().trim();
     return pendingRequests.filter(u => {
       const uEmail = (u.email || "").toLowerCase();
-      const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === uEmail);
+      const studDetails = (alumnos || []).find(a => (a?.email || "").toLowerCase() === uEmail);
       const dni = studDetails?.dni || "";
       const curso = studDetails?.curso || "";
       const matchesSearch = 
@@ -291,9 +292,9 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             ) : (
               filteredPending.map(u => {
                 const uEmail = (u.email || "").toLowerCase();
-                const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === uEmail);
+                const studDetails = (alumnos || []).find(a => (a?.email || "").toLowerCase() === uEmail);
                 const cursoLabel = studDetails?.curso && studDetails.curso !== "pendiente" ? studDetails.curso : null;
-                const requestedRole = u.rol.replace("pendiente_", "");
+                const requestedRole = (u.rol || "").replace("pendiente_", "");
 
                 return (
                   <div key={u.id} className="card glass rounded-2xl border border-[var(--border)] p-4 space-y-3">
@@ -387,7 +388,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                     </tr>
                   ) : (
                     filteredPending.map(u => {
-                      const studDetails = alumnos.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+                      const studDetails = (alumnos || []).find(a => (a?.email || "").toLowerCase() === (u?.email || "").toLowerCase());
                       const cursoLabel = studDetails?.curso && studDetails.curso !== "pendiente" ? studDetails.curso : null;
 
                       return (
@@ -495,7 +496,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             ) : (
               filteredActive.map((u) => {
                 const uEmail = (u.email || "").toLowerCase();
-                const studDetails = alumnos.find((a) => (a.email || "").toLowerCase() === uEmail);
+                const studDetails = (alumnos || []).find((a) => (a?.email || "").toLowerCase() === uEmail);
                 const isCurrentAccount =
                   (userProfile?.email && uEmail === (userProfile.email || "").toLowerCase()) ||
                   (userProfile?.id && u.id === userProfile.id);
@@ -617,7 +618,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                   ) : (
                     filteredActive.map((u) => {
                       const uEmail = (u.email || "").toLowerCase();
-                      const studDetails = alumnos.find((a) => (a.email || "").toLowerCase() === uEmail);
+                      const studDetails = (alumnos || []).find((a) => (a?.email || "").toLowerCase() === uEmail);
                       const isCurrentAccount =
                         (userProfile?.email && uEmail === (userProfile.email || "").toLowerCase()) ||
                         (userProfile?.id && u.id === userProfile.id);
@@ -731,50 +732,54 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
 
       {/* MODAL DE SELECCIÓN DE ROL Y CURSO AL APROBAR */}
       {isApproveModalOpen && approvingUser && (
-        <ApproveStudentRoleModal
-          isOpen={isApproveModalOpen}
-          onClose={() => {
-            setIsApproveModalOpen(false);
-            setApprovingUser(null);
-          }}
-          onConfirm={(targetRole, selectedCurso, preceptorCursos) =>
-            onApproveStudent(approvingUser, targetRole, selectedCurso, preceptorCursos)
-          }
-          user={approvingUser}
-          alumnoDetails={alumnos.find(
-            (a) => (a.email || "").toLowerCase() === (approvingUser.email || "").toLowerCase()
-          )}
-          cursos={cursos}
-          operatorRole={userProfile?.rol}
-        />
+        <ErrorBoundary fallbackTitle="Error al abrir modal de aprobación de rol">
+          <ApproveStudentRoleModal
+            isOpen={isApproveModalOpen}
+            onClose={() => {
+              setIsApproveModalOpen(false);
+              setApprovingUser(null);
+            }}
+            onConfirm={(targetRole, selectedCurso, preceptorCursos) =>
+              onApproveStudent(approvingUser, targetRole, selectedCurso, preceptorCursos)
+            }
+            user={approvingUser}
+            alumnoDetails={(alumnos || []).find(
+              (a) => (a?.email || "").toLowerCase() === (approvingUser.email || "").toLowerCase()
+            )}
+            cursos={cursos || []}
+            operatorRole={userProfile?.rol}
+          />
+        </ErrorBoundary>
       )}
 
       {/* MODAL DE CAMBIO DE ROL INSTITUCIONAL (Según jerarquía permitida) */}
       {isChangeRoleModalOpen && roleChangingUser && (
-        <ChangeUserRoleModal
-          isOpen={isChangeRoleModalOpen}
-          onClose={() => {
-            setIsChangeRoleModalOpen(false);
-            setRoleChangingUser(null);
-          }}
-          onConfirm={async (targetRole, selectedCurso, preceptorCursos) => {
-            if (onChangeUserRole) {
-              await onChangeUserRole(roleChangingUser, targetRole, selectedCurso, preceptorCursos);
+        <ErrorBoundary fallbackTitle="Error al abrir modal de cambio de rol">
+          <ChangeUserRoleModal
+            isOpen={isChangeRoleModalOpen}
+            onClose={() => {
+              setIsChangeRoleModalOpen(false);
+              setRoleChangingUser(null);
+            }}
+            onConfirm={async (targetRole, selectedCurso, preceptorCursos) => {
+              if (onChangeUserRole) {
+                await onChangeUserRole(roleChangingUser, targetRole, selectedCurso, preceptorCursos);
+              }
+            }}
+            user={roleChangingUser}
+            alumnoDetails={(alumnos || []).find(
+              (a) => (a?.email || "").toLowerCase() === (roleChangingUser.email || "").toLowerCase()
+            )}
+            cursos={cursos || []}
+            isCurrentUser={
+              Boolean(
+                (userProfile?.email && roleChangingUser.email && userProfile.email.toLowerCase() === roleChangingUser.email.toLowerCase()) ||
+                (userProfile?.id && roleChangingUser.id && userProfile.id === roleChangingUser.id)
+              )
             }
-          }}
-          user={roleChangingUser}
-          alumnoDetails={alumnos.find(
-            (a) => (a.email || "").toLowerCase() === (roleChangingUser.email || "").toLowerCase()
-          )}
-          cursos={cursos}
-          isCurrentUser={
-            Boolean(
-              (userProfile?.email && roleChangingUser.email && userProfile.email.toLowerCase() === roleChangingUser.email.toLowerCase()) ||
-              (userProfile?.id && roleChangingUser.id && userProfile.id === roleChangingUser.id)
-            )
-          }
-          operatorRole={userProfile?.rol}
-        />
+            operatorRole={userProfile?.rol}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );

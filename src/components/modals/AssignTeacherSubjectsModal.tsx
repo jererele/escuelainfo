@@ -156,7 +156,7 @@ export default function AssignTeacherSubjectsModal({
     }
   };
 
-  if (!isOpen || !teacher || !mounted) return null;
+  if (!isOpen || !teacher || !mounted || typeof document === "undefined" || !document.body) return null;
 
   return createPortal(
     <div

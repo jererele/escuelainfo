@@ -132,7 +132,9 @@ function ScanContent() {
         }
 
         const allAlumnos = await getAlumnos();
-        const studentRecord = allAlumnos.find(a => a.email.toLowerCase() === userProfile.email.toLowerCase());
+        const studentRecord = (allAlumnos || []).find(
+          a => (a?.email || "").toLowerCase() === (userProfile.email || "").toLowerCase()
+        );
 
         if (!studentRecord || !studentRecord.id) {
           throw new Error("No se encontró tu legajo de alumno en el sistema.");

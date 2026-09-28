@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { 
@@ -23,7 +24,13 @@ interface Props {
 }
 
 export default function StudentExamQRModal({ isOpen, onClose, userProfile, alumno }: Props) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted || typeof document === "undefined" || !document.body) return null;
 
   const nombre = alumno?.nombre || userProfile?.nombre || "Estudiante";
   const dni = alumno?.dni || "—";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { 
@@ -28,8 +28,13 @@ interface Props {
 
 export default function MesaQRModal({ isOpen, onClose, mesa }: Props) {
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen || !mesa) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mesa || !mounted || typeof document === "undefined" || !document.body) return null;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const scanUrl = `${origin}/scan?mesaId=${encodeURIComponent(mesa.id || "")}`;

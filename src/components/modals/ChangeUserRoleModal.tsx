@@ -72,7 +72,7 @@ export default function ChangeUserRoleModal({
 
     // Normalizar rol actual del usuario para pre-seleccionar
     let initialRole: AssignableRole = "alumno";
-    const rawRole = user.rol.replace("pendiente_", "").toLowerCase();
+    const rawRole = (user?.rol || "").replace("pendiente_", "").toLowerCase();
     if (rawRole === "admin") initialRole = "admin";
     else if (rawRole === "directivo") initialRole = "directivo";
     else if (rawRole === "preceptor") initialRole = "preceptor";
@@ -88,16 +88,17 @@ export default function ChangeUserRoleModal({
     setConfirmAdminEscalation(false);
 
     // Si ya tiene cursos asignados como preceptor o usuario
-    const preceptorAssigned = user.cursos ? parseUserCursos(user.cursos) : [];
+    const preceptorAssigned = user?.cursos ? parseUserCursos(user.cursos) : [];
     setSelectedPreceptorCursos(preceptorAssigned);
 
     // Si ya tiene curso asignado en alumnoDetails
     const currentCourse = alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? alumnoDetails.curso : "";
-    if (currentCourse && cursos.some(c => c.nombre.trim().toLowerCase() === currentCourse.trim().toLowerCase())) {
-      const match = cursos.find(c => c.nombre.trim().toLowerCase() === currentCourse.trim().toLowerCase());
+    const validCursos = (cursos || []).filter(c => Boolean(c && c.nombre));
+    if (currentCourse && validCursos.some(c => (c.nombre || "").trim().toLowerCase() === currentCourse.trim().toLowerCase())) {
+      const match = validCursos.find(c => (c.nombre || "").trim().toLowerCase() === currentCourse.trim().toLowerCase());
       setSelectedCurso(match ? match.nombre : currentCourse);
-    } else if (cursos.length > 0) {
-      setSelectedCurso(cursos[0].nombre);
+    } else if (validCursos.length > 0) {
+      setSelectedCurso(validCursos[0].nombre);
     } else {
       setSelectedCurso("");
     }
@@ -117,7 +118,7 @@ export default function ChangeUserRoleModal({
 
   // Bloqueo de scroll en el fondo mientras el modal está abierto
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || typeof document === "undefined") return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -125,7 +126,7 @@ export default function ChangeUserRoleModal({
     };
   }, [isOpen]);
 
-  if (!isOpen || !user || !mounted) return null;
+  if (!isOpen || !user || !mounted || typeof document === "undefined" || !document.body) return null;
 
   const handleSelectRole = (roleId: AssignableRole) => {
     setSelectedRole(roleId);
@@ -265,7 +266,7 @@ export default function ChangeUserRoleModal({
     });
   }, [allRoleDefinitions, allowedRoles, operatorRole]);
 
-  const currentRoleIsSame = user.rol === selectedRole;
+  const currentRoleIsSame = (user?.rol || "").toLowerCase() === (selectedRole || "").toLowerCase();
 
   // Mensaje explicativo según la jerarquía del operador
   const operatorHierarchyNotice = useMemo(() => {
@@ -359,7 +360,7 @@ export default function ChangeUserRoleModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                 {visibleRoleDefinitions.map((role) => {
                   const isSelected = selectedRole === role.id;
-                  const isCurrent = user.rol === role.id;
+                  const isCurrent = (user?.rol || "").toLowerCase() === role.id.toLowerCase();
                   const isDisabled = isCurrentUser && role.id !== "admin";
                   const isAlumno = role.id === "alumno";
                   const isOddSingle = visibleRoleDefinitions.length % 2 !== 0 && isAlumno;
@@ -448,7 +449,7 @@ export default function ChangeUserRoleModal({
                 className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-2.5 px-3 outline-none focus:border-[var(--verde)] text-xs font-bold text-[var(--text)] transition-all cursor-pointer shadow-xs"
               >
                 <option value="">Sin curso asignado (Pendiente / A confirmar)</option>
-                {cursos.map((c) => (
+                {(cursos || []).filter(c => Boolean(c && c.nombre)).map((c) => (
                   <option key={c.id || c.nombre} value={c.nombre}>
                     {c.nombre}
                   </option>
@@ -471,7 +472,7 @@ export default function ChangeUserRoleModal({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setSelectedPreceptorCursos(cursos.map(c => c.nombre))}
+                    onClick={() => setSelectedPreceptorCursos((cursos || []).map(c => c?.nombre).filter(Boolean) as string[])}
                     className="text-[10px] text-[var(--azul)] hover:underline font-bold cursor-pointer"
                   >
                     Todos
@@ -495,7 +496,7 @@ export default function ChangeUserRoleModal({
                 <p className="text-xs text-[var(--text3)] italic">No hay cursos registrados en el sistema.</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
-                  {cursos.map((c) => {
+                  {(cursos || []).filter(c => Boolean(c && c.nombre)).map((c) => {
                     const isSelected = selectedPreceptorCursos.includes(c.nombre);
                     return (
                       <button
@@ -538,7 +539,7 @@ export default function ChangeUserRoleModal({
           )}
 
           {/* ALERTA DE ASCENSO A ADMINISTRADOR */}
-          {selectedRole === "admin" && allowedRoles.includes("admin") && user.rol !== "admin" && (
+          {selectedRole === "admin" && allowedRoles.includes("admin") && (user?.rol || "").toLowerCase() !== "admin" && (
             <div
               ref={adminSectionRef}
               className="p-3.5 sm:p-4 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-2 animate-fade-in"

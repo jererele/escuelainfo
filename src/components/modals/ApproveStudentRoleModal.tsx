@@ -107,10 +107,10 @@ export default function ApproveStudentRoleModal({
 
     // Pre-seleccionar curso solicitado si existe en cursos, o el primer curso disponible
     const requested = alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? alumnoDetails.curso : "";
-    if (requested && cursos && cursos.some(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase())) {
-      const matched = cursos.find(c => c.nombre.trim().toLowerCase() === requested.trim().toLowerCase());
-      setSelectedCurso(matched ? matched.nombre : requested);
-    } else if (cursos && cursos.length > 0) {
+    if (requested && cursos && cursos.some(c => (c?.nombre || "").trim().toLowerCase() === requested.trim().toLowerCase())) {
+      const matched = cursos.find(c => (c?.nombre || "").trim().toLowerCase() === requested.trim().toLowerCase());
+      setSelectedCurso(matched?.nombre ? matched.nombre : requested);
+    } else if (cursos && cursos.length > 0 && cursos[0]?.nombre) {
       setSelectedCurso(cursos[0].nombre);
     } else {
       setSelectedCurso(requested || "");
@@ -123,7 +123,7 @@ export default function ApproveStudentRoleModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, alumnoDetails, cursos, onClose, availableRoles]);
 
-  if (!isOpen || !user || !mounted) return null;
+  if (!isOpen || !user || !mounted || typeof document === "undefined" || !document.body) return null;
 
   const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor") => {
     setSelectedRole(roleId);
