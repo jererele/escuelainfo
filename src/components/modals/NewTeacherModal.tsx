@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { account } from "@/lib/appwrite";
 import { saveProfesor, updateProfesor, checkProfesorDNI, logAction, Profesor } from "@/lib/dataService";
-import { X, AlertCircle, Sparkles } from "lucide-react";
+import { X, AlertCircle, Sparkles, BookOpen } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { PLAN_DE_ESTUDIOS } from "@/lib/curriculum";
 
 interface Props { 
   isOpen: boolean; 
@@ -21,27 +22,40 @@ export default function NewTeacherModal({ isOpen, onClose, onSuccess, editingPro
   const [loading, setLoading] = useState(false);
   const [nombre, setNombre] = useState("");
   const [dni, setDni] = useState("");
-  const [materias, setMaterias] = useState("");
+  const [materiasList, setMateriasList] = useState<string[]>([]);
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
-      setNombre(""); setDni(""); setMaterias(""); setEmail("");
+      setNombre(""); setDni(""); setMateriasList([]); setEmail("");
       return;
     }
     if (editingProfesor) {
       setNombre(editingProfesor.nombre);
       setDni(editingProfesor.dni);
-      setMaterias(editingProfesor.materias.join(", "));
+      setMateriasList(editingProfesor.materias ? [...editingProfesor.materias] : []);
       setEmail(editingProfesor.email || "");
     } else {
-      setNombre(""); setDni(""); setMaterias(""); setEmail("");
+      setNombre(""); setDni(""); setMateriasList([]); setEmail("");
     }
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose, editingProfesor]);
+
+  const handleAddSubject = (subject: string) => {
+    const trimmed = (subject || "").trim();
+    if (!trimmed) return;
+    if (!materiasList.includes(trimmed)) {
+      setMateriasList(prev => [...prev, trimmed]);
+      setError("");
+    }
+  };
+
+  const handleRemoveSubject = (subjectToRemove: string) => {
+    setMateriasList(prev => prev.filter(m => m !== subjectToRemove));
+  };
 
   if (!isOpen) return null;
 
@@ -54,15 +68,14 @@ export default function NewTeacherModal({ isOpen, onClose, onSuccess, editingPro
       if (editingProfesor && editingProfesor.id) {
         setLoading(true);
         try {
-          const materiasArray = materias.split(",").map(m => m.trim()).filter(Boolean);
           await updateProfesor(editingProfesor.id, {
-            materias: materiasArray
+            materias: materiasList
           });
           let userEmail = "desconocido";
           try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
-          await logAction(userEmail, "EDITAR_DOCENTE", `Materias de ${editingProfesor.nombre} actualizadas por preceptor: ${materias}`);
+          await logAction(userEmail, "EDITAR_DOCENTE", `Materias de ${editingProfesor.nombre} actualizadas por preceptor: ${materiasList.join(", ")}`);
           onSuccess(); onClose();
-          setNombre(""); setDni(""); setMaterias(""); setEmail("");
+          setNombre(""); setDni(""); setMateriasList([]); setEmail("");
         } catch {
           setError("Error al guardar las materias del docente.");
         } finally {
@@ -85,24 +98,22 @@ export default function NewTeacherModal({ isOpen, onClose, onSuccess, editingPro
         if (exists) { setError("Ya existe un docente registrado con ese DNI."); setLoading(false); return; }
       }
 
-      const materiasArray = materias.split(",").map(m => m.trim()).filter(Boolean);
-
       if (editingProfesor && editingProfesor.id) {
         await updateProfesor(editingProfesor.id, {
-          nombre, dni, materias: materiasArray, email: email.toLowerCase().trim()
+          nombre, dni, materias: materiasList, email: email.toLowerCase().trim()
         });
       } else {
         await saveProfesor({
-          nombre, dni, materias: materiasArray, email: email.toLowerCase().trim()
+          nombre, dni, materias: materiasList, email: email.toLowerCase().trim()
         });
       }
 
       let userEmail = "desconocido";
       try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
-      await logAction(userEmail, editingProfesor ? "EDITAR_DOCENTE" : "REGISTRAR_DOCENTE", `Nombre: ${nombre}, DNI: ${dni}, Materias: ${materias}`);
+      await logAction(userEmail, editingProfesor ? "EDITAR_DOCENTE" : "REGISTRAR_DOCENTE", `Nombre: ${nombre}, DNI: ${dni}, Materias: ${materiasList.join(", ")}`);
 
       onSuccess(); onClose();
-      setNombre(""); setDni(""); setMaterias(""); setEmail("");
+      setNombre(""); setDni(""); setMateriasList([]); setEmail("");
     } catch { setError("Error al guardar el docente. Intentá de nuevo."); }
     finally { setLoading(false); }
   };
@@ -177,18 +188,63 @@ export default function NewTeacherModal({ isOpen, onClose, onSuccess, editingPro
               onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))} 
             />
           </div>
-          <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">
-              Materias que dicta (separadas por coma)
-            </label>
-            <input 
-              type="text" 
-              placeholder="Ej: Lengua, Historia, Geografía"
-              autoFocus={isPreceptor}
-              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
-              value={materias} 
-              onChange={(e) => setMaterias(e.target.value)} 
-            />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between ml-2">
+              <label className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center gap-1.5">
+                <BookOpen size={12} className="text-[var(--verde)]" />
+                <span>Materias que dicta (Plan de Estudios Oficial)</span>
+              </label>
+              <span className="text-[10px] text-[var(--verde)] font-bold">
+                {materiasList.length} seleccionada{materiasList.length === 1 ? "" : "s"}
+              </span>
+            </div>
+
+            {/* Menú Desplegable con Plan de Estudios Oficial */}
+            <select
+              value=""
+              onChange={(e) => {
+                handleAddSubject(e.target.value);
+                e.target.value = "";
+              }}
+              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-sm text-[var(--text)] focus:border-[var(--verde)] transition-all cursor-pointer"
+            >
+              <option value="">— + Seleccionar Materia del Plan de Estudios —</option>
+              {PLAN_DE_ESTUDIOS.map((cat) => (
+                <optgroup key={cat.id} label={`${cat.name} (${cat.materias.length})`}>
+                  {cat.materias.map((m) => (
+                    <option key={m} value={m} disabled={materiasList.includes(m)}>
+                      {m} {materiasList.includes(m) ? "✓ (Ya agregada)" : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+
+            {/* Chips interactivos de materias seleccionadas */}
+            {materiasList.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 p-1 max-h-32 overflow-y-auto custom-scrollbar">
+                {materiasList.map((m) => (
+                  <span
+                    key={m}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] text-xs font-bold text-[var(--text)] group hover:border-[var(--rojo)] transition-all shadow-xs"
+                  >
+                    <span>{m}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubject(m)}
+                      className="text-[var(--text3)] hover:text-[var(--rojo)] transition-colors cursor-pointer p-0.5"
+                      title={`Quitar ${m}`}
+                    >
+                      <X size={12} strokeWidth={2.5} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[var(--text3)] italic ml-2">
+                Seleccioná una o más materias del menú desplegable superior sin errores de tipeo.
+              </p>
+            )}
           </div>
           <div>
             <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">

@@ -10,8 +10,27 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Include security headers when running on Vercel / server mode
   ...(!isGithubPages ? {
+    async redirects() {
+      return [
+        { source: '/usuarios', destination: '/dashboard?tab=usuarios', permanent: false },
+        { source: '/roles', destination: '/dashboard?tab=usuarios', permanent: false },
+        { source: '/asistencia', destination: '/dashboard?tab=asistencia', permanent: false },
+        { source: '/horarios', destination: '/dashboard?tab=horarios', permanent: false },
+        { source: '/alumnos', destination: '/dashboard?tab=alumnos', permanent: false },
+        { source: '/profesores', destination: '/dashboard?tab=profesores', permanent: false },
+        { source: '/preceptores', destination: '/dashboard?tab=preceptores', permanent: false },
+        { source: '/cursos', destination: '/dashboard?tab=cursos', permanent: false },
+        { source: '/ausencias', destination: '/dashboard?tab=ausencias', permanent: false },
+        { source: '/configuracion', destination: '/dashboard?tab=configuracion', permanent: false },
+        { source: '/accesos', destination: '/dashboard?tab=configuracion', permanent: false },
+        { source: '/auditoria', destination: '/dashboard?tab=auditoria', permanent: false },
+        { source: '/mesas-examen', destination: '/dashboard?tab=mesas-examen', permanent: false },
+        { source: '/mesas', destination: '/dashboard?tab=mesas-examen', permanent: false },
+        { source: '/ciclo-lectivo', destination: '/dashboard?tab=ciclo-lectivo', permanent: false },
+        { source: '/monitor', destination: '/dashboard?tab=monitor-asistencia', permanent: false },
+      ];
+    },
     async headers() {
       return [
         {

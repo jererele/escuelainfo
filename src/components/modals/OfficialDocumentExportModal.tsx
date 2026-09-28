@@ -20,7 +20,8 @@ import {
 } from "@/lib/officialPrintService";
 import { 
   exportStudentsToExcel, 
-  exportExamBoardToExcel 
+  exportExamBoardToExcel,
+  exportExamMinutesToExcel
 } from "@/lib/excelService";
 
 interface OfficialDocumentExportModalProps {
@@ -85,10 +86,24 @@ export default function OfficialDocumentExportModal({
       if (!selectedMesa) return;
 
       const registered = (selectedMesa.alumnosInscriptos || []).map((dniOrName) => {
-        const found = alumnos.find(a => a.dni === dniOrName || a.nombre.toLowerCase() === dniOrName.toLowerCase());
+        const dniMatch = dniOrName.match(/\b\d{7,9}\b/);
+        const extractedDni = dniMatch ? dniMatch[0] : "";
+        
+        const found = alumnos.find(a => {
+          if (extractedDni && a.dni === extractedDni) return true;
+          if (a.dni && dniOrName.includes(a.dni)) return true;
+          if (a.nombre && (
+            dniOrName.toLowerCase().includes(a.nombre.toLowerCase()) ||
+            a.nombre.toLowerCase().includes(dniOrName.toLowerCase())
+          )) return true;
+          return false;
+        });
+
+        const cleanName = dniOrName.replace(/\(?DNI:?\s*[\d\s·\w]+\)?/i, "").trim();
+
         return {
-          nombre: found ? found.nombre : dniOrName,
-          dni: found ? found.dni : "—",
+          nombre: found ? found.nombre : (cleanName || dniOrName),
+          dni: found ? found.dni : (extractedDni || "—"),
           escrito: "",
           oral: "",
           calificacion: "",
@@ -119,7 +134,11 @@ export default function OfficialDocumentExportModal({
     if (docType === "padron" || docType === "asistencia") {
       exportStudentsToExcel(alumnos, selectedCurso);
     } else if (docType === "acta") {
-      exportExamBoardToExcel(mesas);
+      if (selectedMesa) {
+        exportExamMinutesToExcel(selectedMesa, alumnos, libroNumero, folioNumero);
+      } else {
+        exportExamBoardToExcel(mesas);
+      }
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, UserCheck, Users, GraduationCap, AlertTriangle, Check } from "lucide-react";
+import { Search, X, FileSpreadsheet, Clock, Coffee, RefreshCw, Trash2, Ban, UserCheck, Users, GraduationCap, AlertTriangle, Check, Sun, Moon, Globe, ArrowRightLeft } from "lucide-react";
 import { Horario, Curso, Ausencia, Alumno, UserProfile, Profesor, parseUserCursos } from "@/lib/dataService";
 import CustomSelect from "@/components/shared/CustomSelect";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
@@ -46,12 +46,49 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
   const teacherName = currentProfesor?.nombre || userProfile?.nombre || "";
   const [teacherOnlyMine, setTeacherOnlyMine] = useState<boolean>(true);
   const [preceptorOnlyMine, setPreceptorOnlyMine] = useState<boolean>(true);
+  const [preceptorShiftFilter, setPreceptorShiftFilter] = useState<"todos" | "manana" | "tarde">("todos");
+
+  // Determinar turno de curso
+  const getCourseShift = (courseName: string): "manana" | "tarde" | "doble" => {
+    const lower = (courseName || "").toLowerCase();
+    if (lower.includes("doble") || lower.includes("ambos")) return "doble";
+    if (lower.includes("mañana") || lower.includes("manana") || /\b(tm)\b/.test(lower) || lower.includes("turno mañana")) return "manana";
+    if (lower.includes("tarde") || lower.includes("vespertino") || /\b(tt)\b/.test(lower) || lower.includes("turno tarde")) return "tarde";
+    return "doble";
+  };
 
   // Cursos asignados a la preceptoría
   const preceptorCursos = useMemo<string[]>(() => {
     if (!userProfile?.cursos) return [];
     return parseUserCursos(userProfile.cursos);
   }, [userProfile?.cursos]);
+
+  const filteredCursosForPreceptor = useMemo(() => {
+    if (preceptorOnlyMine && preceptorCursos.length > 0) {
+      return preceptorCursos.map(c => ({ value: c, label: c }));
+    }
+    let list = cursos;
+    if (preceptorShiftFilter === "manana") {
+      list = cursos.filter(c => {
+        const s = getCourseShift(c.nombre);
+        return s === "manana" || s === "doble";
+      });
+    } else if (preceptorShiftFilter === "tarde") {
+      list = cursos.filter(c => {
+        const s = getCourseShift(c.nombre);
+        return s === "tarde" || s === "doble";
+      });
+    }
+    return [
+      { value: "", label: preceptorShiftFilter === "todos" ? "Todos los cursos" : `Todos (${preceptorShiftFilter === "manana" ? "Mañana" : "Tarde"})` },
+      ...list.map(c => ({
+        value: c.nombre,
+        label: isPreceptor && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre)
+          ? `${c.nombre} (Cobertura)`
+          : c.nombre
+      }))
+    ];
+  }, [cursos, preceptorOnlyMine, preceptorCursos, preceptorShiftFilter, isPreceptor]);
 
   // Si es preceptor, auto-seleccionar por defecto su primer curso asignado
   useEffect(() => {
@@ -316,6 +353,55 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                 </button>
               )}
 
+              {/* Filtro por turno para preceptores al ver todos los cursos */}
+              {isPreceptor && !preceptorOnlyMine && (
+                <div className="flex items-center gap-1 bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)]">
+                  <button
+                    type="button"
+                    onClick={() => setPreceptorShiftFilter("todos")}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                      preceptorShiftFilter === "todos"
+                        ? "bg-[var(--verde)] text-black"
+                        : "text-[var(--text2)] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreceptorShiftFilter("manana")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                      preceptorShiftFilter === "manana"
+                        ? "bg-amber-500 text-black"
+                        : "text-[var(--text2)] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    <Sun size={12} />
+                    <span>Mañana</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreceptorShiftFilter("tarde")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                      preceptorShiftFilter === "tarde"
+                        ? "bg-indigo-600 text-white"
+                        : "text-[var(--text2)] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    <Moon size={12} />
+                    <span>Tarde</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Indicador de cobertura para el preceptor */}
+              {isPreceptor && preceptorCursos.length > 0 && selectedCourse && !preceptorCursos.includes(selectedCourse) && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  <ArrowRightLeft size={13} />
+                  <span>Cobertura: {selectedCourse}</span>
+                </span>
+              )}
+
               <div className="flex items-center gap-3">
                 <p className="text-[var(--text2)] text-sm font-medium">
                   {isTeacher && teacherOnlyMine 
@@ -351,8 +437,8 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                         : "text-[var(--verde)] bg-[var(--bg3)] text-xs font-bold"
                     }
                     options={
-                      isPreceptor && preceptorOnlyMine && preceptorCursos.length > 0
-                        ? preceptorCursos.map(c => ({ value: c, label: c }))
+                      isPreceptor
+                        ? filteredCursosForPreceptor
                         : [
                             { value: "", label: "Todos los cursos" },
                             ...cursos.map(c => ({

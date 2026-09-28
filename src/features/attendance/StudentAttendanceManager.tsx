@@ -4,7 +4,25 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
-import { UserCheck, Check, X, AlertCircle, Calendar, Clock, Search, Printer, QrCode, Camera } from "lucide-react";
+import { 
+  UserCheck, 
+  Check, 
+  X, 
+  AlertCircle, 
+  Calendar, 
+  Clock, 
+  Search, 
+  Printer, 
+  QrCode, 
+  Camera,
+  Sun,
+  Moon,
+  Globe,
+  ArrowRightLeft,
+  ShieldCheck,
+  Users,
+  Sparkles
+} from "lucide-react";
 import AttendanceTableResponsive from "@/components/shared/AttendanceTableResponsive";
 import { SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
 
@@ -23,6 +41,25 @@ interface Props {
   userProfile: UserProfile | null;
 }
 
+type TurnoFiltro = "mis_cursos" | "manana" | "tarde" | "todos";
+
+// Determinar el turno horario de un curso por su denominación o estructura
+const getCourseShift = (courseName: string): "manana" | "tarde" | "doble" => {
+  const lower = (courseName || "").toLowerCase();
+  if (lower.includes("doble") || lower.includes("ambos")) return "doble";
+  if (lower.includes("mañana") || lower.includes("manana") || /\b(tm)\b/.test(lower) || lower.includes("turno mañana")) return "manana";
+  if (lower.includes("tarde") || lower.includes("vespertino") || /\b(tt)\b/.test(lower) || lower.includes("turno tarde")) return "tarde";
+  // Si no tiene especificación explícita de turno en el nombre, disponible en ambos turnos ("doble")
+  // para que ningún preceptor quede imposibilitado de cubrir la división
+  return "doble";
+};
+
+// Determinar el turno activo de la escuela en tiempo real
+const getLiveSchoolShift = (): "manana" | "tarde" => {
+  const hour = new Date().getHours();
+  return (hour >= 6 && hour < 13) ? "manana" : "tarde";
+};
+
 export default function StudentAttendanceManager({ user, userProfile }: Props) {
   const [role, setRole] = useState<string>("alumno");
   const [cursos, setCursos] = useState<Curso[]>([]);
@@ -33,6 +70,10 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [searchJornada, setSearchJornada] = useState("");
+
+  // Vista Global de Cursos y Turnos para Preceptores
+  const liveShift = useMemo(() => getLiveSchoolShift(), []);
+  const [turnoFiltro, setTurnoFiltro] = useState<TurnoFiltro>("mis_cursos");
 
   // Planillas de asistencias en edición
   const [asistenciasJornada, setAsistenciasJornada] = useState<Record<string, "P" | "A" | "M" | "T" | "R">>({});
@@ -70,11 +111,72 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     }
   }, [userProfile]);
 
+  // Si el preceptor no tiene cursos propios asignados, activar por defecto el turno actual de la escuela
+  useEffect(() => {
+    if (role === "preceptor" && preceptorCursos.length === 0) {
+      setTurnoFiltro(liveShift);
+    }
+  }, [role, preceptorCursos.length, liveShift]);
+
   useEffect(() => {
     if (role === "preceptor" && preceptorCursos.length > 0 && !selectedCurso) {
       setSelectedCurso(preceptorCursos[0]);
     }
   }, [role, preceptorCursos, selectedCurso]);
+
+  // Clasificación de cursos por turno
+  const cursosManana = useMemo(() => {
+    return cursos.filter(c => {
+      const sh = getCourseShift(c.nombre);
+      return sh === "manana" || sh === "doble";
+    });
+  }, [cursos]);
+
+  const cursosTarde = useMemo(() => {
+    return cursos.filter(c => {
+      const sh = getCourseShift(c.nombre);
+      return sh === "tarde" || sh === "doble";
+    });
+  }, [cursos]);
+
+  // Cursos visibles según el filtro de turno seleccionado
+  const visibleCursos = useMemo(() => {
+    if (turnoFiltro === "mis_cursos" && preceptorCursos.length > 0) {
+      return cursos.filter(c => preceptorCursos.includes(c.nombre));
+    }
+    if (turnoFiltro === "manana") {
+      return cursosManana;
+    }
+    if (turnoFiltro === "tarde") {
+      return cursosTarde;
+    }
+    return cursos;
+  }, [cursos, turnoFiltro, preceptorCursos, cursosManana, cursosTarde]);
+
+  // Modo Cobertura: Cuando el preceptor toma lista a un curso que no es de su asignación habitual
+  const isCoverageMode = useMemo(() => {
+    return role === "preceptor" && 
+           preceptorCursos.length > 0 && 
+           Boolean(selectedCurso) && 
+           !preceptorCursos.includes(selectedCurso);
+  }, [role, preceptorCursos, selectedCurso]);
+
+  const handleSelectTurno = (filtro: TurnoFiltro) => {
+    setTurnoFiltro(filtro);
+    let targetList: Curso[] = [];
+    if (filtro === "mis_cursos") {
+      targetList = cursos.filter(c => preceptorCursos.includes(c.nombre));
+    } else if (filtro === "manana") {
+      targetList = cursosManana;
+    } else if (filtro === "tarde") {
+      targetList = cursosTarde;
+    } else {
+      targetList = cursos;
+    }
+    if (targetList.length > 0 && !targetList.some(c => c.nombre === selectedCurso)) {
+      setSelectedCurso(targetList[0].nombre);
+    }
+  };
 
   // Cargar datos condicionalmente según el rol (Privacidad estricta para alumnos)
   useEffect(() => {
@@ -165,21 +267,25 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
             alumnoNombre: al ? al.nombre : "Alumno",
             fecha,
             estado,
-            preceptorId: userProfile?.uid || "admin"
+            preceptorId: userProfile?.uid || userProfile?.email || "admin"
           };
         });
 
         await saveAsistenciasJornada(listToSave);
-        await logAction(userProfile?.email || "admin", "REGISTRAR_ASISTENCIA_JORNADA", `Curso: ${selectedCurso}, Fecha: ${fecha}`);
+        const actionType = isCoverageMode ? "ASISTENCIA_COBERTURA" : "REGISTRAR_ASISTENCIA_JORNADA";
+        const actionDetail = isCoverageMode
+          ? `Cobertura de asistencia en curso: ${selectedCurso}, Fecha: ${fecha}, Preceptor responsable: ${userProfile?.nombre || userProfile?.email || "preceptor"}`
+          : `Curso: ${selectedCurso}, Fecha: ${fecha}`;
+        await logAction(userProfile?.email || "admin", actionType, actionDetail);
         await cargarPlanillaJornada();
       };
 
       await notify.promise(savePromise(), {
-        loading: "Guardando planilla de asistencia...",
-        success: "¡Planilla de asistencia guardada con éxito!",
+        loading: isCoverageMode ? `Guardando planilla de ${selectedCurso} (Modo Cobertura)...` : "Guardando planilla de asistencia...",
+        success: isCoverageMode ? `¡Asistencia de ${selectedCurso} guardada con éxito en Modo Cobertura!` : "¡Planilla de asistencia guardada con éxito!",
         error: "Ocurrió un error al guardar la asistencia."
       });
-      setSuccessMsg("Planilla de asistencia general guardada correctamente.");
+      setSuccessMsg(isCoverageMode ? `Planilla de ${selectedCurso} guardada y cobertura asentada en el registro de auditoría.` : "Planilla de asistencia general guardada correctamente.");
     } catch {
       setErrorMsg("Ocurrió un error al guardar la asistencia.");
     } finally {
@@ -220,59 +326,288 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
       {/* VISTA 1: PRECEPTOR / ADMIN (Control General de Jornada) */}
       {(role === "admin" || role === "directivo" || role === "preceptor") && (
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-5">
-            <div>
-              <h3 className="text-xl font-black text-[var(--text)] flex items-center gap-2">
-                <UserCheck className="text-[var(--verde)]" /> Planilla de Asistencia General
-              </h3>
-              <p className="text-[var(--text2)] text-xs font-bold uppercase tracking-wider mt-1">Control diario de alumnos</p>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Selector de Fecha */}
-              <div 
-                className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-1.5 cursor-pointer"
-                onClick={() => { try { (document.getElementById("student-attendance-date") as HTMLInputElement)?.showPicker?.(); } catch {} }}
-              >
-                <Calendar size={16} className="text-[var(--text3)] pointer-events-none" />
-                <input
-                  id="student-attendance-date"
-                  type="date"
-                  className="bg-transparent text-sm font-bold outline-none text-[var(--text)] cursor-pointer"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
-                />
+          {/* Header con Título, Turno Escolar Activo y Selectores */}
+          <div className="flex flex-col gap-4 border-b border-[var(--border)] pb-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] shadow-xs">
+                    <UserCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-[var(--text)] flex items-center gap-2">
+                      Planilla de Asistencia General
+                    </h3>
+                    <p className="text-[var(--text2)] text-xs font-bold uppercase tracking-wider">
+                      Control diario institucional de jornada
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Selector de Curso */}
-              <select
-                className="bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-bold outline-none text-[var(--text)] focus:border-[var(--verde)]"
-                value={selectedCurso}
-                onChange={(e) => setSelectedCurso(e.target.value)}
-              >
-                <option value="">— Seleccionar Curso —</option>
-                {role === "preceptor" && preceptorCursos.length > 0 ? (
-                  <>
-                    <optgroup label="Mis Cursos Asignados">
-                      {cursos
-                        .filter(c => preceptorCursos.includes(c.nombre))
-                        .map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
-                      }
-                    </optgroup>
-                    <optgroup label="Otros Cursos Institucionales">
-                      {cursos
-                        .filter(c => !preceptorCursos.includes(c.nombre))
-                        .map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
-                      }
-                    </optgroup>
-                  </>
-                ) : (
-                  cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
-                )}
-              </select>
+              {/* Indicador de Turno Escolar en Tiempo Real */}
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-[var(--bg3)] border border-[var(--border)] text-xs font-bold self-start md:self-auto shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-[var(--text3)]">Turno Escolar Activo:</span>
+                <span className="text-[var(--text)] font-black flex items-center gap-1.5">
+                  {liveShift === "manana" ? (
+                    <>
+                      <Sun size={14} className="text-amber-500" />
+                      <span>Mañana (07:45 - 12:45)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon size={14} className="text-indigo-400" />
+                      <span>Tarde (13:15 - 18:45)</span>
+                    </>
+                  )}
+                </span>
+              </div>
             </div>
+
+            {/* Fila de Controles: Filtros de Turno, Selector de Fecha y Dropdown de Curso */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
+              {/* Tabs de Filtro de Turnos / Mis Cursos */}
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl">
+                {role === "preceptor" && preceptorCursos.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTurno("mis_cursos")}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      turnoFiltro === "mis_cursos"
+                        ? "bg-[var(--azul)] text-white shadow-sm"
+                        : "text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg4)]"
+                    }`}
+                  >
+                    <Users size={14} />
+                    <span>Mis Cursos</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      turnoFiltro === "mis_cursos" ? "bg-white/20 text-white" : "bg-[var(--bg2)] text-[var(--text3)]"
+                    }`}>
+                      {preceptorCursos.length}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectTurno("manana")}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    turnoFiltro === "manana"
+                      ? "bg-amber-500 text-black shadow-sm"
+                      : "text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg4)]"
+                  }`}
+                >
+                  <Sun size={14} className={turnoFiltro === "manana" ? "text-black" : "text-amber-500"} />
+                  <span>Turno Mañana</span>
+                  {liveShift === "manana" && (
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      Ahora
+                    </span>
+                  )}
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    turnoFiltro === "manana" ? "bg-black/20 text-black" : "bg-[var(--bg2)] text-[var(--text3)]"
+                  }`}>
+                    {cursosManana.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectTurno("tarde")}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    turnoFiltro === "tarde"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg4)]"
+                  }`}
+                >
+                  <Moon size={14} className={turnoFiltro === "tarde" ? "text-white" : "text-indigo-400"} />
+                  <span>Turno Tarde</span>
+                  {liveShift === "tarde" && (
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      Ahora
+                    </span>
+                  )}
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    turnoFiltro === "tarde" ? "bg-white/20 text-white" : "bg-[var(--bg2)] text-[var(--text3)]"
+                  }`}>
+                    {cursosTarde.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectTurno("todos")}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    turnoFiltro === "todos"
+                      ? "bg-[var(--verde)] text-black shadow-sm"
+                      : "text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg4)]"
+                  }`}
+                >
+                  <Globe size={14} />
+                  <span>Todos</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    turnoFiltro === "todos" ? "bg-black/20 text-black" : "bg-[var(--bg2)] text-[var(--text3)]"
+                  }`}>
+                    {cursos.length}
+                  </span>
+                </button>
+              </div>
+
+              {/* Selector de Fecha y Dropdown de Curso */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Selector de Fecha */}
+                <div 
+                  className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl px-3.5 py-2 cursor-pointer shadow-xs"
+                  onClick={() => { try { (document.getElementById("student-attendance-date") as HTMLInputElement)?.showPicker?.(); } catch {} }}
+                >
+                  <Calendar size={16} className="text-[var(--text3)] pointer-events-none" />
+                  <input
+                    id="student-attendance-date"
+                    type="date"
+                    className="bg-transparent text-xs font-bold outline-none text-[var(--text)] cursor-pointer"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
+                  />
+                </div>
+
+                {/* Dropdown Select de Cursos */}
+                <select
+                  className="bg-[var(--bg3)] border border-[var(--border)] rounded-2xl px-3.5 py-2 text-xs font-bold outline-none text-[var(--text)] focus:border-[var(--verde)] shadow-xs cursor-pointer"
+                  value={selectedCurso}
+                  onChange={(e) => setSelectedCurso(e.target.value)}
+                >
+                  <option value="">— Seleccionar Curso —</option>
+                  {turnoFiltro === "mis_cursos" && preceptorCursos.length > 0 ? (
+                    <>
+                      <optgroup label="Mis Cursos Asignados">
+                        {cursos
+                          .filter(c => preceptorCursos.includes(c.nombre))
+                          .map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
+                        }
+                      </optgroup>
+                      <optgroup label="Otros Cursos (Cobertura)">
+                        {cursos
+                          .filter(c => !preceptorCursos.includes(c.nombre))
+                          .map(c => <option key={c.id} value={c.nombre}>{c.nombre} (Cobertura)</option>)
+                        }
+                      </optgroup>
+                    </>
+                  ) : turnoFiltro === "manana" ? (
+                    <>
+                      <optgroup label="Cursos Turno Mañana">
+                        {cursosManana.map(c => {
+                          const isCoverage = role === "preceptor" && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
+                          return (
+                            <option key={c.id} value={c.nombre}>
+                              {c.nombre} {isCoverage ? "• Cobertura" : ""}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    </>
+                  ) : turnoFiltro === "tarde" ? (
+                    <>
+                      <optgroup label="Cursos Turno Tarde">
+                        {cursosTarde.map(c => {
+                          const isCoverage = role === "preceptor" && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
+                          return (
+                            <option key={c.id} value={c.nombre}>
+                              {c.nombre} {isCoverage ? "• Cobertura" : ""}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    </>
+                  ) : (
+                    <>
+                      <optgroup label="Turno Mañana">
+                        {cursosManana.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                      </optgroup>
+                      <optgroup label="Turno Tarde">
+                        {cursosTarde.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+
+            {/* Quick Switcher de Cursos (Píldoras horizontales para cambio con 1 solo toque) */}
+            {visibleCursos.length > 0 && (
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text3)] flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-[var(--verde)]" />
+                    Cambio Rápido de Curso ({visibleCursos.length} divisiones):
+                  </span>
+                  {isCoverageMode && (
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider flex items-center gap-1">
+                      <ArrowRightLeft size={12} /> Cobertura activa
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                  {visibleCursos.map((c) => {
+                    const isSelected = selectedCurso === c.nombre;
+                    const isCoverage = role === "preceptor" && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedCurso(c.nombre)}
+                        className={`group shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                          isSelected
+                            ? isCoverage
+                              ? "bg-amber-500 text-black shadow-md shadow-amber-500/20 scale-102"
+                              : "bg-[var(--verde)] text-black shadow-md shadow-emerald-500/20 scale-102"
+                            : isCoverage
+                            ? "bg-[var(--bg3)] text-[var(--text2)] border border-amber-500/30 hover:border-amber-500 hover:text-amber-500"
+                            : "bg-[var(--bg3)] text-[var(--text2)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--text)]"
+                        }`}
+                        title={isCoverage ? `Tomar lista en cobertura a ${c.nombre}` : `Tomar lista a ${c.nombre}`}
+                      >
+                        {isSelected && <Check size={12} strokeWidth={3} />}
+                        <span>{c.nombre}</span>
+                        {isCoverage && (
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-extrabold uppercase tracking-tight ${
+                            isSelected ? "bg-black/20 text-black" : "bg-amber-500/10 text-amber-500"
+                          }`}>
+                            Cob.
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Banner de Modo Cobertura si el preceptor está cubriendo a un colega */}
+          {isCoverageMode && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-[var(--text)] shadow-xs animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                  <ArrowRightLeft size={18} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <ShieldCheck size={14} /> Modo Cobertura Activo: {selectedCurso}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text2)] mt-0.5">
+                    Estás registrando la asistencia de una división que no pertenece a tus cursos habituales. La planilla quedará registrada con tu firma digital de usuario en la bitácora institucional de auditoría.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-3 py-1.5 rounded-xl border border-amber-500/20 shrink-0">
+                Preceptor: {userProfile?.nombre || userProfile?.email || "Preceptor"}
+              </span>
+            </div>
+          )}
 
           {Object.keys(asistenciasJornada).length > 0 ? (
             <div className="space-y-4">

@@ -6,6 +6,7 @@ import { X, Plus, BookOpen, Check, AlertCircle, Sparkles } from "lucide-react";
 import { updateProfesor, saveProfesor, logAction, Profesor } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { PLAN_DE_ESTUDIOS } from "@/lib/curriculum";
 
 interface AssignTeacherSubjectsModalProps {
   isOpen: boolean;
@@ -196,11 +197,45 @@ export default function AssignTeacherSubjectsModal({
           </div>
         )}
 
-        {/* Input para nueva materia */}
+        {/* Selector y entrada para nueva materia */}
         <div className="space-y-4">
+          {/* Selector Oficial del Plan de Estudios */}
+          <div>
+            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2 flex items-center gap-1.5">
+              <BookOpen size={12} className="text-[var(--verde)]" />
+              <span>Seleccionar del Plan de Estudios Oficial</span>
+            </label>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleAdd(e.target.value);
+                  e.target.value = "";
+                }
+              }}
+              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 outline-none font-bold text-sm text-[var(--text)] focus:border-[var(--verde)] transition-all cursor-pointer shadow-xs"
+            >
+              <option value="">— + Seleccionar Materia del Plan de Estudios —</option>
+              {PLAN_DE_ESTUDIOS.map((cat) => (
+                <optgroup key={cat.id} label={`${cat.name} (${cat.materias.length})`}>
+                  {cat.materias.map((m) => {
+                    const alreadyHas = materias.some(
+                      (curr) => curr.trim().toLowerCase() === m.trim().toLowerCase()
+                    );
+                    return (
+                      <option key={m} value={m} disabled={alreadyHas}>
+                        {m} {alreadyHas ? "✓ (Ya asignada)" : ""}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">
-              Agregar Nueva Materia
+              O buscar / escribir materia específica
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">

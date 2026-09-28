@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { account } from "@/lib/appwrite";
 import { saveHorario, getProfesores, Profesor, getHorarios, logAction, getCursos, MODULO_MAP } from "@/lib/dataService";
 import { X, AlertCircle } from "lucide-react";
+import { PLAN_DE_ESTUDIOS } from "@/lib/curriculum";
 
 interface Props { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
 
@@ -167,11 +168,21 @@ export default function NewScheduleModal({ isOpen, onClose, onSuccess }: Props) 
             </div>
             <div>
               <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-2 block">Materia</label>
-              <select required className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all"
+              <select required className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] transition-all cursor-pointer"
                 value={materia} onChange={(e) => setMateria(e.target.value)}>
                 <option value="">Seleccionar Materia</option>
-                {selectedProfesor?.materias.map(m => <option key={m} value={m}>{m}</option>)}
-                {!profId && <option disabled>Primero elegí un profesor</option>}
+                {selectedProfesor?.materias && selectedProfesor.materias.length > 0 && (
+                  <optgroup label={`Materias Asignadas a ${selectedProfesor.nombre}`}>
+                    {selectedProfesor.materias.map(m => <option key={m} value={m}>{m}</option>)}
+                  </optgroup>
+                )}
+                {PLAN_DE_ESTUDIOS.map(cat => (
+                  <optgroup key={cat.id} label={`${cat.name} (${cat.materias.length})`}>
+                    {cat.materias.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
           </div>

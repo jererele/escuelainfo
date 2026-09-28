@@ -339,3 +339,73 @@ export const exportExamBoardToExcel = (mesas: MesaExamen[], title = "Cronograma_
   XLSX.utils.book_append_sheet(wb, ws, "Mesas_Examen");
   XLSX.writeFile(wb, `${title}_Escuela713_${new Date().toISOString().split("T")[0]}.xlsx`);
 };
+
+/**
+ * Exporta el acta volante oficial con la planilla detallada de alumnos inscriptos a Excel.
+ */
+export const exportExamMinutesToExcel = (
+  mesa: MesaExamen,
+  alumnos: Alumno[],
+  libro = "—",
+  folio = "—"
+) => {
+  const headerRows = [
+    ["PROVINCIA DEL CHUBUT - MINISTERIO DE EDUCACIÓN"],
+    ["ESCUELA N° 713 'JUAN ABDALA CHAYEP' - ESQUEL (CUE: 2600214-00)"],
+    ["ACTA VOLANTE OFICIAL DE EXÁMENES Y PLANILLA DE CALIFICACIONES"],
+    [`MATERIA: ${mesa.materia.toUpperCase()}`, `FECHA: ${mesa.fecha}`, `HORA: ${mesa.hora} hs`, `AULA: ${mesa.aula}`],
+    [`TRIBUNAL: Pres. ${mesa.presidenteNombre}${mesa.vocal1Nombre ? ` · V1: ${mesa.vocal1Nombre}` : ""}${mesa.vocal2Nombre ? ` · V2: ${mesa.vocal2Nombre}` : ""}`],
+    [`LIBRO N°: ${libro}`, `FOLIO N°: ${folio}`, `TURNO: Ordinario`],
+    [],
+    ["N°", "Apellido y Nombre del Alumno", "D.N.I.", "Curso / División", "Escrito", "Oral", "Calificación Final", "En Letras", "Condición (Aprobado/Desaprobado/Ausente)"]
+  ];
+
+  const dataRows = (mesa.alumnosInscriptos || []).map((dniOrName, idx) => {
+    const dniMatch = dniOrName.match(/\b\d{7,9}\b/);
+    const extractedDni = dniMatch ? dniMatch[0] : "";
+    
+    const found = alumnos.find(a => {
+      if (extractedDni && a.dni === extractedDni) return true;
+      if (a.dni && dniOrName.includes(a.dni)) return true;
+      if (a.nombre && (
+        dniOrName.toLowerCase().includes(a.nombre.toLowerCase()) ||
+        a.nombre.toLowerCase().includes(dniOrName.toLowerCase())
+      )) return true;
+      return false;
+    });
+
+    const cleanName = dniOrName.replace(/\(?DNI:?\s*[\d\s·\w]+\)?/i, "").trim();
+
+    return [
+      idx + 1,
+      found ? found.nombre : (cleanName || dniOrName),
+      found ? found.dni : (extractedDni || "—"),
+      found ? found.curso : "—",
+      "", // Escrito
+      "", // Oral
+      "", // Calificación
+      "", // Letras
+      ""  // Condición
+    ];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([...headerRows, ...dataRows]);
+
+  ws["!cols"] = [
+    { wch: 6 },
+    { wch: 32 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 25 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const safeTitle = mesa.materia.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20);
+  XLSX.utils.book_append_sheet(wb, ws, "Acta_Examen");
+  XLSX.writeFile(wb, `Acta_Examen_${safeTitle}_Escuela713_${mesa.fecha}.xlsx`);
+};
+

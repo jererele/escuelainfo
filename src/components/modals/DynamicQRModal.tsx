@@ -12,6 +12,7 @@ import {
   saveAsistenciasJornada, 
   saveAsistenciasMateria 
 } from "@/lib/dataService";
+import { PLAN_DE_ESTUDIOS } from "@/lib/curriculum";
 
 interface Props {
   isOpen: boolean;
@@ -144,9 +145,8 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
 
   if (!isOpen) return null;
 
-  const qrUrl = typeof window !== "undefined" 
-    ? window.location.href.split('?')[0].replace(/\/dashboard\/?$/, "/scan/") + `?token=${token}` 
-    : "";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const qrUrl = origin ? `${origin}/scan?token=${token}` : "";
   const canSelectJornada = userProfile?.rol === "admin" || userProfile?.rol === "directivo" || userProfile?.rol === "preceptor";
 
   return (
@@ -203,20 +203,29 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
               </select>
             </div>
 
-            {mode === "materia" && currentProfesor && (
+            {mode === "materia" && (
               <div className="space-y-2">
                 <label className="text-[10px] uppercase font-black tracking-wider text-[var(--text3)] ml-1">Seleccionar Materia</label>
                 <select
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 outline-none font-bold text-[var(--text)] text-sm focus:border-[var(--verde)] transition-colors appearance-none"
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 outline-none font-bold text-[var(--text)] text-sm focus:border-[var(--verde)] transition-colors cursor-pointer"
                   value={selectedMateria}
                   onChange={(e) => setSelectedMateria(e.target.value)}
                 >
-                  {(currentProfesor.materias || []).map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                  {(!currentProfesor.materias || currentProfesor.materias.length === 0) && (
-                    <option value="">Sin materias asignadas</option>
+                  <option value="">— Seleccionar Materia —</option>
+                  {currentProfesor?.materias && currentProfesor.materias.length > 0 && (
+                    <optgroup label="Mis Materias Asignadas">
+                      {currentProfesor.materias.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </optgroup>
                   )}
+                  {PLAN_DE_ESTUDIOS.map(cat => (
+                    <optgroup key={cat.id} label={`${cat.name} (${cat.materias.length})`}>
+                      {cat.materias.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
             )}
