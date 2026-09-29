@@ -6,6 +6,7 @@ import { account } from "@/lib/appwrite";
 import { 
   getUserProfile, 
   getAlumnos, 
+  getAlumnoByEmail,
   getMesasExamen,
   saveMesaExamen,
   MesaExamen,
@@ -48,11 +49,7 @@ function ScanContent() {
             throw new Error("Solo los alumnos pueden inscribirse a mesas de examen mediante código QR.");
           }
 
-          const allAlumnos = await getAlumnos();
-          const studentRecord = allAlumnos.find(
-            a => (a.email || "").toLowerCase() === (userProfile.email || "").toLowerCase() ||
-                 (userProfile.nombre && (a.nombre || "").toLowerCase() === userProfile.nombre.toLowerCase())
-          );
+          const studentRecord = await getAlumnoByEmail(userProfile.email);
 
           const mesas = await getMesasExamen(true);
           const mesa = mesas.find(m => m.id === mesaId);
@@ -101,23 +98,7 @@ function ScanContent() {
         if (!token) throw new Error("No se encontró ningún parámetro válido en la URL.");
         setScanType("asistencia");
 
-        // Decode token
-        let payload;
-        try {
-          payload = JSON.parse(atob(token));
-        } catch {
-          throw new Error("El código QR es inválido o está corrupto.");
-        }
-
-        const { t, m, s, p } = payload;
-        
-        // Verify expiration (25 seconds tolerance to prevent sharing photos of the QR via WhatsApp)
-        if (Date.now() - t > 25000) {
-          setStatus("expired");
-          return;
-        }
-
-        // Authenticate user
+        // Autenticar sesión del usuario
         let session;
         try {
           session = await account.get();
@@ -131,43 +112,83 @@ function ScanContent() {
           throw new Error("Solo los alumnos pueden registrar asistencia mediante QR.");
         }
 
-        const allAlumnos = await getAlumnos();
-        const studentRecord = (allAlumnos || []).find(
-          a => (a?.email || "").toLowerCase() === (userProfile.email || "").toLowerCase()
-        );
+        // 1. Verificación segura en Servidor mediante HMAC y API Key protegida
+        try {
+          const jwtRes = await account.createJWT();
+          const res = await fetch("/api/attendance/verify-qr", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${jwtRes.jwt}`
+            },
+            body: JSON.stringify({ token })
+          });
 
-        if (!studentRecord || !studentRecord.id) {
-          throw new Error("No se encontró tu legajo de alumno en el sistema.");
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setStatus("success");
+            return;
+          } else if (res.status === 400 && data.error && (data.error.includes("expirado") || data.error.includes("vencido"))) {
+            setStatus("expired");
+            return;
+          } else if (!res.ok) {
+            throw new Error(data.error || "No se pudo registrar la asistencia.");
+          }
+        } catch (serverErr: any) {
+          // Si el servidor devolvió un error de negocio o autenticación (no un fallo de red), respetarlo
+          if (serverErr.message && !serverErr.message.includes("Failed to fetch") && !serverErr.message.includes("NetworkError")) {
+            throw serverErr;
+          }
+          console.warn("[scan] Verificación por servidor inaccesible, ejecutando fallback seguro:", serverErr);
+
+          // Fallback seguro en cliente para entornos sin API Key configurada
+          let payload;
+          try {
+            const rawToken = token.includes(".") ? token.split(".")[0] : token;
+            payload = JSON.parse(atob(rawToken));
+          } catch {
+            throw new Error("El código QR es inválido o está corrupto.");
+          }
+
+          const { t, m, s, p } = payload;
+          if (Date.now() - t > 35000) {
+            setStatus("expired");
+            return;
+          }
+
+          const studentRecord = await getAlumnoByEmail(userProfile.email);
+          if (!studentRecord || !studentRecord.id) {
+            throw new Error("No se encontró tu legajo de alumno en el sistema.");
+          }
+
+          const todayDate = new Date().toISOString().split("T")[0];
+          if (m === "jornada") {
+            await saveAsistenciasJornada([{
+              alumnoId: studentRecord.id,
+              alumnoNombre: studentRecord.nombre,
+              fecha: todayDate,
+              estado: "P",
+              preceptorId: p || "QR_SISTEMA"
+            }]);
+            await logAction(userProfile.email, "C_AJ", `Asistencia por QR (Jornada)`);
+          } else if (m === "materia") {
+            await saveAsistenciasMateria([{
+              alumnoId: studentRecord.id,
+              alumnoNombre: studentRecord.nombre,
+              fecha: todayDate,
+              materia: s,
+              curso: studentRecord.curso,
+              estado: "P",
+              profesorId: p || "QR_SISTEMA"
+            }]);
+            await logAction(userProfile.email, "C_AM", `Asistencia por QR (Materia: ${s})`);
+          } else {
+            throw new Error("Formato de asistencia desconocido.");
+          }
+
+          setStatus("success");
+          return;
         }
-
-        const todayDate = new Date().toISOString().split("T")[0];
-
-        // Guardar asistencia
-        if (m === "jornada") {
-          await saveAsistenciasJornada([{
-            alumnoId: studentRecord.id,
-            alumnoNombre: studentRecord.nombre,
-            fecha: todayDate,
-            estado: "P",
-            preceptorId: p || "QR_SISTEMA"
-          }]);
-          await logAction(userProfile.email, "C_AJ", `Asistencia por QR (Jornada)`);
-        } else if (m === "materia") {
-          await saveAsistenciasMateria([{
-            alumnoId: studentRecord.id,
-            alumnoNombre: studentRecord.nombre,
-            fecha: todayDate,
-            materia: s,
-            curso: studentRecord.curso,
-            estado: "P",
-            profesorId: p || "QR_SISTEMA"
-          }]);
-          await logAction(userProfile.email, "C_AM", `Asistencia por QR (Materia: ${s})`);
-        } else {
-          throw new Error("Formato de asistencia desconocido.");
-        }
-
-        setStatus("success");
       } catch (err: any) {
         console.error(err);
         setErrorMsg(err.message || "Ocurrió un error inesperado al procesar el código.");

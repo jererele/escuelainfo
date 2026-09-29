@@ -692,6 +692,24 @@ export const checkAlumnoDNI = async (dni: string): Promise<boolean> => {
   } catch { return false; }
 };
 
+// 🛡️ SECURITY AUDIT REF: Prevención de Descarga Masiva (Information Leakage)
+// Consulta únicamente el registro del alumno solicitado sin descargar todo el padrón escolar al navegador.
+export const getAlumnoByEmail = async (email: string): Promise<Alumno | null> => {
+  if (!email || !email.trim()) return null;
+  try {
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+      queries: [Query.equal("email", sanitize(email, 200)), Query.limit(1)]
+    });
+    if (response.documents.length > 0) {
+      const doc = response.documents[0];
+      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email };
+    }
+    return null;
+  } catch { return null; }
+};
+
 export const checkProfesorDNI = async (dni: string): Promise<boolean> => {
   if (!dni || !dni.trim()) return false;
   try {
@@ -886,6 +904,41 @@ export const syncUserEmailChange = async (oldEmail: string, newEmail: string, ro
 export const deleteUserProfile = async (id: string) => {
   clearCache("usuarios");
   return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: id });
+};
+
+// 🛡️ SECURITY AUDIT REF: Invocación autenticada mediante JWT para rechazo y revocación de usuarios
+export const rejectUserApi = async (userId?: string, email?: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    let authHeader = "";
+    try {
+      const jwtRes = await account.createJWT();
+      if (jwtRes?.jwt) {
+        authHeader = `Bearer ${jwtRes.jwt}`;
+      }
+    } catch (jwtErr) {
+      console.warn("[rejectUserApi] No se pudo obtener JWT de sesión:", jwtErr);
+    }
+
+    const res = await fetch("/api/admin/reject-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { "Authorization": authHeader } : {})
+      },
+      body: JSON.stringify({ userId, email })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      return { success: false, error: data.error || "No se pudo rechazar o revocar el usuario." };
+    }
+    clearCache("usuarios");
+    clearCache("alumnos");
+    clearCache("profesores");
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Error al comunicarse con el servidor institucional." };
+  }
 };
 
 export const createUserProfile = async (profile: UserProfile) => {

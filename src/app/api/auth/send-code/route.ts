@@ -160,17 +160,25 @@ export async function POST(request: Request) {
     `;
 
     if (!smtpUser || !smtpPass) {
-      console.log(`[CÓDIGO OTP SIMULADO] Email: ${cleanEmail} (${type}) -> Código: ${code}`);
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[CRITICAL] Missing SMTP_USER or SMTP_PASS in production environment.');
+        return NextResponse.json(
+          { error: 'El servicio de correo institucional no está configurado correctamente en el servidor. Contacte al administrador.' },
+          { status: 503 }
+        );
+      }
+
+      console.log(`[CÓDIGO OTP SIMULADO DEV] Email: ${cleanEmail} (${type}) -> Código: ${code}`);
       const res = NextResponse.json({
         success: true,
-        message: 'Código de verificación generado (Modo simulación por falta de SMTP_USER/SMTP_PASS).',
+        message: 'Código de verificación generado (Modo simulación en entorno de desarrollo).',
         simulated: true,
-        code, // Permite continuar en desarrollo o si faltan las credenciales en Vercel
+        code, // Solo disponible en desarrollo local
         token,
       });
       res.cookies.set('escuelainfo_otp_token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         sameSite: 'lax',
         maxAge: 10 * 60,
         path: '/',

@@ -10,21 +10,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falta userId o email" }, { status: 400 });
     }
 
-    // 🛡️ SECURITY AUDIT REF: Broken Access Control (OWASP A01)
-    // El solicitante debe autenticarse y poseer un rol jerárquico autorizado
-    if (!callerEmail || typeof callerEmail !== "string") {
-      return NextResponse.json({ error: "Petición no autorizada: falta identificación del operador solicitante." }, { status: 401 });
-    }
-
-    const cleanCallerEmail = callerEmail.toLowerCase().trim();
-
-    // Rate limiting para evitar borrado masivo automatizado
-    const clientIp = getClientIp(request);
-    const rateCheck = checkRateLimit(`reject-user:${clientIp}`, 15, 60 * 1000);
-    if (!rateCheck.allowed) {
-      return NextResponse.json({ error: "Demasiadas operaciones consecutivas. Esperá un minuto." }, { status: 429 });
-    }
-
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
     const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
     const apiKey = process.env.APPWRITE_API_KEY;
@@ -32,6 +17,36 @@ export async function POST(request: Request) {
 
     if (!endpoint || !projectId || !apiKey) {
       return NextResponse.json({ error: "Configuración incompleta en el servidor Appwrite" }, { status: 500 });
+    }
+
+    // 🛡️ SECURITY AUDIT REF: Broken Access Control & Anti-Spoofing (OWASP A01)
+    // El solicitante debe autenticarse mediante JWT firmado por Appwrite, nunca confiando en datos del body
+    const authHeader = request.headers.get('authorization') || '';
+    const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (!jwt) {
+      return NextResponse.json({ error: "Petición no autorizada: falta token de sesión institucional (JWT)." }, { status: 401 });
+    }
+
+    let cleanCallerEmail = "";
+    try {
+      const authClient = new Client().setEndpoint(endpoint).setProject(projectId).setJWT(jwt);
+      const authAccount = new (await import('node-appwrite')).Account(authClient);
+      const sessionUser = await authAccount.get();
+      cleanCallerEmail = (sessionUser.email || "").toLowerCase().trim();
+    } catch {
+      return NextResponse.json({ error: "Sesión inválida o expirada. Por favor vuelva a iniciar sesión." }, { status: 401 });
+    }
+
+    if (!cleanCallerEmail) {
+      return NextResponse.json({ error: "No se pudo verificar la identidad del operador solicitante." }, { status: 401 });
+    }
+
+    // Rate limiting para evitar borrado masivo automatizado
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`reject-user:${clientIp}`, 15, 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: "Demasiadas operaciones consecutivas. Esperá un minuto." }, { status: 429 });
     }
 
     const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);

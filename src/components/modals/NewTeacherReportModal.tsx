@@ -85,6 +85,13 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
       return;
     }
 
+    if (formData.tipo === "Paro Docente") {
+      const confirmed = window.confirm(
+        `¿Confirmás la declaración de adhesión al paro para el ${formData.fecha}?\n\nSe registrará en el sistema y se enviará la notificación por email a los alumnos de los cursos afectados.`
+      );
+      if (!confirmed) return;
+    }
+
     setLoading(true);
     try {
       const newAusencia: Ausencia = {

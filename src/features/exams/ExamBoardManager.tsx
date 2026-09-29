@@ -12,6 +12,7 @@ import {
   MesaExamen, 
   getProfesores, 
   getAlumnos, 
+  getAlumnoByEmail,
   getCursos,
   getMesasExamen, 
   saveMesaExamen, 
@@ -161,13 +162,9 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       setCursos(curs);
       setMesas(mesasData);
 
-      // Si es alumno, obtener su registro personal para autocompletado en 1 clic
+      // Si es alumno, obtener únicamente su registro personal para autocompletado en 1 clic
       if (role === "alumno" && userProfile?.email) {
-        const allAlumnos = await getAlumnos();
-        const me = allAlumnos.find(
-          a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase() ||
-               (userProfile.nombre && (a.nombre || "").toLowerCase() === userProfile.nombre.toLowerCase())
-        );
+        const me = await getAlumnoByEmail(userProfile.email);
         if (me) setAlumnoRecord(me);
       }
     } catch {

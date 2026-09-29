@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -366,10 +366,9 @@ export default function Dashboard() {
             });
           } else if (profile.rol === 'alumno') {
             // Privacidad estricta del alumno: NUNCA descargar el padrón de los demás compañeros
-            getAlumnos().then(als => {
+            const myEmail = (currentUser.email || profile.email || "").toLowerCase();
+            getAlumnoByEmail(myEmail).then(myRecord => {
               if (!isMounted) return;
-              const myEmail = (currentUser.email || profile.email || "").toLowerCase();
-              const myRecord = als.find(a => (a.email || "").toLowerCase() === myEmail);
               setAlumnos(myRecord ? [myRecord] : []);
             });
           }
@@ -685,19 +684,9 @@ export default function Dashboard() {
         setUsuarios(prev => prev.filter(userItem => userItem.id !== u.id && userItem.email.toLowerCase() !== u.email.toLowerCase()));
         setProfesores(prev => prev.filter(t => t.email.toLowerCase() !== u.email.toLowerCase()));
 
-        const res = await fetch("/api/admin/reject-user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: u.id,
-            email: u.email,
-            callerEmail: user?.email,
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "No se pudo rechazar la solicitud");
+        const result = await rejectUserApi(u.id, u.email);
+        if (!result.success) {
+          throw new Error(result.error || "No se pudo rechazar la solicitud");
         }
 
         showToast("Solicitud rechazada y eliminada", "success");
@@ -837,19 +826,9 @@ export default function Dashboard() {
         setUsuarios(prev => prev.filter(userItem => userItem.id !== u.id && userItem.email.toLowerCase() !== u.email.toLowerCase()));
         setAlumnos(prev => prev.filter(al => al.email.toLowerCase() !== u.email.toLowerCase()));
 
-        const res = await fetch("/api/admin/reject-user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: u.id,
-            email: u.email,
-            callerEmail: user?.email,
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "No se pudo rechazar la solicitud en el servidor");
+        const result = await rejectUserApi(u.id, u.email);
+        if (!result.success) {
+          throw new Error(result.error || "No se pudo rechazar la solicitud en el servidor");
         }
 
         showToast(`Solicitud de ${u.nombre} rechazada y eliminada`, "success");
@@ -1164,18 +1143,9 @@ export default function Dashboard() {
     askConfirm(`¿Revocar acceso y eliminar la cuenta de ${u.email}?`, async () => {
       try {
         setUsuarios(prev => prev.filter(userItem => userItem.id !== u.id && userItem.email.toLowerCase() !== u.email.toLowerCase()));
-        const res = await fetch("/api/admin/reject-user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: u.id,
-            email: u.email,
-            callerEmail: user?.email,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "No se pudo revocar acceso");
+        const result = await rejectUserApi(u.id, u.email);
+        if (!result.success) {
+          throw new Error(result.error || "No se pudo revocar acceso");
         }
         showToast("Acceso revocado y cuenta eliminada", "success");
         getUsuarios().then(setUsuarios);

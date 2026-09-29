@@ -12,6 +12,7 @@ import {
   saveAsistenciasJornada, 
   saveAsistenciasMateria 
 } from "@/lib/dataService";
+import { account } from "@/lib/appwrite";
 import { PLAN_DE_ESTUDIOS } from "@/lib/curriculum";
 
 interface Props {
@@ -61,16 +62,47 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
   useEffect(() => {
     if (!isOpen || tab !== "qr") return;
 
-    const generateToken = () => {
-      const payload = {
-        t: Date.now(),
-        m: mode,
-        s: mode === "materia" ? selectedMateria : "jornada",
-        p: userProfile?.id || "admin" // issuer
-      };
-      const encoded = btoa(JSON.stringify(payload));
-      setToken(encoded);
-      setTimeLeft(15);
+    let isMounted = true;
+
+    const generateToken = async () => {
+      try {
+        const jwtRes = await account.createJWT();
+        const res = await fetch("/api/attendance/qr-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${jwtRes.jwt}`
+          },
+          body: JSON.stringify({
+            mode,
+            selectedMateria: mode === "materia" ? selectedMateria : "jornada",
+            issuerId: userProfile?.id || "admin"
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.token) {
+            setToken(data.token);
+            setTimeLeft(15);
+            return;
+          }
+        }
+      } catch (err) {
+        // Fallback local silencioso si no hay conexión o no hay API key
+      }
+
+      if (isMounted) {
+        const payload = {
+          t: Date.now(),
+          m: mode,
+          s: mode === "materia" ? selectedMateria : "jornada",
+          p: userProfile?.id || "admin" // issuer
+        };
+        const encoded = btoa(JSON.stringify(payload));
+        setToken(encoded);
+        setTimeLeft(15);
+      }
     };
 
     generateToken();
@@ -84,7 +116,10 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [isOpen, mode, selectedMateria, userProfile, tab]);
 
   useEffect(() => {

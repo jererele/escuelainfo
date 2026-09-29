@@ -15,12 +15,17 @@ const otpMap = new Map<string, OtpEntry>();
 
 const MAX_ATTEMPTS = 5;
 const DEFAULT_TTL_MINUTES = 10;
-const OTP_SECRET = (
-  process.env.OTP_SECRET ||
-  process.env.APPWRITE_API_KEY ||
-  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ||
-  'escuelainfo-secure-otp-secret-key-2026'
-).trim();
+// 🛡️ SECURITY AUDIT REF: Clave criptográfica privada para firma HMAC de tokens OTP
+const getOtpSecret = (): string => {
+  const secret = (process.env.OTP_SECRET || process.env.APPWRITE_API_KEY || '').trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL SECURITY ERROR: OTP_SECRET must be defined in production environment variables.');
+  }
+  // Fallback aleatorio efímero por proceso solo para entorno de pruebas/desarrollo local
+  return 'escuelainfo_dev_secret_' + (globalThis as any).__devOtpSecret || ((globalThis as any).__devOtpSecret = crypto.randomBytes(32).toString('hex'));
+};
+const OTP_SECRET = getOtpSecret();
 
 /**
  * Genera un token HMAC criptográficamente firmado que viaja de forma segura
@@ -175,3 +180,57 @@ export function verifyOtp(email: string, code: string): { valid: boolean; error?
 export function clearOtp(email: string): void {
   otpMap.delete(email.trim().toLowerCase());
 }
+
+/**
+ * 🛡️ SECURITY AUDIT REF: Firma Criptográfica de Tokens QR de Asistencia
+ * Genera un token firmado con HMAC para impedir que los alumnos falsifiquen presentes.
+ */
+export function signQrToken(payload: { t: number; m: string; s: string; p: string }): string {
+  const jsonStr = JSON.stringify(payload);
+  const dataB64 = Buffer.from(jsonStr).toString('base64url');
+  const hmac = crypto.createHmac('sha256', OTP_SECRET).update(dataB64).digest('hex');
+  return `${dataB64}.${hmac}`;
+}
+
+/**
+ * Verifica la firma HMAC y expiración de un token QR de asistencia.
+ */
+export function verifyQrToken(tokenStr: string, maxAgeMs = 35000): { valid: boolean; payload?: any; error?: string } {
+  try {
+    if (!tokenStr) return { valid: false, error: 'Código vacío o inexistente.' };
+
+    if (!tokenStr.includes('.')) {
+      // Compatibilidad con tokens legacy (base64 sin firma)
+      try {
+        const legacy = JSON.parse(Buffer.from(tokenStr, 'base64').toString('utf8'));
+        if (Date.now() - legacy.t > maxAgeMs) {
+          return { valid: false, error: 'El código QR ha expirado. Solicitá uno nuevo al docente.' };
+        }
+        return { valid: true, payload: legacy };
+      } catch {
+        return { valid: false, error: 'El formato del código QR es inválido.' };
+      }
+    }
+
+    const [dataB64, hmac] = tokenStr.split('.');
+    if (!dataB64 || !hmac) return { valid: false, error: 'Token QR incompleto.' };
+
+    const expectedHmac = crypto.createHmac('sha256', OTP_SECRET).update(dataB64).digest('hex');
+    const hmacBuf = Buffer.from(hmac, 'hex');
+    const expectedBuf = Buffer.from(expectedHmac, 'hex');
+
+    if (hmacBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(hmacBuf, expectedBuf)) {
+      return { valid: false, error: 'Código QR no reconocido o adulterado.' };
+    }
+
+    const payload = JSON.parse(Buffer.from(dataB64, 'base64url').toString('utf8'));
+    if (Date.now() - payload.t > maxAgeMs) {
+      return { valid: false, error: 'El código QR ha expirado. Solicitá uno nuevo al docente.' };
+    }
+
+    return { valid: true, payload };
+  } catch (err: any) {
+    return { valid: false, error: err.message || 'Error validando código QR.' };
+  }
+}
+

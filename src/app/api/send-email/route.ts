@@ -47,6 +47,56 @@ export async function POST(request: Request) {
       .filter(e => EMAIL_REGEX.test(e))
       .slice(0, 300); // Límite máximo de seguridad de 300 destinatarios por lote
 
+    // 🛡️ SECURITY AUDIT REF: Prevención de Open Mail Relay & Autorización Estricta
+    const authHeader = request.headers.get('authorization') || '';
+    const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    // Comprobar si es una consulta pública legítima dirigida al buzón oficial de la escuela
+    const isPublicContact = to && 
+      String(to).trim().toLowerCase() === "skbcraft.info@gmail.com" && 
+      bccList.length === 0 &&
+      replyTo && 
+      EMAIL_REGEX.test(String(replyTo).trim());
+
+    if (!jwt && !isPublicContact) {
+      return NextResponse.json(
+        { error: "No autorizado: se requiere sesión activa institucional para enviar correos masivos o a terceros." },
+        { status: 401 }
+      );
+    }
+
+    if (jwt) {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "6a2af00d002d86d3dd20";
+      const apiKey = process.env.APPWRITE_API_KEY;
+      const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'escuelainfodb';
+
+      try {
+        const { Client, Account, Databases, Query } = await import('node-appwrite');
+        const authClient = new Client().setEndpoint(endpoint).setProject(projectId).setJWT(jwt);
+        const authAccount = new Account(authClient);
+        const sessionUser = await authAccount.get();
+        if (!sessionUser || !sessionUser.email) {
+          return NextResponse.json({ error: "Sesión de operador institucional no válida." }, { status: 401 });
+        }
+
+        if (apiKey) {
+          const adminClient = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+          const db = new Databases(adminClient);
+          const userDocs = await db.listDocuments(dbId, 'usuarios', [Query.equal('email', sessionUser.email.toLowerCase().trim())]);
+          if (userDocs.total > 0 && userDocs.documents[0]) {
+            const rol = (userDocs.documents[0].rol || '').toLowerCase();
+            const allowed = ['admin', 'directivo', 'preceptor', 'profesor', 'ad', 'd', 'pp', 'p'];
+            if (!allowed.includes(rol)) {
+              return NextResponse.json({ error: "Permiso denegado: tu rol no tiene autorización para enviar correos institucionales." }, { status: 403 });
+            }
+          }
+        }
+      } catch {
+        return NextResponse.json({ error: "Error de autenticación: sesión de Appwrite inválida o expirada." }, { status: 401 });
+      }
+    }
+
     const user = process.env.SMTP_USER?.replace(/['"\s]/g, "");
     const pass = process.env.SMTP_PASS?.replace(/['"\s]/g, "");
 
@@ -57,7 +107,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, simulated: true });
     }
 
-    // Configurar el transporter para Gmail
+    // Configurar el transporter para Gmail con TLS estricto en producción
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
@@ -67,7 +117,7 @@ export async function POST(request: Request) {
         pass,
       },
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: process.env.NODE_ENV === "production",
       },
       connectionTimeout: 10000,
       greetingTimeout: 10000,

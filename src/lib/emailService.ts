@@ -1,6 +1,20 @@
 /**
  * Servicio de envío de notificaciones y correos institucionales
  */
+import { account } from "./appwrite";
+
+const getEmailAuthHeaders = async (): Promise<Record<string, string>> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  try {
+    const jwtRes = await account.createJWT();
+    if (jwtRes?.jwt) {
+      headers["Authorization"] = `Bearer ${jwtRes.jwt}`;
+    }
+  } catch (err) {
+    console.warn("[emailService] No se pudo obtener JWT de sesión:", err);
+  }
+  return headers;
+};
 
 export interface ApprovalEmailParams {
   to: string;
@@ -145,9 +159,10 @@ export const sendApprovalEmail = async (params: ApprovalEmailParams): Promise<bo
   `;
 
   try {
+    const headers = await getEmailAuthHeaders();
     const res = await fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         to: params.to,
         subject,
@@ -329,9 +344,10 @@ export const sendAbsenceNoticeEmail = async (params: AbsenceNoticeParams): Promi
   `;
 
   try {
+    const headers = await getEmailAuthHeaders();
     const res = await fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         bcc: cleanEmails,
         subject,

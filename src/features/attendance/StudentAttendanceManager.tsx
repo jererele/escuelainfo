@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import { 
   UserCheck, 
@@ -88,8 +88,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
   const refrescarDatosAlumno = useCallback(async () => {
     if (userProfile?.email) {
       try {
-        const als = await getAlumnos();
-        const al = als.find(a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase());
+        const al = await getAlumnoByEmail(userProfile.email);
         if (al) {
           setAlumnoRecord(al);
           await cargarHistorialAlumno(al.id || al.dni);
