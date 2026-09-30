@@ -9,11 +9,13 @@ import {
   ChevronDown, 
   Check, 
   Sparkles,
-  Info
+  Info,
+  Clock
 } from "lucide-react";
 import { 
   ORIENTACIONES_OFICIALES, 
   DIVISIONES_OFICIALES, 
+  TURNOS_OFICIALES,
   formatOfficialCourseName, 
   parseCourseNameComponents,
   OrientacionItem 
@@ -31,7 +33,7 @@ export interface CourseSelectProps {
   className?: string;
   id?: string;
   name?: string;
-  allowCustomOrBuilder?: boolean; // Permite armar curso con Orientación, Año y División
+  allowCustomOrBuilder?: boolean; // Permite armar curso con Orientación, Año, División y Turno
   showBuilderByDefault?: boolean;
   includeSinCursoOption?: boolean;
 }
@@ -54,7 +56,7 @@ export default function CourseSelect({
   const generatedId = useId();
   const selectId = id || generatedId;
 
-  // Estado para el constructor guiado: Orientación, Año y División
+  // Estado para el constructor guiado: Orientación, Año, División y Turno
   const parsed = useMemo(() => parseCourseNameComponents(value), [value]);
 
   const [useBuilder, setUseBuilder] = useState<boolean>(
@@ -69,6 +71,9 @@ export default function CourseSelect({
   );
   const [selectedDivision, setSelectedDivision] = useState<string>(
     parsed.division || "1ra"
+  );
+  const [selectedTurno, setSelectedTurno] = useState<string>(
+    parsed.turno || "Mañana"
   );
 
   // Encontrar el objeto de orientación seleccionado
@@ -91,11 +96,12 @@ export default function CourseSelect({
   }, [selectedOrientacion, aniosDisponibles, selectedAnio]);
 
   // Actualizar el valor padre cuando se usa el constructor guiado
-  const handleBuilderChange = (newOri: string, newAnio: string, newDiv: string) => {
+  const handleBuilderChange = (newOri: string, newAnio: string, newDiv: string, newTurno?: string) => {
     const oriItem = ORIENTACIONES_OFICIALES.find(
       (o) => o.shortName.toLowerCase() === newOri.toLowerCase() || o.id === newOri
     );
-    const formatted = formatOfficialCourseName(newAnio, newDiv, oriItem?.shortName);
+    const turnoToApply = newTurno !== undefined ? newTurno : selectedTurno;
+    const formatted = formatOfficialCourseName(newAnio, newDiv, oriItem?.shortName, turnoToApply);
     onChange(formatted);
   };
 
@@ -181,7 +187,7 @@ export default function CourseSelect({
                 const targetOri = ORIENTACIONES_OFICIALES.find(o => o.shortName === val || o.id === val);
                 const firstAnio = targetOri ? targetOri.anios[0] : "1°";
                 setSelectedAnio(firstAnio);
-                handleBuilderChange(val, firstAnio, selectedDivision);
+                handleBuilderChange(val, firstAnio, selectedDivision, selectedTurno);
               }}
               className="w-full bg-[var(--bg3)] border border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)] rounded-xl py-2 px-3 text-xs font-bold outline-none cursor-pointer"
             >
@@ -193,11 +199,11 @@ export default function CourseSelect({
             </select>
           </div>
 
-          {/* Fila 2: Año y División */}
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* Fila 2: Año, División y Turno */}
+          <div className="grid grid-cols-3 gap-2">
             {/* Año de cursada */}
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center gap-1">
+              <span className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center gap-1 truncate">
                 <Calendar size={11} className="text-[var(--verde)]" />
                 2. Año
               </span>
@@ -207,9 +213,9 @@ export default function CourseSelect({
                 onChange={(e) => {
                   const val = e.target.value;
                   setSelectedAnio(val);
-                  handleBuilderChange(selectedOrientacion, val, selectedDivision);
+                  handleBuilderChange(selectedOrientacion, val, selectedDivision, selectedTurno);
                 }}
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)] rounded-xl py-2 px-3 text-xs font-bold outline-none cursor-pointer"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)] rounded-xl py-2 px-2 text-xs font-bold outline-none cursor-pointer"
               >
                 {aniosDisponibles.map((a) => (
                   <option key={a} value={a}>
@@ -221,7 +227,7 @@ export default function CourseSelect({
 
             {/* División */}
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center gap-1">
+              <span className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center gap-1 truncate">
                 <Layers size={11} className="text-[var(--verde)]" />
                 3. División
               </span>
@@ -231,13 +237,37 @@ export default function CourseSelect({
                 onChange={(e) => {
                   const val = e.target.value;
                   setSelectedDivision(val);
-                  handleBuilderChange(selectedOrientacion, selectedAnio, val);
+                  handleBuilderChange(selectedOrientacion, selectedAnio, val, selectedTurno);
                 }}
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)] rounded-xl py-2 px-3 text-xs font-bold outline-none cursor-pointer"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)] rounded-xl py-2 px-2 text-xs font-bold outline-none cursor-pointer"
               >
                 {DIVISIONES_OFICIALES.map((div) => (
                   <option key={div} value={div}>
                     División {div}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Turno */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase text-[var(--text3)] flex items-center gap-1 truncate">
+                <Clock size={11} className="text-[var(--verde)]" />
+                4. Turno
+              </span>
+              <select
+                value={selectedTurno}
+                disabled={disabled}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedTurno(val);
+                  handleBuilderChange(selectedOrientacion, selectedAnio, selectedDivision, val);
+                }}
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)] rounded-xl py-2 px-2 text-xs font-bold outline-none cursor-pointer"
+              >
+                {TURNOS_OFICIALES.map((t) => (
+                  <option key={t} value={t}>
+                    Turno {t}
                   </option>
                 ))}
               </select>
@@ -247,10 +277,10 @@ export default function CourseSelect({
           {/* Preview del curso armado */}
           <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--verde-bg)]/30 border border-[var(--verde-border)]/50 text-xs">
             <span className="text-[10px] font-black uppercase tracking-wider text-[var(--verde)]">
-              Resultado:
+              Resultado generado:
             </span>
             <span className="font-black text-[var(--text)] font-mono">
-              {value || formatOfficialCourseName(selectedAnio, selectedDivision, orientacionObj.shortName)}
+              {value || formatOfficialCourseName(selectedAnio, selectedDivision, orientacionObj.shortName, selectedTurno)}
             </span>
           </div>
         </div>
