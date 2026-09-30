@@ -10,6 +10,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  devIndicators: false,
   ...(!isGithubPages ? {
     async redirects() {
       return [
@@ -54,7 +55,7 @@ const nextConfig = {
             },
             {
               key: 'Content-Security-Policy',
-              value: "default-src 'self' https://cloud.appwrite.io https://*.firebaseio.com https://*.googleapis.com https://*.firebaseapp.com https://*.firebase.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.google.com https://*.firebaseapp.com; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com; connect-src 'self' https://cloud.appwrite.io wss://cloud.appwrite.io https://*.googleapis.com https://*.firebaseio.com;",
+              value: "default-src 'self' https://cloud.appwrite.io https://*.firebaseio.com https://*.googleapis.com https://*.firebaseapp.com https://*.firebase.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.google.com https://*.firebaseapp.com; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com; connect-src 'self' ws: wss: https://cloud.appwrite.io wss://cloud.appwrite.io https://*.googleapis.com https://*.firebaseio.com;",
             },
           ],
         },

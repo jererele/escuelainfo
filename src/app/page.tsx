@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
@@ -29,6 +29,7 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterInfo, setShowRegisterInfo] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const sessionCheckedRef = useRef(false);
 
   // Recuperar contraseña con código de verificación
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
@@ -95,6 +96,9 @@ function LoginContent() {
     }
   }, [email, resetForgotForm, resetRegisterForm]);
 
+  const urlError = searchParams.get("error");
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+
   useEffect(() => {
     setMounted(true);
     client.ping().catch(() => {});
@@ -105,11 +109,16 @@ function LoginContent() {
       if (initialMode !== "login") {
         setActiveMode(initialMode);
       }
-      window.history.replaceState({ mode: initialMode }, "", window.location.href);
+      if (!window.history.state || window.history.state.mode !== initialMode) {
+        window.history.replaceState({ mode: initialMode }, "", window.location.href);
+      }
     }
 
+    // Prevenir bucle infinito: chequear sesión solo una vez al montar
+    if (sessionCheckedRef.current) return;
+    sessionCheckedRef.current = true;
+
     // Verificar error en URL (por ejemplo si fue redirigido por cuenta no registrada)
-    const urlError = searchParams.get("error");
     if (urlError) {
       if (urlError === "unregistered") {
         setErrorMsg("Tu cuenta no se encuentra registrada en la institución o fue dada de baja.");
@@ -123,12 +132,6 @@ function LoginContent() {
 
     // Auto-redirección si la sesión está activa y la cuenta es válida
     const checkSession = async () => {
-      // Salvaguarda: Si hay error en la URL, no intentar auto-redirección
-      if (searchParams.get("error")) {
-        setCheckingSession(false);
-        return;
-      }
-
       let user;
       try {
         user = await account.get();
@@ -139,7 +142,6 @@ function LoginContent() {
       }
 
       try {
-        const redirectTo = searchParams.get("redirect") || "/dashboard";
         let profile = await getUserProfile(user.$id);
 
         if (!profile && user.email) {
@@ -173,7 +175,7 @@ function LoginContent() {
     };
 
     checkSession();
-  }, [router, searchParams]);
+  }, [router, urlError, redirectTo]);
 
   // Manejo de retroceso en pestañas de acceso (Login <-> Register <-> Forgot)
   useEffect(() => {
@@ -193,14 +195,15 @@ function LoginContent() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [resetForgotForm, resetRegisterForm]);
 
+  const isTimerRunning = forgotTimer > 0 || registerTimer > 0;
   useEffect(() => {
-    if (forgotTimer <= 0 && registerTimer <= 0) return;
+    if (!isTimerRunning) return;
     const interval = setInterval(() => {
       setForgotTimer(prev => (prev > 0 ? prev - 1 : 0));
       setRegisterTimer(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, [forgotTimer, registerTimer]);
+  }, [isTimerRunning]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
