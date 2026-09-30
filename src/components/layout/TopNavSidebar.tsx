@@ -25,7 +25,7 @@ import {
   ShieldCheck,
   Activity,
 } from "lucide-react";
-import { UserProfile } from "@/lib/dataService";
+import { UserProfile, fromDbRol } from "@/lib/dataService";
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
 import VersionModal from "@/components/modals/VersionModal";
@@ -153,6 +153,8 @@ export default function TopNavSidebar({
     closeSidebar();
   };
 
+  const normalizedRole = fromDbRol(userProfile?.rol);
+
   const tabs = [
     { id: "general",       label: "Inicio",            icon: <LayoutDashboard size={18} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "usuarios",      label: "Usuarios",          icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor"] },
@@ -167,18 +169,21 @@ export default function TopNavSidebar({
     { id: "cursos",        label: "Cursos",            icon: <FolderOpen size={18} />,      roles: ["admin", "directivo", "preceptor"] },
     { id: "classroom",     label: "Google Classroom",  icon: <BookOpen size={18} />,        roles: ["admin", "profesor", "alumno"], isExternal: true, url: "https://classroom.google.com" },
     { id: "ciclo-lectivo", label: "Ciclo Lectivo",     icon: <RefreshCw size={18} />,       roles: ["admin", "directivo"] },
-    ...((userProfile?.rol === "admin" || userProfile?.rol === "directivo")
+    ...((normalizedRole === "admin" || normalizedRole === "directivo")
       ? [{ id: "configuracion", label: "Accesos", icon: <Settings size={18} />, roles: ["admin", "directivo"] }]
       : []),
     ...(showSecretAdmin
       ? [{ id: "auditoria", label: "Auditoría", icon: <ShieldAlert size={18} />, roles: ["admin", "directivo"] }]
       : []),
-  ].filter((tab) => tab.roles.includes(userProfile?.rol ?? "alumno"));
+  ].filter((tab) => tab.roles.includes(normalizedRole ?? "alumno"));
 
   const userName  = userProfile?.nombre || user?.displayName || "Usuario";
   const userInitial = userName.charAt(0).toUpperCase();
-  const rolLabel  = userProfile?.rol === "admin" ? "Administrador"
-    : userProfile?.rol === "directivo" ? "Directivo"
+  const rolLabel  = normalizedRole === "admin" ? "Administrador"
+    : normalizedRole === "directivo" ? "Directivo"
+    : normalizedRole === "preceptor" ? "Preceptor"
+    : normalizedRole === "profesor" ? "Profesor"
+    : normalizedRole === "alumno" ? "Alumno"
     : userProfile?.rol ?? "Invitado";
 
   return (

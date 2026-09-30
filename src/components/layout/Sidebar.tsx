@@ -23,7 +23,7 @@ import {
   Edit3,
   ShieldCheck
 } from "lucide-react";
-import { UserProfile } from "@/lib/dataService";
+import { UserProfile, fromDbRol } from "@/lib/dataService";
 import { gamerEasterEgg } from "@/lib/gamerEasterEgg";
 import {
   Sidebar as ShadcnSidebar,
@@ -97,6 +97,8 @@ export default function Sidebar({
     }
   };
 
+  const normalizedRole = fromDbRol(userProfile?.rol);
+
   const tabs = [
     { id: "general", label: "Inicio", icon: <LayoutDashboard size={20} />, roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "usuarios", label: "Usuarios", icon: <UserCheck size={20} />, roles: ["admin", "directivo", "preceptor"] },
@@ -112,9 +114,9 @@ export default function Sidebar({
     { id: "calendario", label: "Calendario", icon: <CalendarDays size={20} />, roles: ["admin", "directivo"] },
     { id: "classroom", label: "Google Classroom", icon: <BookOpen size={20} />, roles: ["admin", "profesor", "alumno"], isExternal: true, url: "https://classroom.google.com" },
     { id: "ciclo-lectivo", label: "Ciclo Lectivo", icon: <RefreshCw size={20} />, roles: ["admin", "directivo"] },
-    ...((userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') ? [{ id: "configuracion", label: "Accesos", icon: <Settings size={20} />, roles: ["admin", "directivo"] }] : []),
+    ...((normalizedRole === 'admin' || normalizedRole === 'directivo') ? [{ id: "configuracion", label: "Accesos", icon: <Settings size={20} />, roles: ["admin", "directivo"] }] : []),
     ...(showSecretAdmin ? [{ id: "auditoria", label: "Auditoría", icon: <ShieldAlert size={20} />, roles: ["admin", "directivo"] }] : [])
-  ].filter(tab => tab.roles.includes(userProfile?.rol || "alumno"));
+  ].filter(tab => tab.roles.includes(normalizedRole || "alumno"));
 
   return (
     <>
@@ -132,7 +134,7 @@ export default function Sidebar({
               <div className="title-font text-2xl font-black whitespace-nowrap">
                 Escuela<span className="text-[var(--verde)]">Info</span>
               </div>
-              {userProfile?.rol === 'admin' && (
+              {normalizedRole === 'admin' && (
                 <button
                   type="button"
                   onClick={(e) => {

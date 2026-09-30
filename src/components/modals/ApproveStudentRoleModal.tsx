@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Check, GraduationCap, BookOpen, Users, AlertCircle } from "lucide-react";
-import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, fromDbRol } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ApproveStudentRoleModalProps {
@@ -38,6 +38,7 @@ export default function ApproveStudentRoleModal({
   const courseSelectRef = useRef<HTMLSelectElement>(null);
   const preceptorSectionRef = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
+  const initializedUserRef = useRef<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function ApproveStudentRoleModal({
 
   // Bloqueo de scroll en el fondo mientras el modal está abierto
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || typeof document === "undefined") return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -82,7 +83,7 @@ export default function ApproveStudentRoleModal({
 
   // Filtrar los roles según los permisos jerárquicos del operador
   const availableRoles = useMemo(() => {
-    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    const isOpPreceptor = fromDbRol(operatorRole || "").trim().toLowerCase() === "preceptor";
     return allRoles.filter((r) => {
       // Un preceptor bajo ninguna circunstancia puede asignar el rol de preceptor
       if (isOpPreceptor && r.id === "preceptor") return false;
@@ -91,12 +92,19 @@ export default function ApproveStudentRoleModal({
   }, [allRoles, allowedRoles, operatorRole]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !user) {
       setSelectedRole("alumno");
       setSelectedCurso("");
       setLoading(false);
+      initializedUserRef.current = null;
       return;
     }
+
+    const userKey = `${user.id || user.uid || user.email}-${isOpen}`;
+    if (initializedUserRef.current === userKey) {
+      return;
+    }
+    initializedUserRef.current = userKey;
 
     // Pre-seleccionar rol inicial válido
     if (availableRoles.some((r) => r.id === "alumno")) {
@@ -115,13 +123,16 @@ export default function ApproveStudentRoleModal({
     } else {
       setSelectedCurso(requested || "");
     }
+  }, [isOpen, user, alumnoDetails, cursos, availableRoles]);
 
+  useEffect(() => {
+    if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, alumnoDetails, cursos, onClose, availableRoles]);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !user || !mounted || typeof document === "undefined" || !document.body) return null;
 

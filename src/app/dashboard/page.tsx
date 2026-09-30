@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, fromDbRol } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -343,11 +343,12 @@ export default function Dashboard() {
           }
 
           // Cargar datos condicionalmente según el rol con suscripciones en tiempo real y privacidad estricta
-          if (profile.rol === 'admin' || profile.rol === 'directivo' || profile.rol === 'preceptor') {
+          const roleForSubscriptions = fromDbRol(profile.rol);
+          if (roleForSubscriptions === 'admin' || roleForSubscriptions === 'directivo' || roleForSubscriptions === 'preceptor') {
             unsubscribes.push(subscribeToUsuarios(setUsuarios));
             unsubscribes.push(subscribeToProfesores(setProfesores));
             unsubscribes.push(subscribeToAlumnos(setAlumnos));
-          } else if (profile.rol === 'profesor') {
+          } else if (roleForSubscriptions === 'profesor') {
             // Privacidad docente: no exponer DNI, teléfono ni email personal de otros profesores
             getProfesores().then(profs => {
               if (!isMounted) return;
@@ -364,7 +365,7 @@ export default function Dashboard() {
               });
               setProfesores(sanitized);
             });
-          } else if (profile.rol === 'alumno') {
+          } else if (roleForSubscriptions === 'alumno') {
             // Privacidad estricta del alumno: NUNCA descargar el padrón de los demás compañeros
             const myEmail = (currentUser.email || profile.email || "").toLowerCase();
             getAlumnoByEmail(myEmail).then(myRecord => {
@@ -376,7 +377,7 @@ export default function Dashboard() {
           unsubscribes.push(subscribeToCursos(setCursos));
 
           getHorarios().then(d => { if (isMounted) { setHorarios(d); stamp('horarios'); }});
-          if (profile.rol === 'admin') getLogs().then(d => { if (isMounted) { setLogs(d); stamp('logs'); }});
+          if (roleForSubscriptions === 'admin') getLogs().then(d => { if (isMounted) { setLogs(d); stamp('logs'); }});
         } else {
           // Si no hay perfil en usuarios (ej. cuenta rechazada o eliminada), eliminar sesión activa de inmediato
           try { await account.deleteSession("current"); } catch {}
@@ -499,10 +500,11 @@ export default function Dashboard() {
   };
 
 
-  const isAdmin = userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor';
-  const isSuperAdmin = userProfile?.rol === 'admin';
-  const isDirector = userProfile?.rol === 'directivo';
-  const isPreceptor = userProfile?.rol === 'preceptor';
+  const normalizedUserRole = fromDbRol(userProfile?.rol);
+  const isAdmin = normalizedUserRole === 'admin' || normalizedUserRole === 'directivo' || normalizedUserRole === 'preceptor';
+  const isSuperAdmin = normalizedUserRole === 'admin';
+  const isDirector = normalizedUserRole === 'directivo';
+  const isPreceptor = normalizedUserRole === 'preceptor';
   
   // Jerarquía: Preceptor no puede gestionar ausencias. Solo Directivo y Admin.
   const canManageAusencias = isSuperAdmin || isDirector;
@@ -810,11 +812,12 @@ export default function Dashboard() {
           : undefined,
       }).catch(err => console.error("Error al enviar email de aprobación:", err));
 
-      getUsuarios().then(setUsuarios);
-      getAlumnos().then(setAlumnos);
-      if (targetRole === "profesor") {
-        getProfesores().then(setProfesores);
-      }
+      // Forzar actualización ignorando caché local de sesión
+      await Promise.all([
+        getUsuarios(true).then(setUsuarios),
+        getAlumnos(true).then(setAlumnos),
+        targetRole === "profesor" ? getProfesores(true).then(setProfesores) : Promise.resolve(),
+      ]);
     } catch (err) {
       showToast("Error al aprobar usuario", "error");
     }
@@ -854,17 +857,19 @@ export default function Dashboard() {
     });
   };
 
-  // CAMBIO DE ROL DIRECTO (Exclusivo Administrador)
+  // CAMBIO DE ROL INSTITUCIONAL
   const handleChangeUserRole = async (
     targetUser: UserProfile,
     newRole: UserProfile["rol"],
     selectedCurso?: string,
     preceptorCursos?: string[]
   ) => {
-    const operatorRole = userProfile?.rol?.trim().toLowerCase();
+    const operatorRole = fromDbRol(userProfile?.rol);
+    const normalizedTargetRole = fromDbRol(targetUser.rol);
+    const normalizedNewRole = fromDbRol(newRole);
 
     // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
-    if (operatorRole === "preceptor" && newRole === "preceptor") {
+    if (operatorRole === "preceptor" && normalizedNewRole === "preceptor") {
       showToast("Los preceptores no tienen permisos para asignar el rol de preceptor", "error");
       return;
     }
@@ -877,8 +882,8 @@ export default function Dashboard() {
 
     // 2. Validar que el rol a asignar esté dentro de los permitidos para su jerarquía
     const allowedRoles = getAllowedAssignableRoles(operatorRole);
-    if (!allowedRoles.includes(newRole as UserRole)) {
-      showToast(`Tu rol de ${operatorRole || "usuario"} no puede otorgar la jerarquía de ${newRole}`, "error");
+    if (!allowedRoles.includes(normalizedNewRole as UserRole)) {
+      showToast(`Tu rol de ${operatorRole || "usuario"} no puede otorgar la jerarquía de ${normalizedNewRole}`, "error");
       return;
     }
 
@@ -887,114 +892,138 @@ export default function Dashboard() {
     const currentUserEmail = (userProfile?.email || "").toLowerCase();
     if (
       (targetUser.id === userProfile?.id || (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)) &&
-      newRole !== "admin" &&
-      targetUser.rol === "admin"
+      normalizedNewRole !== "admin" &&
+      (normalizedTargetRole === "admin" || targetUser.rol === "admin")
     ) {
       showToast("No podés modificar o quitarte tu propio rol de Administrador", "error");
       return;
     }
 
+    const roleLabels: Record<string, string> = {
+      admin: "Administrador",
+      directivo: "Directivo",
+      preceptor: "Preceptor",
+      profesor: "Profesor",
+      alumno: "Alumno",
+    };
+    const newLabel = roleLabels[normalizedNewRole] || normalizedNewRole;
+
     try {
-      const oldRole = targetUser.rol;
-
-      // Actualizar en base de datos
-      const updatePayload: Partial<UserProfile> = { rol: newRole };
-      if (newRole === "preceptor" && preceptorCursos) {
-        updatePayload.cursos = preceptorCursos;
-      }
-      await updateUserProfile(targetUser.id!, updatePayload);
-
       // Actualización optimista local
       setUsuarios(prev => prev.map(u => u.id === targetUser.id ? { 
         ...u, 
-        rol: newRole,
-        cursos: newRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
+        rol: normalizedNewRole as any,
+        cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
       } : u));
 
       if (userProfile?.id === targetUser.id || (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)) {
         setUserProfile(prev => prev ? {
           ...prev,
-          rol: newRole,
-          cursos: newRole === "preceptor" ? (preceptorCursos ?? prev.cursos) : prev.cursos
+          rol: normalizedNewRole as any,
+          cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? prev.cursos) : prev.cursos
         } : prev);
       }
 
-      // 1. Si el rol asignado es ALUMNO
-      if (newRole === "alumno") {
-        const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
-        if (studDetails && studDetails.id) {
-          if (selectedCurso) {
-            await updateAlumno(studDetails.id, { curso: selectedCurso });
-            setAlumnos(prev => prev.map(a => a.id === studDetails.id ? { ...a, curso: selectedCurso } : a));
-          }
+      // 4. Intentar actualización segura vía Server API (con permisos elevados de admin en Appwrite)
+      let apiSuccess = false;
+      try {
+        const apiRes = await changeUserRoleApi(
+          targetUser.id!,
+          targetUserEmail,
+          normalizedNewRole,
+          selectedCurso,
+          preceptorCursos
+        );
+        if (apiRes.success) {
+          apiSuccess = true;
         } else {
-          await saveAlumno({
-            nombre: targetUser.nombre,
-            dni: "",
-            curso: selectedCurso || "pendiente",
-            email: targetUser.email.toLowerCase().trim()
-          });
-          getAlumnos().then(setAlumnos);
+          console.warn("API Server change-role aviso:", apiRes.error);
         }
+      } catch (apiErr) {
+        console.warn("Fallo Server API change-role, ejecutando fallback local:", apiErr);
       }
 
-      // 2. Si el rol asignado es PROFESOR
-      if (newRole === "profesor") {
-        const teachers = await getProfesores();
-        const alreadyExists = teachers.some(t => (t.email || "").toLowerCase() === targetUserEmail);
-        if (!alreadyExists) {
+      // Si la API no respondió éxito, ejecutar fallback del cliente
+      if (!apiSuccess) {
+        const updatePayload: Partial<UserProfile> = { rol: normalizedNewRole as any };
+        if (normalizedNewRole === "preceptor") {
+          updatePayload.cursos = preceptorCursos || [];
+        } else {
+          updatePayload.cursos = [];
+        }
+        await updateUserProfile(targetUser.id!, updatePayload);
+
+        // 1. Si el rol asignado es ALUMNO
+        if (normalizedNewRole === "alumno") {
           const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
-          await saveProfesor({
-            nombre: targetUser.nombre,
-            dni: studDetails?.dni || "",
-            materias: [],
-            email: targetUser.email.toLowerCase().trim()
-          });
-          getProfesores().then(setProfesores);
+          if (studDetails && studDetails.id) {
+            if (selectedCurso) {
+              await updateAlumno(studDetails.id, { curso: selectedCurso });
+              setAlumnos(prev => prev.map(a => a.id === studDetails.id ? { ...a, curso: selectedCurso } : a));
+            }
+          } else {
+            await saveAlumno({
+              nombre: targetUser.nombre,
+              dni: "",
+              curso: selectedCurso || "pendiente",
+              email: targetUser.email.toLowerCase().trim()
+            });
+          }
         }
-        // Desvincular de lista de alumnos si existía
-        const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
-        if (studDetails && studDetails.id) {
-          await deleteAlumno(studDetails.id);
-          getAlumnos().then(setAlumnos);
+
+        // 2. Si el rol asignado es PROFESOR
+        if (normalizedNewRole === "profesor") {
+          const teachers = await getProfesores();
+          const alreadyExists = teachers.some(t => (t.email || "").toLowerCase() === targetUserEmail);
+          if (!alreadyExists) {
+            const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
+            await saveProfesor({
+              nombre: targetUser.nombre,
+              dni: studDetails?.dni || "",
+              materias: [],
+              email: targetUser.email.toLowerCase().trim()
+            });
+          }
+          const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
+          if (studDetails && studDetails.id) {
+            await deleteAlumno(studDetails.id);
+          }
         }
+
+        // 3. Si el rol asignado es ADMIN, DIRECTIVO o PRECEPTOR
+        if (normalizedNewRole === "admin" || normalizedNewRole === "directivo" || normalizedNewRole === "preceptor") {
+          const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
+          if (studDetails && studDetails.id) {
+            await deleteAlumno(studDetails.id);
+          }
+        }
+
+        const oldLabel = roleLabels[normalizedTargetRole] || normalizedTargetRole;
+        const extraDetails = normalizedNewRole === "alumno" && selectedCurso
+          ? ` (Curso: ${selectedCurso})`
+          : normalizedNewRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
+          ? ` (Cursos: ${preceptorCursos.join(", ")})`
+          : "";
+
+        await logAction(
+          user?.email || "admin",
+          "C_ROL",
+          `${targetUser.email}: de ${oldLabel} a ${newLabel}${extraDetails}`
+        );
       }
-
-      // 3. Si el rol asignado es ADMIN, DIRECTIVO o PRECEPTOR
-      if (newRole === "admin" || newRole === "directivo" || newRole === "preceptor") {
-        const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
-        if (studDetails && studDetails.id) {
-          await deleteAlumno(studDetails.id);
-          getAlumnos().then(setAlumnos);
-        }
-      }
-
-      const roleLabels: Record<string, string> = {
-        admin: "Administrador",
-        directivo: "Directivo",
-        preceptor: "Preceptor",
-        profesor: "Profesor",
-        alumno: "Alumno",
-      };
-      const oldLabel = roleLabels[oldRole] || oldRole;
-      const newLabel = roleLabels[newRole] || newRole;
-
-      const extraDetails = newRole === "alumno" && selectedCurso
-        ? ` (Curso: ${selectedCurso})`
-        : newRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
-        ? ` (Cursos: ${preceptorCursos.join(", ")})`
-        : "";
-
-      await logAction(
-        user?.email || "admin",
-        "C_ROL",
-        `${targetUser.email}: de ${oldLabel} a ${newLabel}${extraDetails}`
-      );
 
       showToast(`Rol de ${targetUser.nombre} actualizado a ${newLabel}`, "success");
-      getUsuarios().then(setUsuarios);
+
+      // Invalidar caché y forzar recarga de datos actualizados desde la base de datos
+      await Promise.all([
+        getUsuarios(true).then(setUsuarios),
+        getAlumnos(true).then(setAlumnos),
+        getProfesores(true).then(setProfesores),
+      ]);
     } catch (err) {
+      console.error("Error al actualizar el rol:", err);
       showToast("Error al actualizar el rol del usuario", "error");
+      getUsuarios(true).then(setUsuarios);
     }
   };
 
@@ -1594,7 +1623,7 @@ export default function Dashboard() {
             />
           )}
 
-          {activeTab === "usuarios" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+          {activeTab === "usuarios" && isAdmin && (
             <UsuariosTab
               usuarios={usuarios}
               alumnos={alumnos}
@@ -1605,7 +1634,7 @@ export default function Dashboard() {
               onRejectStudent={handleRejectStudent}
               onChangeUserRole={handleChangeUserRole}
               showToast={showToast}
-              onRefreshUsuarios={() => getUsuarios().then(setUsuarios)}
+              onRefreshUsuarios={() => getUsuarios(true).then(setUsuarios)}
             />
           )}
 

@@ -79,7 +79,25 @@ const ROL_MAP: Record<string, string> = {
   "d": "directivo",
   "pe": "pendiente",
   "p_a": "pendiente_alumno",
-  "p_p": "pendiente_profesor"
+  "p_p": "pendiente_profesor",
+  "pe_a": "pendiente_alumno",
+  "pe_p": "pendiente_profesor",
+  "pe_pp": "pendiente_preceptor",
+  "pe_d": "pendiente_directivo",
+  "pe_ad": "pendiente_admin",
+  "p_pp": "pendiente_preceptor",
+  "p_d": "pendiente_directivo",
+  "p_ad": "pendiente_admin",
+  "pendiente_alumno": "pendiente_alumno",
+  "pendiente_profesor": "pendiente_profesor",
+  "pendiente_preceptor": "pendiente_preceptor",
+  "pendiente_directivo": "pendiente_directivo",
+  "pendiente_admin": "pendiente_admin",
+  "alumno": "alumno",
+  "admin": "admin",
+  "profesor": "profesor",
+  "preceptor": "preceptor",
+  "directivo": "directivo"
 };
 const ROL_REVERSE: Record<string, string> = Object.fromEntries(Object.entries(ROL_MAP).map(([k, v]) => [v, k]));
 
@@ -90,20 +108,43 @@ const ESTADO_MAP: Record<string, string> = {
 };
 const ESTADO_REVERSE: Record<string, string> = Object.fromEntries(Object.entries(ESTADO_MAP).map(([k, v]) => [v, k]));
 
-export const toDbRol = (r: string) => ROL_REVERSE[r] || r;
-export const fromDbRol = (r: string) => ROL_MAP[r] || r;
+export const toDbRol = (r: string): string => {
+  const clean = (r || "").trim().toLowerCase();
+  switch (clean) {
+    case "admin": return "ad";
+    case "directivo": return "d";
+    case "preceptor": return "pp";
+    case "profesor": return "p";
+    case "alumno": return "a";
+    case "pendiente": return "pe";
+    case "pendiente_admin": case "pe_ad": case "p_ad": return "pe_ad";
+    case "pendiente_directivo": case "pe_d": case "p_d": return "pe_d";
+    case "pendiente_preceptor": case "pe_pp": case "p_pp": return "pe_pp";
+    case "pendiente_profesor": case "pe_p": case "p_p": return "pe_p";
+    case "pendiente_alumno": case "pe_a": case "p_a": return "pe_a";
+    default: return ROL_REVERSE[clean] || clean;
+  }
+};
+
+export const fromDbRol = (r?: string | null): string => {
+  if (!r) return "";
+  const clean = r.trim().toLowerCase();
+  return ROL_MAP[clean] || clean;
+};
+
 export const toDbEstado = (e: string) => ESTADO_REVERSE[e] || e;
 export const fromDbEstado = (e: string) => ESTADO_MAP[e] || e;
 
 export const isPendingRole = (rol?: string | null): boolean => {
   if (!rol) return true;
   const clean = rol.trim().toLowerCase();
-  return clean === "pe" || clean === "p_a" || clean === "p_p" || clean === "pendiente" || clean.startsWith("pendiente");
+  return clean === "pe" || clean === "p_a" || clean === "p_p" || clean === "pe_a" || clean === "pe_p" || clean === "pe_pp" || clean === "pe_d" || clean === "pe_ad" || clean === "pendiente" || clean.startsWith("pendiente");
 };
 
 export const isAuthorizedRole = (rol?: string | null): boolean => {
   if (!rol) return false;
-  return !isPendingRole(rol) && ["admin", "directivo", "preceptor", "profesor", "alumno"].includes(rol.trim().toLowerCase());
+  const clean = fromDbRol(rol).trim().toLowerCase();
+  return !isPendingRole(clean) && ["admin", "directivo", "preceptor", "profesor", "alumno"].includes(clean);
 };
 
 export type UserRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
@@ -117,7 +158,7 @@ export type UserRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumn
  */
 export const getAllowedAssignableRoles = (operatorRole?: string | null): UserRole[] => {
   if (!operatorRole) return [];
-  const clean = operatorRole.trim().toLowerCase();
+  const clean = fromDbRol(operatorRole).trim().toLowerCase();
   if (clean === "admin") {
     return ["admin", "directivo", "preceptor", "profesor", "alumno"];
   }
@@ -139,21 +180,21 @@ export const getAllowedAssignableRoles = (operatorRole?: string | null): UserRol
  */
 export const canManageUserRole = (operatorRole?: string | null, targetRole?: string | null): boolean => {
   if (!operatorRole) return false;
-  const op = operatorRole.trim().toLowerCase();
-  const tgt = (targetRole || "").trim().toLowerCase();
+  const op = fromDbRol(operatorRole).trim().toLowerCase();
+  const tgt = fromDbRol(targetRole || "").trim().toLowerCase();
 
   if (op === "admin") return true;
   if (op === "directivo") {
-    return tgt !== "admin" && tgt !== "directivo" && tgt !== "pendiente_admin" && tgt !== "pendiente_directivo";
+    return tgt !== "admin" && tgt !== "directivo" && !tgt.includes("admin") && !tgt.includes("directivo");
   }
   if (op === "preceptor") {
     return (
       tgt !== "admin" &&
       tgt !== "directivo" &&
       tgt !== "preceptor" &&
-      tgt !== "pendiente_admin" &&
-      tgt !== "pendiente_directivo" &&
-      tgt !== "pendiente_preceptor"
+      !tgt.includes("admin") &&
+      !tgt.includes("directivo") &&
+      !tgt.includes("preceptor")
     );
   }
   return false;
@@ -936,6 +977,53 @@ export const rejectUserApi = async (userId?: string, email?: string): Promise<{ 
     clearCache("alumnos");
     clearCache("profesores");
     return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Error al comunicarse con el servidor institucional." };
+  }
+};
+
+// 🛡️ SECURITY AUDIT REF: Invocación autenticada mediante JWT para modificación de rol institucional
+export const changeUserRoleApi = async (
+  targetUserId: string,
+  targetUserEmail: string,
+  newRole: string,
+  selectedCurso?: string,
+  preceptorCursos?: string[]
+): Promise<{ success: boolean; error?: string; targetUserId?: string; newRole?: string }> => {
+  try {
+    let authHeader = "";
+    try {
+      const jwtRes = await account.createJWT();
+      if (jwtRes?.jwt) {
+        authHeader = `Bearer ${jwtRes.jwt}`;
+      }
+    } catch (jwtErr) {
+      console.warn("[changeUserRoleApi] No se pudo obtener JWT de sesión:", jwtErr);
+    }
+
+    const res = await fetch("/api/admin/change-role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { "Authorization": authHeader } : {})
+      },
+      body: JSON.stringify({
+        targetUserId,
+        targetUserEmail,
+        newRole,
+        selectedCurso,
+        preceptorCursos
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      return { success: false, error: data.error || "No se pudo actualizar el rol institucional." };
+    }
+    clearCache("usuarios");
+    clearCache("alumnos");
+    clearCache("profesores");
+    return { success: true, targetUserId: data.targetUserId, newRole: data.newRole };
   } catch (err: any) {
     return { success: false, error: err?.message || "Error al comunicarse con el servidor institucional." };
   }

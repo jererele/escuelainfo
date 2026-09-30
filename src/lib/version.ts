@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.32.1";
-export const APP_BUILD_DATE = "30/09/2026 14:15 hs";
+export const APP_VERSION = "v2.32.2";
+export const APP_BUILD_DATE = "30/09/2026 15:15 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Resolución de Bucle Infinito en Inicio de Sesión, Desacople de Navegación y Blindaje de Renderizado (page.tsx y next.config.js): Se corrigió la incidencia crítica donde la pantalla de acceso entraba en un ciclo continuo de re-renderizado que saturaba el procesador y congelaba el navegador. 1) Control de Montaje y Desacople de Historial (page.tsx): Se incorporó una referencia atómica (sessionCheckedRef) que garantiza que la verificación de sesión en Appwrite y la inicialización de modo se ejecuten una única vez al montar el componente, eliminando la inestabilidad de referencias por 'replaceState' y 'useSearchParams'. 2) Optimización del Temporizador OTP: Se reestructuró el hook de cuenta regresiva para evitar la re-creación innecesaria de intervalos por segundo. 3) Desactivación de Dev Indicators y Permisos de WebSocket en CSP (next.config.js): Se configuró 'devIndicators: false' para deshabilitar el ícono flotante de desarrollo de Next.js y se habilitaron directivas 'ws: wss:' en la política de seguridad (CSP) para la sincronización fluida de WebSockets en Turbopack/HMR."
+  "Resolución Definitiva y Blindaje de Cambio de Rol Institucional en Usuarios (/api/admin/change-role, dataService.ts, UsuariosTab.tsx, page.tsx, ChangeUserRoleModal.tsx, Sidebar.tsx y TopNavSidebar.tsx): Se resolvió la anomalía donde el cambio de rol institucional en el directorio de usuarios no surtía efecto. 1) Endpoint Seguro en Servidor (/api/admin/change-role): Se implementó una ruta API en Next.js con permisos administrativos de Appwrite (node-appwrite y APPWRITE_API_KEY) que valida el token JWT del operador, comprueba la jerarquía permitida, actualiza el perfil en la colección usuarios, sincroniza altas/bajas en las colecciones alumnos y profesores, y asienta el registro en auditoría con el código 'C_ROL'. 2) Normalización Bidireccional de Formatos de Rol (fromDbRol y toDbRol): Se unificó el manejo de claves compactas ('ad', 'd', 'pp', 'p', 'a', 'pe') y completas en todas las comprobaciones de permisos jerárquicos (canManageUserRole, getAllowedAssignableRoles, isAdmin, isSuperAdmin) y renderizado de insignias visuales (getRoleBadge). 3) Protección de Estado en Modales de Selección: Se blindó ChangeUserRoleModal y ApproveStudentRoleModal con referencias de inicialización para erradicar el reseteo involuntario del rol seleccionado durante los re-renderizados del componente padre. 4) Invalidación Estricta de Caché: Se forzó la recarga de datos ('forceRefresh = true') tras cualquier cambio o aprobación, asegurando que la interfaz refleje inmediatamente el nuevo rol sin ser sobreescrita por la caché de sesión previa."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.32.1",
+    date: "30/09/2026 14:15 hs",
+    notes: [
+      "Resolución de Bucle Infinito en Inicio de Sesión, Desacople de Navegación y Blindaje de Renderizado (page.tsx y next.config.js): Se corrigió la incidencia crítica donde la pantalla de acceso entraba en un ciclo continuo de re-renderizado que saturaba el procesador y congelaba el navegador. 1) Control de Montaje y Desacople de Historial (page.tsx): Se incorporó una referencia atómica (sessionCheckedRef) que garantiza que la verificación de sesión en Appwrite y la inicialización de modo se ejecuten una única vez al montar el componente, eliminando la inestabilidad de referencias por 'replaceState' y 'useSearchParams'. 2) Optimización del Temporizador OTP: Se reestructuró el hook de cuenta regresiva para evitar la re-creación innecesaria de intervalos por segundo. 3) Desactivación de Dev Indicators y Permisos de WebSocket en CSP (next.config.js): Se configuró 'devIndicators: false' para deshabilitar el ícono flotante de desarrollo de Next.js y se habilitaron directivas 'ws: wss:' en la política de seguridad (CSP) para la sincronización fluida de WebSockets en Turbopack/HMR."
+    ]
+  },
   {
     version: "v2.32.0",
     date: "29/09/2026 16:25 hs",

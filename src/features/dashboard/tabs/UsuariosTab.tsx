@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { UserProfile, Alumno, Curso, isPendingRole, canManageUserRole, getAllowedAssignableRoles } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, isPendingRole, canManageUserRole, getAllowedAssignableRoles, fromDbRol } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
 import ChangeUserRoleModal from "@/components/modals/ChangeUserRoleModal";
@@ -65,10 +65,12 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const [roleChangingUser, setRoleChangingUser] = useState<UserProfile | null>(null);
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
 
-  // Determinar si el usuario autenticado tiene rol de Administrador
+  // Determinar roles jerárquicos del operador con normalización compacta
+  const normalizedOperatorRole = fromDbRol(userProfile?.rol);
   const isOperatorAdmin = Boolean(
-    isAdmin || (userProfile?.rol && userProfile.rol.toLowerCase().trim() === "admin")
+    isAdmin || normalizedOperatorRole === "admin"
   );
+  const canOperatorManageRoles = ["admin", "directivo", "preceptor"].includes(normalizedOperatorRole);
 
   useEffect(() => {
     if (!isOperatorAdmin && roleFilter === "admin") {
@@ -80,7 +82,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const pendingRequests = useMemo(() => {
     return usuarios.filter(u => {
       if (!isPendingRole(u.rol)) return false;
-      if (!isOperatorAdmin && (u.rol === "admin" || u.rol === "pendiente_admin")) return false;
+      const uNorm = fromDbRol(u.rol);
+      if (!isOperatorAdmin && (uNorm === "admin" || u.rol === "admin" || u.rol === "pendiente_admin")) return false;
       return true;
     });
   }, [usuarios, isOperatorAdmin]);
@@ -90,7 +93,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const activeUsers = useMemo(() => {
     return usuarios.filter(u => {
       if (isPendingRole(u.rol)) return false;
-      if (!isOperatorAdmin && u.rol === "admin") return false;
+      const uNorm = fromDbRol(u.rol);
+      if (!isOperatorAdmin && (uNorm === "admin" || u.rol === "admin")) return false;
       return true;
     });
   }, [usuarios, isOperatorAdmin]);
@@ -110,29 +114,32 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
         curso.toLowerCase().includes(q);
 
       if (roleFilter === "todos") return matchesSearch;
-      if (roleFilter === "alumno") return matchesSearch && u.rol === "pendiente_alumno";
-      if (roleFilter === "profesor") return matchesSearch && u.rol === "pendiente_profesor";
-      if (roleFilter === "preceptor") return matchesSearch && u.rol === "pendiente_preceptor";
+      if (roleFilter === "alumno") return matchesSearch && (u.rol === "pendiente_alumno" || u.rol === "a");
+      if (roleFilter === "profesor") return matchesSearch && (u.rol === "pendiente_profesor" || u.rol === "p");
+      if (roleFilter === "preceptor") return matchesSearch && (u.rol === "pendiente_preceptor" || u.rol === "pp");
       return matchesSearch;
     });
   }, [pendingRequests, alumnos, searchQuery, roleFilter]);
 
-  // Filtrado de usuarios activos por búsqueda
+  // Filtrado de usuarios activos por búsqueda con soporte para roles compactos
   const filteredActive = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return activeUsers.filter(u => {
+      const uNorm = fromDbRol(u.rol);
       const matchesSearch = 
         (u.nombre || "").toLowerCase().includes(q) ||
         (u.email || "").toLowerCase().includes(q) ||
+        uNorm.toLowerCase().includes(q) ||
         (u.rol || "").toLowerCase().includes(q);
 
       if (roleFilter === "todos") return matchesSearch;
-      return matchesSearch && u.rol === roleFilter;
+      return matchesSearch && uNorm === roleFilter;
     });
   }, [activeUsers, searchQuery, roleFilter]);
 
   const getRoleBadge = (rol: string) => {
-    switch (rol) {
+    const normalized = fromDbRol(rol);
+    switch (normalized) {
       case "admin":
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]">
@@ -169,7 +176,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           </span>
         );
       default:
-        if (rol.startsWith("pendiente") || rol === "pe") {
+        if (rol.startsWith("pendiente") || rol === "pe" || normalized === "pendiente") {
           return (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)]">
               <Clock size={11} strokeWidth={2.5} />
@@ -179,7 +186,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
         }
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-[var(--bg3)] text-[var(--text2)] border border-[var(--border)]">
-            <span>{rol}</span>
+            <span>{normalized || rol}</span>
           </span>
         );
     }
@@ -545,7 +552,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                         Activo
                       </span>
 
-                      {u.rol === "alumno" && (
+                      {fromDbRol(u.rol) === "alumno" && (
                         <div className="text-[11px] font-bold text-[var(--text2)]">
                           {studDetails?.curso && studDetails.curso !== "pendiente" ? (
                             <span className="px-2 py-0.5 rounded-lg bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] uppercase font-mono">
@@ -557,7 +564,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                         </div>
                       )}
 
-                      {u.rol === "preceptor" && (
+                      {fromDbRol(u.rol) === "preceptor" && (
                         <div className="text-[11px] font-bold text-[var(--text2)]">
                           {u.cursos && u.cursos.length > 0 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--azul-bg)] text-[var(--azul)] border border-[var(--azul-border)] font-mono">
@@ -603,7 +610,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Rol Asignado</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Detalle / Curso</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Estado</th>
-                    {(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+                    {canOperatorManageRoles && (
                       <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest text-right">Acciones</th>
                     )}
                   </tr>
@@ -611,7 +618,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                 <tbody>
                   {filteredActive.length === 0 ? (
                     <tr>
-                      <td colSpan={(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') ? 6 : 5} className="p-20 text-center text-[var(--text3)] italic">
+                      <td colSpan={canOperatorManageRoles ? 6 : 5} className="p-20 text-center text-[var(--text3)] italic">
                         No se encontraron usuarios con ese criterio.
                       </td>
                     </tr>
@@ -665,7 +672,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                             )}
                           </td>
                           <td className="p-6 text-xs">
-                            {u.rol === "alumno" ? (
+                            {fromDbRol(u.rol) === "alumno" ? (
                               studDetails?.curso && studDetails.curso !== "pendiente" ? (
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[var(--bg3)] border border-[var(--border)] font-bold text-[var(--text)] uppercase font-mono">
                                   {studDetails.curso}
@@ -673,7 +680,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                               ) : (
                                 <span className="text-[var(--amarillo)] font-medium italic">Sin curso</span>
                               )
-                            ) : u.rol === "preceptor" ? (
+                            ) : fromDbRol(u.rol) === "preceptor" ? (
                               u.cursos && u.cursos.length > 0 ? (
                                 <div className="flex flex-wrap items-center gap-1.5 max-w-[280px]">
                                   {u.cursos.map((c) => (
@@ -699,7 +706,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                               Activo
                             </span>
                           </td>
-                          {(userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+                          {canOperatorManageRoles && (
                             <td className="p-6 text-right">
                               {canModifyThisUser ? (
                                 <button

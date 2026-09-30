@@ -16,7 +16,7 @@ import {
   Lock,
   ArrowRight
 } from "lucide-react";
-import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, parseUserCursos } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, parseUserCursos, fromDbRol } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ChangeUserRoleModalProps {
@@ -57,6 +57,7 @@ export default function ChangeUserRoleModal({
   const preceptorSectionRef = useRef<HTMLDivElement>(null);
   const adminSectionRef = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
+  const initializedUserRef = useRef<string | null>(null);
 
   // Jerarquía de roles que el operador activo tiene permitido asignar
   const allowedRoles = useMemo<UserRole[]>(() => {
@@ -67,12 +68,20 @@ export default function ChangeUserRoleModal({
     if (!isOpen || !user) {
       setLoading(false);
       setConfirmAdminEscalation(false);
+      initializedUserRef.current = null;
       return;
     }
 
+    // Inicializar sólo una vez al abrir o cambiar de usuario objetivo, impidiendo que re-renders sobreescriban la elección del operador
+    const userKey = `${user.id || user.uid || user.email}-${isOpen}`;
+    if (initializedUserRef.current === userKey) {
+      return;
+    }
+    initializedUserRef.current = userKey;
+
     // Normalizar rol actual del usuario para pre-seleccionar
     let initialRole: AssignableRole = "alumno";
-    const rawRole = (user?.rol || "").replace("pendiente_", "").toLowerCase();
+    const rawRole = fromDbRol(user?.rol || "").replace("pendiente_", "").toLowerCase();
     if (rawRole === "admin") initialRole = "admin";
     else if (rawRole === "directivo") initialRole = "directivo";
     else if (rawRole === "preceptor") initialRole = "preceptor";
@@ -102,13 +111,16 @@ export default function ChangeUserRoleModal({
     } else {
       setSelectedCurso("");
     }
+  }, [isOpen, user, alumnoDetails, cursos, allowedRoles]);
 
+  useEffect(() => {
+    if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, user, alumnoDetails, cursos, onClose, allowedRoles]);
+  }, [isOpen, onClose]);
 
   const [mounted, setMounted] = useState(false);
 
@@ -170,7 +182,7 @@ export default function ChangeUserRoleModal({
       return;
     }
     // Si se asciende a admin y no se confirmó la alerta
-    if (selectedRole === "admin" && user.rol !== "admin" && !confirmAdminEscalation) {
+    if (selectedRole === "admin" && fromDbRol(user?.rol || "").toLowerCase() !== "admin" && !confirmAdminEscalation) {
       setConfirmAdminEscalation(true);
       setTimeout(() => {
         if (adminSectionRef.current && modalBodyRef.current) {
