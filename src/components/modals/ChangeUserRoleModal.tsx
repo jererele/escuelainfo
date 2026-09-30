@@ -37,6 +37,68 @@ interface ChangeUserRoleModalProps {
 
 export type AssignableRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
 
+const ALL_ROLE_DEFINITIONS: Array<{
+  id: AssignableRole;
+  name: string;
+  badgeLabel: string;
+  shortDesc: string;
+  icon: React.ReactNode;
+  colorClass: string;
+  borderClass: string;
+  bgHoverClass: string;
+}> = [
+  {
+    id: "admin",
+    name: "Administrador",
+    badgeLabel: "Acceso Total",
+    shortDesc: "Gestión total de usuarios, roles, auditoría y configuración.",
+    icon: <ShieldCheck size={20} strokeWidth={2.5} className="text-[var(--rojo)]" />,
+    colorClass: "text-[var(--rojo)]",
+    borderClass: "border-[var(--rojo-border)]",
+    bgHoverClass: "hover:border-[var(--rojo)]/40 hover:bg-[var(--rojo-bg)]/30",
+  },
+  {
+    id: "directivo",
+    name: "Directivo",
+    badgeLabel: "Dirección",
+    shortDesc: "Supervisión institucional, control docente y estadísticas.",
+    icon: <UserCog size={20} strokeWidth={2.5} className="text-[var(--violeta)]" />,
+    colorClass: "text-[var(--violeta)]",
+    borderClass: "border-[var(--violeta-border)]",
+    bgHoverClass: "hover:border-[var(--violeta)]/40 hover:bg-[var(--violeta-bg)]/30",
+  },
+  {
+    id: "preceptor",
+    name: "Preceptor",
+    badgeLabel: "Asistencia",
+    shortDesc: "Toma de asistencia diaria, avisos y seguimiento de cursos.",
+    icon: <UserCheck size={20} strokeWidth={2.5} className="text-[var(--cyan)]" />,
+    colorClass: "text-[var(--cyan)]",
+    borderClass: "border-[var(--cyan-border)]",
+    bgHoverClass: "hover:border-[var(--cyan)]/40 hover:bg-[var(--cyan-bg)]/30",
+  },
+  {
+    id: "profesor",
+    name: "Profesor",
+    badgeLabel: "Docente",
+    shortDesc: "Asistencia por clase, materias asignadas y horarios.",
+    icon: <GraduationCap size={20} strokeWidth={2.5} className="text-[var(--azul)]" />,
+    colorClass: "text-[var(--azul)]",
+    borderClass: "border-[var(--azul-border)]",
+    bgHoverClass: "hover:border-[var(--azul)]/40 hover:bg-[var(--azul-bg)]/30",
+  },
+  {
+    id: "alumno",
+    name: "Alumno",
+    badgeLabel: "Estudiante",
+    shortDesc: "Consulta de horarios de su división, avisos y materias.",
+    icon: <User size={20} strokeWidth={2.5} className="text-[var(--verde)]" />,
+    colorClass: "text-[var(--verde)]",
+    borderClass: "border-[var(--verde-border)]",
+    bgHoverClass: "hover:border-[var(--verde)]/40 hover:bg-[var(--verde-bg)]/30",
+  },
+];
+
 export default function ChangeUserRoleModal({
   isOpen,
   onClose,
@@ -53,6 +115,7 @@ export default function ChangeUserRoleModal({
   const [selectedPreceptorCursos, setSelectedPreceptorCursos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmAdminEscalation, setConfirmAdminEscalation] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const courseSectionRef = useRef<HTMLDivElement>(null);
   const courseSelectRef = useRef<HTMLSelectElement>(null);
@@ -69,6 +132,33 @@ export default function ChangeUserRoleModal({
       return ["admin", "directivo", "preceptor", "profesor", "alumno"];
     }
     return getAllowedAssignableRoles(effectiveRole);
+  }, [isAdmin, effectiveRole]);
+
+  // Filtrar estrictamente solo los roles que el operador tiene derecho a otorgar
+  const visibleRoleDefinitions = useMemo(() => {
+    const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
+    return ALL_ROLE_DEFINITIONS.filter(r => {
+      // Un preceptor bajo ninguna circunstancia puede otorgar el rol de preceptor
+      if (isOpPreceptor && r.id === "preceptor") return false;
+      return allowedRoles.includes(r.id as UserRole);
+    });
+  }, [allowedRoles, isAdmin, effectiveRole]);
+
+  const currentRoleIsSame = fromDbRol(user?.rol || "").toLowerCase() === (selectedRole || "").toLowerCase();
+
+  // Mensaje explicativo según la jerarquía del operador
+  const operatorHierarchyNotice = useMemo(() => {
+    const op = isAdmin ? "admin" : effectiveRole.toLowerCase();
+    if (op === "admin") {
+      return "Como Administrador tenés permisos para asignar cualquier rol institucional.";
+    }
+    if (op === "directivo") {
+      return "Como Directivo podés asignar los roles de Preceptor, Profesor o Alumno.";
+    }
+    if (op === "preceptor") {
+      return "Como Preceptor podés asignar los roles de Profesor o Alumno (no podés asignar Preceptores, Directivos ni Administradores).";
+    }
+    return "No contás con permisos para modificar roles institucionales.";
   }, [isAdmin, effectiveRole]);
 
   useEffect(() => {
@@ -129,8 +219,6 @@ export default function ChangeUserRoleModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -144,8 +232,6 @@ export default function ChangeUserRoleModal({
       document.body.style.overflow = originalOverflow;
     };
   }, [isOpen]);
-
-  if (!isOpen || !user || !mounted || typeof document === "undefined" || !document.body) return null;
 
   const handleSelectRole = (roleId: AssignableRole) => {
     setSelectedRole(roleId);
@@ -167,7 +253,7 @@ export default function ChangeUserRoleModal({
           modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
         }
       }, 60);
-    } else if (roleId === "admin" && user.rol !== "admin") {
+    } else if (roleId === "admin" && fromDbRol(user?.rol) !== "admin") {
       setTimeout(() => {
         if (adminSectionRef.current && modalBodyRef.current) {
           const topPos = adminSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
@@ -213,94 +299,7 @@ export default function ChangeUserRoleModal({
     }
   };
 
-  const allRoleDefinitions: Array<{
-    id: AssignableRole;
-    name: string;
-    badgeLabel: string;
-    shortDesc: string;
-    icon: React.ReactNode;
-    colorClass: string;
-    borderClass: string;
-    bgHoverClass: string;
-  }> = [
-    {
-      id: "admin",
-      name: "Administrador",
-      badgeLabel: "Acceso Total",
-      shortDesc: "Gestión total de usuarios, roles, auditoría y configuración.",
-      icon: <ShieldCheck size={20} strokeWidth={2.5} className="text-[var(--rojo)]" />,
-      colorClass: "text-[var(--rojo)]",
-      borderClass: "border-[var(--rojo-border)]",
-      bgHoverClass: "hover:border-[var(--rojo)]/40 hover:bg-[var(--rojo-bg)]/30",
-    },
-    {
-      id: "directivo",
-      name: "Directivo",
-      badgeLabel: "Dirección",
-      shortDesc: "Supervisión institucional, control docente y estadísticas.",
-      icon: <UserCog size={20} strokeWidth={2.5} className="text-[var(--violeta)]" />,
-      colorClass: "text-[var(--violeta)]",
-      borderClass: "border-[var(--violeta-border)]",
-      bgHoverClass: "hover:border-[var(--violeta)]/40 hover:bg-[var(--violeta-bg)]/30",
-    },
-    {
-      id: "preceptor",
-      name: "Preceptor",
-      badgeLabel: "Asistencia",
-      shortDesc: "Toma de asistencia diaria, avisos y seguimiento de cursos.",
-      icon: <UserCheck size={20} strokeWidth={2.5} className="text-[var(--cyan)]" />,
-      colorClass: "text-[var(--cyan)]",
-      borderClass: "border-[var(--cyan-border)]",
-      bgHoverClass: "hover:border-[var(--cyan)]/40 hover:bg-[var(--cyan-bg)]/30",
-    },
-    {
-      id: "profesor",
-      name: "Profesor",
-      badgeLabel: "Docente",
-      shortDesc: "Asistencia por clase, materias asignadas y horarios.",
-      icon: <GraduationCap size={20} strokeWidth={2.5} className="text-[var(--azul)]" />,
-      colorClass: "text-[var(--azul)]",
-      borderClass: "border-[var(--azul-border)]",
-      bgHoverClass: "hover:border-[var(--azul)]/40 hover:bg-[var(--azul-bg)]/30",
-    },
-    {
-      id: "alumno",
-      name: "Alumno",
-      badgeLabel: "Estudiante",
-      shortDesc: "Consulta de horarios de su división, avisos y materias.",
-      icon: <User size={20} strokeWidth={2.5} className="text-[var(--verde)]" />,
-      colorClass: "text-[var(--verde)]",
-      borderClass: "border-[var(--verde-border)]",
-      bgHoverClass: "hover:border-[var(--verde)]/40 hover:bg-[var(--verde-bg)]/30",
-    },
-  ];
-
-  // Filtrar estrictamente solo los roles que el operador tiene derecho a otorgar
-  const visibleRoleDefinitions = useMemo(() => {
-    const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
-    return allRoleDefinitions.filter(r => {
-      // Un preceptor bajo ninguna circunstancia puede otorgar el rol de preceptor
-      if (isOpPreceptor && r.id === "preceptor") return false;
-      return allowedRoles.includes(r.id as UserRole);
-    });
-  }, [allRoleDefinitions, allowedRoles, isAdmin, effectiveRole]);
-
-  const currentRoleIsSame = fromDbRol(user?.rol || "").toLowerCase() === (selectedRole || "").toLowerCase();
-
-  // Mensaje explicativo según la jerarquía del operador
-  const operatorHierarchyNotice = useMemo(() => {
-    const op = isAdmin ? "admin" : effectiveRole.toLowerCase();
-    if (op === "admin") {
-      return "Como Administrador tenés permisos para asignar cualquier rol institucional.";
-    }
-    if (op === "directivo") {
-      return "Como Directivo podés asignar los roles de Preceptor, Profesor o Alumno.";
-    }
-    if (op === "preceptor") {
-      return "Como Preceptor podés asignar los roles de Profesor o Alumno (no podés asignar Preceptores, Directivos ni Administradores).";
-    }
-    return "No contás con permisos para modificar roles institucionales.";
-  }, [isAdmin, effectiveRole]);
+  if (!isOpen || !user || !mounted || typeof document === "undefined" || !document.body) return null;
 
   return createPortal(
     <div

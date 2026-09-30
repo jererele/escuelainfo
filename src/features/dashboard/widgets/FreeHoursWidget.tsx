@@ -63,40 +63,6 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     return holidays[mmDd] || null;
   };
 
-  const holiday = getHolidayToday();
-  if (holiday) {
-    const typeLabels = {
-      nacional: "Feriado Nacional Argentino",
-      provincial: "Feriado Provincial (Chubut)",
-      local: "Feriado Local (Esquel)"
-    };
-    return (
-      <div className="p-6 rounded-3xl border bg-[var(--azul-bg)]/20 border-[var(--azul-border)] shadow-[0_10px_30px_rgba(59,130,246,0.08)] flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in will-change-gpu no-print">
-        <div className="flex items-center gap-4 text-left">
-          <div className="w-12 h-12 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center shrink-0">
-            <PartyPopper size={24} strokeWidth={2.5} />
-          </div>
-          <div>
-            <span className="text-[9px] font-black uppercase text-[var(--azul)] bg-[var(--azul-bg)] px-2.5 py-1 rounded-md border border-[var(--azul-border)] tracking-wider">
-              {typeLabels[holiday.type]}
-            </span>
-            <h3 className="font-black text-xl text-[var(--text)] mt-1.5 leading-tight">{holiday.name}</h3>
-            <p className="text-xs text-[var(--text2)] mt-0.5">
-              Hoy no se dictan clases debido a la conmemoración oficial de esta fecha patria o local. ¡Disfrutá tu día libre de descanso!
-            </p>
-          </div>
-        </div>
-        <div className="text-xs font-black uppercase tracking-widest px-4 py-2 border border-[var(--azul-border)] bg-[var(--azul-bg)] text-[var(--azul)] rounded-xl shrink-0 select-none">
-          Día Libre
-        </div>
-      </div>
-    );
-  }
-
-  if (todayDayName === "Sábado" || todayDayName === "Domingo") {
-    return null;
-  }
-
   // Profesores ausentes hoy (aprobados) memoizado
   const activeAbsencesToday = useMemo(() => {
     return ausencias.filter(a => 
@@ -143,6 +109,40 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     }
     return list;
   }, [horarios, todayDayName, activeAbsencesToday, isStudent, currentAlumno, isPreceptor, preceptorCourses]);
+
+  const holiday = getHolidayToday();
+  if (holiday) {
+    const typeLabels = {
+      nacional: "Feriado Nacional Argentino",
+      provincial: "Feriado Provincial (Chubut)",
+      local: "Feriado Local (Esquel)"
+    };
+    return (
+      <div className="p-6 rounded-3xl border bg-[var(--azul-bg)]/20 border-[var(--azul-border)] shadow-[0_10px_30px_rgba(59,130,246,0.08)] flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in will-change-gpu no-print">
+        <div className="flex items-center gap-4 text-left">
+          <div className="w-12 h-12 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center shrink-0">
+            <PartyPopper size={24} strokeWidth={2.5} />
+          </div>
+          <div>
+            <span className="text-[9px] font-black uppercase text-[var(--azul)] bg-[var(--azul-bg)] px-2.5 py-1 rounded-md border border-[var(--azul-border)] tracking-wider">
+              {typeLabels[holiday.type]}
+            </span>
+            <h3 className="font-black text-xl text-[var(--text)] mt-1.5 leading-tight">{holiday.name}</h3>
+            <p className="text-xs text-[var(--text2)] mt-0.5">
+              Hoy no se dictan clases debido a la conmemoración oficial de esta fecha patria o local. ¡Disfrutá tu día libre de descanso!
+            </p>
+          </div>
+        </div>
+        <div className="text-xs font-black uppercase tracking-widest px-4 py-2 border border-[var(--azul-border)] bg-[var(--azul-bg)] text-[var(--azul)] rounded-xl shrink-0 select-none">
+          Día Libre
+        </div>
+      </div>
+    );
+  }
+
+  if (todayDayName === "Sábado" || todayDayName === "Domingo") {
+    return null;
+  }
 
   const hasFreeHours = freeHoursToday.length > 0;
 

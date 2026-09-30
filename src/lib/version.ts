@@ -4,11 +4,11 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.32.3";
-export const APP_BUILD_DATE = "30/09/2026 15:45 hs";
+export const APP_VERSION = "v2.32.4";
+export const APP_BUILD_DATE = "30/09/2026 15:55 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Blindaje Integral y Corrección Definitiva del Cambio de Rol en Usuarios (ChangeUserRoleModal.tsx, UsuariosTab.tsx, ApproveStudentRoleModal.tsx, dashboard/page.tsx, /api/admin/change-role/route.ts): Se resolvió la causa raíz que impedía cambiar el rol de usuarios en el apartado institucional. 1) Sincronización de Jerarquía y Permisos de Operador: Se incorporó la prop 'isAdmin' y el cálculo robusto 'effectiveOperatorRole' (isOperatorAdmin ? 'admin' : normalizedOperatorRole) tanto en UsuariosTab como en ChangeUserRoleModal y ApproveStudentRoleModal, evitando que 'allowedRoles' quede vacío y bloquee permanentemente el botón de confirmación. 2) Normalización de Formatos de Rol (fromDbRol): Se corrigieron las comparaciones en ChangeUserRoleModal donde los roles compactos de la base de datos ('ad', 'd', 'pp', 'p', 'a') provocaban desfasajes en la detección del rol actual (isCurrent, currentRoleIsSame) y falsas alertas de escalamiento. 3) Habilitación de Acciones en Directorio: Se desbloqueó la columna de 'Acciones' y el botón 'Cambiar Rol' en las vistas de escritorio y móviles para operadores administradores. 4) Resiliencia en Ejecución de Cambios: Se blindó handleChangeUserRole con targetUserId resiliente (id, uid, $id) y fallback local automático por SDK si el token JWT no estuviese disponible, además de incorporar búsqueda por UID en el endpoint seguro /api/admin/change-role."
+  "Resolución Definitiva de 'Minified React error #310' y Cumplimiento Estricto de Reglas de Hooks (ChangeUserRoleModal.tsx y FreeHoursWidget.tsx): Se erradicó por completo el error de ejecución de React ('Rendered more hooks than during the previous render' / Error #310). 1) Reorganización Incondicional de Hooks en ChangeUserRoleModal: Se extrajo la constante estática 'ALL_ROLE_DEFINITIONS' al ámbito del módulo y se reubicaron todos los hooks ('useMemo' para 'visibleRoleDefinitions' y 'operatorHierarchyNotice') al inicio absoluto del componente, antes de cualquier retorno condicional ('if (!isOpen || !user ...) return null;'). Esto garantiza que el recuento y orden de hooks sea 100% idéntico tanto si el modal está abierto o cerrado. 2) Reordenamiento de Hooks en FreeHoursWidget: Se movieron los hooks 'useMemo' ('activeAbsencesToday' y 'freeHoursToday') al nivel superior del componente antes de los retornos condicionales por feriados ('if (holiday) return ...') y fines de semana ('if (todayDayName === \"Sábado\" ...) return null;'), garantizando estabilidad total de renderizado en el panel de control."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
