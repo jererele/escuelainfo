@@ -18,6 +18,7 @@ interface ApproveStudentRoleModalProps {
   alumnoDetails?: Alumno | null;
   cursos?: Curso[];
   operatorRole?: string | null;
+  isAdmin?: boolean;
 }
 
 export default function ApproveStudentRoleModal({
@@ -28,6 +29,7 @@ export default function ApproveStudentRoleModal({
   alumnoDetails,
   cursos,
   operatorRole = "",
+  isAdmin = false,
 }: ApproveStudentRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -55,10 +57,15 @@ export default function ApproveStudentRoleModal({
     };
   }, [isOpen]);
 
+  const effectiveRole = isAdmin ? "admin" : fromDbRol(operatorRole);
+
   // Jerarquía de roles que el operador tiene permitido otorgar
   const allowedRoles = useMemo<UserRole[]>(() => {
-    return getAllowedAssignableRoles(operatorRole);
-  }, [operatorRole]);
+    if (isAdmin) {
+      return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+    }
+    return getAllowedAssignableRoles(effectiveRole);
+  }, [isAdmin, effectiveRole]);
 
   const allRoles = [
     {
@@ -83,13 +90,13 @@ export default function ApproveStudentRoleModal({
 
   // Filtrar los roles según los permisos jerárquicos del operador
   const availableRoles = useMemo(() => {
-    const isOpPreceptor = fromDbRol(operatorRole || "").trim().toLowerCase() === "preceptor";
+    const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
     return allRoles.filter((r) => {
       // Un preceptor bajo ninguna circunstancia puede asignar el rol de preceptor
       if (isOpPreceptor && r.id === "preceptor") return false;
       return allowedRoles.includes(r.id as UserRole);
     });
-  }, [allRoles, allowedRoles, operatorRole]);
+  }, [allRoles, allowedRoles, isAdmin, effectiveRole]);
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -160,7 +167,7 @@ export default function ApproveStudentRoleModal({
     if (selectedRole === "alumno" && cursos && cursos.length > 0 && !selectedCurso) {
       return;
     }
-    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
     if (isOpPreceptor && selectedRole === "preceptor") {
       return;
     }

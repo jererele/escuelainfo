@@ -70,7 +70,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const isOperatorAdmin = Boolean(
     isAdmin || normalizedOperatorRole === "admin"
   );
-  const canOperatorManageRoles = ["admin", "directivo", "preceptor"].includes(normalizedOperatorRole);
+  const effectiveOperatorRole = isOperatorAdmin ? "admin" : normalizedOperatorRole;
+  const canOperatorManageRoles = isOperatorAdmin || ["admin", "directivo", "preceptor"].includes(effectiveOperatorRole);
 
   useEffect(() => {
     if (!isOperatorAdmin && roleFilter === "admin") {
@@ -526,7 +527,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                         </div>
                       </div>
                       <div className="shrink-0">
-                        {canManageUserRole(userProfile?.rol, u.rol) ? (
+                        {canManageUserRole(effectiveOperatorRole, u.rol) ? (
                           <button
                             type="button"
                             onClick={() => {
@@ -578,7 +579,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       )}
                     </div>
 
-                    {canManageUserRole(userProfile?.rol, u.rol) && (
+                    {canManageUserRole(effectiveOperatorRole, u.rol) && (
                       <div className="pt-1 border-t border-[var(--border)]/50">
                         <button
                           type="button"
@@ -629,7 +630,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       const isCurrentAccount =
                         (userProfile?.email && uEmail === (userProfile.email || "").toLowerCase()) ||
                         (userProfile?.id && u.id === userProfile.id);
-                      const canModifyThisUser = canManageUserRole(userProfile?.rol, u.rol);
+                      const canModifyThisUser = canManageUserRole(effectiveOperatorRole, u.rol);
 
                       return (
                         <tr key={u.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)] last:border-none">
@@ -754,7 +755,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
               (a) => (a?.email || "").toLowerCase() === (approvingUser.email || "").toLowerCase()
             )}
             cursos={cursos || []}
-            operatorRole={userProfile?.rol}
+            isAdmin={isOperatorAdmin}
+            operatorRole={effectiveOperatorRole}
           />
         </ErrorBoundary>
       )}
@@ -784,7 +786,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                 (userProfile?.id && roleChangingUser.id && userProfile.id === roleChangingUser.id)
               )
             }
-            operatorRole={userProfile?.rol}
+            isAdmin={isOperatorAdmin}
+            operatorRole={effectiveOperatorRole}
           />
         </ErrorBoundary>
       )}

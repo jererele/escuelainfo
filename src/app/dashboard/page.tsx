@@ -715,15 +715,15 @@ export default function Dashboard() {
     selectedCurso?: string,
     preceptorCursos?: string[]
   ) => {
-    const operatorRole = userProfile?.rol?.trim().toLowerCase();
+    const effectiveOperatorRole = isSuperAdmin || isAdmin ? "admin" : fromDbRol(userProfile?.rol);
 
     // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
-    if (operatorRole === "preceptor" && targetRole === "preceptor") {
+    if (effectiveOperatorRole === "preceptor" && targetRole === "preceptor") {
       showToast("Los preceptores no tienen permisos para designar usuarios como preceptor", "error");
       return;
     }
 
-    const allowedRoles = getAllowedAssignableRoles(operatorRole);
+    const allowedRoles = getAllowedAssignableRoles(effectiveOperatorRole);
 
     if (!allowedRoles.includes(targetRole as UserRole)) {
       showToast(`Tu jerarquía no tiene permisos para aprobar solicitudes con el rol de ${targetRole}`, "error");
@@ -864,39 +864,43 @@ export default function Dashboard() {
     selectedCurso?: string,
     preceptorCursos?: string[]
   ) => {
-    const operatorRole = fromDbRol(userProfile?.rol);
+    const effectiveOperatorRole = isSuperAdmin || isAdmin ? "admin" : fromDbRol(userProfile?.rol);
     const normalizedTargetRole = fromDbRol(targetUser.rol);
     const normalizedNewRole = fromDbRol(newRole);
 
     // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
-    if (operatorRole === "preceptor" && normalizedNewRole === "preceptor") {
+    if (effectiveOperatorRole === "preceptor" && normalizedNewRole === "preceptor") {
       showToast("Los preceptores no tienen permisos para asignar el rol de preceptor", "error");
       return;
     }
 
     // 1. Validar que el operador tenga permisos jerárquicos sobre el usuario destino
-    if (!canManageUserRole(operatorRole, targetUser.rol)) {
+    if (!canManageUserRole(effectiveOperatorRole, targetUser.rol)) {
       showToast("No contás con permisos jerárquicos para modificar el rol de este usuario", "error");
       return;
     }
 
     // 2. Validar que el rol a asignar esté dentro de los permitidos para su jerarquía
-    const allowedRoles = getAllowedAssignableRoles(operatorRole);
+    const allowedRoles = getAllowedAssignableRoles(effectiveOperatorRole);
     if (!allowedRoles.includes(normalizedNewRole as UserRole)) {
-      showToast(`Tu rol de ${operatorRole || "usuario"} no puede otorgar la jerarquía de ${normalizedNewRole}`, "error");
+      showToast(`Tu rol de ${effectiveOperatorRole || "usuario"} no puede otorgar la jerarquía de ${normalizedNewRole}`, "error");
       return;
     }
 
     // 3. Salvaguarda: No auto-degradar la propia cuenta de Administrador
-    const targetUserEmail = (targetUser.email || "").toLowerCase();
-    const currentUserEmail = (userProfile?.email || "").toLowerCase();
+    const targetUserId = targetUser.id || targetUser.uid || (targetUser as any).$id || "";
+    const targetUserEmail = (targetUser.email || "").toLowerCase().trim();
+    const currentUserEmail = (userProfile?.email || user?.email || "").toLowerCase().trim();
+    const currentUserId = userProfile?.id || userProfile?.uid || user?.$id || "";
+
     if (
-      (targetUser.id === userProfile?.id || (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)) &&
-      normalizedNewRole !== "admin" &&
-      (normalizedTargetRole === "admin" || targetUser.rol === "admin")
+      (targetUserId && currentUserId && targetUserId === currentUserId) ||
+      (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)
     ) {
-      showToast("No podés modificar o quitarte tu propio rol de Administrador", "error");
-      return;
+      if (normalizedNewRole !== "admin" && (normalizedTargetRole === "admin" || targetUser.rol === "admin")) {
+        showToast("No podés modificar o quitarte tu propio rol de Administrador", "error");
+        return;
+      }
     }
 
     const roleLabels: Record<string, string> = {
@@ -910,13 +914,20 @@ export default function Dashboard() {
 
     try {
       // Actualización optimista local
-      setUsuarios(prev => prev.map(u => u.id === targetUser.id ? { 
-        ...u, 
-        rol: normalizedNewRole as any,
-        cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
-      } : u));
+      setUsuarios(prev => prev.map(u => {
+        const matches = (targetUserId && (u.id === targetUserId || u.uid === targetUserId)) ||
+          (targetUserEmail && (u.email || "").toLowerCase().trim() === targetUserEmail);
+        return matches ? { 
+          ...u, 
+          rol: normalizedNewRole as any,
+          cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
+        } : u;
+      }));
 
-      if (userProfile?.id === targetUser.id || (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)) {
+      if (
+        (targetUserId && currentUserId && targetUserId === currentUserId) ||
+        (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)
+      ) {
         setUserProfile(prev => prev ? {
           ...prev,
           rol: normalizedNewRole as any,
@@ -928,7 +939,7 @@ export default function Dashboard() {
       let apiSuccess = false;
       try {
         const apiRes = await changeUserRoleApi(
-          targetUser.id!,
+          targetUserId,
           targetUserEmail,
           normalizedNewRole,
           selectedCurso,
@@ -944,14 +955,14 @@ export default function Dashboard() {
       }
 
       // Si la API no respondió éxito, ejecutar fallback del cliente
-      if (!apiSuccess) {
+      if (!apiSuccess && targetUserId) {
         const updatePayload: Partial<UserProfile> = { rol: normalizedNewRole as any };
         if (normalizedNewRole === "preceptor") {
           updatePayload.cursos = preceptorCursos || [];
         } else {
           updatePayload.cursos = [];
         }
-        await updateUserProfile(targetUser.id!, updatePayload);
+        await updateUserProfile(targetUserId, updatePayload);
 
         // 1. Si el rol asignado es ALUMNO
         if (normalizedNewRole === "alumno") {

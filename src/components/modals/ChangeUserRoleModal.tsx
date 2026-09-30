@@ -32,6 +32,7 @@ interface ChangeUserRoleModalProps {
   cursos?: Curso[];
   isCurrentUser?: boolean;
   operatorRole?: string | null;
+  isAdmin?: boolean;
 }
 
 export type AssignableRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
@@ -45,6 +46,7 @@ export default function ChangeUserRoleModal({
   cursos = [],
   isCurrentUser = false,
   operatorRole = "",
+  isAdmin = false,
 }: ChangeUserRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<AssignableRole>("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
@@ -59,10 +61,15 @@ export default function ChangeUserRoleModal({
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const initializedUserRef = useRef<string | null>(null);
 
+  const effectiveRole = isAdmin ? "admin" : fromDbRol(operatorRole);
+
   // Jerarquía de roles que el operador activo tiene permitido asignar
   const allowedRoles = useMemo<UserRole[]>(() => {
-    return getAllowedAssignableRoles(operatorRole);
-  }, [operatorRole]);
+    if (isAdmin) {
+      return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+    }
+    return getAllowedAssignableRoles(effectiveRole);
+  }, [isAdmin, effectiveRole]);
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -174,7 +181,7 @@ export default function ChangeUserRoleModal({
     if (isCurrentUser && selectedRole !== "admin") {
       return;
     }
-    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
     if (isOpPreceptor && selectedRole === "preceptor") {
       return;
     }
@@ -270,19 +277,19 @@ export default function ChangeUserRoleModal({
 
   // Filtrar estrictamente solo los roles que el operador tiene derecho a otorgar
   const visibleRoleDefinitions = useMemo(() => {
-    const isOpPreceptor = (operatorRole || "").trim().toLowerCase() === "preceptor";
+    const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
     return allRoleDefinitions.filter(r => {
       // Un preceptor bajo ninguna circunstancia puede otorgar el rol de preceptor
       if (isOpPreceptor && r.id === "preceptor") return false;
       return allowedRoles.includes(r.id as UserRole);
     });
-  }, [allRoleDefinitions, allowedRoles, operatorRole]);
+  }, [allRoleDefinitions, allowedRoles, isAdmin, effectiveRole]);
 
-  const currentRoleIsSame = (user?.rol || "").toLowerCase() === (selectedRole || "").toLowerCase();
+  const currentRoleIsSame = fromDbRol(user?.rol || "").toLowerCase() === (selectedRole || "").toLowerCase();
 
   // Mensaje explicativo según la jerarquía del operador
   const operatorHierarchyNotice = useMemo(() => {
-    const op = (operatorRole || "").toLowerCase();
+    const op = isAdmin ? "admin" : effectiveRole.toLowerCase();
     if (op === "admin") {
       return "Como Administrador tenés permisos para asignar cualquier rol institucional.";
     }
@@ -293,7 +300,7 @@ export default function ChangeUserRoleModal({
       return "Como Preceptor podés asignar los roles de Profesor o Alumno (no podés asignar Preceptores, Directivos ni Administradores).";
     }
     return "No contás con permisos para modificar roles institucionales.";
-  }, [operatorRole]);
+  }, [isAdmin, effectiveRole]);
 
   return createPortal(
     <div
@@ -360,7 +367,7 @@ export default function ChangeUserRoleModal({
                 Roles Permitidos ({visibleRoleDefinitions.length})
               </label>
               <span className="text-[10px] text-[var(--text3)] font-semibold capitalize">
-                Operador: {operatorRole || "Sin Rango"}
+                Operador: {isAdmin ? "Administrador" : (effectiveRole || "Sin Rango")}
               </span>
             </div>
 
@@ -372,7 +379,7 @@ export default function ChangeUserRoleModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                 {visibleRoleDefinitions.map((role) => {
                   const isSelected = selectedRole === role.id;
-                  const isCurrent = (user?.rol || "").toLowerCase() === role.id.toLowerCase();
+                  const isCurrent = fromDbRol(user?.rol || "").toLowerCase() === role.id.toLowerCase();
                   const isDisabled = isCurrentUser && role.id !== "admin";
                   const isAlumno = role.id === "alumno";
                   const isOddSingle = visibleRoleDefinitions.length % 2 !== 0 && isAlumno;
@@ -551,7 +558,7 @@ export default function ChangeUserRoleModal({
           )}
 
           {/* ALERTA DE ASCENSO A ADMINISTRADOR */}
-          {selectedRole === "admin" && allowedRoles.includes("admin") && (user?.rol || "").toLowerCase() !== "admin" && (
+          {selectedRole === "admin" && allowedRoles.includes("admin") && fromDbRol(user?.rol || "").toLowerCase() !== "admin" && (
             <div
               ref={adminSectionRef}
               className="p-3.5 sm:p-4 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-2 animate-fade-in"

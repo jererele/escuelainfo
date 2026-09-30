@@ -123,11 +123,13 @@ export async function POST(request: Request) {
     }
 
     let cleanCallerEmail = "";
+    let callerSessionUserId = "";
     try {
       const authClient = new Client().setEndpoint(endpoint).setProject(projectId).setJWT(jwt);
       const authAccount = new (await import('node-appwrite')).Account(authClient);
       const sessionUser = await authAccount.get();
       cleanCallerEmail = (sessionUser.email || "").toLowerCase().trim();
+      callerSessionUserId = sessionUser.$id || "";
     } catch {
       return NextResponse.json({ error: "Sesión institucional inválida o expirada. Por favor vuelva a iniciar sesión." }, { status: 401 });
     }
@@ -147,12 +149,23 @@ export async function POST(request: Request) {
     const db = new Databases(client);
 
     // 1. Obtener datos del operador solicitante en la base de datos
+    let callerDoc: any = null;
     const callerDocs = await db.listDocuments(dbId, 'usuarios', [Query.equal('email', cleanCallerEmail)]);
-    if (callerDocs.total === 0 || !callerDocs.documents[0]) {
+    if (callerDocs.total > 0 && callerDocs.documents[0]) {
+      callerDoc = callerDocs.documents[0];
+    } else if (callerSessionUserId) {
+      try {
+        const byUid = await db.listDocuments(dbId, 'usuarios', [Query.equal('uid', callerSessionUserId)]);
+        if (byUid.total > 0 && byUid.documents[0]) {
+          callerDoc = byUid.documents[0];
+        }
+      } catch {}
+    }
+
+    if (!callerDoc) {
       return NextResponse.json({ error: "El operador solicitante no está registrado en el sistema." }, { status: 403 });
     }
 
-    const callerDoc = callerDocs.documents[0];
     const operatorRole = fromDbRol(callerDoc.rol);
     const cleanNewRole = fromDbRol(newRole).trim().toLowerCase();
 
@@ -162,7 +175,7 @@ export async function POST(request: Request) {
       try {
         targetDoc = await db.getDocument(dbId, 'usuarios', targetUserId);
       } catch {
-        // Intentar fallback por email
+        // Intentar fallback por email o uid
       }
     }
 
@@ -172,6 +185,15 @@ export async function POST(request: Request) {
       if (list.documents.length > 0) {
         targetDoc = list.documents[0];
       }
+    }
+
+    if (!targetDoc && targetUserId) {
+      try {
+        const listByUid = await db.listDocuments(dbId, 'usuarios', [Query.equal('uid', targetUserId)]);
+        if (listByUid.documents.length > 0) {
+          targetDoc = listByUid.documents[0];
+        }
+      } catch {}
     }
 
     if (!targetDoc) {
