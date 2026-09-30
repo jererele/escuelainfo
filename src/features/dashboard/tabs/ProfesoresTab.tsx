@@ -84,17 +84,56 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
     return new Set(profesores.map((p) => p.dni).filter(Boolean));
   }, [profesores]);
 
-  // Docentes registrados en el sistema (usuarios con rol profesor) que aún no tienen registro en la colección profesores
+  // Docentes registrados que no tienen materias asignadas:
+  // 1) Usuarios con rol profesor que aún no tienen registro en la colección profesores
+  // 2) Profesores ya existentes en el cuerpo docente pero con 0 materias asignadas
   const pendingConfigTeachers = useMemo(() => {
-    const profEmails = new Set(
-      profesores.map((p) => (p.email || "").trim().toLowerCase()).filter(Boolean)
-    );
-    return usuarios.filter(
-      (u) =>
-        u.rol === "profesor" &&
-        u.email &&
-        !profEmails.has(u.email.trim().toLowerCase())
-    );
+    type PendingTeacherItem = {
+      id?: string;
+      nombre: string;
+      email: string;
+      dni?: string;
+      materias: string[];
+      isFromCollection?: boolean;
+    };
+
+    const result: PendingTeacherItem[] = [];
+    const profEmails = new Set<string>();
+
+    // 1. Profesores de la colección profesores que no tienen materias
+    profesores.forEach((p) => {
+      const email = (p.email || "").trim().toLowerCase();
+      if (email) profEmails.add(email);
+
+      const hasNoMaterias = !p.materias || p.materias.length === 0 || p.materias.every((m) => !m || !m.trim());
+      if (hasNoMaterias) {
+        result.push({
+          id: p.id,
+          nombre: p.nombre,
+          email: p.email,
+          dni: p.dni,
+          materias: [],
+          isFromCollection: true,
+        });
+      }
+    });
+
+    // 2. Usuarios con rol profesor que no figuran aún en la colección profesores
+    usuarios.forEach((u) => {
+      const email = (u.email || "").trim().toLowerCase();
+      if (u.rol === "profesor" && email && !profEmails.has(email)) {
+        result.push({
+          nombre: u.nombre,
+          email: u.email,
+          dni: "",
+          materias: [],
+          isFromCollection: false,
+        });
+      }
+    });
+
+    // Ordenar alfabéticamente por nombre
+    return result.sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [usuarios, profesores]);
 
   // Recopilación de todas las materias únicas de la institución para sugerencias
@@ -111,18 +150,28 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
     return Array.from(subjects).sort((a, b) => a.localeCompare(b));
   }, [profesores, horarios]);
 
-  // Filtrado de profesores por búsqueda
+  // Filtrado de profesores por búsqueda, ordenando primero a los que no tienen materias asignadas
   const filteredProfesores = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return profesores;
-    return profesores.filter((p) => {
-      const matchName = (p.nombre || "").toLowerCase().includes(q);
-      const matchDni = (p.dni || "").toLowerCase().includes(q);
-      const matchEmail = (p.email || "").toLowerCase().includes(q);
-      const matchMaterias = (p.materias || []).some((m) =>
-        m.toLowerCase().includes(q)
-      );
-      return matchName || matchDni || matchEmail || matchMaterias;
+    let list = profesores;
+    if (q) {
+      list = profesores.filter((p) => {
+        const matchName = (p.nombre || "").toLowerCase().includes(q);
+        const matchDni = (p.dni || "").toLowerCase().includes(q);
+        const matchEmail = (p.email || "").toLowerCase().includes(q);
+        const matchMaterias = (p.materias || []).some((m) =>
+          m.toLowerCase().includes(q)
+        );
+        return matchName || matchDni || matchEmail || matchMaterias;
+      });
+    }
+
+    return [...list].sort((a, b) => {
+      const aNoMaterias = !a.materias || a.materias.length === 0;
+      const bNoMaterias = !b.materias || b.materias.length === 0;
+      if (aNoMaterias && !bNoMaterias) return -1;
+      if (!aNoMaterias && bNoMaterias) return 1;
+      return a.nombre.localeCompare(b.nombre);
     });
   }, [profesores, searchQuery]);
 
@@ -205,9 +254,9 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-            {pendingConfigTeachers.map((u) => (
+            {pendingConfigTeachers.map((u, idx) => (
               <div
-                key={u.id}
+                key={u.id || u.email || idx}
                 className="bg-[var(--bg)]/90 backdrop-blur-md p-4 rounded-2xl border border-[var(--border)] flex items-center justify-between gap-3 shadow-xs hover:border-[var(--amarillo)] transition-all"
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -224,9 +273,10 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                 <button
                   onClick={() =>
                     handleOpenAssignModal({
+                      id: u.id,
                       nombre: u.nombre,
                       email: u.email,
-                      dni: "",
+                      dni: u.dni || "",
                       materias: [],
                     })
                   }
