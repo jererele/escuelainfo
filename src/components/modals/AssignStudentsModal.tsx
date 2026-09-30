@@ -82,22 +82,35 @@ export default function AssignStudentsModal({ isOpen, onClose, onSuccess, curso,
     setSaving(true);
     setError("");
     try {
-      let count = 0;
+      let addedCount = 0;
+      let removedCount = 0;
+      const targetCourseName = curso.nombre.trim();
+
       for (const alumno of alumnos) {
-        const shouldBeInCourse = selected.has(alumno.id!);
-        const isInCourse = alumno.curso === curso.nombre;
+        if (!alumno.id) continue;
+        const shouldBeInCourse = selected.has(alumno.id);
+        const isInCourse = (alumno.curso || "").trim().toLowerCase() === targetCourseName.toLowerCase();
+
         if (shouldBeInCourse && !isInCourse) {
-          await updateAlumno(alumno.id!, { curso: curso.nombre });
-          count++;
+          await updateAlumno(alumno.id, { curso: targetCourseName });
+          addedCount++;
+        } else if (!shouldBeInCourse && isInCourse) {
+          await updateAlumno(alumno.id, { curso: "" });
+          removedCount++;
         }
       }
+
       let userEmail = "desconocido";
       try { const u = await account.get(); userEmail = u.email; } catch {}
-      await logAction(userEmail, "ASIGNAR_ALUMNOS_CURSO", `Curso: ${curso.nombre}, Asignados: ${count}`);
+      await logAction(
+        userEmail,
+        "ASIGNAR_ALUMNOS_CURSO",
+        `Curso: ${curso.nombre}, Sumados: ${addedCount}, Removidos: ${removedCount}`
+      );
       onSuccess();
       onClose();
     } catch {
-      setError("Error al guardar. Intentá de nuevo.");
+      setError("Error al guardar los cambios en la nómina. Intentá de nuevo.");
     } finally {
       setSaving(false);
     }

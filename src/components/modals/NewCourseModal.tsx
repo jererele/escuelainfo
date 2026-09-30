@@ -2,19 +2,25 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { account } from "@/lib/appwrite";
-import { saveCurso, checkCursoExists, logAction } from "@/lib/dataService";
-import { X, AlertCircle, Sparkles, Compass, Calendar, Layers, Clock } from "lucide-react";
+import { Curso, saveCurso, updateCurso, checkCursoExists, logAction } from "@/lib/dataService";
+import { X, AlertCircle, Sparkles, Compass, Calendar, Layers, Clock, Edit } from "lucide-react";
 import { 
   ORIENTACIONES_OFICIALES, 
   DIVISIONES_OFICIALES, 
   TURNOS_OFICIALES, 
   formatOfficialCourseName, 
+  parseCourseNameComponents,
   OrientacionItem 
 } from "@/lib/curriculum";
 
-interface Props { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
+interface Props { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSuccess: () => void; 
+  initialCurso?: Curso | null;
+}
 
-export default function NewCourseModal({ isOpen, onClose, onSuccess }: Props) {
+export default function NewCourseModal({ isOpen, onClose, onSuccess, initialCurso }: Props) {
   const [loading, setLoading] = useState(false);
   const [isGuidedMode, setIsGuidedMode] = useState(true);
 
@@ -27,6 +33,38 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess }: Props) {
   // Estado para modo manual
   const [nombreManual, setNombreManual] = useState("");
   const [error, setError] = useState("");
+
+  const isEditing = Boolean(initialCurso && initialCurso.id);
+
+  // Cargar datos cuando se abre en modo edición
+  useEffect(() => {
+    if (!isOpen) return;
+    if (initialCurso && initialCurso.nombre) {
+      const parsed = parseCourseNameComponents(initialCurso.nombre);
+      if (parsed.anio) setAnio(parsed.anio);
+      if (parsed.division) setDivision(parsed.division);
+      if (parsed.turno && (parsed.turno === "Mañana" || parsed.turno === "Tarde" || parsed.turno === "Doble Turno")) {
+        setTurno(parsed.turno as any);
+      }
+      if (parsed.orientacion) {
+        const found = ORIENTACIONES_OFICIALES.find(o => 
+          o.shortName.toLowerCase() === parsed.orientacion?.toLowerCase() ||
+          o.name.toLowerCase().includes(parsed.orientacion?.toLowerCase() || "")
+        );
+        if (found) setOrientacionId(found.id);
+      }
+      setNombreManual(initialCurso.nombre);
+      setIsGuidedMode(Boolean(parsed.anio || parsed.division));
+    } else {
+      setOrientacionId("ciclo_basico");
+      setAnio("1°");
+      setDivision("1ra");
+      setTurno("Mañana");
+      setNombreManual("");
+      setIsGuidedMode(true);
+    }
+    setError("");
+  }, [isOpen, initialCurso]);
 
   const orientacionActual = useMemo<OrientacionItem>(() => {
     return ORIENTACIONES_OFICIALES.find(o => o.id === orientacionId) || ORIENTACIONES_OFICIALES[0];
@@ -66,24 +104,47 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess }: Props) {
 
     setLoading(true);
     try {
-      const exists = await checkCursoExists(finalName);
-      if (exists) { 
-        setError(`El curso "${finalName}" ya se encuentra registrado en el sistema.`); 
-        setLoading(false); 
-        return; 
+      if (isEditing && initialCurso?.id) {
+        // Si no cambió el nombre, cerramos
+        if (initialCurso.nombre === finalName) {
+          onSuccess();
+          onClose();
+          return;
+        }
+
+        // Si cambió a otro nombre que ya existe
+        const exists = await checkCursoExists(finalName);
+        if (exists) {
+          setError(`Ya existe otro curso con el nombre "${finalName}".`);
+          setLoading(false);
+          return;
+        }
+
+        await updateCurso(initialCurso.id, finalName, initialCurso.nombre);
+
+        let userEmail = "desconocido";
+        try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
+        await logAction(userEmail, "EDITAR_CURSO", `Anterior: ${initialCurso.nombre} -> Nuevo: ${finalName}`);
+      } else {
+        const exists = await checkCursoExists(finalName);
+        if (exists) { 
+          setError(`El curso "${finalName}" ya se encuentra registrado en el sistema.`); 
+          setLoading(false); 
+          return; 
+        }
+
+        await saveCurso({ nombre: finalName });
+
+        let userEmail = "desconocido";
+        try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
+        await logAction(userEmail, "CREAR_CURSO", `Curso: ${finalName}`);
       }
-
-      await saveCurso({ nombre: finalName });
-
-      let userEmail = "desconocido";
-      try { const user = await account.get(); userEmail = user.email; } catch { /* silent */ }
-      await logAction(userEmail, "CREAR_CURSO", `Curso: ${finalName}`);
 
       onSuccess();
       onClose();
       setNombreManual("");
     } catch { 
-      setError("Error al guardar el curso. Intentá de nuevo."); 
+      setError(isEditing ? "Error al actualizar el curso. Intentá de nuevo." : "Error al guardar el curso. Intentá de nuevo."); 
     } finally { 
       setLoading(false); 
     }
@@ -95,9 +156,11 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess }: Props) {
       <div className="bg-[var(--bg)] w-full sm:max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <h2 className="text-2xl font-black title-font text-[var(--text)]">Agregar Nuevo Curso</h2>
+            <h2 className="text-2xl font-black title-font text-[var(--text)]">
+              {isEditing ? "Modificar Curso" : "Agregar Nuevo Curso"}
+            </h2>
             <p className="text-[var(--text2)] text-xs mt-1 font-bold uppercase tracking-wider">
-              Configurá Orientación, Año y División oficial
+              {isEditing ? `Editando: ${initialCurso?.nombre}` : "Configurá Orientación, Año y División oficial"}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all">
@@ -256,8 +319,8 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess }: Props) {
               Cancelar
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-xs sm:text-sm">
-              {loading ? "Guardando..." : "Crear Curso"}
+              className="flex-1 p-4 rounded-2xl bg-[var(--verde)] text-black font-black disabled:opacity-50 shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-xs sm:text-sm cursor-pointer">
+              {loading ? "Guardando..." : isEditing ? "Guardar Cambios" : "Crear Curso"}
             </button>
           </div>
         </form>

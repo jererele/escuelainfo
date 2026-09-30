@@ -156,6 +156,7 @@ export default function Dashboard() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assigningCurso, setAssigningCurso] = useState<Curso | null>(null);
   const [isSendNoticeModalOpen, setIsSendNoticeModalOpen] = useState(false);
@@ -253,7 +254,10 @@ export default function Dashboard() {
         if (isTeacherReportModalOpen) setIsTeacherReportModalOpen(false);
         if (isStudentModalOpen) setIsStudentModalOpen(false);
         if (isScheduleModalOpen) setIsScheduleModalOpen(false);
-        if (isCourseModalOpen) setIsCourseModalOpen(false);
+        if (isCourseModalOpen) {
+          setIsCourseModalOpen(false);
+          setEditingCurso(null);
+        }
         if (isAssignModalOpen) setIsAssignModalOpen(false);
         if (isSendNoticeModalOpen) setIsSendNoticeModalOpen(false);
         if (isUserModalOpen) setIsUserModalOpen(false);
@@ -1711,7 +1715,14 @@ export default function Dashboard() {
               alumnos={alumnos}
               usuarios={usuarios}
               userProfile={userProfile}
-              onOpenCourseModal={() => setIsCourseModalOpen(true)}
+              onOpenCourseModal={() => {
+                setEditingCurso(null);
+                setIsCourseModalOpen(true);
+              }}
+              onEditCurso={(curso: Curso) => {
+                setEditingCurso(curso);
+                setIsCourseModalOpen(true);
+              }}
               onAssignAlumnos={(curso: Curso) => { setAssigningCurso(curso); setIsAssignModalOpen(true); }}
               onDeleteCurso={handleDeleteCurso}
               onNavigateToPreceptores={() => setActiveTab("preceptores")}
@@ -1792,8 +1803,18 @@ export default function Dashboard() {
 
       <NewCourseModal
         isOpen={isCourseModalOpen}
-        onClose={() => setIsCourseModalOpen(false)}
-        onSuccess={() => { getCursos().then(setCursos); showToast("Curso agregado"); }}
+        initialCurso={editingCurso}
+        onClose={() => {
+          setIsCourseModalOpen(false);
+          setEditingCurso(null);
+        }}
+        onSuccess={() => { 
+          getCursos(true).then(setCursos);
+          getAlumnos(true).then(setAlumnos);
+          getHorarios(true).then(setHorarios);
+          showToast(editingCurso ? "Curso modificado exitosamente" : "Curso creado exitosamente", "success");
+          setEditingCurso(null);
+        }}
       />
 
       <SendNoticeModal

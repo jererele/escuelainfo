@@ -1285,6 +1285,92 @@ export const saveCurso = async (curso: Omit<Curso, "id">) => {
   } catch (err) { devLog("saveCurso", err); throw err; }
 };
 
+export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterior?: string) => {
+  await requireAuth();
+  clearCache("cursos");
+  const cleanNuevo = sanitize(nuevoNombre, 100);
+  try {
+    await databases.updateDocument({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_CURSOS_COLLECTION_ID,
+      documentId: id,
+      data: { nombre: cleanNuevo }
+    });
+
+    // Cascada: si cambió el nombre, sincronizar en alumnos, horarios y usuarios (preceptores)
+    if (nombreAnterior && nombreAnterior.trim() !== cleanNuevo) {
+      const cleanAnterior = nombreAnterior.trim();
+
+      // 1. Alumnos
+      try {
+        const als = await databases.listDocuments({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+          queries: [Query.equal("curso", cleanAnterior), Query.limit(DEFAULT_LIMIT)]
+        });
+        clearCache("alumnos");
+        for (const doc of als.documents) {
+          await databases.updateDocument({
+            databaseId: APPWRITE_DB_ID,
+            collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+            documentId: doc.$id,
+            data: { curso: cleanNuevo }
+          });
+        }
+      } catch (err) {
+        devLog("updateCurso/syncAlumnos", err);
+      }
+
+      // 2. Horarios
+      try {
+        const hrs = await databases.listDocuments({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_HORARIOS_COLLECTION_ID,
+          queries: [Query.equal("curso", cleanAnterior), Query.limit(DEFAULT_LIMIT)]
+        });
+        clearCache("horarios");
+        for (const doc of hrs.documents) {
+          await databases.updateDocument({
+            databaseId: APPWRITE_DB_ID,
+            collectionId: APPWRITE_HORARIOS_COLLECTION_ID,
+            documentId: doc.$id,
+            data: { curso: cleanNuevo }
+          });
+        }
+      } catch (err) {
+        devLog("updateCurso/syncHorarios", err);
+      }
+
+      // 3. Preceptores (campo cursos array o JSON)
+      try {
+        const users = await databases.listDocuments({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_USERS_COLLECTION_ID,
+          queries: [Query.limit(200)]
+        });
+        clearCache("usuarios");
+        for (const doc of users.documents) {
+          const userCursos = parseUserCursos(doc.cursos);
+          if (userCursos.includes(cleanAnterior)) {
+            const updated = userCursos.map(c => c === cleanAnterior ? cleanNuevo : c);
+            await databases.updateDocument({
+              databaseId: APPWRITE_DB_ID,
+              collectionId: APPWRITE_USERS_COLLECTION_ID,
+              documentId: doc.$id,
+              data: { cursos: updated }
+            });
+          }
+        }
+      } catch (err) {
+        devLog("updateCurso/syncPreceptores", err);
+      }
+    }
+  } catch (err) {
+    devLog("updateCurso", err);
+    throw err;
+  }
+};
+
 export const deleteCurso = async (id: string) => {
   await requireAuth();
   clearCache("cursos");

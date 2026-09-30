@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
-import { Users, Trash2, Plus, GraduationCap, UserCheck } from "lucide-react";
+import { Users, Trash2, Plus, GraduationCap, UserCheck, Edit, Clock } from "lucide-react";
 import { Curso, Alumno, UserProfile } from "@/lib/dataService";
 import { TiltCard, FluidOrb } from "@/components/ui/rare";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { parseCourseNameComponents } from "@/lib/curriculum";
 
 interface CursosTabProps {
   cursos: Curso[];
@@ -10,6 +11,7 @@ interface CursosTabProps {
   usuarios?: UserProfile[];
   userProfile?: UserProfile | null;
   onOpenCourseModal: () => void;
+  onEditCurso?: (curso: Curso) => void;
   onAssignAlumnos: (curso: Curso) => void;
   onDeleteCurso: (curso: Curso) => void;
   onNavigateToPreceptores?: () => void;
@@ -21,13 +23,14 @@ export const CursosTab: React.FC<CursosTabProps> = ({
   usuarios,
   userProfile,
   onOpenCourseModal,
+  onEditCurso,
   onAssignAlumnos,
   onDeleteCurso,
   onNavigateToPreceptores,
 }) => {
   // Preceptores de la institución
-  const preceptores = useMemo(() => {
-    return (usuarios || []).filter(u => u.rol === "preceptor");
+  const preceptores: UserProfile[] = useMemo(() => {
+    return (usuarios || []).filter((u: UserProfile) => u.rol === "preceptor");
   }, [usuarios]);
   return (
     <div className="animate-fade-in space-y-8">
@@ -61,7 +64,9 @@ export const CursosTab: React.FC<CursosTabProps> = ({
             const alumnosCurso = alumnos.filter((a) => a.curso === c.nombre);
             const totalAlumnos = alumnosCurso.length;
             const previewAlumnos = alumnosCurso.slice(0, 4);
-            const assignedPreceptores = preceptores.filter(p => (p.cursos || []).includes(c.nombre));
+            const assignedPreceptores = preceptores.filter((p: UserProfile) => (p.cursos || []).includes(c.nombre));
+
+            const parsedCourse = parseCourseNameComponents(c.nombre);
 
             return (
               <TiltCard
@@ -74,24 +79,54 @@ export const CursosTab: React.FC<CursosTabProps> = ({
                     <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] font-black text-lg">
                       <GraduationCap size={24} />
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteCurso(c);
-                      }}
-                      className="text-[var(--rojo)] p-2 hover:bg-[var(--rojo-bg)] rounded-xl transition-all active:scale-95 cursor-pointer"
-                      title="Eliminar Curso"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {onEditCurso && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditCurso(c);
+                          }}
+                          className="text-[var(--text2)] hover:text-[var(--text)] p-2 hover:bg-[var(--bg3)] border border-transparent hover:border-[var(--border)] rounded-xl transition-all active:scale-95 cursor-pointer"
+                          title="Modificar Nombre, Turno y Orientación"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteCurso(c);
+                        }}
+                        className="text-[var(--rojo)] p-2 hover:bg-[var(--rojo-bg)] rounded-xl transition-all active:scale-95 cursor-pointer"
+                        title="Eliminar Curso"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
 
-                  <h3 className="text-xl font-black text-[var(--text)] group-hover:text-[var(--verde)] transition-colors mb-1">
+                  <h3 className="text-xl font-black text-[var(--text)] group-hover:text-[var(--verde)] transition-colors mb-1.5 leading-tight">
                     {c.nombre}
                   </h3>
-                  <p className="text-xs text-[var(--text3)] font-semibold mb-4">
-                    División Escolar Activa
-                  </p>
+
+                  <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                    {parsedCourse.turno ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[var(--bg3)] border border-[var(--border)] text-[var(--text2)]">
+                        <Clock size={10} className="text-[var(--verde)]" />
+                        <span>Turno {parsedCourse.turno}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-[var(--text3)]">
+                        División Escolar Activa
+                      </span>
+                    )}
+
+                    {parsedCourse.orientacion && (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)]">
+                        {parsedCourse.orientacion}
+                      </span>
+                    )}
+                  </div>
 
                   {/* PREVIEW DE ALUMNOS CON BLOBATAR */}
                   <div className="flex items-center justify-between gap-3 mb-6 pt-3 border-t border-[var(--border)]/50">
@@ -135,8 +170,8 @@ export const CursosTab: React.FC<CursosTabProps> = ({
                           Preceptoría:
                         </span>
                         {assignedPreceptores.length > 0 ? (
-                          <span className="font-black text-xs text-[var(--text)] block truncate" title={assignedPreceptores.map(p => p.nombre).join(", ")}>
-                            {assignedPreceptores.map(p => p.nombre.split(" ")[0]).join(", ")}
+                          <span className="font-black text-xs text-[var(--text)] block truncate" title={assignedPreceptores.map((p: UserProfile) => p.nombre).join(", ")}>
+                            {assignedPreceptores.map((p: UserProfile) => p.nombre.split(" ")[0]).join(", ")}
                           </span>
                         ) : (
                           <span className="font-bold text-[11px] text-[var(--amarillo)] block italic">
