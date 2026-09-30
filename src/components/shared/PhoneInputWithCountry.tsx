@@ -107,13 +107,15 @@ export default function PhoneInputWithCountry({
       const triggerRect = triggerButtonRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
       
-      const width = Math.max(300, Math.min(containerRect.width, 360));
+      const screenWidth = typeof window !== "undefined" ? window.innerWidth : 360;
+      const maxAllowedWidth = Math.min(360, screenWidth - 24);
+      const width = Math.min(containerRect.width || 320, maxAllowedWidth);
       let left = triggerRect.left;
       
       // Asegurar que no desborde horizontalmente la pantalla
       if (typeof window !== "undefined") {
         if (left + width > window.innerWidth - 12) {
-          left = window.innerWidth - width - 12;
+          left = Math.max(12, window.innerWidth - width - 12);
         }
         if (left < 12) left = 12;
       }
@@ -264,7 +266,7 @@ export default function PhoneInputWithCountry({
         </button>
 
         {/* Input de número telefónico (con limitador numérico) */}
-        <div className="relative flex-1 flex items-center">
+        <div className="relative flex-1 flex items-center min-w-0">
           <input
             ref={inputRef}
             id={id}
@@ -282,21 +284,21 @@ export default function PhoneInputWithCountry({
             onChange={handleDigitsChange}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="w-full bg-transparent px-3.5 py-4 outline-none font-bold text-[var(--text)] text-sm placeholder:text-[var(--text3)]/60"
+            className="w-full min-w-0 bg-transparent px-3 py-3.5 sm:px-3.5 sm:py-4 outline-none font-bold text-[var(--text)] text-base sm:text-sm tracking-wide placeholder:text-[var(--text3)]/50"
           />
 
           {/* Indicador de dígitos / Estado */}
-          <div className="pr-3.5 pl-1 flex items-center shrink-0">
+          <div className="pr-2.5 sm:pr-3.5 pl-1 flex items-center shrink-0">
             {hasDigits && (
               <div
-                className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-full border transition-colors ${
+                className={`text-[9px] sm:text-[10px] font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border transition-colors select-none ${
                   isComplete
                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                     : "bg-amber-500/10 text-amber-400 border-amber-500/25"
                 }`}
                 title={
                   isComplete
-                    ? "Número válido"
+                    ? "Número completo"
                     : `Mínimo ${selectedCountry.minDigits} dígitos requeridos`
                 }
               >
