@@ -122,6 +122,9 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const [manualStudentInput, setManualStudentInput] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
 
+  // Filtro de profesores calificados en tribunal
+  const [onlyQualifiedTeachers, setOnlyQualifiedTeachers] = useState(false);
+
   // Estados de feedback
   const [panelError, setPanelError] = useState("");
   const [panelSuccess, setPanelSuccess] = useState("");
@@ -141,6 +144,33 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     return feriados.find(f => f.fecha === fecha) || null;
   })();
 
+  // Identificar el profesor correspondiente al usuario autenticado
+  const currentProfesor = useMemo(() => {
+    if (!userProfile) return null;
+    const userEmail = (userProfile.email || "").toLowerCase().trim();
+    const userName = (userProfile.nombre || "").toLowerCase().trim();
+    return profesores.find(p => 
+      (p.email && p.email.toLowerCase().trim() === userEmail) ||
+      (p.nombre && p.nombre.toLowerCase().trim() === userName)
+    ) || null;
+  }, [profesores, userProfile]);
+
+  // Helper para saber si el usuario logueado es presidente de una mesa dada
+  const isUserPresidenteOfMesa = useCallback((m: MesaExamen) => {
+    if (!userProfile) return false;
+    const userEmail = (userProfile.email || "").toLowerCase().trim();
+    const userName = (userProfile.nombre || "").toLowerCase().trim();
+    const presId = String(m.presidenteId || "").trim();
+    const presName = (m.presidenteNombre || "").toLowerCase().trim();
+
+    if (currentProfesor) {
+      if (presId && (presId === String(currentProfesor.id) || presId === String(currentProfesor.dni))) return true;
+    }
+    if (presName && userName && (presName === userName || presName.includes(userName) || userName.includes(presName))) return true;
+    if (userProfile.id && presId === String(userProfile.id)) return true;
+    return false;
+  }, [userProfile, currentProfesor]);
+
   useEffect(() => {
     if (userProfile) {
       setRole(userProfile.rol);
@@ -150,11 +180,11 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
   const refreshData = useCallback(async () => {
     setLoading(true);
     try {
-      const canManage = role === "admin" || role === "directivo" || role === "preceptor";
+      const isStudent = role === "alumno";
       const [profs, als, curs, mesasData] = await Promise.all([
         getProfesores(),
-        canManage ? getAlumnos() : Promise.resolve([]),
-        canManage ? getCursos() : Promise.resolve([]),
+        !isStudent ? getAlumnos() : Promise.resolve([]),
+        !isStudent ? getCursos() : Promise.resolve([]),
         getMesasExamen(true),
       ]);
       setProfesores(profs);
@@ -237,6 +267,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setManualStudentInput("");
     setShowManualInput(false);
     setEstado("borrador");
+    setOnlyQualifiedTeachers(false);
     setModalError("");
     setModalLoading(false);
     setIsModalOpen(true);
@@ -259,6 +290,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     setManualStudentInput("");
     setShowManualInput(false);
     setEstado(m.estado);
+    setOnlyQualifiedTeachers(false);
     setModalError("");
     setModalLoading(false);
     setIsModalOpen(true);
@@ -665,6 +697,78 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
     );
   });
 
+  // Función para evaluación directa por parte del Presidente de mesa o Directivo/Admin
+  const handleQuickEvaluate = async (targetMesa: MesaExamen) => {
+    if (!targetMesa.id) return;
+    const nuevoEstado = targetMesa.estado === "evaluada" ? "confirmada" : "evaluada";
+    const actionLabel = nuevoEstado === "evaluada" ? "evaluada" : "confirmada";
+    
+    if (!confirm(`¿Deseás marcar la mesa de "${targetMesa.materia}" como ${actionLabel.toUpperCase()}?`)) return;
+
+    setLoading(true);
+    setPanelError("");
+    setPanelSuccess("");
+
+    const updatedMesa: MesaExamen = {
+      ...targetMesa,
+      estado: nuevoEstado,
+    };
+
+    setMesas(prev => prev.map(m => m.id === targetMesa.id ? updatedMesa : m));
+
+    try {
+      await saveMesaExamen(updatedMesa);
+      await logAction(
+        userProfile?.email || "docente",
+        "EVALUAR_MESA_EXAMEN",
+        `Mesa: ${targetMesa.materia}, Estado: ${nuevoEstado}, Evaluador: ${userProfile?.nombre || "Presidente"}`
+      );
+      setPanelSuccess(`La mesa de ${targetMesa.materia} fue marcada como ${actionLabel}.`);
+      notify.success(`Mesa marcada como ${actionLabel} exitosamente.`);
+    } catch (err: unknown) {
+      if (err instanceof AppwriteException) {
+        setPanelError(`Error al cambiar estado: ${err.message}`);
+      } else {
+        setPanelError("No se pudo actualizar el estado de evaluación de la mesa.");
+      }
+      refreshData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Profesores filtrados u ordenados según la materia elegida
+  const { filteredProfessoresForMateria, teachersQualifiedCount } = useMemo(() => {
+    if (!materia) {
+      return { 
+        filteredProfessoresForMateria: profesores, 
+        teachersQualifiedCount: 0 
+      };
+    }
+    const matClean = materia.toLowerCase().trim();
+    const doesTeach = (p: Profesor) => 
+      Array.isArray(p.materias) && p.materias.some(m => {
+        const item = (m || "").toLowerCase().trim();
+        return item === matClean || item.includes(matClean) || matClean.includes(item);
+      });
+
+    const qualified = profesores.filter(doesTeach);
+    const others = profesores.filter(p => !doesTeach(p));
+
+    if (onlyQualifiedTeachers) {
+      return {
+        filteredProfessoresForMateria: qualified,
+        teachersQualifiedCount: qualified.length
+      };
+    }
+
+    // Si no está activado el filtro estricto, mostramos primero los capacitados destacados y luego el resto
+    return {
+      filteredProfessoresForMateria: [...qualified, ...others],
+      teachersQualifiedCount: qualified.length
+    };
+  }, [profesores, materia, onlyQualifiedTeachers]);
+
   const canManage = role === "admin" || role === "directivo" || role === "preceptor";
 
   return (
@@ -957,25 +1061,59 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                       </div>
                     )}
 
-                    {/* Acciones de Gestión (Docente/Preceptor/Admin) */}
-                    {canManage && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openEditModal(m)}
-                          className="p-2 rounded-xl border border-[var(--border)] hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-[var(--text)] transition-colors active:scale-90"
-                          title="Editar Mesa y Gestionar Planilla"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m.id!)}
-                          className="p-2 rounded-xl border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)] text-[var(--rojo)] transition-colors active:scale-90"
-                          title="Eliminar Mesa"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
+                    {/* Acciones de Gestión y Evaluación (Presidente de Mesa / Directivo / Admin / Preceptor) */}
+                    {(() => {
+                      const isPresident = isUserPresidenteOfMesa(m);
+                      const canEvaluateThisMesa = canManage || isPresident;
+
+                      if (!canEvaluateThisMesa) return null;
+
+                      return (
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          {/* Botón rápido para evaluar / cerrar mesa (Presidente o Directivo/Admin) */}
+                          <button
+                            type="button"
+                            onClick={() => handleQuickEvaluate(m)}
+                            disabled={loading}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                              m.estado === "evaluada"
+                                ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                                : "bg-[var(--verde)] hover:brightness-110 text-black font-black"
+                            }`}
+                            title={
+                              m.estado === "evaluada"
+                                ? "Mesa cerrada y evaluada. Clic para reabrir"
+                                : isPresident
+                                ? "Como Presidente de mesa, hacé clic para evaluar y cerrar la mesa"
+                                : "Evaluar y cerrar mesa"
+                            }
+                          >
+                            <ClipboardCheck size={14} />
+                            <span>{m.estado === "evaluada" ? "Evaluada ✓" : "Evaluar Mesa"}</span>
+                          </button>
+
+                          {/* Botón de Editar Mesa y Planilla */}
+                          <button
+                            onClick={() => openEditModal(m)}
+                            className="p-2 rounded-xl border border-[var(--border)] hover:bg-[var(--bg3)] text-[var(--text2)] hover:text-[var(--text)] transition-colors active:scale-90 cursor-pointer"
+                            title="Editar Mesa y Gestionar Planilla"
+                          >
+                            <Edit size={14} />
+                          </button>
+
+                          {/* Botón de Eliminar solo para administradores/directivos/preceptores */}
+                          {canManage && (
+                            <button
+                              onClick={() => handleDelete(m.id!)}
+                              className="p-2 rounded-xl border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)] text-[var(--rojo)] transition-colors active:scale-90 cursor-pointer"
+                              title="Eliminar Mesa"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -1089,8 +1227,29 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                 />
               </div>
 
-              <div>
-                <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Presidente de Mesa *</label>
+              {/* Selector de Presidente con Filtro Inteligente de Profesores */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">
+                    Presidente de Mesa *
+                  </label>
+                  {materia && (
+                    <button
+                      type="button"
+                      onClick={() => setOnlyQualifiedTeachers(prev => !prev)}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-colors flex items-center gap-1 cursor-pointer ${
+                        onlyQualifiedTeachers
+                          ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]"
+                          : "bg-[var(--bg3)] text-[var(--text3)] border-[var(--border)] hover:text-[var(--text)]"
+                      }`}
+                      title="Filtrar solo a los profesores que tienen asignada esta materia"
+                    >
+                      <GraduationCap size={12} />
+                      <span>{onlyQualifiedTeachers ? "Mostrando docentes de la materia" : `Filtrar docentes que dictan (${teachersQualifiedCount})`}</span>
+                    </button>
+                  )}
+                </div>
+
                 <select
                   required
                   className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold focus:border-[var(--verde)] text-sm text-[var(--text)]"
@@ -1098,8 +1257,24 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                   onChange={(e) => setPresidenteId(e.target.value)}
                 >
                   <option value="">— Seleccionar Presidente —</option>
-                  {profesores.map(p => <option key={p.id || p.dni} value={p.id || p.dni}>{p.nombre} (DNI: {p.dni})</option>)}
+                  {filteredProfessoresForMateria.map((p) => {
+                    const matClean = (materia || "").toLowerCase().trim();
+                    const teachesThis = matClean && Array.isArray(p.materias) && p.materias.some(m => {
+                      const item = (m || "").toLowerCase().trim();
+                      return item === matClean || item.includes(matClean) || matClean.includes(item);
+                    });
+                    return (
+                      <option key={p.id || p.dni} value={p.id || p.dni}>
+                        {teachesThis ? "★ " : ""}{p.nombre} {teachesThis ? "— (Dicta la materia)" : ""} (DNI: {p.dni})
+                      </option>
+                    );
+                  })}
                 </select>
+                {materia && teachersQualifiedCount === 0 && onlyQualifiedTeachers && (
+                  <p className="text-[11px] text-amber-500 font-semibold ml-2">
+                    No hay docentes con esta materia asignada explícitamente en el sistema. Desactivá el filtro para seleccionar cualquiera.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1111,7 +1286,18 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                     onChange={(e) => setVocal1Id(e.target.value)}
                   >
                     <option value="">— Sin Asignar —</option>
-                    {profesores.map(p => <option key={p.id || p.dni} value={p.id || p.dni}>{p.nombre}</option>)}
+                    {filteredProfessoresForMateria.map((p) => {
+                      const matClean = (materia || "").toLowerCase().trim();
+                      const teachesThis = matClean && Array.isArray(p.materias) && p.materias.some(m => {
+                        const item = (m || "").toLowerCase().trim();
+                        return item === matClean || item.includes(matClean) || matClean.includes(item);
+                      });
+                      return (
+                        <option key={p.id || p.dni} value={p.id || p.dni}>
+                          {teachesThis ? "★ " : ""}{p.nombre} {teachesThis ? "(Especialista)" : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
@@ -1122,7 +1308,18 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                     onChange={(e) => setVocal2Id(e.target.value)}
                   >
                     <option value="">— Sin Asignar —</option>
-                    {profesores.map(p => <option key={p.id || p.dni} value={p.id || p.dni}>{p.nombre}</option>)}
+                    {filteredProfessoresForMateria.map((p) => {
+                      const matClean = (materia || "").toLowerCase().trim();
+                      const teachesThis = matClean && Array.isArray(p.materias) && p.materias.some(m => {
+                        const item = (m || "").toLowerCase().trim();
+                        return item === matClean || item.includes(matClean) || matClean.includes(item);
+                      });
+                      return (
+                        <option key={p.id || p.dni} value={p.id || p.dni}>
+                          {teachesThis ? "★ " : ""}{p.nombre} {teachesThis ? "(Especialista)" : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
