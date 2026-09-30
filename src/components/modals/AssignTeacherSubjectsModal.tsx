@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Plus, BookOpen, Check, AlertCircle, Sparkles } from "lucide-react";
+import { X, Plus, BookOpen, Check, AlertCircle } from "lucide-react";
 import { updateProfesor, saveProfesor, logAction, Profesor } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -32,7 +32,6 @@ export default function AssignTeacherSubjectsModal({
   showToast,
 }: AssignTeacherSubjectsModalProps) {
   const [materias, setMaterias] = useState<string[]>([]);
-  const [inputVal, setInputVal] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -54,12 +53,10 @@ export default function AssignTeacherSubjectsModal({
   useEffect(() => {
     if (!isOpen || !teacher) {
       setMaterias([]);
-      setInputVal("");
       setError("");
       return;
     }
     setMaterias(teacher.materias ? [...teacher.materias] : []);
-    setInputVal("");
     setError("");
   }, [isOpen, teacher]);
 
@@ -73,17 +70,10 @@ export default function AssignTeacherSubjectsModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // Materias sugeridas que el docente aún no tiene asignadas
-  const availableSuggestions = useMemo(() => {
-    const currentLower = new Set(materias.map((m) => m.trim().toLowerCase()));
-    const uniqueSuggestions = Array.from(new Set(suggestedMaterias.map((s) => s.trim()))).filter(Boolean);
-    return uniqueSuggestions.filter((s) => !currentLower.has(s.toLowerCase())).slice(0, 15);
-  }, [suggestedMaterias, materias]);
-
   if (!isOpen || !teacher) return null;
 
-  const handleAdd = (subjectName?: string) => {
-    const nameToAdd = (subjectName !== undefined ? subjectName : inputVal).trim();
+  const handleAdd = (subjectName: string) => {
+    const nameToAdd = subjectName.trim();
     if (!nameToAdd) return;
 
     const lower = nameToAdd.toLowerCase();
@@ -93,20 +83,12 @@ export default function AssignTeacherSubjectsModal({
     }
 
     setMaterias((prev) => [...prev, nameToAdd]);
-    setInputVal("");
     setError("");
   };
 
   const handleRemove = (index: number) => {
     setMaterias((prev) => prev.filter((_, i) => i !== index));
     setError("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAdd();
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -232,59 +214,6 @@ export default function AssignTeacherSubjectsModal({
               ))}
             </select>
           </div>
-
-          <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">
-              O buscar / escribir materia específica
-            </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]">
-                  <BookOpen size={16} />
-                </span>
-                <input
-                  type="text"
-                  placeholder="Ej: Matemática, Lengua, Física..."
-                  value={inputVal}
-                  onChange={(e) => setInputVal(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl py-3 pl-10 pr-4 outline-none font-bold text-sm text-[var(--text)] focus:border-[var(--verde)] transition-all placeholder:text-[var(--text3)]"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => handleAdd()}
-                disabled={!inputVal.trim()}
-                className="bg-[var(--verde)] text-black font-black px-4 rounded-2xl flex items-center justify-center gap-1.5 text-xs hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:hover:scale-100 cursor-pointer shadow-sm"
-              >
-                <Plus size={16} strokeWidth={2.5} />
-                <span className="hidden sm:inline">Agregar</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Sugerencias rápidas de la institución */}
-          {availableSuggestions.length > 0 && (
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[var(--text3)] ml-2">
-                <Sparkles size={11} className="text-[var(--verde)]" />
-                <span>Sugerencias de la Escuela (Clic para sumar)</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar p-1">
-                {availableSuggestions.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => handleAdd(m)}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-xl bg-[var(--bg3)] hover:bg-[var(--verde-bg)] hover:text-[var(--verde)] hover:border-[var(--verde-border)] border border-[var(--border)] text-[var(--text2)] transition-all cursor-pointer group active:scale-95"
-                  >
-                    <Plus size={11} strokeWidth={2.5} className="text-[var(--verde)] group-hover:scale-125 transition-transform" />
-                    <span>{m}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Listado de materias asignadas actualmente */}
           <div className="pt-2">

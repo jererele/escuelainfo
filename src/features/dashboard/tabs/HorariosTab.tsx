@@ -44,7 +44,6 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
   const isStudent = userProfile?.rol === 'alumno';
   const isPreceptor = userProfile?.rol === 'preceptor';
   const teacherName = currentProfesor?.nombre || userProfile?.nombre || "";
-  const [teacherOnlyMine, setTeacherOnlyMine] = useState<boolean>(true);
   const [preceptorOnlyMine, setPreceptorOnlyMine] = useState<boolean>(true);
   const [preceptorShiftFilter, setPreceptorShiftFilter] = useState<"todos" | "manana" | "tarde">("todos");
 
@@ -164,7 +163,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     const normDia = normalizeStr(dia);
     const normSlot = normalizeSlot(slot);
 
-    if (isTeacher && teacherOnlyMine) {
+    if (isTeacher) {
       return horarios.find(item =>
         normalizeStr(item.dia) === normDia &&
         normalizeSlot(item.hora) === normSlot &&
@@ -185,7 +184,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
     const slots = getVisibleSlots();
 
-    const isTeacherMySchedule = isTeacher && (teacherOnlyMine || !selectedCourse);
+    const isTeacherMySchedule = isTeacher;
     const targetCourse = isStudent ? (currentAlumno?.curso || "") : selectedCourse;
 
     let fileName = "Cronograma_General_Institucional.xlsx";
@@ -285,11 +284,13 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
       <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 mb-8">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-black title-font text-[var(--text)]">Cronograma Institucional</h2>
-            {isTeacher && teacherOnlyMine && (
+            <h2 className="text-3xl font-black title-font text-[var(--text)]">
+              {isTeacher ? "Mi Cronograma de Clases" : "Cronograma Institucional"}
+            </h2>
+            {isTeacher && (
               <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--verde-bg)] text-[var(--verde)] text-xs font-bold rounded-xl border border-[var(--verde-border)]">
                 <UserCheck size={13} />
-                Mi Horario: {teacherName}
+                Docente: {teacherName}
               </span>
             )}
             {isPreceptor && (
@@ -313,23 +314,10 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-3 z-30 relative no-print">
             <div className="flex flex-wrap items-center gap-3">
               {isTeacher && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextVal = !teacherOnlyMine;
-                    setTeacherOnlyMine(nextVal);
-                    if (nextVal) setSelectedCourse("");
-                  }}
-                  className={`px-4 py-2 rounded-2xl text-xs font-black transition-all border flex items-center gap-2 cursor-pointer ${
-                    teacherOnlyMine
-                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm"
-                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:bg-[var(--bg4)]"
-                  }`}
-                  title={teacherOnlyMine ? "Viendo únicamente tus materias asignadas" : "Cambiar a ver sólo tus materias"}
-                >
-                  <UserCheck size={15} className={teacherOnlyMine ? "text-[var(--verde)]" : "text-[var(--text3)]"} />
-                  {teacherOnlyMine ? "Viendo: Mis Materias" : "Ver Mis Materias"}
-                </button>
+                <div className="px-4 py-2 rounded-2xl text-xs font-black border flex items-center gap-2 bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm">
+                  <UserCheck size={15} className="text-[var(--verde)]" />
+                  <span>Mis Horarios de Clase</span>
+                </div>
               )}
 
               {isPreceptor && preceptorCursos.length > 0 && (
@@ -403,53 +391,48 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                 </span>
               )}
 
-              <div className="flex items-center gap-3">
-                <p className="text-[var(--text2)] text-sm font-medium">
-                  {isTeacher && teacherOnlyMine 
-                    ? "Explorar por curso:" 
-                    : isPreceptor && preceptorOnlyMine 
-                    ? "Cursos asignados:" 
-                    : "Filtrar por curso:"}
-                </p>
-                {userProfile?.rol === 'alumno' ? (
-                  <span className="px-4 py-2 bg-[var(--bg3)] text-[var(--verde)] rounded-2xl border border-[var(--border)] font-bold text-sm">
-                    {currentAlumno?.curso || "Sin curso"}
-                  </span>
-                ) : (
-                  <CustomSelect 
-                    value={teacherOnlyMine ? "" : selectedCourse} 
-                    onChange={(val) => {
-                      setSelectedCourse(val);
-                      if (val) {
-                        if (isTeacher) setTeacherOnlyMine(false);
+              {!isTeacher && (
+                <div className="flex items-center gap-3">
+                  <p className="text-[var(--text2)] text-sm font-medium">
+                    {isPreceptor && preceptorOnlyMine 
+                      ? "Cursos asignados:" 
+                      : "Filtrar por curso:"}
+                  </p>
+                  {userProfile?.rol === 'alumno' ? (
+                    <span className="px-4 py-2 bg-[var(--bg3)] text-[var(--verde)] rounded-2xl border border-[var(--border)] font-bold text-sm">
+                      {currentAlumno?.curso || "Sin curso"}
+                    </span>
+                  ) : (
+                    <CustomSelect 
+                      value={selectedCourse} 
+                      onChange={(val) => {
+                        setSelectedCourse(val);
+                      }}
+                      placeholder={
+                        isPreceptor && preceptorOnlyMine 
+                          ? "Seleccionar curso..." 
+                          : "Todos los cursos"
                       }
-                    }}
-                    placeholder={
-                      teacherOnlyMine 
-                        ? "Seleccionar curso..." 
-                        : isPreceptor && preceptorOnlyMine 
-                        ? "Seleccionar curso..." 
-                        : "Todos los cursos"
-                    }
-                    className="w-48 sm:w-56"
-                    buttonClassName={
-                      isPreceptor && preceptorOnlyMine 
-                        ? "text-[var(--azul)] bg-[var(--bg3)] text-xs font-bold" 
-                        : "text-[var(--verde)] bg-[var(--bg3)] text-xs font-bold"
-                    }
-                    options={
-                      isPreceptor
-                        ? filteredCursosForPreceptor
-                        : [
-                            { value: "", label: "Todos los cursos" },
-                            ...cursos.map(c => ({
-                              value: c.nombre, label: c.nombre
-                            }))
-                          ]
-                    }
-                  />
-                )}
-              </div>
+                      className="w-48 sm:w-56"
+                      buttonClassName={
+                        isPreceptor && preceptorOnlyMine 
+                          ? "text-[var(--azul)] bg-[var(--bg3)] text-xs font-bold" 
+                          : "text-[var(--verde)] bg-[var(--bg3)] text-xs font-bold"
+                      }
+                      options={
+                        isPreceptor
+                          ? filteredCursosForPreceptor
+                          : [
+                              { value: "", label: "Todos los cursos" },
+                              ...cursos.map(c => ({
+                                value: c.nombre, label: c.nombre
+                              }))
+                            ]
+                      }
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl px-4 py-2 w-full sm:w-64">
@@ -507,7 +490,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
           >
             <FileSpreadsheet size={18} className="text-[var(--verde)] shrink-0" />
             {isTeacher 
-              ? (teacherOnlyMine || !selectedCourse ? "Descargar Mi Horario (Excel)" : `Descargar Horario ${selectedCourse} (Excel)`)
+              ? "Descargar Mi Horario (Excel)"
               : isStudent 
               ? "Descargar Mi Horario (Excel)" 
               : isPreceptor && selectedCourse
@@ -527,19 +510,21 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
         </div>
       </div>
 
-      {/* HORAS LIBRES DEL DÍA */}
-      <div className="mb-8 no-print animate-fade-in">
-        <FreeHoursWidget 
-          isStudent={userProfile?.rol === 'alumno'}
-          currentAlumno={currentAlumno}
-          isPreceptor={isPreceptor}
-          preceptorCourses={preceptorCursos}
-          ausencias={ausencias}
-          horarios={horarios}
-          onNavigateToAusencias={onNavigateToAusencias}
-          onNavigateToHorarios={(c) => setSelectedCourse(c)}
-        />
-      </div>
+      {/* HORAS LIBRES DEL DÍA (Oculto para docentes para que solo vean sus horarios) */}
+      {!isTeacher && (
+        <div className="mb-8 no-print animate-fade-in">
+          <FreeHoursWidget 
+            isStudent={userProfile?.rol === 'alumno'}
+            currentAlumno={currentAlumno}
+            isPreceptor={isPreceptor}
+            preceptorCourses={preceptorCursos}
+            ausencias={ausencias}
+            horarios={horarios}
+            onNavigateToAusencias={onNavigateToAusencias}
+            onNavigateToHorarios={(c) => setSelectedCourse(c)}
+          />
+        </div>
+      )}
 
       {/* Selector de días para dispositivos móviles */}
       <div className="flex lg:hidden justify-between items-center gap-1 bg-[var(--bg3)] p-1.5 rounded-2xl border border-[var(--border)] mb-6 z-30 relative no-print">
@@ -623,19 +608,29 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                   <Clock size={13} /> {slot}
                 </span>
                 {h && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedCourse(h.curso);
-                    }}
-                    className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md hover:scale-105 transition-all cursor-pointer ${
-                      isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"
-                    }`}
-                    title="Filtrar por este curso"
-                  >
-                    {h.curso}
-                  </button>
+                  isTeacher ? (
+                    <span
+                      className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
+                        isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"
+                      }`}
+                    >
+                      {h.curso}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCourse(h.curso);
+                      }}
+                      className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md hover:scale-105 transition-all cursor-pointer ${
+                        isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"
+                      }`}
+                      title="Filtrar por este curso"
+                    >
+                      {h.curso}
+                    </button>
+                  )
                 )}
               </div>
 
@@ -791,17 +786,25 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                               Prof. {h.profesor}
                             </button>
                             <div className="flex items-center justify-between mt-2.5 gap-2">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedCourse(h.curso);
-                                }}
-                                className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md hover:scale-105 transition-all cursor-pointer ${isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}
-                                title={`Filtrar por ${h.curso}`}
-                              >
-                                {h.curso}
-                              </button>
+                              {isTeacher ? (
+                                <span
+                                  className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}
+                                >
+                                  {h.curso}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCourse(h.curso);
+                                  }}
+                                  className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md hover:scale-105 transition-all cursor-pointer ${isAbsent ? "bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)]" : "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]"}`}
+                                  title={`Filtrar por ${h.curso}`}
+                                >
+                                  {h.curso}
+                                </button>
+                              )}
                               {isAbsent && (
                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] animate-pulse shrink-0">
                                   Hora Libre
