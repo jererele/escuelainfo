@@ -22,6 +22,7 @@ import {
   EyeOff,
   KeyRound,
   Send,
+  LogOut,
 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
@@ -32,6 +33,7 @@ interface Props {
   onClose: () => void;
   profile: UserProfile;
   onProfileUpdated: (updated: Partial<UserProfile>) => void;
+  onLogout?: () => void;
 }
 
 type Tab = "info" | "password" | "email";
@@ -47,9 +49,27 @@ function Field({ label, icon, children }: { label: string; icon: React.ReactNode
   );
 }
 
-export default function UserProfileModal({ isOpen, onClose, profile, onProfileUpdated }: Props) {
+export default function UserProfileModal({ isOpen, onClose, profile, onProfileUpdated, onLogout }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [loading, setLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleDirectLogout = async () => {
+    if (!confirm("¿Seguro que deseás cerrar la sesión de tu cuenta?")) return;
+    setLoggingOut(true);
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+    try {
+      sessionStorage.clear();
+      await account.deleteSession("current");
+    } catch {
+      sessionStorage.clear();
+    } finally {
+      window.location.replace("/");
+    }
+  };
 
   // Info tab
   const [telefono, setTelefono] = useState(profile.telefono || "");
@@ -268,9 +288,21 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleDirectLogout}
+              disabled={loggingOut}
+              className="p-2 rounded-xl border border-[var(--rojo-border)] bg-[var(--rojo-bg)] hover:bg-[var(--rojo)] text-[var(--rojo)] hover:text-white transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-50"
+              title="Cerrar sesión de mi cuenta"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Cerrar Sesión</span>
+            </button>
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer" title="Cerrar ventana">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -345,6 +377,18 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
                 {loading ? <Loader size={16} className="animate-spin" /> : <Check size={16} />}
                 {loading ? "Guardando..." : "Guardar Cambios"}
               </button>
+
+              <div className="pt-2 border-t border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={handleDirectLogout}
+                  disabled={loggingOut}
+                  className="w-full py-3 px-4 rounded-2xl border border-[var(--rojo-border)] bg-[var(--rojo-bg)] hover:bg-[var(--rojo)] text-[var(--rojo)] hover:text-white font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+                >
+                  <LogOut size={15} />
+                  <span>{loggingOut ? "Cerrando sesión..." : "Cerrar Sesión de mi Cuenta"}</span>
+                </button>
+              </div>
             </>
           )}
 

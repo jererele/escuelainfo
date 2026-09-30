@@ -1892,6 +1892,7 @@ export default function Dashboard() {
             setUserProfile(prev => prev ? { ...prev, ...updated } : prev);
             showToast("Perfil actualizado.", "success");
           }}
+          onLogout={handleLogout}
         />
       )}
       {isSuperAdmin && (
