@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { account } from "@/lib/appwrite";
 import { getAlumnos, updateAlumno, logAction, getCursos, Curso, Alumno } from "@/lib/dataService";
 import { X, AlertCircle, Search, UserCheck, UserPlus, Check } from "lucide-react";
+import CourseSelect from "@/components/shared/CourseSelect";
 
 interface Props {
   isOpen: boolean;
@@ -246,36 +247,22 @@ export default function NewStudentModal({ isOpen, onClose, onSuccess, initialAlu
             </div>
           )}
 
-          {/* Selector de curso */}
-          <div>
-            <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">
-              Curso a Asignar
-              <span className="text-[var(--rojo)] ml-1">*</span>
-            </label>
-            <select
-              required
-              className={`w-full bg-[var(--bg3)] border rounded-2xl p-4 outline-none font-bold transition-all ${
-                !curso
-                  ? "border-[var(--rojo-border)] focus:border-[var(--rojo)] text-[var(--text3)]"
-                  : "border-[var(--border)] focus:border-[var(--verde)] text-[var(--text)]"
-              }`}
-              value={curso}
-              onChange={(e) => setCurso(e.target.value)}
-            >
-              <option value="" disabled>— Seleccionar Curso —</option>
-              <option value="pendiente">Sin curso (Desinscribir / Pendiente)</option>
-              {cursos.length === 0
-                ? <option disabled>No hay cursos — agregalos primero.</option>
-                : cursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)
-              }
-            </select>
-            {!curso && (
-              <p className="text-[10px] text-[var(--rojo)] font-bold mt-1.5 ml-2 flex items-center gap-1.5">
-                <AlertCircle size={12} className="shrink-0" />
-                <span>Seleccioná un curso o la opción &quot;Sin curso&quot;.</span>
-              </p>
-            )}
-          </div>
+          {/* Selector de curso con Orientación, Año y División */}
+          <CourseSelect
+            label="Curso a Asignar"
+            required
+            cursos={cursos}
+            value={curso}
+            onChange={(val) => setCurso(val)}
+            includeSinCursoOption={true}
+            placeholder="— Seleccionar Curso o Armar División —"
+          />
+          {!curso && (
+            <p className="text-[10px] text-[var(--rojo)] font-bold mt-1 ml-2 flex items-center gap-1.5">
+              <AlertCircle size={12} className="shrink-0" />
+              <span>Seleccioná un curso o la opción &quot;Sin curso&quot;.</span>
+            </p>
+          )}
 
           <div className="flex gap-4 pt-2">
             <button type="button" onClick={onClose}

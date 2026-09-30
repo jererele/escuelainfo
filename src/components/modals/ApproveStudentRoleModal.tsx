@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X, Check, GraduationCap, BookOpen, Users, AlertCircle } from "lucide-react";
 import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, fromDbRol } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
+import CourseSelect from "@/components/shared/CourseSelect";
 
 interface ApproveStudentRoleModalProps {
   isOpen: boolean;
@@ -297,41 +298,14 @@ export default function ApproveStudentRoleModal({
               ref={courseSectionRef}
               className="space-y-2 p-3.5 rounded-2xl bg-[var(--bg3)]/60 border border-[var(--border)] animate-fade-in ring-1 ring-[var(--verde)]/30"
             >
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
-                  <GraduationCap size={13} className="text-[var(--verde)]" />
-                  <span>División / Curso a Asignar</span>
-                  <span className="text-[var(--rojo)]">*</span>
-                </label>
-                {selectedCurso && (
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-mono">
-                    {selectedCurso}
-                  </span>
-                )}
-              </div>
-
-              {cursos && cursos.length > 0 ? (
-                <div className="relative">
-                  <select
-                    ref={courseSelectRef}
-                    value={selectedCurso}
-                    onChange={(e) => setSelectedCurso(e.target.value)}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] focus:border-[var(--verde)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text)] outline-none transition-all cursor-pointer shadow-xs"
-                  >
-                    <option value="" disabled>-- Seleccionar Curso Obligatorio --</option>
-                    {cursos.map((c) => (
-                      <option key={c.id || c.nombre} value={c.nombre}>
-                        {c.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div className="text-xs text-[var(--amarillo)] bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] p-2.5 rounded-xl flex items-center gap-2">
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span>No hay cursos dados de alta. Podrás asignarlo luego desde Ciclo Lectivo.</span>
-                </div>
-              )}
+              <CourseSelect
+                label="División / Curso a Asignar"
+                required
+                cursos={cursos}
+                value={selectedCurso}
+                onChange={(val) => setSelectedCurso(val)}
+                placeholder="-- Seleccionar Curso Obligatorio --"
+              />
 
               {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" && alumnoDetails.curso !== selectedCurso && (
                 <p className="text-[10px] text-[var(--amarillo)] font-medium pl-1">
