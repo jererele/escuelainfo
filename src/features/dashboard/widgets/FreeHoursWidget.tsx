@@ -201,7 +201,7 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
                 onClick={() => {
                   onNavigateToAusencias(free.profesor);
                 }}
-                title={`Ver ausencias de ${free.profesor}`}
+                title={`Ver licencias de ${free.profesor}`}
               >
                 <div className="flex justify-between items-start gap-2 mb-3">
                   <button
@@ -237,7 +237,7 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
                       <span className="truncate">Prof: {free.profesor}</span>
                     </span>
                     <span className="text-[10px] font-black text-[var(--verde)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5 ml-2">
-                      Ver ausencias <ArrowRight size={11} />
+                      Ver licencias <ArrowRight size={11} />
                     </span>
                   </div>
                 </div>

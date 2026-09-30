@@ -52,7 +52,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
   const statCards = [
     {
-      label: isTeacher ? "Mis Ausencias Hoy" : "Ausentes Hoy",
+      label: isTeacher ? "Mis Licencias Hoy" : "Con Licencia Hoy",
       value: stats.hoy,
       color: "var(--rojo)",
       glowColor: "rgba(239, 68, 68, 0.16)",

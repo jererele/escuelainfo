@@ -653,7 +653,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                       onNavigateToAusencias(h.profesor);
                     }}
                     className={`text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
-                    title={`Ver ausencias de ${h.profesor}`}
+                    title={`Ver licencias de ${h.profesor}`}
                   >
                     Prof. {h.profesor}
                   </button>
@@ -781,7 +781,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                                 onNavigateToAusencias(h.profesor);
                               }}
                               className={`text-[10px] sm:text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors block ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
-                              title={`Ver ausencias de ${h.profesor}`}
+                              title={`Ver licencias de ${h.profesor}`}
                             >
                               Prof. {h.profesor}
                             </button>

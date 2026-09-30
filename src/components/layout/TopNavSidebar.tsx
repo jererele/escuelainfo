@@ -160,7 +160,7 @@ export default function TopNavSidebar({
     { id: "usuarios",      label: "Usuarios",          icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor"] },
     { id: "asistencia",    label: "Asistencia",        icon: <UserCheck size={18} />,       roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "monitor-asistencia", label: "Monitor y Alerta Temprana", icon: <Activity size={18} />, roles: ["admin", "directivo", "preceptor"] },
-    { id: "ausencias",     label: "Ausencias",         icon: <ClipboardList size={18} />,   roles: ["admin", "directivo", "preceptor", "profesor"] },
+    { id: "ausencias",     label: "Licencias",         icon: <ClipboardList size={18} />,   roles: ["admin", "directivo", "preceptor", "profesor"] },
     { id: "mesas-examen",  label: "Mesas de Examen",   icon: <ClipboardCheck size={18} />,  roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "horarios",      label: "Horarios",          icon: <CalendarDays size={18} />,    roles: ["admin", "directivo", "preceptor", "profesor", "alumno"] },
     { id: "profesores",    label: "Profesores",        icon: <GraduationCap size={18} />,   roles: ["admin", "directivo", "preceptor"] },

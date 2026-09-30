@@ -194,7 +194,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                 <FileText size={20} />
               </div>
               <div>
-                <h4 className="font-extrabold text-sm text-[var(--text)]">Solicitar Ausencia</h4>
+                <h4 className="font-extrabold text-sm text-[var(--text)]">Solicitar Licencia</h4>
                 <p className="text-[11px] text-[var(--text2)] mt-0.5">Solicita una licencia sujeta a la aprobación directiva.</p>
               </div>
             </button>
@@ -208,7 +208,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={20} /></span>
           <input 
             type="text" 
-            placeholder={userProfile?.rol === 'profesor' ? "Buscar en mi historial de inasistencias..." : "Buscar por profesor o tipo..."} 
+            placeholder={userProfile?.rol === 'profesor' ? "Buscar en mi historial de licencias..." : "Buscar por profesor o tipo de licencia..."} 
             className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--verde)] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -220,13 +220,13 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
               onClick={onOpenAbsenceModal} 
               className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-all cursor-pointer"
             >
-              + Nuevo Registro
+              + Nueva Licencia
             </button>
           )}
         </div>
       </div>
 
-      {/* TABLA PRINCIPAL DE AUSENCIAS */}
+      {/* TABLA PRINCIPAL DE LICENCIAS */}
       <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">

@@ -1494,7 +1494,7 @@ export default function Dashboard() {
                 {{
                   asistencia: "Asistencia",
                   "monitor-asistencia": "Monitor y Alerta Temprana (SATDE)",
-                  ausencias: "Ausencias",
+                  ausencias: "Licencias",
                   "mesas-examen": "Mesas de Examen",
                   horarios: "Horarios",
                   alumnos: "Alumnos",

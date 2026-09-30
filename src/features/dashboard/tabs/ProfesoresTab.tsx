@@ -476,7 +476,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                     {p.email}
                   </p>
                   <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-xl border border-[var(--verde-border)] opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all shrink-0">
-                    Ausencias →
+                    Licencias →
                   </span>
                 </div>
               </div>
