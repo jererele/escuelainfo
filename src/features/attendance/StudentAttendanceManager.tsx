@@ -231,7 +231,8 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
           mapaAsistencias[a.id || a.dni] = r.estado as "P" | "A" | "M" | "T" | "R";
           mapaIds[a.id || a.dni] = r.id || "";
         } else {
-          mapaAsistencias[a.id || a.dni] = "P"; // por defecto Presente
+          // Por defecto todos Ausentes hasta que escaneen el código QR institucional
+          mapaAsistencias[a.id || a.dni] = "A";
         }
       });
 
@@ -621,14 +622,42 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                     onChange={(e) => setSearchJornada(e.target.value)}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsExportModalOpen(true)}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[var(--bg4)] hover:border-[var(--verde)] hover:text-[var(--verde)] transition-all active:scale-95 cursor-pointer shadow-xs"
-                  title="Generar planilla mensual oficial con membrete ministerial o exportar a Excel"
-                >
-                  <Printer size={16} /> Planilla Oficial (PDF/Excel)
-                </button>
+
+                <div className="flex items-center gap-2 w-full md:w-auto flex-wrap justify-end">
+                  {/* Botón para restablecer todos a Ausentes (Modalidad QR) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated: Record<string, "P" | "A" | "M" | "T" | "R"> = {};
+                      alumnos.filter(a => a.curso === selectedCurso).forEach(a => {
+                        updated[a.id || a.dni] = "A";
+                      });
+                      setAsistenciasJornada(prev => ({ ...prev, ...updated }));
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/25 transition-all cursor-pointer shadow-xs active:scale-95"
+                    title="Pone a todos los alumnos del curso en Ausente para que deban escanear el QR"
+                  >
+                    <X size={14} strokeWidth={2.5} />
+                    <span>Todos Ausentes (QR)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsExportModalOpen(true)}
+                    className="flex items-center justify-center gap-2 bg-[var(--bg3)] border border-[var(--border)] text-[var(--text)] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[var(--bg4)] hover:border-[var(--verde)] hover:text-[var(--verde)] transition-all active:scale-95 cursor-pointer shadow-xs"
+                    title="Generar planilla mensual oficial con membrete ministerial o exportar a Excel"
+                  >
+                    <Printer size={16} /> Planilla Oficial (PDF/Excel)
+                  </button>
+                </div>
+              </div>
+
+              {/* Banner informativo de Asistencia QR */}
+              <div className="flex items-center gap-2.5 px-4 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-xs font-semibold text-[var(--text)] text-blue-600 dark:text-blue-400">
+                <QrCode size={16} className="shrink-0 text-blue-500" />
+                <span>
+                  <strong>Modalidad QR Activa:</strong> Todos los alumnos inician en <strong>Ausente (A)</strong>. Al escanear el código QR institucional desde su teléfono, su estado pasará automáticamente a <strong>Presente (P)</strong>.
+                </span>
               </div>
 
               {loading ? (

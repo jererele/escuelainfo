@@ -1447,26 +1447,53 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
                         preceptorId: sanitize(a.preceptorId, 50)
                       } });
       } else {
-        await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, documentId: ID.unique(), data: {
-                        alumnoId: sanitize(a.alumnoId, 50),
-                        alumnoNombre: sanitize(a.alumnoNombre, 200),
-                        fecha: sanitize(a.fecha, 20),
-                        estado: a.estado,
-                        preceptorId: sanitize(a.preceptorId, 50)
-                      } });
+        // Buscar si ya existe un registro para este alumno y fecha para actualizarlo
+        const existingDocs = await databases.listDocuments({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+          queries: [
+            Query.equal("alumnoId", sanitize(a.alumnoId, 50)),
+            Query.equal("fecha", sanitize(a.fecha, 20)),
+            Query.limit(1)
+          ]
+        });
+
+        if (existingDocs.total > 0 && existingDocs.documents[0]) {
+          await databases.updateDocument({
+            databaseId: APPWRITE_DB_ID,
+            collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+            documentId: existingDocs.documents[0].$id,
+            data: {
+              alumnoNombre: sanitize(a.alumnoNombre, 200),
+              estado: a.estado,
+              preceptorId: sanitize(a.preceptorId, 50)
+            }
+          });
+          a.id = existingDocs.documents[0].$id;
+        } else {
+          const created = await databases.createDocument({
+            databaseId: APPWRITE_DB_ID,
+            collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+            documentId: ID.unique(),
+            data: {
+              alumnoId: sanitize(a.alumnoId, 50),
+              alumnoNombre: sanitize(a.alumnoNombre, 200),
+              fecha: sanitize(a.fecha, 20),
+              estado: a.estado,
+              preceptorId: sanitize(a.preceptorId, 50)
+            }
+          });
+          a.id = created.$id;
+        }
       }
     } catch (err: any) {
       devLog("saveAsistenciaJornada/item (LocalStorage fallback)", err);
       const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
-      if (a.id) {
-        const idx = local.findIndex(item => item.id === a.id);
-        if (idx !== -1) {
-          local[idx] = a;
-        } else {
-          local.push(a);
-        }
+      const existingIdx = local.findIndex(item => (a.id && item.id === a.id) || (item.alumnoId === a.alumnoId && item.fecha === a.fecha));
+      if (existingIdx !== -1) {
+        local[existingIdx] = { ...local[existingIdx], ...a, id: local[existingIdx].id };
       } else {
-        const newRecord = { ...a, id: "LOCAL_" + Math.random().toString(36).substr(2, 9) };
+        const newRecord = { ...a, id: a.id || ("LOCAL_" + Math.random().toString(36).substr(2, 9)) };
         local.push(newRecord);
         a.id = newRecord.id;
       }

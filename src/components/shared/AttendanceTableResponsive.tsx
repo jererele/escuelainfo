@@ -308,7 +308,7 @@ export default function AttendanceTableResponsive({
             <AlumnoCard
               key={alId}
               alumno={alumno}
-              estado={asistencias[alId] || "P"}
+              estado={asistencias[alId] || "A"}
               estados={estados}
               onChangeEstado={onChangeEstado}
               readOnly={readOnly}
@@ -344,7 +344,7 @@ export default function AttendanceTableResponsive({
                 <AlumnoTableRow
                   key={alId}
                   alumno={alumno}
-                  estado={asistencias[alId] || "P"}
+                  estado={asistencias[alId] || "A"}
                   estados={estados}
                   onChangeEstado={onChangeEstado}
                   readOnly={readOnly}

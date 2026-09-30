@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const alumno = alumnoDocs.documents[0];
     const todayDate = new Date().toISOString().split('T')[0];
 
-    // 4. Registrar Asistencia (previniendo duplicados)
+    // 4. Registrar Asistencia (actualizando de Ausente a Presente si ya existía registro)
     if (mode === "jornada") {
       const existing = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
         Query.equal('alumnoId', alumno.$id),
@@ -78,24 +78,31 @@ export async function POST(request: Request) {
         Query.limit(1)
       ]);
 
-      if (existing.total > 0) {
-        // Ya está registrado el presente hoy
-        return NextResponse.json({
-          success: true,
-          alreadyRecorded: true,
-          mode: "jornada",
-          studentName: alumno.nombre,
-          message: "Tu asistencia de hoy ya se encontraba registrada previamente."
+      if (existing.total > 0 && existing.documents[0]) {
+        const doc = existing.documents[0];
+        if (doc.estado === "P") {
+          return NextResponse.json({
+            success: true,
+            alreadyRecorded: true,
+            mode: "jornada",
+            studentName: alumno.nombre,
+            message: "Tu asistencia de hoy ya se encontraba registrada como Presente."
+          });
+        }
+        // Si estaba Ausente u otro estado, cambiar a Presente por QR
+        await db.updateDocument(dbId, 'asistencias_alumnos_jornada', doc.$id, {
+          estado: "P",
+          preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
+        });
+      } else {
+        await db.createDocument(dbId, 'asistencias_alumnos_jornada', ID.unique(), {
+          alumnoId: alumno.$id,
+          alumnoNombre: alumno.nombre || sessionUser.name || "Alumno",
+          fecha: todayDate,
+          estado: "P",
+          preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
         });
       }
-
-      await db.createDocument(dbId, 'asistencias_alumnos_jornada', ID.unique(), {
-        alumnoId: alumno.$id,
-        alumnoNombre: alumno.nombre || sessionUser.name || "Alumno",
-        fecha: todayDate,
-        estado: "P",
-        preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
-      });
 
       // Log compacto
       try {
@@ -116,26 +123,33 @@ export async function POST(request: Request) {
         Query.limit(1)
       ]);
 
-      if (existing.total > 0) {
-        return NextResponse.json({
-          success: true,
-          alreadyRecorded: true,
-          mode: "materia",
-          materia: cleanMateria,
-          studentName: alumno.nombre,
-          message: `Tu presente para ${cleanMateria} ya se encontraba registrado.`
+      if (existing.total > 0 && existing.documents[0]) {
+        const doc = existing.documents[0];
+        if (doc.estado === "P") {
+          return NextResponse.json({
+            success: true,
+            alreadyRecorded: true,
+            mode: "materia",
+            materia: cleanMateria,
+            studentName: alumno.nombre,
+            message: `Tu presente para ${cleanMateria} ya se encontraba registrado.`
+          });
+        }
+        await db.updateDocument(dbId, 'asistencias_alumnos_materia', doc.$id, {
+          estado: "P",
+          profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
+        });
+      } else {
+        await db.createDocument(dbId, 'asistencias_alumnos_materia', ID.unique(), {
+          alumnoId: alumno.$id,
+          alumnoNombre: alumno.nombre || sessionUser.name || "Alumno",
+          fecha: todayDate,
+          materia: cleanMateria.slice(0, 100),
+          curso: (alumno.curso || "Curso").slice(0, 50),
+          estado: "P",
+          profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
         });
       }
-
-      await db.createDocument(dbId, 'asistencias_alumnos_materia', ID.unique(), {
-        alumnoId: alumno.$id,
-        alumnoNombre: alumno.nombre || sessionUser.name || "Alumno",
-        fecha: todayDate,
-        materia: cleanMateria.slice(0, 100),
-        curso: (alumno.curso || "Curso").slice(0, 50),
-        estado: "P",
-        profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
-      });
 
       try {
         await db.createDocument(dbId, 'logs', ID.unique(), {
