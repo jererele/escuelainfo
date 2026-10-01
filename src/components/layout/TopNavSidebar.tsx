@@ -31,6 +31,8 @@ import { APP_VERSION } from "@/lib/version";
 import VersionModal from "@/components/modals/VersionModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { gamerEasterEgg } from "@/lib/gamerEasterEgg";
+import NotificationsBell from "@/components/layout/NotificationsBell";
+import { NotificacionSistema } from "@/lib/dataService";
 
 interface TopNavSidebarProps {
   user: any;
@@ -42,6 +44,7 @@ interface TopNavSidebarProps {
   handleLogout: () => void;
   onTabChange?: (tabId: string) => void;
   onProfileOpen?: () => void;
+  onOpenCoverageModal?: (notif: NotificacionSistema) => void;
   pendingUsersCount?: number;
   pendingAccessCount?: number;
   pendingAlumnosCount?: number;
@@ -57,6 +60,7 @@ export default function TopNavSidebar({
   handleLogout,
   onTabChange,
   onProfileOpen,
+  onOpenCoverageModal,
   pendingUsersCount = 0,
   pendingAccessCount = 0,
   pendingAlumnosCount = 0,
@@ -254,8 +258,16 @@ export default function TopNavSidebar({
           }[activeTab] ?? "EscuelaInfo"}
         </span>
 
-        {/* Right: theme + avatar */}
+        {/* Right: notifications + theme + avatar */}
         <div className="flex items-center gap-2">
+          {userProfile && (
+            <NotificationsBell
+              userEmail={userProfile?.email || user?.email}
+              userRole={userProfile?.rol}
+              onOpenCoverageModal={onOpenCoverageModal}
+            />
+          )}
+
           <button
             onClick={toggleTheme}
             title={theme === "dark" ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"}

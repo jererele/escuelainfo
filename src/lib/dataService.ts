@@ -71,7 +71,7 @@ export const clearCache = (key: string) => {
 };
 
 // ─── Despachador de Eventos en Tiempo Real (Local & Multi-Pestaña) ─────────────
-export const notifyRealtimeUpdate = (type: "ausencias" | "horarios") => {
+export const notifyRealtimeUpdate = (type: "ausencias" | "horarios" | "notificaciones") => {
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent(`escuelainfo:${type}-updated`));
@@ -2139,4 +2139,118 @@ export const deleteSuspension = async (id: string) => {
   let current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
   current = current.filter(s => s.id !== id);
   setLocalStorageData("suspensiones_edilicias", current);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICACIONES INTERNAS DEL SISTEMA (DIRECTIVOS, PRECEPTORES, PERSONAL)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface NotificacionSistema {
+  id: string;
+  tipo: "licencia_preceptor_aprobada" | "cobertura_asignada" | "aviso_general";
+  titulo: string;
+  mensaje: string;
+  destinatarioRol?: "directivo" | "admin" | "preceptor" | "todos";
+  destinatarioEmail?: string;
+  destinatarioId?: string;
+  leida: boolean;
+  fecha: string;
+  metadata?: {
+    preceptorTitularNombre?: string;
+    preceptorTitularId?: string;
+    preceptorCubridorNombre?: string;
+    preceptorCubridorEmail?: string;
+    preceptorCubridorId?: string;
+    cursosAfectados?: string[];
+    inicio?: string;
+    fin?: string;
+    licenciaId?: string;
+  };
+}
+
+export const getNotificaciones = (userEmail?: string, userRole?: string): NotificacionSistema[] => {
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const cleanEmail = (userEmail || "").trim().toLowerCase();
+  const cleanRole = (userRole || "").trim().toLowerCase();
+
+  return all.filter(n => {
+    // Si tiene destinatario específico por email
+    if (n.destinatarioEmail && cleanEmail) {
+      if (n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+    }
+    // Si tiene destinatario por rol
+    if (n.destinatarioRol) {
+      if (n.destinatarioRol === "todos") return true;
+      if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) return true;
+      if (n.destinatarioRol === "admin" && cleanRole === "admin") return true;
+      if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") {
+        // Si no tiene destinatarioEmail, va para todos los preceptores
+        if (!n.destinatarioEmail) return true;
+      }
+    }
+    return false;
+  }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+};
+
+export const saveNotificacion = (notif: Omit<NotificacionSistema, "id" | "fecha" | "leida">): NotificacionSistema => {
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const newNotif: NotificacionSistema = {
+    ...notif,
+    id: "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+    leida: false,
+    fecha: new Date().toISOString(),
+  };
+  all.unshift(newNotif);
+  setLocalStorageData("notificaciones_sistema", all);
+
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated", { detail: newNotif }));
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "notificaciones", notif: newNotif, timestamp: Date.now() });
+      bc.close();
+    } catch {}
+  }
+
+  return newNotif;
+};
+
+export const markNotificacionAsRead = (id: string) => {
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const updated = all.map(n => n.id === id ? { ...n, leida: true } : n);
+  setLocalStorageData("notificaciones_sistema", updated);
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "notificaciones", timestamp: Date.now() });
+      bc.close();
+    } catch {}
+  }
+};
+
+export const markAllNotificacionesAsRead = (userEmail?: string, userRole?: string) => {
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const cleanEmail = (userEmail || "").trim().toLowerCase();
+  const cleanRole = (userRole || "").trim().toLowerCase();
+
+  const updated = all.map(n => {
+    let belongs = false;
+    if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) belongs = true;
+    if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) belongs = true;
+    if (n.destinatarioRol === "admin" && cleanRole === "admin") belongs = true;
+    if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor" && (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail)) belongs = true;
+    if (belongs) return { ...n, leida: true };
+    return n;
+  });
+
+  setLocalStorageData("notificaciones_sistema", updated);
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "notificaciones", timestamp: Date.now() });
+      bc.close();
+    } catch {}
+  }
 };

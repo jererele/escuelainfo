@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.33.5";
-export const APP_BUILD_DATE = "01/10/2026 16:55 hs";
+export const APP_VERSION = "v2.34.0";
+export const APP_BUILD_DATE = "01/10/2026 17:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Priorización y Reestructuración de la Tabla de Licencias (AusenciasTab.tsx): Las solicitudes de licencias pendientes de aprobación ahora se ubican automáticamente al tope de la lista para una visibilidad directiva inmediata. Se reemplazó el encabezado 'Profesor' por 'Personal / Agente', se incorporó el badge de jerarquía/rol (Docente, Preceptor, Directivo) encima del nombre de cada persona, y se diferenció el detalle inferior: para preceptores se listan exclusivamente los cursos/divisiones a cargo, y para docentes se muestran las materias curriculares y cursos afectados organizados con claridad."
+  "Sistema de Cobertura y Notificaciones de Licencias de Preceptoría (PreceptorCoverageModal.tsx & NotificationsBell.tsx): Al aprobar la licencia de un preceptor, el Equipo Directivo recibe una notificación en tiempo real indicando con exactitud los cursos que quedaron sin preceptor durante el período de ausencia. Se implementó una ventana interactiva de designación que permite al directivo seleccionar los preceptores de reemplazo, despachando automáticamente notificaciones en la plataforma y correos institucionales a los preceptores elegidos comunicando los cursos asignados a su cargo."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.34.0",
+    date: "01/10/2026 17:25 hs",
+    notes: [
+      "Sistema de Cobertura y Notificaciones de Licencias de Preceptoría (PreceptorCoverageModal.tsx & NotificationsBell.tsx): Al aprobar la licencia de un preceptor, el Equipo Directivo recibe una notificación en tiempo real indicando con exactitud los cursos que quedaron sin preceptor durante el período de ausencia. Se implementó una ventana interactiva de designación que permite al directivo seleccionar los preceptores de reemplazo, despachando automáticamente notificaciones en la plataforma y correos institucionales a los preceptores elegidos comunicando los cursos asignados a su cargo."
+    ]
+  },
   {
     version: "v2.33.5",
     date: "01/10/2026 16:55 hs",

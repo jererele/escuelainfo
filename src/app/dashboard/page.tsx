@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, fromDbRol, subscribeToHorarios, notifyRealtimeUpdate } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, fromDbRol, subscribeToHorarios, notifyRealtimeUpdate, saveNotificacion, NotificacionSistema } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -14,7 +14,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
-import { sendApprovalEmail, sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia } from "@/lib/emailService";
+import { sendApprovalEmail, sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia, sendPreceptorCoverageEmail } from "@/lib/emailService";
 import {
   GeneralTab,
   UsuariosTab,
@@ -85,6 +85,10 @@ const VersionModal = dynamic(() => import("@/components/modals/VersionModal"), {
   loading: () => null,
 });
 const DynamicQRModal = dynamic(() => import("@/components/modals/DynamicQRModal"), {
+  ssr: false,
+  loading: () => null,
+});
+const PreceptorCoverageModal = dynamic(() => import("@/components/modals/PreceptorCoverageModal"), {
   ssr: false,
   loading: () => null,
 });
@@ -162,6 +166,11 @@ export default function Dashboard() {
   const [isSendNoticeModalOpen, setIsSendNoticeModalOpen] = useState(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [coverageModalData, setCoverageModalData] = useState<{
+    isOpen: boolean;
+    ausencia: Ausencia | null;
+    cursos: string[];
+  }>({ isOpen: false, ausencia: null, cursos: [] });
   const [activeTab, setActiveTab] = useState("general");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -245,9 +254,11 @@ export default function Dashboard() {
         isSendNoticeModalOpen ||
         isUserModalOpen ||
         isQRModalOpen ||
-        isVersionModalOpen;
+        isVersionModalOpen ||
+        coverageModalData.isOpen;
 
       if (anyModalOpen) {
+        if (coverageModalData.isOpen) setCoverageModalData(prev => ({ ...prev, isOpen: false }));
         if (isProfileModalOpen) setIsProfileModalOpen(false);
         if (isModalOpen) setIsModalOpen(false);
         if (isTeacherModalOpen) setIsTeacherModalOpen(false);
@@ -608,6 +619,55 @@ export default function Dashboard() {
       if (status === "aprobada") {
         const targetAusencia = ausencias.find(a => a.id === id);
         if (targetAusencia) {
+          // Detectar si el solicitante es un preceptor
+          const matchedUser = usuarios.find(u =>
+            (targetAusencia.profId && (String(u.uid) === String(targetAusencia.profId) || String(u.id) === String(targetAusencia.profId))) ||
+            (u.nombre && u.nombre.trim().toLowerCase() === (targetAusencia.profNombre || "").trim().toLowerCase())
+          );
+          const materiasList = Array.isArray(targetAusencia.materias) ? targetAusencia.materias : (targetAusencia.materias ? [targetAusencia.materias] : []);
+          const isPreceptorAbsence = (matchedUser?.rol || "").toLowerCase() === "preceptor" || materiasList.some(m => /preceptor/i.test(m));
+
+          if (isPreceptorAbsence) {
+            // Extraer cursos del preceptor
+            const fromMats: string[] = [];
+            materiasList.forEach(m => {
+              const match = m.match(/\(([^)]+)\)/);
+              if (match && match[1]) {
+                fromMats.push(match[1].trim());
+              } else if (!/preceptor/i.test(m)) {
+                fromMats.push(m.trim());
+              }
+            });
+            const userCursos = (matchedUser?.cursos && Array.isArray(matchedUser.cursos)) ? matchedUser.cursos : [];
+            const affectedPreceptorCourses = Array.from(new Set([...fromMats, ...userCursos])).filter(Boolean);
+            const isOneDay = targetAusencia.inicio === targetAusencia.fin;
+            const fechaTxt = isOneDay ? targetAusencia.inicio : `del ${targetAusencia.inicio} al ${targetAusencia.fin}`;
+            const cursosTxt = affectedPreceptorCourses.length > 0 ? affectedPreceptorCourses.join(", ") : "Cursos asignados al turno";
+
+            // 1. Generar notificación interna al Equipo Directivo informando los cursos que quedaron sin preceptor
+            saveNotificacion({
+              tipo: "licencia_preceptor_aprobada",
+              titulo: "Licencia de Preceptoría Aprobada · Asignar Cobertura",
+              mensaje: `El preceptor ${targetAusencia.profNombre} tiene licencia aprobada (${fechaTxt}). Los cursos que quedaron sin preceptor son: ${cursosTxt}. Seleccioná los preceptores para cubrir el turno.`,
+              destinatarioRol: "directivo",
+              metadata: {
+                preceptorTitularNombre: targetAusencia.profNombre,
+                preceptorTitularId: String(targetAusencia.profId),
+                cursosAfectados: affectedPreceptorCourses,
+                inicio: targetAusencia.inicio,
+                fin: targetAusencia.fin,
+                licenciaId: id,
+              }
+            });
+
+            // 2. Si el usuario actual es directivo/admin, abrir inmediatamente el modal interactivo para designar preceptores
+            setCoverageModalData({
+              isOpen: true,
+              ausencia: targetAusencia,
+              cursos: affectedPreceptorCourses,
+            });
+          }
+
           const affectedCourses = getAffectedCoursesFromAusencia(targetAusencia, horarios);
           if (affectedCourses.length > 0) {
             const cleanTargetCourses = affectedCourses.map(c => c.toLowerCase().trim());
@@ -1500,6 +1560,18 @@ export default function Dashboard() {
           onTabChange={(tabId) => {
             if (tabId === 'auditoria') getLogs().then(setLogs);
           }}
+          onOpenCoverageModal={(notif) => {
+            if (notif.metadata?.licenciaId) {
+              const target = ausencias.find(a => a.id === notif.metadata?.licenciaId);
+              if (target) {
+                setCoverageModalData({
+                  isOpen: true,
+                  ausencia: target,
+                  cursos: notif.metadata?.cursosAfectados || [],
+                });
+              }
+            }
+          }}
           pendingUsersCount={usuarios.filter(u => isPendingRole(u.rol)).length}
         />
 
@@ -1973,6 +2045,72 @@ export default function Dashboard() {
         onClose={() => setIsQRModalOpen(false)}
         userProfile={userProfile}
       />
+      {coverageModalData.isOpen && (
+        <PreceptorCoverageModal
+          isOpen={coverageModalData.isOpen}
+          onClose={() => setCoverageModalData(prev => ({ ...prev, isOpen: false }))}
+          ausencia={coverageModalData.ausencia}
+          cursosAfectados={coverageModalData.cursos}
+          preceptores={usuarios.filter(u => u.rol === "preceptor")}
+          onConfirmCoverage={async (selectedPreceptores) => {
+            const aus = coverageModalData.ausencia;
+            if (!aus) return;
+
+            const isOneDay = aus.inicio === aus.fin;
+            const fechaTxt = isOneDay ? aus.inicio : `del ${aus.inicio} al ${aus.fin}`;
+            const cursosTxt = coverageModalData.cursos.length > 0 ? coverageModalData.cursos.join(", ") : "Cursos asignados al turno";
+
+            // 1. Notificar a cada preceptor seleccionado tanto por la campana interna como por correo
+            for (const prec of selectedPreceptores) {
+              const precEmail = prec.email?.trim().toLowerCase();
+              const precId = String(prec.uid || prec.id || "");
+
+              // Guardar notificación interna para este preceptor
+              saveNotificacion({
+                tipo: "cobertura_asignada",
+                titulo: "Asignación de Cobertura de Preceptoría",
+                mensaje: `El Equipo Directivo te asignó la cobertura de los cursos (${cursosTxt}) a cargo de ${aus.profNombre} durante su licencia (${fechaTxt}).`,
+                destinatarioRol: "preceptor",
+                destinatarioEmail: precEmail,
+                destinatarioId: precId,
+                metadata: {
+                  preceptorTitularNombre: aus.profNombre,
+                  preceptorTitularId: String(aus.profId),
+                  preceptorCubridorNombre: prec.nombre,
+                  preceptorCubridorEmail: precEmail,
+                  cursosAfectados: coverageModalData.cursos,
+                  inicio: aus.inicio,
+                  fin: aus.fin,
+                  licenciaId: aus.id,
+                }
+              });
+
+              // Enviar correo electrónico institucional
+              if (precEmail) {
+                sendPreceptorCoverageEmail({
+                  toEmail: precEmail,
+                  coveringPreceptorName: prec.nombre,
+                  absentPreceptorName: aus.profNombre,
+                  cursos: coverageModalData.cursos,
+                  inicio: aus.inicio,
+                  fin: aus.fin,
+                  tipoLicencia: aus.tipo,
+                }).catch(err => console.error("Error al enviar correo de cobertura a preceptor:", err));
+              }
+            }
+
+            // Registrar en auditoría
+            const cubridoresNombres = selectedPreceptores.map(p => p.nombre).join(", ");
+            logAction(
+              user?.email || "directivo",
+              "ASIGNAR_COBERTURA_PRECEPTOR",
+              `Licencia: ${aus.profNombre} (${fechaTxt}), Cursos: ${cursosTxt} -> Cubren: ${cubridoresNombres}`
+            );
+
+            showToast(`Cobertura asignada con éxito a ${selectedPreceptores.length} preceptor(es).`, "success");
+          }}
+        />
+      )}
     </div>
     </SidebarProvider>
   );

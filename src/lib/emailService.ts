@@ -361,3 +361,151 @@ export const sendAbsenceNoticeEmail = async (params: AbsenceNoticeParams): Promi
     return false;
   }
 };
+
+export interface PreceptorCoverageEmailParams {
+  toEmail: string;
+  coveringPreceptorName: string;
+  absentPreceptorName: string;
+  cursos: string[];
+  inicio: string;
+  fin: string;
+  tipoLicencia?: string;
+  appUrl?: string;
+}
+
+/**
+ * Envía un correo institucional al preceptor designado para cubrir los cursos
+ * de un colega preceptor durante su período de licencia estatutaria.
+ */
+export const sendPreceptorCoverageEmail = async (params: PreceptorCoverageEmailParams): Promise<boolean> => {
+  if (!params.toEmail) return false;
+
+  const origin =
+    params.appUrl ||
+    (typeof window !== "undefined" && window.location.origin
+      ? window.location.origin
+      : "https://escuela713.com");
+
+  const isOneDay = params.inicio === params.fin;
+  const fechaTexto = isOneDay ? `el día ${params.inicio}` : `desde el ${params.inicio} hasta el ${params.fin}`;
+  const cursosTexto = params.cursos.length > 0 ? params.cursos.join(", ") : "Cursos asignados al turno";
+
+  const subject = `Asignación de Cobertura de Preceptoría: Cursos ${cursosTexto} - Escuela N° 713`;
+
+  const plainText = `
+    Hola ${params.coveringPreceptorName},
+
+    El Equipo Directivo te ha asignado la cobertura de los cursos a cargo de ${params.absentPreceptorName} debido a su licencia (${params.tipoLicencia || "Licencia Reglamentaria"}).
+
+    - Cursos asignados a tu cargo: ${cursosTexto}
+    - Período de cobertura: ${fechaTexto}
+    - Preceptor titular con licencia: ${params.absentPreceptorName}
+
+    Por favor, ingresá a la plataforma para coordinar las asistencias de jornada y el control de los alumnos:
+    ${origin}
+
+    Escuela Provincial de Educación Técnica N° 713 - Esquel, Chubut
+  `.trim();
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Asignación de Cobertura de Preceptoría</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #050b14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 30px auto; background-color: #0b1329; border: 1px solid #1e293b; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <!-- Encabezado con degradado azul -->
+        <tr>
+          <td style="padding: 32px 32px 24px 32px; background: linear-space; background: linear-gradient(135deg, #1e3a8a 0%, #0369a1 100%); text-align: center;">
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: #bae6fd; background-color: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 9999px; display: inline-block; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.2);">
+              Asignación Directiva de Cobertura
+            </span>
+            <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.02em;">
+              Cobertura de Cursos Asignada
+            </h1>
+          </td>
+        </tr>
+
+        <!-- Contenido Principal -->
+        <tr>
+          <td style="padding: 32px;">
+            <p style="font-size: 15px; line-height: 1.6; color: #e2e8f0; margin: 0 0 20px 0;">
+              Hola <strong>${params.coveringPreceptorName}</strong>,
+            </p>
+            <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0 0 24px 0;">
+              El Equipo Directivo ha aprobado la licencia de <strong>${params.absentPreceptorName}</strong> y te ha designado como preceptor/a a cargo de la cobertura de sus cursos durante el período reglamentario.
+            </p>
+
+            <!-- Tarjeta de Detalles -->
+            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #080e21; border: 1px solid #1e293b; border-left: 4px solid #38bdf8; border-radius: 12px; margin-bottom: 28px;">
+              <tr>
+                <td style="padding: 20px;">
+                  <div style="margin-bottom: 12px;">
+                    <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Cursos a tu Cargo</span>
+                    <span style="font-size: 16px; font-weight: 900; color: #38bdf8; font-family: monospace;">${cursosTexto}</span>
+                  </div>
+                  <div style="margin-bottom: 12px;">
+                    <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Período de Licencia</span>
+                    <span style="font-size: 14px; font-weight: 700; color: #10b981;">${fechaTexto}</span>
+                  </div>
+                  <div style="margin-bottom: 12px;">
+                    <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Preceptor Titular</span>
+                    <span style="font-size: 14px; font-weight: 700; color: #ffffff;">${params.absentPreceptorName}</span>
+                  </div>
+                  <div>
+                    <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Encuadre</span>
+                    <span style="font-size: 13px; color: #94a3b8;">${params.tipoLicencia || "Licencia Estatutaria"}</span>
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <p style="font-size: 13px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0;">
+              Por favor, recordá registrar las asistencias de jornada de los cursos cubiertos en la sección <strong>Asistencia</strong> de EscuelaInfo.
+            </p>
+
+            <div style="text-align: center; margin-bottom: 24px;">
+              <a href="${origin}" target="_blank" style="display: inline-block; background-color: #38bdf8; color: #082f49; font-size: 13px; font-weight: 900; text-decoration: none; padding: 12px 28px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+                Ingresar al Panel de Preceptoría
+              </a>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Pie de página -->
+        <tr>
+          <td style="padding: 20px 32px; background-color: #0b1120; border-top: 1px solid #1e293b; text-align: center;">
+            <p style="font-size: 11px; color: #64748b; margin: 0 0 4px 0;">
+              Escuela Provincial de Educación Técnica N° 713 &quot;Juan Abdala Chayep&quot;
+            </p>
+            <p style="font-size: 10px; color: #475569; margin: 0;">
+              Esquel, Chubut · Sistema EscuelaInfo
+            </p>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    const headers = await getEmailAuthHeaders();
+    const res = await fetch("/api/send-email", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        to: params.toEmail,
+        subject,
+        text: plainText,
+        html,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("[sendPreceptorCoverageEmail] Error al despachar aviso:", err);
+    return false;
+  }
+};
