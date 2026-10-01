@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Client, Databases, Users, Query, ID } from 'node-appwrite';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { verifyOtpToken, verifyOtp, markTokenUsed } from '@/lib/otpStore';
+
+export const MASTER_ADMIN_EMAIL = 'jeree.castroo10@gmail.com';
 
 // Mapeos compactos institucionales
 const ROL_MAP: Record<string, string> = {
@@ -95,7 +98,16 @@ const getAllowedAssignableRoles = (operatorRole?: string | null): string[] => {
 
 export async function POST(request: Request) {
   try {
-    const { targetUserId, targetUserEmail, newRole, selectedCurso, preceptorCursos } = await request.json();
+    const { 
+      targetUserId, 
+      targetUserEmail, 
+      newRole, 
+      selectedCurso, 
+      preceptorCursos,
+      adminOtpCode,
+      adminOtpToken,
+      targetUserName
+    } = await request.json();
 
     if (!newRole) {
       return NextResponse.json({ error: "Debe especificarse el nuevo rol institucional." }, { status: 400 });
@@ -196,11 +208,63 @@ export async function POST(request: Request) {
       } catch {}
     }
 
+    // Si el usuario aún no existe en la colección de usuarios, inicializamos su registro formal
     if (!targetDoc) {
-      return NextResponse.json({ error: "No se encontró el registro del usuario objetivo." }, { status: 404 });
+      if (!cleanTargetEmail) {
+        return NextResponse.json({ error: "No se encontró el registro del usuario objetivo." }, { status: 404 });
+      }
+      try {
+        targetDoc = await db.createDocument(dbId, 'usuarios', ID.unique(), {
+          uid: targetUserId || ("PENDING_" + ID.unique()),
+          email: cleanTargetEmail,
+          nombre: targetUserName || "Pendiente",
+          rol: toDbRol("pendiente"),
+          cursos: "[]"
+        });
+      } catch (createErr: any) {
+        return NextResponse.json({ error: `Error al crear perfil para el usuario: ${createErr.message}` }, { status: 500 });
+      }
     }
 
     const targetCurrentRole = fromDbRol(targetDoc.rol);
+
+    // 🛡️ REQUISITO DE SEGURIDAD ESTRICTO:
+    // Para otorgar rol de Administrador (si el usuario no lo era previamente),
+    // se exige verificación de código OTP de 6 dígitos enviado exclusivamente a jeree.castroo10@gmail.com
+    const isPromotingToAdmin = cleanNewRole === 'admin' && targetCurrentRole !== 'admin';
+    if (isPromotingToAdmin) {
+      const cleanOtp = typeof adminOtpCode === 'string' ? adminOtpCode.trim() : '';
+      if (!cleanOtp) {
+        return NextResponse.json({
+          error: "Para asignar el rol de Administrador es obligatorio ingresar el código de verificación enviado a jeree.castroo10@gmail.com"
+        }, { status: 403 });
+      }
+
+      let isValidOtp = false;
+
+      // 1. Validar contra token criptográfico firmado HMAC
+      if (adminOtpToken && typeof adminOtpToken === 'string') {
+        const tokenRes = verifyOtpToken(MASTER_ADMIN_EMAIL, cleanOtp, adminOtpToken);
+        if (tokenRes.valid) {
+          isValidOtp = true;
+          markTokenUsed(adminOtpToken);
+        }
+      }
+
+      // 2. Fallback de verificación en memoria (desarrollo / misma instancia)
+      if (!isValidOtp) {
+        const memRes = verifyOtp(MASTER_ADMIN_EMAIL, cleanOtp);
+        if (memRes.valid) {
+          isValidOtp = true;
+        }
+      }
+
+      if (!isValidOtp) {
+        return NextResponse.json({
+          error: "Código de autorización incorrecto o expirado. Solicitá un nuevo código enviado a jeree.castroo10@gmail.com"
+        }, { status: 403 });
+      }
+    }
 
     // 3. Validar salvaguardas jerárquicas
     // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
@@ -313,10 +377,11 @@ export async function POST(request: Request) {
         ? ` (Cursos: ${preceptorCursos.join(", ")})`
         : "";
 
+      const isVerifiedAdmin = isPromotingToAdmin ? " [AUTORIZADO CON CÓDIGO OTP jeree.castroo10@gmail.com]" : "";
       await db.createDocument(dbId, 'logs', ID.unique(), {
         usuarioEmail: cleanCallerEmail || 'admin',
-        accion: 'C_ROL',
-        detalles: `${cleanTargetEmail}: de ${oldLabel} a ${newLabel}${extraDetails}`,
+        accion: isPromotingToAdmin ? 'PROMOTE_ADMIN' : 'C_ROL',
+        detalles: `${cleanTargetEmail}: de ${oldLabel} a ${newLabel}${extraDetails}${isVerifiedAdmin}`,
         fecha: new Date().toISOString(),
         ip: clientIp || "Desconocida"
       });

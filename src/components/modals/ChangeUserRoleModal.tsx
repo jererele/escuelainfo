@@ -14,9 +14,24 @@ import {
   AlertTriangle,
   Info,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Mail,
+  KeyRound,
+  RefreshCw,
+  Loader2,
+  Send,
+  ShieldAlert
 } from "lucide-react";
-import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, parseUserCursos, fromDbRol } from "@/lib/dataService";
+import { 
+  UserProfile, 
+  Alumno, 
+  Curso, 
+  getAllowedAssignableRoles, 
+  UserRole, 
+  parseUserCursos, 
+  fromDbRol,
+  requestAdminOtpApi
+} from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface ChangeUserRoleModalProps {
@@ -25,7 +40,9 @@ interface ChangeUserRoleModalProps {
   onConfirm: (
     targetRole: UserProfile["rol"],
     selectedCurso?: string,
-    preceptorCursos?: string[]
+    preceptorCursos?: string[],
+    adminOtpCode?: string,
+    adminOtpToken?: string
   ) => Promise<void> | void;
   user: UserProfile | null;
   alumnoDetails?: Alumno | null;
@@ -117,6 +134,15 @@ export default function ChangeUserRoleModal({
   const [confirmAdminEscalation, setConfirmAdminEscalation] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Estados de seguridad para validación OTP de Administrador (jeree.castroo10@gmail.com)
+  const [adminOtpCode, setAdminOtpCode] = useState<string>("");
+  const [adminOtpToken, setAdminOtpToken] = useState<string>("");
+  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
+  const [otpSent, setOtpSent] = useState<boolean>(false);
+  const [otpCooldown, setOtpCooldown] = useState<number>(0);
+  const [otpError, setOtpError] = useState<string>("");
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState<string>("");
+
   const courseSectionRef = useRef<HTMLDivElement>(null);
   const courseSelectRef = useRef<HTMLSelectElement>(null);
   const preceptorSectionRef = useRef<HTMLDivElement>(null);
@@ -165,6 +191,13 @@ export default function ChangeUserRoleModal({
     if (!isOpen || !user) {
       setLoading(false);
       setConfirmAdminEscalation(false);
+      setAdminOtpCode("");
+      setAdminOtpToken("");
+      setIsSendingOtp(false);
+      setOtpSent(false);
+      setOtpCooldown(0);
+      setOtpError("");
+      setOtpSuccessMessage("");
       initializedUserRef.current = null;
       return;
     }
@@ -219,6 +252,15 @@ export default function ChangeUserRoleModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
+  // Temporizador para reenvío de código OTP
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -263,6 +305,28 @@ export default function ChangeUserRoleModal({
     }
   };
 
+  const handleRequestAdminOtp = async () => {
+    if (!user?.email || isSendingOtp || otpCooldown > 0) return;
+    setIsSendingOtp(true);
+    setOtpError("");
+    setOtpSuccessMessage("");
+    try {
+      const res = await requestAdminOtpApi(user.email, user.nombre);
+      if (res.success) {
+        setOtpSent(true);
+        if (res.token) setAdminOtpToken(res.token);
+        setOtpSuccessMessage(res.message || "Código enviado exitosamente a jeree.castroo10@gmail.com");
+        setOtpCooldown(60);
+      } else {
+        setOtpError(res.error || "No se pudo enviar el código a jeree.castroo10@gmail.com");
+      }
+    } catch (err: any) {
+      setOtpError(err?.message || "Error al solicitar código de verificación.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
   const handleConfirm = async () => {
     if (isCurrentUser && selectedRole !== "admin") {
       return;
@@ -274,26 +338,42 @@ export default function ChangeUserRoleModal({
     if (!allowedRoles.includes(selectedRole as UserRole)) {
       return;
     }
-    // Si se asciende a admin y no se confirmó la alerta
-    if (selectedRole === "admin" && fromDbRol(user?.rol || "").toLowerCase() !== "admin" && !confirmAdminEscalation) {
-      setConfirmAdminEscalation(true);
-      setTimeout(() => {
-        if (adminSectionRef.current && modalBodyRef.current) {
-          const topPos = adminSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
-          modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
-        }
-      }, 50);
-      return;
+
+    const isPromotingToAdmin = selectedRole === "admin" && fromDbRol(user?.rol || "").toLowerCase() !== "admin";
+
+    // Salvaguarda: Exigir código OTP verificado en jeree.castroo10@gmail.com
+    if (isPromotingToAdmin) {
+      if (!otpSent) {
+        setOtpError("Primero debés solicitar el código de verificación para jeree.castroo10@gmail.com");
+        setTimeout(() => {
+          if (adminSectionRef.current && modalBodyRef.current) {
+            const topPos = adminSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
+            modalBodyRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+          }
+        }, 50);
+        return;
+      }
+      if (!adminOtpCode || adminOtpCode.trim().length !== 6) {
+        setOtpError("Ingresá el código numérico de 6 dígitos recibido en jeree.castroo10@gmail.com");
+        return;
+      }
     }
 
     setLoading(true);
+    setOtpError("");
     try {
       await onConfirm(
         selectedRole,
         selectedRole === "alumno" ? (selectedCurso || undefined) : undefined,
-        selectedRole === "preceptor" ? selectedPreceptorCursos : undefined
+        selectedRole === "preceptor" ? selectedPreceptorCursos : undefined,
+        isPromotingToAdmin ? adminOtpCode.trim() : undefined,
+        isPromotingToAdmin ? adminOtpToken : undefined
       );
       onClose();
+    } catch (err: any) {
+      if (isPromotingToAdmin) {
+        setOtpError(err?.message || "Código de verificación inválido o expirado. Solicitá uno nuevo.");
+      }
     } finally {
       setLoading(false);
     }
@@ -556,23 +636,111 @@ export default function ChangeUserRoleModal({
             </div>
           )}
 
-          {/* ALERTA DE ASCENSO A ADMINISTRADOR */}
+          {/* ALERTA Y VERIFICACIÓN OTP PARA ASCENSO A ADMINISTRADOR */}
           {selectedRole === "admin" && allowedRoles.includes("admin") && fromDbRol(user?.rol || "").toLowerCase() !== "admin" && (
             <div
               ref={adminSectionRef}
-              className="p-3.5 sm:p-4 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-2 animate-fade-in"
+              className="p-4 sm:p-5 rounded-2xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] space-y-3.5 animate-fade-in ring-1 ring-[var(--rojo)]/30"
             >
-              <div className="flex items-center gap-2 text-[var(--rojo)] font-black text-xs uppercase tracking-wider">
-                <AlertTriangle size={15} strokeWidth={2.5} />
-                <span>Privilegios Elevados de Administrador</span>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 text-[var(--rojo)] font-black text-xs uppercase tracking-wider">
+                  <ShieldAlert size={16} strokeWidth={2.5} />
+                  <span>Autorización de Seguridad Requerida</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[var(--rojo)]/20 text-[var(--rojo)] border border-[var(--rojo)]/30">
+                  Acceso Total
+                </span>
               </div>
+
               <p className="text-xs text-[var(--text)] leading-relaxed">
-                Estás por otorgarle acceso total a este usuario. Podrá gestionar usuarios, auditar registros y modificar la configuración global.
+                Para otorgarle privilegios de Administrador a este usuario, es indispensable ingresar el código de verificación de 6 dígitos enviado al correo del Administrador Principal:
+                <br />
+                <span className="font-mono text-xs font-bold text-[var(--rojo)] bg-black/40 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 mt-1.5 border border-[var(--rojo-border)]">
+                  <Mail size={13} />
+                  jeree.castroo10@gmail.com
+                </span>
               </p>
-              {confirmAdminEscalation && (
-                <div className="pt-1 flex items-center gap-1.5 text-xs font-bold text-[var(--rojo)]">
-                  <Check size={14} strokeWidth={3} />
-                  <span>Presioná &quot;Confirmar y Asignar Rol&quot; para proceder.</span>
+
+              {/* Botón de envío de código / Cooldown */}
+              <div className="pt-1">
+                {!otpSent ? (
+                  <button
+                    type="button"
+                    onClick={handleRequestAdminOtp}
+                    disabled={isSendingOtp}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[var(--rojo)] hover:brightness-110 active:scale-95 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin" />
+                        <span>Enviando código a jeree.castroo10@gmail.com...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={15} />
+                        <span>Enviar Código a jeree.castroo10@gmail.com</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between text-xs flex-wrap gap-1">
+                      <span className="text-[10px] font-black uppercase text-[var(--verde)] flex items-center gap-1">
+                        <Check size={12} strokeWidth={3} />
+                        Código enviado a jeree.castroo10@gmail.com
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRequestAdminOtp}
+                        disabled={isSendingOtp || otpCooldown > 0}
+                        className="text-[10px] text-[var(--rojo)] hover:underline font-bold disabled:opacity-50 disabled:no-underline cursor-pointer flex items-center gap-1"
+                      >
+                        <RefreshCw size={11} className={isSendingOtp ? "animate-spin" : ""} />
+                        {otpCooldown > 0 ? `Reenviar en ${otpCooldown}s` : "Reenviar código"}
+                      </button>
+                    </div>
+
+                    {/* Input para el código de 6 dígitos */}
+                    <div className="space-y-1">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          autoFocus
+                          value={adminOtpCode}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                            setAdminOtpCode(val);
+                            if (otpError) setOtpError("");
+                          }}
+                          placeholder="000000"
+                          className="w-full bg-[var(--bg)] border-2 border-[var(--rojo-border)] focus:border-[var(--rojo)] text-[var(--rojo)] text-center text-2xl font-black font-mono tracking-[0.3em] rounded-xl py-2 px-3 outline-none transition-all placeholder:text-[var(--text3)]/40 shadow-inner"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none">
+                          <KeyRound size={16} />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[var(--text3)] text-center">
+                        Ingresá los 6 dígitos recibidos en la casilla (válido por 10 min)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mensajes de error o éxito */}
+              {otpError && (
+                <div className="p-2.5 rounded-xl bg-black/40 border border-[var(--rojo-border)] text-[var(--rojo)] text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  <span>{otpError}</span>
+                </div>
+              )}
+              {otpSuccessMessage && !otpError && (
+                <div className="p-2.5 rounded-xl bg-black/40 border border-[var(--verde-border)] text-[var(--verde)] text-xs font-semibold flex items-center gap-2">
+                  <Check size={14} className="shrink-0" />
+                  <span>{otpSuccessMessage}</span>
                 </div>
               )}
             </div>
@@ -593,17 +761,25 @@ export default function ChangeUserRoleModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={loading || (isCurrentUser && selectedRole !== "admin") || !allowedRoles.includes(selectedRole as UserRole)}
+            disabled={
+              loading || 
+              (isCurrentUser && selectedRole !== "admin") || 
+              !allowedRoles.includes(selectedRole as UserRole) ||
+              (selectedRole === "admin" && fromDbRol(user?.rol || "").toLowerCase() !== "admin" && (!otpSent || adminOtpCode.length !== 6))
+            }
             className="w-full sm:w-auto flex-1 min-h-[42px] px-4 py-2.5 rounded-xl bg-[var(--verde)] text-black text-xs font-black hover:brightness-105 active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <span>Actualizando rol...</span>
+            ) : selectedRole === "admin" && fromDbRol(user?.rol || "").toLowerCase() !== "admin" ? (
+              <>
+                <span>Verificar y Asignar Administrador</span>
+                <ShieldCheck size={14} strokeWidth={2.5} />
+              </>
             ) : (
               <>
                 <span>
-                  {confirmAdminEscalation
-                    ? "Confirmar y Asignar Rol"
-                    : currentRoleIsSame
+                  {currentRoleIsSame
                     ? "Guardar Configuración"
                     : "Guardar Nuevo Rol"}
                 </span>

@@ -873,7 +873,9 @@ export default function Dashboard() {
     targetUser: UserProfile,
     newRole: UserProfile["rol"],
     selectedCurso?: string,
-    preceptorCursos?: string[]
+    preceptorCursos?: string[],
+    adminOtpCode?: string,
+    adminOtpToken?: string
   ) => {
     const effectiveOperatorRole = isSuperAdmin || isAdmin ? "admin" : fromDbRol(userProfile?.rol);
     const normalizedTargetRole = fromDbRol(targetUser.rol);
@@ -922,28 +924,31 @@ export default function Dashboard() {
       alumno: "Alumno",
     };
     const newLabel = roleLabels[normalizedNewRole] || normalizedNewRole;
+    const isPromotingToAdmin = normalizedNewRole === "admin" && normalizedTargetRole !== "admin";
 
     try {
-      // Actualización optimista local
-      setUsuarios(prev => prev.map(u => {
-        const matches = (targetUserId && (u.id === targetUserId || u.uid === targetUserId)) ||
-          (targetUserEmail && (u.email || "").toLowerCase().trim() === targetUserEmail);
-        return matches ? { 
-          ...u, 
-          rol: normalizedNewRole as any,
-          cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
-        } : u;
-      }));
+      // Actualización optimista local solo para roles que no son elevación a administrador
+      if (!isPromotingToAdmin) {
+        setUsuarios(prev => prev.map(u => {
+          const matches = (targetUserId && (u.id === targetUserId || u.uid === targetUserId)) ||
+            (targetUserEmail && (u.email || "").toLowerCase().trim() === targetUserEmail);
+          return matches ? { 
+            ...u, 
+            rol: normalizedNewRole as any,
+            cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
+          } : u;
+        }));
 
-      if (
-        (targetUserId && currentUserId && targetUserId === currentUserId) ||
-        (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)
-      ) {
-        setUserProfile(prev => prev ? {
-          ...prev,
-          rol: normalizedNewRole as any,
-          cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? prev.cursos) : prev.cursos
-        } : prev);
+        if (
+          (targetUserId && currentUserId && targetUserId === currentUserId) ||
+          (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)
+        ) {
+          setUserProfile(prev => prev ? {
+            ...prev,
+            rol: normalizedNewRole as any,
+            cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? prev.cursos) : prev.cursos
+          } : prev);
+        }
       }
 
       // 4. Intentar actualización segura vía Server API (con permisos elevados de admin en Appwrite)
@@ -954,19 +959,43 @@ export default function Dashboard() {
           targetUserEmail,
           normalizedNewRole,
           selectedCurso,
-          preceptorCursos
+          preceptorCursos,
+          adminOtpCode,
+          adminOtpToken,
+          targetUser.nombre
         );
         if (apiRes.success) {
           apiSuccess = true;
+          // Actualización de estado local tras confirmación de la API para elevación a administrador
+          if (isPromotingToAdmin) {
+            setUsuarios(prev => prev.map(u => {
+              const matches = (targetUserId && (u.id === targetUserId || u.uid === targetUserId)) ||
+                (targetUserEmail && (u.email || "").toLowerCase().trim() === targetUserEmail);
+              return matches ? { ...u, rol: "admin" as any, cursos: [] } : u;
+            }));
+            if (
+              (targetUserId && currentUserId && targetUserId === currentUserId) ||
+              (targetUserEmail && currentUserEmail && targetUserEmail === currentUserEmail)
+            ) {
+              setUserProfile(prev => prev ? { ...prev, rol: "admin" as any, cursos: [] } : prev);
+            }
+          }
         } else {
           console.warn("API Server change-role aviso:", apiRes.error);
+          if (isPromotingToAdmin) {
+            showToast(apiRes.error || "No se pudo autorizar el rol de Administrador.", "error");
+            throw new Error(apiRes.error || "Código de verificación de Administrador inválido");
+          }
         }
-      } catch (apiErr) {
+      } catch (apiErr: any) {
+        if (isPromotingToAdmin) {
+          throw apiErr;
+        }
         console.warn("Fallo Server API change-role, ejecutando fallback local:", apiErr);
       }
 
-      // Si la API no respondió éxito, ejecutar fallback del cliente
-      if (!apiSuccess && targetUserId) {
+      // Si la API no respondió éxito, ejecutar fallback del cliente (SOLO permitido si no es administrador)
+      if (!apiSuccess && targetUserId && !isPromotingToAdmin) {
         const updatePayload: Partial<UserProfile> = { rol: normalizedNewRole as any };
         if (normalizedNewRole === "preceptor") {
           updatePayload.cursos = preceptorCursos || [];

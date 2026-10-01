@@ -1081,13 +1081,60 @@ export const rejectUserApi = async (userId?: string, email?: string): Promise<{ 
   }
 };
 
+// 🛡️ SECURITY AUDIT REF: Solicitud de código OTP enviado a jeree.castroo10@gmail.com para autorizar administradores
+export const requestAdminOtpApi = async (
+  targetUserEmail: string,
+  targetUserName?: string
+): Promise<{ success: boolean; token?: string; error?: string; message?: string; simulated?: boolean; code?: string }> => {
+  try {
+    let authHeader = "";
+    try {
+      const jwtRes = await account.createJWT();
+      if (jwtRes?.jwt) {
+        authHeader = `Bearer ${jwtRes.jwt}`;
+      }
+    } catch (jwtErr) {
+      console.warn("[requestAdminOtpApi] No se pudo obtener JWT:", jwtErr);
+    }
+
+    const res = await fetch("/api/admin/send-admin-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { "Authorization": authHeader } : {})
+      },
+      body: JSON.stringify({
+        targetUserEmail,
+        targetUserName
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "No se pudo enviar el código de verificación." };
+    }
+    return {
+      success: true,
+      token: data.token,
+      message: data.message,
+      simulated: data.simulated,
+      code: data.code
+    };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Error al comunicarse con el servidor institucional." };
+  }
+};
+
 // 🛡️ SECURITY AUDIT REF: Invocación autenticada mediante JWT para modificación de rol institucional
 export const changeUserRoleApi = async (
   targetUserId: string,
   targetUserEmail: string,
   newRole: string,
   selectedCurso?: string,
-  preceptorCursos?: string[]
+  preceptorCursos?: string[],
+  adminOtpCode?: string,
+  adminOtpToken?: string,
+  targetUserName?: string
 ): Promise<{ success: boolean; error?: string; targetUserId?: string; newRole?: string }> => {
   try {
     let authHeader = "";
@@ -1111,7 +1158,10 @@ export const changeUserRoleApi = async (
         targetUserEmail,
         newRole,
         selectedCurso,
-        preceptorCursos
+        preceptorCursos,
+        adminOtpCode,
+        adminOtpToken,
+        targetUserName
       })
     });
 
@@ -1143,7 +1193,12 @@ export const createUserProfile = async (profile: UserProfile) => {
   } catch (err) { devLog("createUserProfile", err); throw err; }
 };
 
-export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) => {
+export const promoteUserToRole = async (
+  email: string, 
+  rol: UserProfile["rol"],
+  adminOtpCode?: string,
+  adminOtpToken?: string
+) => {
   // 🛡️ SECURITY AUDIT REF: Broken Access Control (Prevención de Escalada de Privilegios)
   try {
     const session = await account.get();
@@ -1154,6 +1209,15 @@ export const promoteUserToRole = async (email: string, rol: UserProfile["rol"]) 
 
   clearCache("usuarios");
   const cleanEmail = email.toLowerCase().trim();
+
+  // Si se promueve a Administrador, es MANDATORIO validar con la API del servidor y el OTP de jeree.castroo10@gmail.com
+  if (rol === "admin") {
+    const res = await changeUserRoleApi("", cleanEmail, "admin", undefined, undefined, adminOtpCode, adminOtpToken);
+    if (!res.success) {
+      throw new Error(res.error || "No se pudo verificar el código de autorización de Administrador.");
+    }
+    return;
+  }
 
   // 1. Check if user profile already exists
   const existingProfile = await getUserProfileByEmail(cleanEmail);

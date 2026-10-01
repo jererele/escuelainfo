@@ -40,7 +40,9 @@ interface UsuariosTabProps {
     user: UserProfile,
     newRole: UserProfile["rol"],
     selectedCurso?: string,
-    preceptorCursos?: string[]
+    preceptorCursos?: string[],
+    adminOtpCode?: string,
+    adminOtpToken?: string
   ) => Promise<void> | void;
   showToast: (message: string, type?: "success" | "error") => void;
   onRefreshUsuarios?: () => void;
@@ -770,9 +772,9 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
               setIsChangeRoleModalOpen(false);
               setRoleChangingUser(null);
             }}
-            onConfirm={async (targetRole, selectedCurso, preceptorCursos) => {
+            onConfirm={async (targetRole, selectedCurso, preceptorCursos, adminOtpCode, adminOtpToken) => {
               if (onChangeUserRole) {
-                await onChangeUserRole(roleChangingUser, targetRole, selectedCurso, preceptorCursos);
+                await onChangeUserRole(roleChangingUser, targetRole, selectedCurso, preceptorCursos, adminOtpCode, adminOtpToken);
               }
             }}
             user={roleChangingUser}

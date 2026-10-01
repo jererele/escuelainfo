@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.32.6";
-export const APP_BUILD_DATE = "01/10/2026 15:30 hs";
+export const APP_VERSION = "v2.33.0";
+export const APP_BUILD_DATE = "01/10/2026 15:46 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Habilitación de Solicitud de Licencias y Autogestión para Preceptores (AusenciasTab.tsx, NewAbsenceModal.tsx y page.tsx): Se habilitó integralmente el módulo de licencias para el rol de Preceptoría. 1) Panel de Autogestión de Preceptoría: Cómputo dinámico de cupos anuales en tiempo real según el estatuto docente de Chubut (Art. 15 Razones Particulares 6d, Art. 14 Familiar Enfermo 20d, Art. 50 Salud 30d), adhesión directa a medidas de fuerza gremiales y botón de solicitud de licencias. 2) Solicitud Autónoma de Licencias (NewAbsenceModal.tsx): El modal autocompleta y bloquea los datos del preceptor logueado con cargo POD y sus cursos a cargo, permitiendo asimismo a directivos y administradores seleccionar preceptores institucionales. 3) Filtros Rápidos y Empty State (AusenciasTab.tsx): Incorporación de selector 'Mis Licencias' / 'Solo Pendientes', empty state interactivo y corrección de etiquetas de estado."
+  "Autorización de Máxima Seguridad para Asignación de Administradores mediante Código OTP (send-admin-otp, change-role/route.ts, ChangeUserRoleModal.tsx, NewUserModal.tsx, UsuariosTab.tsx, dataService.ts y page.tsx): Implementación de salvaguarda de doble factor obligatorio para la asignación del rol de Administrador. 1) Envío Exclusivo a Casilla Titular (/api/admin/send-admin-otp): Para otorgar permisos de Administrador a cualquier usuario, el sistema despacha automáticamente un código numérico de 6 dígitos firmado criptográficamente con HMAC (SHA-256) de forma exclusiva al correo del Administrador Principal: jeree.castroo10@gmail.com. 2) Blindaje en Servidor (/api/admin/change-role): Se bloqueó cualquier intento de promover a administrador sin el código OTP válido y token verificado, impidiendo desvíos por cliente o fallbacks locales. 3) Interfaz Interactiva (ChangeUserRoleModal.tsx y NewUserModal.tsx): Panel de seguridad de privilegios elevados con botón de solicitud con temporizador de 60s, entrada de 6 dígitos numéricos y confirmación condicionada a la validación."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.33.0",
+    date: "01/10/2026 15:46 hs",
+    notes: [
+      "Autorización de Máxima Seguridad para Asignación de Administradores mediante Código OTP (send-admin-otp, change-role/route.ts, ChangeUserRoleModal.tsx, NewUserModal.tsx, UsuariosTab.tsx, dataService.ts y page.tsx): Implementación de salvaguarda de doble factor obligatorio para la asignación del rol de Administrador. 1) Envío Exclusivo a Casilla Titular (/api/admin/send-admin-otp): Para otorgar permisos de Administrador a cualquier usuario, el sistema despacha automáticamente un código numérico de 6 dígitos firmado criptográficamente con HMAC (SHA-256) de forma exclusiva al correo del Administrador Principal: jeree.castroo10@gmail.com. 2) Blindaje en Servidor (/api/admin/change-role): Se bloqueó cualquier intento de promover a administrador sin el código OTP válido y token verificado, impidiendo desvíos por cliente o fallbacks locales. 3) Interfaz Interactiva (ChangeUserRoleModal.tsx y NewUserModal.tsx): Panel de seguridad de privilegios elevados con botón de solicitud con temporizador de 60s, entrada de 6 dígitos numéricos y confirmación condicionada a la validación."
+    ]
+  },
   {
     version: "v2.32.6",
     date: "01/10/2026 15:30 hs",
