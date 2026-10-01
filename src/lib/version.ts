@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.33.4";
-export const APP_BUILD_DATE = "01/10/2026 16:45 hs";
+export const APP_VERSION = "v2.33.5";
+export const APP_BUILD_DATE = "01/10/2026 16:55 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Asignación Automática de Cursos en Licencias de Preceptoría (NewAbsenceModal.tsx): Al solicitar una licencia de preceptoría, el sistema ahora asigna automáticamente la totalidad de los cursos a cargo del preceptor (Turno Completo) sin necesidad de seleccionar curso por curso de forma manual. Se optimizó la interfaz ocultando el menú desplegable redundante y reemplazándolo por una tarjeta informativa de cobertura integral de divisiones."
+  "Priorización y Reestructuración de la Tabla de Licencias (AusenciasTab.tsx): Las solicitudes de licencias pendientes de aprobación ahora se ubican automáticamente al tope de la lista para una visibilidad directiva inmediata. Se reemplazó el encabezado 'Profesor' por 'Personal / Agente', se incorporó el badge de jerarquía/rol (Docente, Preceptor, Directivo) encima del nombre de cada persona, y se diferenció el detalle inferior: para preceptores se listan exclusivamente los cursos/divisiones a cargo, y para docentes se muestran las materias curriculares y cursos afectados organizados con claridad."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.33.5",
+    date: "01/10/2026 16:55 hs",
+    notes: [
+      "Priorización y Reestructuración de la Tabla de Licencias (AusenciasTab.tsx): Las solicitudes de licencias pendientes de aprobación ahora se ubican automáticamente al tope de la lista para una visibilidad directiva inmediata. Se reemplazó el encabezado 'Profesor' por 'Personal / Agente', se incorporó el badge de jerarquía/rol (Docente, Preceptor, Directivo) encima del nombre de cada persona, y se diferenció el detalle inferior: para preceptores se listan exclusivamente los cursos/divisiones a cargo, y para docentes se muestran las materias curriculares y cursos afectados organizados con claridad."
+    ]
+  },
   {
     version: "v2.33.4",
     date: "01/10/2026 16:45 hs",

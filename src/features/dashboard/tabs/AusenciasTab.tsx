@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check } from "lucide-react";
-import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays, notifyRealtimeUpdate } from "@/lib/dataService";
+import { Ausencia, Profesor, UserProfile, Horario, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays, notifyRealtimeUpdate } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface AusenciasTabProps {
@@ -24,6 +24,9 @@ interface AusenciasTabProps {
   ) => void;
   showToast: (msg: string, type?: "success" | "error") => void;
   onRefreshAusencias: () => void;
+  usuarios?: UserProfile[];
+  profesores?: Profesor[];
+  horarios?: Horario[];
 }
 
 export const AusenciasTab: React.FC<AusenciasTabProps> = ({
@@ -43,6 +46,9 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
   askConfirm,
   showToast,
   onRefreshAusencias,
+  usuarios = [],
+  profesores = [],
+  horarios = [],
 }) => {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const [filterMode, setFilterMode] = useState<"todas" | "pendientes" | "mis_licencias">("todas");
@@ -90,16 +96,27 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
     };
   }, [showSelfService, isTeacher, currentProfesor, userProfile, ausencias, currentYear]);
 
-  // Licencias filtradas por pestaña rápida
+  // Licencias filtradas por pestaña rápida y priorizando pendientes arriba del todo
   const displayedAusencias = useMemo(() => {
-    let list = filteredAusencias;
+    let list = [...filteredAusencias];
     if (filterMode === "pendientes") {
       list = list.filter(a => a.estado === "pendiente");
     } else if (filterMode === "mis_licencias") {
       const myName = (userProfile?.nombre || "").trim().toLowerCase();
       list = list.filter(a => a.profNombre && a.profNombre.trim().toLowerCase() === myName);
     }
-    return list;
+
+    // Ordenamiento: 1) Solicitudes pendientes arriba del todo; 2) Más recientes por fecha de inicio o registro
+    return list.sort((a, b) => {
+      const aIsPending = a.estado === "pendiente";
+      const bIsPending = b.estado === "pendiente";
+      if (aIsPending && !bIsPending) return -1;
+      if (!aIsPending && bIsPending) return 1;
+
+      const dateA = new Date(a.inicio || a.fechaReg || 0).getTime();
+      const dateB = new Date(b.inicio || b.fechaReg || 0).getTime();
+      return dateB - dateA;
+    });
   }, [filteredAusencias, filterMode, userProfile?.nombre]);
 
   const pendientesCount = useMemo(() => {
@@ -372,7 +389,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           <table className="w-full text-left">
             <thead className="bg-[var(--bg3)]/50">
               <tr>
-                <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Profesor</th>
+                <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Personal / Agente</th>
                 <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Detalles</th>
                 <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Fechas</th>
                 <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Estado</th>
@@ -408,27 +425,145 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                 // Los certificados médicos y detalles sensibles solo pueden ser vistos por el propio docente o el Equipo Directivo/Admin
                 const canViewMedicalCert = canManageAusencias || isOwnRecord;
 
+                // Detección de Rol / Rango
+                const matchedUser = usuarios.find(u =>
+                  (a.profId && (String(u.uid) === String(a.profId) || String(u.id) === String(a.profId))) ||
+                  (u.nombre && u.nombre.trim().toLowerCase() === (a.profNombre || "").trim().toLowerCase())
+                );
+                const matchedProf = profesores.find(p =>
+                  (a.profId && String(p.id) === String(a.profId)) ||
+                  (p.nombre && p.nombre.trim().toLowerCase() === (a.profNombre || "").trim().toLowerCase())
+                );
+
+                const rawRole = (matchedUser?.rol || (matchedProf ? "profesor" : "")).toLowerCase();
+                const materiasList = Array.isArray(a.materias) ? a.materias : (a.materias ? [a.materias] : []);
+                const hasPreceptoriaWord = materiasList.some(m => /preceptor/i.test(m));
+                
+                const isAgentPreceptor = rawRole === "preceptor" || hasPreceptoriaWord;
+                const isAgentDirectivo = rawRole === "directivo";
+                const isAgentDocente = !isAgentPreceptor && !isAgentDirectivo;
+
+                // Extracción de Cursos y Materias afectadas
+                let affectedCourses: string[] = [];
+                let affectedSubjects: string[] = [];
+
+                if (isAgentPreceptor) {
+                  // Cursos asignados al preceptor o extraídos de materias ("Preceptoría (1° 1°)")
+                  const fromMats: string[] = [];
+                  materiasList.forEach(m => {
+                    const match = m.match(/\(([^)]+)\)/);
+                    if (match && match[1]) {
+                      fromMats.push(match[1].trim());
+                    } else if (!/preceptor/i.test(m)) {
+                      fromMats.push(m.trim());
+                    }
+                  });
+                  const userCursos = (matchedUser?.cursos && Array.isArray(matchedUser.cursos)) ? matchedUser.cursos : [];
+                  affectedCourses = Array.from(new Set([...fromMats, ...userCursos])).filter(Boolean);
+                } else {
+                  // Docente: Extraer cursos y nombres limpios de materias
+                  const coursesSet = new Set<string>();
+                  const subjectsSet = new Set<string>();
+
+                  materiasList.forEach(m => {
+                    const match = m.match(/\(([^)]+)\)$/);
+                    if (match && match[1]) {
+                      coursesSet.add(match[1].trim());
+                      const subjName = m.replace(/\s*\([^)]*\)$/, "").trim();
+                      if (subjName) subjectsSet.add(subjName);
+                    } else {
+                      subjectsSet.add(m.trim());
+                    }
+                  });
+
+                  // Correlacionar con horarios del docente para asegurar cursos completos
+                  if (horarios.length > 0 && a.profNombre) {
+                    const profLower = a.profNombre.trim().toLowerCase();
+                    horarios.forEach(h => {
+                      if ((h.profesor || "").trim().toLowerCase() === profLower) {
+                        const matLower = (h.materia || "").trim().toLowerCase();
+                        const isRelevant = subjectsSet.size === 0 || Array.from(subjectsSet).some(s => s.toLowerCase() === matLower);
+                        if (isRelevant && h.curso) {
+                          coursesSet.add(h.curso.trim());
+                        }
+                      }
+                    });
+                  }
+
+                  affectedCourses = Array.from(coursesSet).filter(Boolean);
+                  affectedSubjects = Array.from(subjectsSet).filter(Boolean);
+                }
+
                 return (
                 <tr key={a.id} className="hover:bg-[var(--bg3)]/20 transition-colors border-b border-[var(--border)]">
                   <td className="p-5">
-                    <div className="flex items-center gap-3">
-                      <UserAvatar name={a.profNombre} size={36} showRing={false} />
-                      <div>
-                        {userProfile?.rol === 'profesor' ? (
-                          <span className="font-bold text-[var(--text)]">{a.profNombre}</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setSearchQuery(a.profNombre)}
-                            className="font-bold text-[var(--text)] hover:text-[var(--verde)] hover:underline transition-colors text-left cursor-pointer"
-                            title={`Filtrar por ${a.profNombre}`}
-                          >
-                            {a.profNombre}
-                          </button>
-                        )}
-                        <div className="text-[10px] text-[var(--text3)] uppercase font-bold tracking-tighter">
-                          {Array.isArray(a.materias) ? a.materias.join(", ") : a.materias}
+                    <div className="flex items-start gap-3">
+                      <UserAvatar name={a.profNombre} size={38} showRing={false} className="mt-0.5" />
+                      <div className="space-y-1">
+                        {/* Rango arriba del nombre */}
+                        <div>
+                          {isAgentPreceptor ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[var(--azul-bg)] text-[var(--azul)] border border-[var(--azul-border)]">
+                              Preceptor
+                            </span>
+                          ) : isAgentDirectivo ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                              Directivo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                              Docente
+                            </span>
+                          )}
                         </div>
+
+                        {/* Nombre del agente */}
+                        <div>
+                          {userProfile?.rol === 'profesor' ? (
+                            <span className="font-bold text-[var(--text)] text-sm">{a.profNombre}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setSearchQuery(a.profNombre)}
+                              className="font-bold text-[var(--text)] text-sm hover:text-[var(--verde)] hover:underline transition-colors text-left cursor-pointer"
+                              title={`Filtrar por ${a.profNombre}`}
+                            >
+                              {a.profNombre}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Debajo del nombre: Preceptor -> cursos afectados | Docente -> materias y cursos afectados */}
+                        {isAgentPreceptor ? (
+                          <div className="text-[11px] text-[var(--text2)] font-semibold flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span className="text-[10px] uppercase font-black tracking-wider text-[var(--azul)]">Cursos:</span>
+                            {affectedCourses.length > 0 ? (
+                              <span>{affectedCourses.join(", ")}</span>
+                            ) : (
+                              <span className="italic text-[var(--text3)]">Turno Completo</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5 pt-0.5 text-[11px]">
+                            {affectedSubjects.length > 0 && (
+                              <div className="text-[var(--text2)] font-semibold flex flex-wrap items-center gap-1.5">
+                                <span className="text-[10px] uppercase font-black tracking-wider text-[var(--verde)]">Materias:</span>
+                                <span>{affectedSubjects.join(", ")}</span>
+                              </div>
+                            )}
+                            {affectedCourses.length > 0 && (
+                              <div className="text-[var(--text3)] font-medium flex flex-wrap items-center gap-1.5">
+                                <span className="text-[10px] uppercase font-black tracking-wider text-[var(--amarillo)]">Cursos:</span>
+                                <span>{affectedCourses.join(", ")}</span>
+                              </div>
+                            )}
+                            {affectedSubjects.length === 0 && affectedCourses.length === 0 && materiasList.length > 0 && (
+                              <div className="text-[10px] text-[var(--text3)] uppercase font-bold tracking-tighter">
+                                {materiasList.join(", ")}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>

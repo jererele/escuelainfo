@@ -1623,6 +1623,9 @@ export default function Dashboard() {
               onRefreshAusencias={() => {
                 notifyRealtimeUpdate("ausencias");
               }}
+              usuarios={usuarios}
+              profesores={profesores}
+              horarios={horarios}
             />
           )}
 
