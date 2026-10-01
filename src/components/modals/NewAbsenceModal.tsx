@@ -506,6 +506,12 @@ export default function NewAbsenceModal({
   const articuloRef = useRef<HTMLDivElement>(null);
   const mobileArticuloRef = useRef<HTMLDivElement>(null);
 
+  // — Estados para el buscador de personal (docente / preceptor / directivo) —
+  const [staffSearchQuery, setStaffSearchQuery] = useState("");
+  const [showStaffDropdown, setShowStaffDropdown] = useState(false);
+  const staffRef = useRef<HTMLDivElement>(null);
+  const mobileStaffRef = useRef<HTMLDivElement>(null);
+
   // Sincronizar usuarios recibidos por props o cargar de base de datos
   useEffect(() => {
     if (usuarios && usuarios.length > 0) {
@@ -572,10 +578,17 @@ export default function NewAbsenceModal({
       ) {
         setShowArticuloDropdown(false);
       }
+      if (
+        (staffRef.current && !staffRef.current.contains(target)) &&
+        (mobileStaffRef.current && !mobileStaffRef.current.contains(target))
+      ) {
+        setShowStaffDropdown(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setShowArticuloDropdown(false);
+        setShowStaffDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside, { passive: true });
@@ -591,21 +604,25 @@ export default function NewAbsenceModal({
     if (isOpen) {
       if (lockedProfesor) {
         setSelectedProfId(String(lockedProfesor.id!));
+        setStaffSearchQuery(lockedProfesor.nombre);
         setFormData(prev => ({ ...prev, materias: (lockedProfesor.materias || []).join(", ") }));
       } else if (userProfile?.rol === "preceptor") {
         const pId = String(userProfile.uid || userProfile.id || userProfile.nombre);
         setSelectedProfId(pId);
+        setStaffSearchQuery(userProfile.nombre || "");
         const mats = (userProfile.cursos && userProfile.cursos.length > 0)
           ? userProfile.cursos.map(c => `Preceptoría (${c})`).join(", ")
           : "Turno Preceptoría";
         setFormData(prev => ({ ...prev, materias: mats }));
       } else {
         setSelectedProfId("");
+        setStaffSearchQuery("");
         getProfesores().then(setProfesores);
         if (!usuarios || usuarios.length === 0) {
           getUsuarios().then(setAllUsuarios).catch(() => {});
         }
       }
+      setShowStaffDropdown(false);
       setArticuloQuery("");
       setShowArticuloDropdown(false);
 
@@ -854,6 +871,26 @@ export default function NewAbsenceModal({
       `${a.codigo} ${a.detalle}`.toLowerCase().includes(q)
     );
   }, [articuloQuery]);
+
+  // Lista filtrada del personal según el rol y la búsqueda
+  const filteredStaffList = useMemo(() => {
+    const q = staffSearchQuery.trim().toLowerCase();
+    if (selectedRole === "preceptor") {
+      if (!q) return preceptores;
+      return preceptores.filter(p =>
+        (p.nombre || "").toLowerCase().includes(q) ||
+        (p.email || "").toLowerCase().includes(q) ||
+        (p.cursos || []).some(c => c.toLowerCase().includes(q))
+      );
+    }
+    // Docente o Directivo
+    if (!q) return profesores;
+    return profesores.filter(p =>
+      (p.nombre || "").toLowerCase().includes(q) ||
+      (p.dni || "").includes(q) ||
+      (p.materias || []).some(m => m.toLowerCase().includes(q))
+    );
+  }, [selectedRole, staffSearchQuery, preceptores, profesores]);
 
   // ✅ OPTIMIZACIONES CON USECALLBACK:
   const handleSelectArticulo = useCallback((art: ArticuloLicencia) => {
@@ -1148,7 +1185,7 @@ export default function NewAbsenceModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); }}
+                    onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       selectedRole === "preceptor"
                         ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black shadow-xs scale-[1.01]"
@@ -1160,7 +1197,7 @@ export default function NewAbsenceModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); }}
+                    onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       selectedRole === "directivo"
                         ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black shadow-xs scale-[1.01]"
@@ -1190,25 +1227,147 @@ export default function NewAbsenceModal({
             )}
 
             {!lockedProfesor && !isPreceptorSelf ? (
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
-                  {selectedRole === "profesor" ? "Seleccionar Profesor" : selectedRole === "preceptor" ? "Seleccionar Preceptor / Agente" : "Seleccionar Directivo"}
-                </label>
-                {selectedRole === "preceptor" ? (
-                  <select required
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
-                    value={selectedProfId} onChange={(e) => handlePreceptorChange(e.target.value)}>
-                    <option value="">Elegir preceptor...</option>
-                    {preceptores.map(p => <option key={p.id || p.uid} value={p.id || p.uid}>{p.nombre}</option>)}
-                  </select>
-                ) : (
-                  <select required
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
-                    value={selectedProfId} onChange={(e) => handleProfChange(e.target.value)}>
-                    <option value="">Elegir {selectedRole === "profesor" ? "docente" : "directivo"}...</option>
-                    {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                  </select>
-                )}
+              <div className="relative space-y-2 animate-fade-in z-30" ref={staffRef}>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
+                    {selectedRole === "profesor"
+                      ? "Buscar Profesor"
+                      : selectedRole === "preceptor"
+                      ? "Buscar Preceptor / Agente"
+                      : "Buscar Directivo"}
+                  </label>
+                  {selectedProfId ? (
+                    <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] flex items-center gap-1">
+                      <Check size={10} strokeWidth={3} />
+                      Seleccionado
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-[var(--text3)] uppercase">
+                      Obligatorio
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedRole === "profesor"
+                        ? "Escribí el nombre, materia o DNI del docente..."
+                        : selectedRole === "preceptor"
+                        ? "Escribí el nombre del preceptor..."
+                        : "Escribí el nombre del directivo..."
+                    }
+                    className={`w-full bg-[var(--bg3)] border rounded-xl pl-9 pr-10 py-3 outline-none transition-all font-semibold text-sm text-[var(--text)] ${
+                      selectedProfId ? "border-[var(--verde-border)] bg-[var(--verde-bg)]/10" : "border-[var(--border)] focus:border-[var(--verde)]"
+                    }`}
+                    value={staffSearchQuery}
+                    onChange={(e) => {
+                      setStaffSearchQuery(e.target.value);
+                      setShowStaffDropdown(true);
+                      if (selectedProfId && e.target.value !== activeStaff?.nombre) {
+                        setSelectedProfId("");
+                      }
+                    }}
+                    onFocus={() => setShowStaffDropdown(true)}
+                  />
+                  {staffSearchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStaffSearchQuery("");
+                        setSelectedProfId("");
+                        setSelectedCourse("");
+                        setShowStaffDropdown(true);
+                      }}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1 cursor-pointer"
+                      title="Limpiar y buscar otro"
+                    >
+                      <X size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowStaffDropdown(prev => !prev);
+                      }}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1 cursor-pointer"
+                    >
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform duration-200 ${showStaffDropdown ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  )}
+
+                  {showStaffDropdown && filteredStaffList.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-h-60 overflow-y-auto custom-scrollbar">
+                      {filteredStaffList.map((item) => {
+                        const id = String(item.id || (item as any).uid);
+                        const isSelected = selectedProfId === id;
+                        const subDetails = selectedRole === "preceptor"
+                          ? ((item as any).cursos && (item as any).cursos.length > 0 ? `Cursos: ${(item as any).cursos.join(", ")}` : "Turno Preceptoría")
+                          : (Array.isArray((item as any).materias) && (item as any).materias.length > 0 ? (item as any).materias.join(", ") : "Sin materias asignadas");
+
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => {
+                              if (selectedRole === "preceptor") {
+                                handlePreceptorChange(id);
+                              } else {
+                                handleProfChange(id);
+                              }
+                              setStaffSearchQuery(item.nombre);
+                              setShowStaffDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 transition-colors border-b border-[var(--border)] last:border-none flex items-center justify-between gap-3 group cursor-pointer ${
+                              isSelected
+                                ? "bg-[var(--verde-bg)] text-[var(--verde)] font-black"
+                                : "hover:bg-[var(--bg3)] text-[var(--text)]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-center text-xs font-bold shrink-0 text-[var(--text2)] group-hover:border-[var(--verde-border)]">
+                                {selectedRole === "preceptor" ? (
+                                  <Clock size={14} className="text-[var(--azul)]" />
+                                ) : selectedRole === "directivo" ? (
+                                  <Building2 size={14} className="text-purple-400" />
+                                ) : (
+                                  <GraduationCap size={14} className="text-[var(--verde)]" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-[var(--text)] group-hover:text-[var(--verde)] truncate">
+                                  {item.nombre}
+                                </div>
+                                <div className="text-[10px] text-[var(--text3)] truncate mt-0.5">
+                                  {subDetails}
+                                </div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <span className="w-5 h-5 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
+                                <Check size={12} strokeWidth={3} />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {showStaffDropdown && filteredStaffList.length === 0 && (
+                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl p-4 text-center animate-fade-in">
+                      <p className="text-xs text-[var(--text3)] font-semibold">
+                        No se encontró personal para «{staffSearchQuery}»
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : isPreceptorSelf ? (
               <div className="space-y-2">
@@ -1667,7 +1826,7 @@ export default function NewAbsenceModal({
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
-                  onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); }}
+                  onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
                   className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
                     selectedRole === "profesor"
                       ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black"
@@ -1679,7 +1838,7 @@ export default function NewAbsenceModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); }}
+                  onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
                   className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
                     selectedRole === "preceptor"
                       ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black"
@@ -1691,7 +1850,7 @@ export default function NewAbsenceModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); }}
+                  onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
                   className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
                     selectedRole === "directivo"
                       ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black"
@@ -1706,25 +1865,91 @@ export default function NewAbsenceModal({
           )}
 
           {!lockedProfesor && !isPreceptorSelf ? (
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-black uppercase text-[var(--text2)]">
-                {selectedRole === "profesor" ? "Docente" : selectedRole === "preceptor" ? "Preceptor / Personal" : "Directivo"}
-              </label>
-              {selectedRole === "preceptor" ? (
-                <select required
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-bold text-[var(--text)]"
-                  value={selectedProfId} onChange={(e) => handlePreceptorChange(e.target.value)}>
-                  <option value="">Elegir preceptor...</option>
-                  {preceptores.map(p => <option key={p.id || p.uid} value={p.id || p.uid}>{p.nombre}</option>)}
-                </select>
-              ) : (
-                <select required
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-bold text-[var(--text)]"
-                  value={selectedProfId} onChange={(e) => handleProfChange(e.target.value)}>
-                  <option value="">Elegir {selectedRole === "profesor" ? "docente" : "directivo"}...</option>
-                  {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                </select>
-              )}
+            <div className="relative flex flex-col gap-1 z-30" ref={mobileStaffRef}>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-black uppercase text-[var(--text2)]">
+                  {selectedRole === "profesor" ? "Buscar Docente" : selectedRole === "preceptor" ? "Buscar Preceptor / Personal" : "Buscar Directivo"}
+                </label>
+                {selectedProfId && (
+                  <span className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-1.5 py-0.2 rounded border border-[var(--verde-border)]">
+                    OK
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={selectedRole === "profesor" ? "Escribí para buscar docente..." : "Escribí para buscar..."}
+                  className={`w-full bg-[var(--bg3)] border rounded-lg pl-8 pr-9 p-3 outline-none text-sm font-bold text-[var(--text)] transition-all ${
+                    selectedProfId ? "border-[var(--verde-border)] bg-[var(--verde-bg)]/10" : "border-[var(--border)] focus:border-[var(--verde)]"
+                  }`}
+                  value={staffSearchQuery}
+                  onChange={(e) => {
+                    setStaffSearchQuery(e.target.value);
+                    setShowStaffDropdown(true);
+                    if (selectedProfId && e.target.value !== activeStaff?.nombre) {
+                      setSelectedProfId("");
+                    }
+                  }}
+                  onFocus={() => setShowStaffDropdown(true)}
+                />
+                {staffSearchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffSearchQuery("");
+                      setSelectedProfId("");
+                      setSelectedCourse("");
+                      setShowStaffDropdown(true);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] p-1 cursor-pointer"
+                  >
+                    <X size={13} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowStaffDropdown(prev => !prev);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] p-1 cursor-pointer"
+                  >
+                    <ChevronDown size={13} className={`transition-transform ${showStaffDropdown ? "rotate-180" : ""}`} />
+                  </button>
+                )}
+
+                {showStaffDropdown && filteredStaffList.length > 0 && (
+                  <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden max-h-52 overflow-y-auto custom-scrollbar">
+                    {filteredStaffList.map((item) => {
+                      const id = String(item.id || (item as any).uid);
+                      const isSelected = selectedProfId === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            if (selectedRole === "preceptor") {
+                              handlePreceptorChange(id);
+                            } else {
+                              handleProfChange(id);
+                            }
+                            setStaffSearchQuery(item.nombre);
+                            setShowStaffDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2.5 border-b border-[var(--border)] last:border-none flex items-center justify-between text-xs ${
+                            isSelected ? "bg-[var(--verde-bg)] text-[var(--verde)] font-black" : "text-[var(--text)] hover:bg-[var(--bg3)]"
+                          }`}
+                        >
+                          <span className="truncate">{item.nombre}</span>
+                          {isSelected && <Check size={12} strokeWidth={3} className="shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           ) : isPreceptorSelf ? (
             <div className="flex flex-col gap-1">

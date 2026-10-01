@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.33.2";
-export const APP_BUILD_DATE = "01/10/2026 15:58 hs";
+export const APP_VERSION = "v2.33.3";
+export const APP_BUILD_DATE = "01/10/2026 16:22 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Aislamiento y Especialización de Suspensión Urgente por Fuerza Mayor (NewTeacherReportModal.tsx y AusenciasTab.tsx): Se desacopló por completo el flujo de 'Suspensión Urgente' de las opciones de 'Solicitar Licencia' y 'Adherirse al Paro'. 1) Modal de Reporte Docente: Se eliminó la selección de otros tipos de inasistencia al reportar una suspensión urgente, fijando la modalidad exclusivamente en 'Suspensión Urgente (Fuerza Mayor)' con advertencias claras, validación obligatoria de motivo y botón de confirmación específico. 2) Autogestión de Preceptores: Al accionar 'Suspensión Urgente', ya no se redirige al modal de licencias estatutarias, sino que se solicita el motivo imprevisto y se registra directamente la suspensión de turno por fuerza mayor con confirmación interactiva."
+  "Transformación de Selector de Personal a Buscador Interactivo en Licencias (NewAbsenceModal.tsx): Se modernizó el selector de personal en la solicitud de licencias docentes y no docentes. Se sustituyeron los elementos HTML select rígidos por un buscador en tiempo real con autocompletado y menú desplegable inteligente. Ahora los directivos y administradores pueden filtrar instantáneamente a profesores, preceptores y directivos escribiendo su nombre, DNI o materias asignadas, con botón de borrado rápido (X), avatares temáticos por rol e indicador de selección confirmada."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.33.3",
+    date: "01/10/2026 16:22 hs",
+    notes: [
+      "Transformación de Selector de Personal a Buscador Interactivo en Licencias (NewAbsenceModal.tsx): Se modernizó el selector de personal en la solicitud de licencias docentes y no docentes. Se sustituyeron los elementos HTML select rígidos por un buscador en tiempo real con autocompletado y menú desplegable inteligente. Ahora los directivos y administradores pueden filtrar instantáneamente a profesores, preceptores y directivos escribiendo su nombre, DNI o materias asignadas, con botón de borrado rápido (X), avatares temáticos por rol e indicador de selección confirmada."
+    ]
+  },
   {
     version: "v2.33.2",
     date: "01/10/2026 15:58 hs",
