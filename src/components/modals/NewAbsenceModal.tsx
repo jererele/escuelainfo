@@ -1392,8 +1392,8 @@ export default function NewAbsenceModal({
               </div>
             )}
 
-            {/* Selector de Curso Afectado (para profesor o preceptor) */}
-            {(selectedRole === "profesor" || selectedRole === "preceptor") && (
+            {/* Selector de Curso Afectado (solo para profesor; para preceptor se asignan automáticamente todos sus cursos a cargo) */}
+            {selectedRole === "profesor" ? (
               <div className="space-y-2 animate-fade-in">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
@@ -1416,9 +1416,7 @@ export default function NewAbsenceModal({
                   onChange={(e) => handleCourseChange(e.target.value)}
                 >
                   <option value="">
-                    {selectedRole === "profesor"
-                      ? "Todos los cursos del docente (Jornada / Horario Completo)"
-                      : "Todos los cursos a cargo"}
+                    Todos los cursos del docente (Jornada / Horario Completo)
                   </option>
                   {activeProfesorCourses.length > 0 && (
                     <optgroup label="Cursos con Clases Asignadas al Docente">
@@ -1435,6 +1433,23 @@ export default function NewAbsenceModal({
                       ))}
                   </optgroup>
                 </select>
+              </div>
+            ) : selectedRole === "preceptor" && (
+              <div className="p-3.5 rounded-2xl bg-[var(--azul-bg,#0ea5e920)] border border-[var(--azul-border,#0ea5e940)] text-[var(--azul,#0284c7)] flex items-start gap-2.5 animate-fade-in">
+                <GraduationCap size={16} className="shrink-0 mt-0.5" />
+                <div className="text-xs space-y-0.5 flex-1 min-w-0">
+                  <div className="font-extrabold flex items-center justify-between">
+                    <span>Cursos asignados automáticamente</span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-[var(--azul-bg,#0ea5e930)] border border-[var(--azul-border,#0ea5e940)] uppercase">
+                      Turno Completo
+                    </span>
+                  </div>
+                  <p className="text-[11px] opacity-90 truncate">
+                    {activeStaff?.cursos && activeStaff.cursos.length > 0
+                      ? `Cubre todos sus cursos a cargo: ${activeStaff.cursos.join(", ")}`
+                      : "Cubre la totalidad de los cursos correspondientes a su turno de preceptoría."}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1973,8 +1988,8 @@ export default function NewAbsenceModal({
             </div>
           )}
 
-          {/* Selector de Curso Afectado Móvil */}
-          {(selectedRole === "profesor" || selectedRole === "preceptor") && (
+          {/* Selector de Curso Afectado Móvil (solo profesor; preceptor auto-afecta todos sus cursos) */}
+          {selectedRole === "profesor" ? (
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-black uppercase text-[var(--text2)] flex items-center gap-1">
@@ -1993,9 +2008,7 @@ export default function NewAbsenceModal({
                 onChange={(e) => handleCourseChange(e.target.value)}
               >
                 <option value="">
-                  {selectedRole === "profesor"
-                    ? "Todos los cursos del docente"
-                    : "Todos los cursos a cargo"}
+                  Todos los cursos del docente
                 </option>
                 {activeProfesorCourses.length > 0 && (
                   <optgroup label="Cursos del Docente">
@@ -2012,6 +2025,15 @@ export default function NewAbsenceModal({
                     ))}
                 </optgroup>
               </select>
+            </div>
+          ) : selectedRole === "preceptor" && (
+            <div className="p-2.5 rounded-lg bg-[var(--azul-bg,#0ea5e920)] border border-[var(--azul-border,#0ea5e940)] text-[var(--azul,#0284c7)] flex items-center gap-2 text-xs font-bold">
+              <GraduationCap size={14} className="shrink-0" />
+              <span className="truncate">
+                {activeStaff?.cursos && activeStaff.cursos.length > 0
+                  ? `Cursos a cargo: ${activeStaff.cursos.join(", ")}`
+                  : "Todos los cursos a cargo asignados automáticamente"}
+              </span>
             </div>
           )}
 

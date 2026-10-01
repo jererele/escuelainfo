@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.33.3";
-export const APP_BUILD_DATE = "01/10/2026 16:22 hs";
+export const APP_VERSION = "v2.33.4";
+export const APP_BUILD_DATE = "01/10/2026 16:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Transformación de Selector de Personal a Buscador Interactivo en Licencias (NewAbsenceModal.tsx): Se modernizó el selector de personal en la solicitud de licencias docentes y no docentes. Se sustituyeron los elementos HTML select rígidos por un buscador en tiempo real con autocompletado y menú desplegable inteligente. Ahora los directivos y administradores pueden filtrar instantáneamente a profesores, preceptores y directivos escribiendo su nombre, DNI o materias asignadas, con botón de borrado rápido (X), avatares temáticos por rol e indicador de selección confirmada."
+  "Asignación Automática de Cursos en Licencias de Preceptoría (NewAbsenceModal.tsx): Al solicitar una licencia de preceptoría, el sistema ahora asigna automáticamente la totalidad de los cursos a cargo del preceptor (Turno Completo) sin necesidad de seleccionar curso por curso de forma manual. Se optimizó la interfaz ocultando el menú desplegable redundante y reemplazándolo por una tarjeta informativa de cobertura integral de divisiones."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.33.4",
+    date: "01/10/2026 16:45 hs",
+    notes: [
+      "Asignación Automática de Cursos en Licencias de Preceptoría (NewAbsenceModal.tsx): Al solicitar una licencia de preceptoría, el sistema ahora asigna automáticamente la totalidad de los cursos a cargo del preceptor (Turno Completo) sin necesidad de seleccionar curso por curso de forma manual. Se optimizó la interfaz ocultando el menú desplegable redundante y reemplazándolo por una tarjeta informativa de cobertura integral de divisiones."
+    ]
+  },
   {
     version: "v2.33.3",
     date: "01/10/2026 16:22 hs",
