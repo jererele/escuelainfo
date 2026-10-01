@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check } from "lucide-react";
-import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays } from "@/lib/dataService";
+import { Ausencia, Profesor, UserProfile, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays, notifyRealtimeUpdate } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface AusenciasTabProps {
@@ -211,7 +211,60 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                 if (isTeacher) {
                   onOpenTeacherReportModal("Suspensión (Fuerza Mayor)");
                 } else {
-                  onOpenAbsenceModal();
+                  const todayStr = new Date().toLocaleDateString("en-CA");
+                  const staffName = userProfile?.nombre || "Preceptor";
+                  const staffId = userProfile?.uid || userProfile?.id || userProfile?.nombre || "preceptor";
+
+                  const alreadyLogged = ausencias.some(a => 
+                    a.profNombre?.toLowerCase() === staffName.toLowerCase() && 
+                    todayStr >= a.inicio && 
+                    todayStr <= a.fin
+                  );
+
+                  if (alreadyLogged) {
+                    showToast("Ya tenés una inasistencia o suspensión registrada para hoy.", "error");
+                    return;
+                  }
+
+                  const motivoInput = window.prompt("Ingresá el motivo o causa de la suspensión urgente por fuerza mayor (ej: corte de luz, salud imprevista, emergencia):");
+                  if (motivoInput === null) return;
+
+                  const motivoFinal = motivoInput.trim() || "Fuerza mayor / Inasistencia imprevista";
+
+                  askConfirm(
+                    `¿Confirmás reportar una Suspensión Urgente para el día de hoy?\n\nMotivo: "${motivoFinal}"`,
+                    async () => {
+                      try {
+                        const newAbsence: Ausencia = {
+                          profId: staffId,
+                          profNombre: staffName,
+                          tipo: "Suspensión (Fuerza Mayor)",
+                          inicio: todayStr,
+                          fin: todayStr,
+                          materias: (userProfile?.cursos && userProfile.cursos.length > 0)
+                            ? userProfile.cursos.map(c => `Preceptoría (${c})`)
+                            : ["Turno Preceptoría"],
+                          motivo: motivoFinal,
+                          cert: false,
+                          estado: "aprobada",
+                          fechaReg: new Date().toISOString()
+                        };
+
+                        await saveAusencia(newAbsence);
+                        await logAction(user?.email || "desconocido", "REGISTRAR_SUSPENSION_URGENTE", `Preceptor: ${staffName} - Motivo: ${motivoFinal}`);
+                        notifyRealtimeUpdate("ausencias");
+                        onRefreshAusencias();
+                        showToast("Suspensión urgente registrada con éxito", "success");
+                      } catch {
+                        showToast("Error al registrar la suspensión urgente", "error");
+                      }
+                    },
+                    {
+                      title: "Confirmar Suspensión Urgente",
+                      confirmText: "Registrar Suspensión",
+                      variant: "warning"
+                    }
+                  );
                 }
               }}
               className="p-5 rounded-2xl bg-[var(--amarillo-bg)]/20 border border-[var(--amarillo-border)] hover:bg-[var(--amarillo-bg)]/30 active:scale-95 transition-all text-left flex flex-col gap-3 group cursor-pointer"

@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.33.1";
-export const APP_BUILD_DATE = "01/10/2026 15:50 hs";
+export const APP_VERSION = "v2.33.2";
+export const APP_BUILD_DATE = "01/10/2026 15:58 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Depuración de Interfaz y Eliminación de Botón Redundante de Cerrar Sesión (UserProfileModal.tsx): Se corrigió la duplicación del botón 'Cerrar Sesión' dentro de la pestaña 'Mi Perfil' en la ventana modal del usuario. Se removió el botón redundante al pie del formulario manteniendo el botón de desconexión unificado en la cabecera superior del modal y en el menú lateral."
+  "Aislamiento y Especialización de Suspensión Urgente por Fuerza Mayor (NewTeacherReportModal.tsx y AusenciasTab.tsx): Se desacopló por completo el flujo de 'Suspensión Urgente' de las opciones de 'Solicitar Licencia' y 'Adherirse al Paro'. 1) Modal de Reporte Docente: Se eliminó la selección de otros tipos de inasistencia al reportar una suspensión urgente, fijando la modalidad exclusivamente en 'Suspensión Urgente (Fuerza Mayor)' con advertencias claras, validación obligatoria de motivo y botón de confirmación específico. 2) Autogestión de Preceptores: Al accionar 'Suspensión Urgente', ya no se redirige al modal de licencias estatutarias, sino que se solicita el motivo imprevisto y se registra directamente la suspensión de turno por fuerza mayor con confirmación interactiva."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.33.2",
+    date: "01/10/2026 15:58 hs",
+    notes: [
+      "Aislamiento y Especialización de Suspensión Urgente por Fuerza Mayor (NewTeacherReportModal.tsx y AusenciasTab.tsx): Se desacopló por completo el flujo de 'Suspensión Urgente' de las opciones de 'Solicitar Licencia' y 'Adherirse al Paro'. 1) Modal de Reporte Docente: Se eliminó la selección de otros tipos de inasistencia al reportar una suspensión urgente, fijando la modalidad exclusivamente en 'Suspensión Urgente (Fuerza Mayor)' con advertencias claras, validación obligatoria de motivo y botón de confirmación específico. 2) Autogestión de Preceptores: Al accionar 'Suspensión Urgente', ya no se redirige al modal de licencias estatutarias, sino que se solicita el motivo imprevisto y se registra directamente la suspensión de turno por fuerza mayor con confirmación interactiva."
+    ]
+  },
   {
     version: "v2.33.1",
     date: "01/10/2026 15:50 hs",

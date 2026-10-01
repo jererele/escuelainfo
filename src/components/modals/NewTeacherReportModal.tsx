@@ -85,6 +85,11 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
       return;
     }
 
+    if (formData.tipo === "Suspensión (Fuerza Mayor)" && !formData.motivo.trim()) {
+      showToast("Por favor indicá el motivo de la suspensión urgente.");
+      return;
+    }
+
     if (formData.tipo === "Paro Docente") {
       const confirmed = window.confirm(
         `¿Confirmás la declaración de adhesión al paro para el ${formData.fecha}?\n\nSe registrará en el sistema y se enviará la notificación por email a los alumnos de los cursos afectados.`
@@ -171,14 +176,16 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
         {/* HEADER */}
         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg2)]">
           <div>
-            <h2 className="title-font font-bold text-xl">Reporte de Inasistencia</h2>
-            <p className="text-[10px] uppercase font-black tracking-widest text-[var(--verde)] mt-0.5">
+            <h2 className="title-font font-bold text-xl">
+              {formData.tipo === "Suspensión (Fuerza Mayor)" ? "Suspensión Urgente" : "Reporte de Inasistencia"}
+            </h2>
+            <p className={`text-[10px] uppercase font-black tracking-widest mt-0.5 ${formData.tipo === "Suspensión (Fuerza Mayor)" ? "text-[var(--amarillo)]" : "text-[var(--verde)]"}`}>
               {currentProfesor.nombre}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg3)] transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg3)] transition-all cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -187,33 +194,33 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
 
           {/* TIPO */}
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-wider text-[var(--text2)]">Tipo de Reporte</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: "Paro Docente", label: "Adhesión al Paro", desc: "Medida gremial", icon: <ShieldAlert size={16} className="text-[var(--text2)]" /> },
-                { id: "Suspensión (Fuerza Mayor)", label: "Suspensión Urgente", desc: "Clima, salud, etc.", icon: <AlertTriangle size={16} className="text-[var(--text2)]" /> },
-                { id: "Ausencia / Licencia", label: "Solicitar Ausencia", desc: "Sujeto a aprobación", icon: <FileText size={16} className="text-[var(--text2)]" /> }
-              ].map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, tipo: t.id, motivo: t.id === "Paro Docente" ? "" : formData.motivo })}
-                  className={`p-3.5 rounded-xl border text-left transition-all active:scale-95 ${
-                    formData.tipo === t.id
-                      ? "bg-[var(--verde-bg)] border-[var(--verde-border)] text-[var(--verde)] shadow-sm"
-                      : "bg-[var(--bg3)] border-[var(--border)] text-[var(--text2)] hover:border-[var(--verde-border)]/40"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    {t.icon}
-                    <div className="font-extrabold text-xs">{t.label}</div>
+          {formData.tipo === "Suspensión (Fuerza Mayor)" ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-black uppercase tracking-wider text-[var(--text2)]">Tipo de Reporte</label>
+              <div className="p-4 rounded-2xl border border-[var(--amarillo-border)] bg-[var(--amarillo-bg)]/20 text-[var(--text)] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--amarillo-bg)] text-[var(--amarillo)] flex items-center justify-center shrink-0 border border-[var(--amarillo-border)]">
+                    <AlertTriangle size={20} />
                   </div>
-                  <div className="text-[9px] uppercase tracking-wider mt-0.5 opacity-70">{t.desc}</div>
-                </button>
-              ))}
+                  <div>
+                    <div className="font-extrabold text-xs text-[var(--text)]">Suspensión Urgente (Fuerza Mayor)</div>
+                    <div className="text-[10px] text-[var(--text2)] mt-0.5">Aviso inmediato por clima, salud o imprevisto de último momento</div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md bg-[var(--amarillo-bg)] text-[var(--amarillo)] border border-[var(--amarillo-border)] shrink-0">
+                  Urgente
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider text-[var(--text2)]">Tipo de Reporte</label>
+              <div className="p-3.5 rounded-xl border border-[var(--verde-border)] bg-[var(--verde-bg)]/20 text-[var(--verde)] flex items-center gap-2">
+                <ShieldAlert size={18} />
+                <span className="font-extrabold text-xs">Adhesión al Paro Docente</span>
+              </div>
+            </div>
+          )}
 
           {/* FECHA */}
           <div className="space-y-2">
@@ -304,14 +311,18 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-3.5 rounded-xl bg-[var(--verde)] text-black font-black shadow-[0_4px_15px_-4px_rgba(16,185,129,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+              className={`flex-1 px-6 py-3.5 rounded-xl font-black hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50 text-sm flex items-center justify-center gap-2 ${
+                formData.tipo === "Suspensión (Fuerza Mayor)"
+                  ? "bg-[var(--amarillo)] text-black shadow-[0_4px_15px_-4px_rgba(245,158,11,0.4)]"
+                  : "bg-[var(--verde)] text-black shadow-[0_4px_15px_-4px_rgba(16,185,129,0.4)]"
+              }`}
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                   Registrando...
                 </>
-              ) : "Enviar Reporte"}
+              ) : formData.tipo === "Suspensión (Fuerza Mayor)" ? "Registrar Suspensión Urgente" : "Enviar Reporte"}
             </button>
           </div>
         </form>
