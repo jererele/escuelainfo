@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.32.5";
-export const APP_BUILD_DATE = "01/10/2026 10:38 hs";
+export const APP_VERSION = "v2.32.6";
+export const APP_BUILD_DATE = "01/10/2026 15:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Sincronización Total y Actualización de Horas Libres en Tiempo Real (FreeHoursWidget.tsx, dataService.ts, GeneralTab.tsx, NewAbsenceModal.tsx y dashboard/page.tsx): Se erradicó la falta de reactividad y el retraso en la detección de horas libres docentes en toda la plataforma. 1) Suscripción en Tiempo Real y Polling de Respaldo (dataService.ts): Se implementó 'subscribeToHorarios' con WebSockets de Appwrite, canales broadcast entre pestañas ('BroadcastChannel') y latido de seguridad (heartbeat polling) cada 15-25 segundos más re-sincronización al reenfocar la ventana. 2) Despacho Reactivo Inmediato ('notifyRealtimeUpdate'): Modales de licencias, reportes docentes y programación de clases ahora emiten eventos locales instantáneos (0ms) que actualizan el widget sin esperar recargas manuales. 3) Normalización Robusta y Zona Horaria Argentina (FreeHoursWidget.tsx): Se unificó la fecha y el día de la semana con la zona horaria 'America/Argentina/Buenos_Aires', se blindó la correspondencia de días numéricos y alfabéticos (ej. '1' <-> 'Lunes'), estados ('aprobada' / 'ap') y fechas sin límite ('fin || inicio'). 4) Soporte de Preceptores en Panel General: La pestaña general ahora traslada las divisiones asignadas al widget para reflejar con exactitud las horas libres que impactan a sus cursos a cargo."
+  "Habilitación de Solicitud de Licencias y Autogestión para Preceptores (AusenciasTab.tsx, NewAbsenceModal.tsx y page.tsx): Se habilitó integralmente el módulo de licencias para el rol de Preceptoría. 1) Panel de Autogestión de Preceptoría: Cómputo dinámico de cupos anuales en tiempo real según el estatuto docente de Chubut (Art. 15 Razones Particulares 6d, Art. 14 Familiar Enfermo 20d, Art. 50 Salud 30d), adhesión directa a medidas de fuerza gremiales y botón de solicitud de licencias. 2) Solicitud Autónoma de Licencias (NewAbsenceModal.tsx): El modal autocompleta y bloquea los datos del preceptor logueado con cargo POD y sus cursos a cargo, permitiendo asimismo a directivos y administradores seleccionar preceptores institucionales. 3) Filtros Rápidos y Empty State (AusenciasTab.tsx): Incorporación de selector 'Mis Licencias' / 'Solo Pendientes', empty state interactivo y corrección de etiquetas de estado."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.32.6",
+    date: "01/10/2026 15:30 hs",
+    notes: [
+      "Habilitación de Solicitud de Licencias y Autogestión para Preceptores (AusenciasTab.tsx, NewAbsenceModal.tsx y page.tsx): Se habilitó integralmente el módulo de licencias para el rol de Preceptoría. 1) Panel de Autogestión de Preceptoría: Cómputo dinámico de cupos anuales en tiempo real según el estatuto docente de Chubut (Art. 15 Razones Particulares 6d, Art. 14 Familiar Enfermo 20d, Art. 50 Salud 30d), adhesión directa a medidas de fuerza gremiales y botón de solicitud de licencias. 2) Solicitud Autónoma de Licencias (NewAbsenceModal.tsx): El modal autocompleta y bloquea los datos del preceptor logueado con cargo POD y sus cursos a cargo, permitiendo asimismo a directivos y administradores seleccionar preceptores institucionales. 3) Filtros Rápidos y Empty State (AusenciasTab.tsx): Incorporación de selector 'Mis Licencias' / 'Solo Pendientes', empty state interactivo y corrección de etiquetas de estado."
+    ]
+  },
   {
     version: "v2.32.5",
     date: "01/10/2026 10:38 hs",

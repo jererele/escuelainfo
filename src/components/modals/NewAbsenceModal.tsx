@@ -17,7 +17,8 @@ import {
   Horario,
   getCursos,
   getHorarios,
-  getAlumnos
+  getAlumnos,
+  getUsuarios
 } from "@/lib/dataService";
 import { sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia } from "@/lib/emailService";
 import { notify } from "@/lib/notify";
@@ -65,6 +66,7 @@ interface NewAbsenceModalProps {
   userProfile?: UserProfile | null;
   cursos?: Curso[];
   horarios?: Horario[];
+  usuarios?: UserProfile[];
 }
 
 // ——— Catálogo estatutario enriquecido de licencias por Rol (Chubut Ley VIII N° 20 / Dto. 508/2026 / Res. 517/90) ———
@@ -460,10 +462,12 @@ export default function NewAbsenceModal({
   ausencias,
   userProfile,
   cursos,
-  horarios
+  horarios,
+  usuarios
 }: NewAbsenceModalProps) {
   const [loading, setLoading] = useState(false);
   const [profesores, setProfesores] = useState<Profesor[]>([]);
+  const [allUsuarios, setAllUsuarios] = useState<UserProfile[]>(usuarios || []);
   const [selectedProfId, setSelectedProfId] = useState("");
   const [allAusencias, setAllAusencias] = useState<Ausencia[]>(ausencias || []);
   const [allCursos, setAllCursos] = useState<Curso[]>(cursos || []);
@@ -472,8 +476,11 @@ export default function NewAbsenceModal({
   const [selectedArticulo, setSelectedArticulo] = useState<ArticuloLicencia | null>(null);
   const [error, setError] = useState("");
 
+  const isPreceptorSelf = userProfile?.rol === "preceptor";
+  const preceptores = useMemo(() => allUsuarios.filter(u => u.rol === "preceptor"), [allUsuarios]);
+
   // Rol del personal para la licencia: profesor | preceptor | directivo
-  const [selectedRole, setSelectedRole] = useState<StaffRole>("profesor");
+  const [selectedRole, setSelectedRole] = useState<StaffRole>(userProfile?.rol === "preceptor" ? "preceptor" : "profesor");
 
   const [formData, setFormData] = useState({
     tipo: "Licencia Médica",
@@ -498,6 +505,15 @@ export default function NewAbsenceModal({
   const [showArticuloDropdown, setShowArticuloDropdown] = useState(false);
   const articuloRef = useRef<HTMLDivElement>(null);
   const mobileArticuloRef = useRef<HTMLDivElement>(null);
+
+  // Sincronizar usuarios recibidos por props o cargar de base de datos
+  useEffect(() => {
+    if (usuarios && usuarios.length > 0) {
+      setAllUsuarios(usuarios);
+    } else if (isOpen) {
+      getUsuarios().then(setAllUsuarios).catch(() => {});
+    }
+  }, [isOpen, usuarios]);
 
   // Sincronizar ausencias recibidas por props o cargar de base de datos
   useEffect(() => {
@@ -574,10 +590,21 @@ export default function NewAbsenceModal({
   useEffect(() => {
     if (isOpen) {
       if (lockedProfesor) {
-        setSelectedProfId(lockedProfesor.id!);
-        setFormData(prev => ({ ...prev, materias: lockedProfesor.materias.join(", ") }));
+        setSelectedProfId(String(lockedProfesor.id!));
+        setFormData(prev => ({ ...prev, materias: (lockedProfesor.materias || []).join(", ") }));
+      } else if (userProfile?.rol === "preceptor") {
+        const pId = String(userProfile.uid || userProfile.id || userProfile.nombre);
+        setSelectedProfId(pId);
+        const mats = (userProfile.cursos && userProfile.cursos.length > 0)
+          ? userProfile.cursos.map(c => `Preceptoría (${c})`).join(", ")
+          : "Turno Preceptoría";
+        setFormData(prev => ({ ...prev, materias: mats }));
       } else {
+        setSelectedProfId("");
         getProfesores().then(setProfesores);
+        if (!usuarios || usuarios.length === 0) {
+          getUsuarios().then(setAllUsuarios).catch(() => {});
+        }
       }
       setArticuloQuery("");
       setShowArticuloDropdown(false);
@@ -604,7 +631,7 @@ export default function NewAbsenceModal({
         })
         .catch((err) => console.error("Error al cargar feriados:", err));
     }
-  }, [isOpen, lockedProfesor]);
+  }, [isOpen, lockedProfesor, userProfile, usuarios]);
 
   // Escape key close modal
   useEffect(() => {
@@ -616,19 +643,60 @@ export default function NewAbsenceModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // Docente o Personal activo seleccionado
-  const activeProfesor = useMemo<Profesor | null>(() => {
-    if (lockedProfesor) return lockedProfesor;
+  // Agente, Docente o Personal activo seleccionado (Profesor o Preceptor)
+  const activeStaff = useMemo(() => {
+    if (lockedProfesor) {
+      return {
+        id: lockedProfesor.id!,
+        nombre: lockedProfesor.nombre,
+        materias: lockedProfesor.materias || [],
+        cursos: [] as string[]
+      };
+    }
+    if (isPreceptorSelf) {
+      return {
+        id: userProfile?.uid || userProfile?.id || userProfile?.nombre || "preceptor",
+        nombre: userProfile?.nombre || "Preceptor",
+        materias: (userProfile?.cursos && userProfile.cursos.length > 0)
+          ? userProfile.cursos.map(c => `Preceptoría (${c})`)
+          : ["Turno Preceptoría"],
+        cursos: userProfile?.cursos || []
+      };
+    }
+    if (selectedRole === "preceptor" && selectedProfId) {
+      const p = preceptores.find(u => String(u.id || u.uid) === String(selectedProfId));
+      if (p) {
+        return {
+          id: p.id || p.uid || p.nombre,
+          nombre: p.nombre,
+          materias: (p.cursos && p.cursos.length > 0) ? p.cursos.map(c => `Preceptoría (${c})`) : ["Turno Preceptoría"],
+          cursos: p.cursos || []
+        };
+      }
+    }
     if (selectedProfId) {
-      return profesores.find(p => String(p.id) === String(selectedProfId)) || null;
+      const prof = profesores.find(p => String(p.id) === String(selectedProfId));
+      if (prof) {
+        return {
+          id: prof.id!,
+          nombre: prof.nombre,
+          materias: prof.materias || [],
+          cursos: [] as string[]
+        };
+      }
     }
     return null;
-  }, [lockedProfesor, selectedProfId, profesores]);
+  }, [lockedProfesor, isPreceptorSelf, userProfile, selectedRole, selectedProfId, preceptores, profesores]);
 
-  // Cursos en los que dicta clases el docente activo
+  const activeProfesor = activeStaff;
+
+  // Cursos del personal activo
   const activeProfesorCourses = useMemo(() => {
-    if (!activeProfesor) return [];
-    const profName = activeProfesor.nombre.trim().toLowerCase();
+    if (!activeStaff) return [];
+    if (selectedRole === "preceptor") {
+      return activeStaff.cursos || [];
+    }
+    const profName = activeStaff.nombre.trim().toLowerCase();
     const coursesSet = new Set<string>();
 
     allHorarios.forEach(h => {
@@ -638,7 +706,7 @@ export default function NewAbsenceModal({
     });
 
     return Array.from(coursesSet).sort();
-  }, [activeProfesor, allHorarios]);
+  }, [activeStaff, selectedRole, allHorarios]);
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
@@ -809,6 +877,18 @@ export default function NewAbsenceModal({
     }
   }, [profesores]);
 
+  const handlePreceptorChange = useCallback((id: string) => {
+    setSelectedProfId(id);
+    setSelectedCourse("");
+    const preceptor = preceptores.find(p => String(p.id || p.uid) === String(id));
+    if (preceptor) {
+      const mats = (preceptor.cursos && preceptor.cursos.length > 0)
+        ? preceptor.cursos.map(c => `Preceptoría (${c})`).join(", ")
+        : "Turno Preceptoría";
+      setFormData(prev => ({ ...prev, materias: mats }));
+    }
+  }, [preceptores]);
+
   const handleCourseChange = useCallback((courseName: string) => {
     setSelectedCourse(courseName);
     if (!activeProfesor) return;
@@ -819,24 +899,31 @@ export default function NewAbsenceModal({
         materias: (activeProfesor.materias || []).join(", ")
       }));
     } else {
-      const profName = activeProfesor.nombre.trim().toLowerCase();
-      const courseNorm = courseName.trim().toLowerCase();
-      const courseSubjects = Array.from(new Set(
-        allHorarios
-          .filter(h => (h.profesor || "").trim().toLowerCase() === profName && (h.curso || "").trim().toLowerCase() === courseNorm)
-          .map(h => h.materia.trim())
-      ));
+      if (selectedRole === "preceptor") {
+        setFormData(prev => ({
+          ...prev,
+          materias: `Guardia (${courseName})`
+        }));
+      } else {
+        const profName = activeProfesor.nombre.trim().toLowerCase();
+        const courseNorm = courseName.trim().toLowerCase();
+        const courseSubjects = Array.from(new Set(
+          allHorarios
+            .filter(h => (h.profesor || "").trim().toLowerCase() === profName && (h.curso || "").trim().toLowerCase() === courseNorm)
+            .map(h => h.materia.trim())
+        ));
 
-      const subjectsStr = courseSubjects.length > 0
-        ? courseSubjects.join(", ")
-        : (activeProfesor.materias || []).join(", ");
+        const subjectsStr = courseSubjects.length > 0
+          ? courseSubjects.join(", ")
+          : (activeProfesor.materias || []).join(", ");
 
-      setFormData(prev => ({
-        ...prev,
-        materias: `${subjectsStr} (${courseName})`
-      }));
+        setFormData(prev => ({
+          ...prev,
+          materias: `${subjectsStr} (${courseName})`
+        }));
+      }
     }
-  }, [activeProfesor, allHorarios]);
+  }, [activeProfesor, selectedRole, allHorarios]);
 
   const handleTipoChange = useCallback((tipo: string) => {
     setFormData(prev => ({ ...prev, tipo }));
@@ -868,7 +955,15 @@ export default function NewAbsenceModal({
     }
 
     setLoading(true);
-    const prof = lockedProfesor || profesores.find(p => p.id === selectedProfId);
+    const staffName = lockedProfesor?.nombre
+      || (isPreceptorSelf ? userProfile!.nombre : null)
+      || (selectedRole === "preceptor" ? preceptores.find(p => String(p.id || p.uid) === String(selectedProfId))?.nombre : null)
+      || profesores.find(p => String(p.id) === String(selectedProfId))?.nombre
+      || activeStaff?.nombre
+      || "Desconocido";
+
+    const staffId = lockedProfesor?.id
+      || (isPreceptorSelf ? (userProfile!.uid || userProfile!.id || userProfile!.nombre) : selectedProfId);
     
     let uploadedFileId = "";
     if (formData.cert && selectedFile) {
@@ -894,8 +989,8 @@ export default function NewAbsenceModal({
       }
 
       const newAusencia: Ausencia = {
-        profId: selectedProfId,
-        profNombre: prof?.nombre || "Desconocido",
+        profId: staffId,
+        profNombre: staffName,
         tipo: formData.tipo,
         inicio: formData.inicio,
         fin: formData.fin || formData.inicio,
@@ -1032,8 +1127,8 @@ export default function NewAbsenceModal({
           )}
 
           <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-5">
-            {/* SELECTOR DE ROL ESTATUTARIO (Solo si no viene un profesor bloqueado) */}
-            {!lockedProfesor && (
+            {/* SELECTOR DE ROL ESTATUTARIO (Solo si no viene un docente o preceptor bloqueado) */}
+            {!lockedProfesor && !isPreceptorSelf && (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
                   Tipo de Personal / Cargo
@@ -1041,7 +1136,7 @@ export default function NewAbsenceModal({
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => setSelectedRole("profesor")}
+                    onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       selectedRole === "profesor"
                         ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black shadow-xs scale-[1.01]"
@@ -1053,7 +1148,7 @@ export default function NewAbsenceModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedRole("preceptor")}
+                    onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       selectedRole === "preceptor"
                         ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black shadow-xs scale-[1.01]"
@@ -1065,7 +1160,7 @@ export default function NewAbsenceModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedRole("directivo")}
+                    onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); }}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       selectedRole === "directivo"
                         ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black shadow-xs scale-[1.01]"
@@ -1094,23 +1189,45 @@ export default function NewAbsenceModal({
               </div>
             )}
 
-            {!lockedProfesor ? (
+            {!lockedProfesor && !isPreceptorSelf ? (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
                   {selectedRole === "profesor" ? "Seleccionar Profesor" : selectedRole === "preceptor" ? "Seleccionar Preceptor / Agente" : "Seleccionar Directivo"}
                 </label>
-                <select required
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
-                  value={selectedProfId} onChange={(e) => handleProfChange(e.target.value)}>
-                  <option value="">Elegir {selectedRole === "profesor" ? "docente" : selectedRole === "preceptor" ? "preceptor" : "directivo"}...</option>
-                  {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                </select>
+                {selectedRole === "preceptor" ? (
+                  <select required
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
+                    value={selectedProfId} onChange={(e) => handlePreceptorChange(e.target.value)}>
+                    <option value="">Elegir preceptor...</option>
+                    {preceptores.map(p => <option key={p.id || p.uid} value={p.id || p.uid}>{p.nombre}</option>)}
+                  </select>
+                ) : (
+                  <select required
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
+                    value={selectedProfId} onChange={(e) => handleProfChange(e.target.value)}>
+                    <option value="">Elegir {selectedRole === "profesor" ? "docente" : "directivo"}...</option>
+                    {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                )}
+              </div>
+            ) : isPreceptorSelf ? (
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Preceptor/a</label>
+                <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 font-bold text-[var(--text)] flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Clock size={16} className="text-[var(--azul,#0284c7)]" />
+                    {userProfile?.nombre}
+                  </span>
+                  <span className="text-[10px] font-black uppercase text-[var(--azul,#0284c7)] bg-[var(--azul-bg,#0ea5e920)] px-2 py-0.5 rounded-md border border-[var(--azul-border,#0ea5e940)]">
+                    Personal de Preceptoría (POD)
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Docente</label>
                 <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 font-bold text-[var(--text)] cursor-not-allowed opacity-80 flex items-center justify-between">
-                  <span>{lockedProfesor.nombre}</span>
+                  <span>{lockedProfesor?.nombre || "Docente"}</span>
                   <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)]">Docente Frente a Curso</span>
                 </div>
               </div>
@@ -1544,13 +1661,13 @@ export default function NewAbsenceModal({
         )}
 
         <form onSubmit={handleSubmit} className="p-4 flex-1 overflow-y-auto flex flex-col gap-4">
-          {!lockedProfesor && (
+          {!lockedProfesor && !isPreceptorSelf && (
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-black uppercase text-[var(--text2)]">Rol Estatutario</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setSelectedRole("profesor")}
+                  onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); }}
                   className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
                     selectedRole === "profesor"
                       ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black"
@@ -1562,7 +1679,7 @@ export default function NewAbsenceModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedRole("preceptor")}
+                  onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); }}
                   className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
                     selectedRole === "preceptor"
                       ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black"
@@ -1574,7 +1691,7 @@ export default function NewAbsenceModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedRole("directivo")}
+                  onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); }}
                   className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
                     selectedRole === "directivo"
                       ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black"
@@ -1588,23 +1705,45 @@ export default function NewAbsenceModal({
             </div>
           )}
 
-          {!lockedProfesor ? (
+          {!lockedProfesor && !isPreceptorSelf ? (
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-black uppercase text-[var(--text2)]">
                 {selectedRole === "profesor" ? "Docente" : selectedRole === "preceptor" ? "Preceptor / Personal" : "Directivo"}
               </label>
-              <select required
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-bold text-[var(--text)]"
-                value={selectedProfId} onChange={(e) => handleProfChange(e.target.value)}>
-                <option value="">Elegir {selectedRole === "profesor" ? "docente" : selectedRole === "preceptor" ? "preceptor" : "directivo"}...</option>
-                {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
+              {selectedRole === "preceptor" ? (
+                <select required
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-bold text-[var(--text)]"
+                  value={selectedProfId} onChange={(e) => handlePreceptorChange(e.target.value)}>
+                  <option value="">Elegir preceptor...</option>
+                  {preceptores.map(p => <option key={p.id || p.uid} value={p.id || p.uid}>{p.nombre}</option>)}
+                </select>
+              ) : (
+                <select required
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-bold text-[var(--text)]"
+                  value={selectedProfId} onChange={(e) => handleProfChange(e.target.value)}>
+                  <option value="">Elegir {selectedRole === "profesor" ? "docente" : "directivo"}...</option>
+                  {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              )}
+            </div>
+          ) : isPreceptorSelf ? (
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-black uppercase text-[var(--text2)]">Preceptor/a</label>
+              <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 font-bold text-sm text-[var(--text)] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Clock size={14} className="text-[var(--azul,#0284c7)]" />
+                  {userProfile?.nombre}
+                </span>
+                <span className="text-[9px] font-black uppercase text-[var(--azul,#0284c7)] bg-[var(--azul-bg,#0ea5e920)] px-1.5 py-0.5 rounded border border-[var(--azul-border,#0ea5e940)]">
+                  Preceptoría (POD)
+                </span>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-black uppercase text-[var(--text2)]">Docente</label>
               <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 font-bold text-sm text-[var(--text2)] opacity-80">
-                {lockedProfesor.nombre}
+                {lockedProfesor?.nombre || "Docente"}
               </div>
             </div>
           )}

@@ -1769,6 +1769,7 @@ export default function Dashboard() {
         userProfile={userProfile}
         cursos={cursos}
         horarios={horarios}
+        usuarios={usuarios}
       />
 
       <NewTeacherModal 
