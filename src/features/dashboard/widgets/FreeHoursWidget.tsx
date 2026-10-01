@@ -226,13 +226,6 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
             </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 self-start md:self-center">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--bg3)] border border-[var(--border)] text-[10px] font-bold text-[var(--text2)] shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-[var(--verde)] animate-pulse" />
-            <span>En vivo</span>
-          </div>
-        </div>
       </div>
 
       {hasFreeHours && (
