@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.33.0";
-export const APP_BUILD_DATE = "01/10/2026 15:46 hs";
+export const APP_VERSION = "v2.33.1";
+export const APP_BUILD_DATE = "01/10/2026 15:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Autorización de Máxima Seguridad para Asignación de Administradores mediante Código OTP (send-admin-otp, change-role/route.ts, ChangeUserRoleModal.tsx, NewUserModal.tsx, UsuariosTab.tsx, dataService.ts y page.tsx): Implementación de salvaguarda de doble factor obligatorio para la asignación del rol de Administrador. 1) Envío Exclusivo a Casilla Titular (/api/admin/send-admin-otp): Para otorgar permisos de Administrador a cualquier usuario, el sistema despacha automáticamente un código numérico de 6 dígitos firmado criptográficamente con HMAC (SHA-256) de forma exclusiva al correo del Administrador Principal: jeree.castroo10@gmail.com. 2) Blindaje en Servidor (/api/admin/change-role): Se bloqueó cualquier intento de promover a administrador sin el código OTP válido y token verificado, impidiendo desvíos por cliente o fallbacks locales. 3) Interfaz Interactiva (ChangeUserRoleModal.tsx y NewUserModal.tsx): Panel de seguridad de privilegios elevados con botón de solicitud con temporizador de 60s, entrada de 6 dígitos numéricos y confirmación condicionada a la validación."
+  "Depuración de Interfaz y Eliminación de Botón Redundante de Cerrar Sesión (UserProfileModal.tsx): Se corrigió la duplicación del botón 'Cerrar Sesión' dentro de la pestaña 'Mi Perfil' en la ventana modal del usuario. Se removió el botón redundante al pie del formulario manteniendo el botón de desconexión unificado en la cabecera superior del modal y en el menú lateral."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.33.1",
+    date: "01/10/2026 15:50 hs",
+    notes: [
+      "Depuración de Interfaz y Eliminación de Botón Redundante de Cerrar Sesión (UserProfileModal.tsx): Se corrigió la duplicación del botón 'Cerrar Sesión' dentro de la pestaña 'Mi Perfil' en la ventana modal del usuario. Se removió el botón redundante al pie del formulario manteniendo el botón de desconexión unificado en la cabecera superior del modal y en el menú lateral."
+    ]
+  },
   {
     version: "v2.33.0",
     date: "01/10/2026 15:46 hs",

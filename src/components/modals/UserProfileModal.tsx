@@ -377,18 +377,6 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
                 {loading ? <Loader size={16} className="animate-spin" /> : <Check size={16} />}
                 {loading ? "Guardando..." : "Guardar Cambios"}
               </button>
-
-              <div className="pt-2 border-t border-[var(--border)]">
-                <button
-                  type="button"
-                  onClick={handleDirectLogout}
-                  disabled={loggingOut}
-                  className="w-full py-3 px-4 rounded-2xl border border-[var(--rojo-border)] bg-[var(--rojo-bg)] hover:bg-[var(--rojo)] text-[var(--rojo)] hover:text-white font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
-                >
-                  <LogOut size={15} />
-                  <span>{loggingOut ? "Cerrando sesión..." : "Cerrar Sesión de mi Cuenta"}</span>
-                </button>
-              </div>
             </>
           )}
 
