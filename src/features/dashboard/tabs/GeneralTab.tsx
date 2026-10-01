@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
-import { Ausencia, Horario, Alumno, Profesor } from "@/lib/dataService";
+import { Ausencia, Horario, Alumno, Profesor, parseUserCursos } from "@/lib/dataService";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
 import { TiltCard, GravityText } from "@/components/ui/rare";
 
@@ -126,6 +126,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       <FreeHoursWidget 
         isStudent={userProfile?.rol === 'alumno'}
         currentAlumno={currentAlumno}
+        isPreceptor={userProfile?.rol === 'preceptor' || userProfile?.rol === 'pp'}
+        preceptorCourses={parseUserCursos(userProfile?.cursos)}
         ausencias={ausencias}
         horarios={horarios}
         onNavigateToAusencias={onNavigateToAusencias}

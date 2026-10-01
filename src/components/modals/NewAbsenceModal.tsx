@@ -898,7 +898,7 @@ export default function NewAbsenceModal({
         profNombre: prof?.nombre || "Desconocido",
         tipo: formData.tipo,
         inicio: formData.inicio,
-        fin: formData.fin,
+        fin: formData.fin || formData.inicio,
         materias: finalMaterias,
         motivo: formData.motivo,
         cert: formData.cert,

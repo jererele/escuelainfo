@@ -70,6 +70,22 @@ export const clearCache = (key: string) => {
   sessionStorage.removeItem(CACHE_KEY_PREFIX + key);
 };
 
+// ─── Despachador de Eventos en Tiempo Real (Local & Multi-Pestaña) ─────────────
+export const notifyRealtimeUpdate = (type: "ausencias" | "horarios") => {
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent(`escuelainfo:${type}-updated`));
+    } catch {}
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        const bc = new BroadcastChannel("escuelainfo-realtime");
+        bc.postMessage({ type, timestamp: Date.now() });
+        bc.close();
+      } catch {}
+    }
+  }
+};
+
 // ─── DB Simplification Mappings ──────────────────────────────────────────────
 const ROL_MAP: Record<string, string> = {
   "a": "alumno",
@@ -628,7 +644,7 @@ export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
     if (cached && !cached.some(h => h.hora === "Hora a confirmar")) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, queries: [Query.limit(DEFAULT_LIMIT)] });
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, queries: [Query.limit(500)] });
     const data = response.documents.map(doc => {
       // Map numeric day values to display strings
       let dayName = doc.dia;
@@ -667,19 +683,102 @@ export const saveHorario = async (h: Horario) => {
   // Convertir texto de hora a código numérico de módulo antes de guardar
   const horaCode = toDbHora(h.hora);
 
-  return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: ID.unique(), data: {
+  const res = await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: ID.unique(), data: {
             dia: dayCode,
             hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
             materia: sanitize(h.materia, 100),
             profesor: sanitize(h.profesor, 200),
             curso: sanitize(h.curso, 50)
           } });
+  notifyRealtimeUpdate("horarios");
+  return res;
 };
 
 export const deleteHorario = async (id: string) => {
   await requireAuth();
   clearCache("horarios");
-  return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: id });
+  const res = await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: id });
+  notifyRealtimeUpdate("horarios");
+  return res;
+};
+
+export const subscribeToHorarios = (callback: (data: Horario[]) => void) => {
+  let isSubscribed = true;
+  let retryTimeout: NodeJS.Timeout | null = null;
+
+  const fetchAll = async (force = true) => {
+    try {
+      const data = await getHorarios(force);
+      if (isSubscribed) {
+        callback(data);
+      }
+    } catch (err) {
+      devLog("subscribeToHorarios/fetch", err);
+    }
+  };
+
+  fetchAll(false);
+
+  // Suscripción Realtime WebSocket con Appwrite
+  const unsubscribe = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_HORARIOS_COLLECTION_ID}.documents`,
+    () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = setTimeout(() => {
+        if (isSubscribed) fetchAll(true);
+      }, 150);
+    }
+  );
+
+  // Escucha de eventos locales en la misma pestaña
+  const handleLocalUpdate = () => {
+    if (isSubscribed) fetchAll(true);
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:horarios-updated", handleLocalUpdate);
+  }
+
+  // Canal broadcast entre múltiples pestañas del mismo navegador
+  let bc: BroadcastChannel | null = null;
+  if (typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") {
+    try {
+      bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "horarios" && isSubscribed) {
+          fetchAll(true);
+        }
+      };
+    } catch {}
+  }
+
+  // Polling de seguridad (cada 25s) y sincronización al reenfocar la ventana
+  const interval = setInterval(() => {
+    if (isSubscribed) fetchAll(true);
+  }, 25000);
+
+  const handleFocus = () => {
+    if (isSubscribed) fetchAll(true);
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isSubscribed) fetchAll(true);
+    });
+  }
+
+  return () => {
+    isSubscribed = false;
+    if (retryTimeout) clearTimeout(retryTimeout);
+    clearInterval(interval);
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:horarios-updated", handleLocalUpdate);
+      window.removeEventListener("focus", handleFocus);
+    }
+    if (bc) {
+      try { bc.close(); } catch {}
+    }
+  };
 };
 
 // ─── ALUMNOS ─────────────────────────────────────────────────────────────────
@@ -1146,7 +1245,7 @@ export const saveAusencia = async (ausencia: Ausencia) => {
                 profNombre: sanitize(ausencia.profNombre, 200),
                 tipo: sanitize(ausencia.tipo, 80),
                 inicio: ausencia.inicio,
-                fin: ausencia.fin,
+                fin: ausencia.fin || ausencia.inicio,
                 materias: ausencia.materias.map(m => sanitize(m, 100)),
                 motivo: sanitize(ausencia.motivo, 500),
                 cert: ausencia.cert,
@@ -1154,33 +1253,112 @@ export const saveAusencia = async (ausencia: Ausencia) => {
                 estado: toDbEstado(ausencia.estado),
                 fechaReg: new Date().toISOString()
               } });
+    notifyRealtimeUpdate("ausencias");
     return response.$id;
   } catch (err) { devLog("saveAusencia", err); throw err; }
 };
 
 export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
-  const fetchAll = () =>
-    databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, queries: [
-                Query.orderDesc("inicio"),
-                Query.limit(100)
-              ] }).then(response => {
+  let isSubscribed = true;
+  let retryTimeout: NodeJS.Timeout | null = null;
+
+  const fetchAll = async () => {
+    try {
+      const response = await databases.listDocuments({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_COLLECTION_ID,
+        queries: [
+          Query.orderDesc("inicio"),
+          Query.limit(300)
+        ]
+      });
+
       const ausencias = response.documents.map(doc => ({
-        id: doc.$id, profId: doc.profId, profNombre: doc.profNombre,
-        tipo: doc.tipo, inicio: doc.inicio, fin: doc.fin,
-        materias: doc.materias, motivo: doc.motivo,
-        cert: doc.cert, certFileId: doc.certFileId, estado: fromDbEstado(doc.estado), fechaReg: doc.fechaReg
+        id: doc.$id,
+        profId: doc.profId,
+        profNombre: doc.profNombre,
+        tipo: doc.tipo,
+        inicio: doc.inicio,
+        fin: doc.fin || doc.inicio,
+        materias: doc.materias,
+        motivo: doc.motivo,
+        cert: doc.cert,
+        certFileId: doc.certFileId,
+        estado: fromDbEstado(doc.estado),
+        fechaReg: doc.fechaReg
       })) as Ausencia[];
-      callback(ausencias);
-    }).catch(err => devLog("subscribeToAusencias/fetch", err));
+
+      if (isSubscribed) {
+        setCachedData("ausencias_list", ausencias);
+        callback(ausencias);
+      }
+    } catch (err) {
+      devLog("subscribeToAusencias/fetch", err);
+    }
+  };
 
   fetchAll();
 
+  // Suscripción Realtime WebSocket con Appwrite
   const unsubscribe = appwriteClient.subscribe(
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_COLLECTION_ID}.documents`,
-    () => fetchAll()
+    () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = setTimeout(() => {
+        if (isSubscribed) fetchAll();
+      }, 150);
+    }
   );
 
-  return () => unsubscribe();
+  // Escucha de eventos locales en la misma pestaña
+  const handleLocalUpdate = () => {
+    if (isSubscribed) fetchAll();
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:ausencias-updated", handleLocalUpdate);
+  }
+
+  // Canal broadcast entre múltiples pestañas del mismo navegador
+  let bc: BroadcastChannel | null = null;
+  if (typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") {
+    try {
+      bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "ausencias" && isSubscribed) {
+          fetchAll();
+        }
+      };
+    } catch {}
+  }
+
+  // Polling de seguridad de alta frecuencia (cada 15s) y sincronización al reenfocar
+  const interval = setInterval(() => {
+    if (isSubscribed) fetchAll();
+  }, 15000);
+
+  const handleFocus = () => {
+    if (isSubscribed) fetchAll();
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isSubscribed) fetchAll();
+    });
+  }
+
+  return () => {
+    isSubscribed = false;
+    if (retryTimeout) clearTimeout(retryTimeout);
+    clearInterval(interval);
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:ausencias-updated", handleLocalUpdate);
+      window.removeEventListener("focus", handleFocus);
+    }
+    if (bc) {
+      try { bc.close(); } catch {}
+    }
+  };
 };
 
 export const subscribeToMesasExamen = (callback: (data: MesaExamen[]) => void) => {
@@ -1245,6 +1423,7 @@ export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "ap
   try {
     clearCache("ausencias_list");
     await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id, data: { estado: toDbEstado(estado) } });
+    notifyRealtimeUpdate("ausencias");
   } catch (err) { devLog("updateAusenciaStatus", err); throw err; }
 };
 
@@ -1259,7 +1438,9 @@ export const deleteAusencia = async (id: string) => {
 
   try {
     clearCache("ausencias_list");
-    await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id });
+    const res = await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id });
+    notifyRealtimeUpdate("ausencias");
+    return res;
   } catch (err) { devLog("deleteAusencia", err); throw err; }
 };
 

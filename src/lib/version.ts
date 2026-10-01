@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.32.4";
-export const APP_BUILD_DATE = "30/09/2026 15:55 hs";
+export const APP_VERSION = "v2.32.5";
+export const APP_BUILD_DATE = "01/10/2026 10:38 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Resolución Definitiva de 'Minified React error #310' y Cumplimiento Estricto de Reglas de Hooks (ChangeUserRoleModal.tsx y FreeHoursWidget.tsx): Se erradicó por completo el error de ejecución de React ('Rendered more hooks than during the previous render' / Error #310). 1) Reorganización Incondicional de Hooks en ChangeUserRoleModal: Se extrajo la constante estática 'ALL_ROLE_DEFINITIONS' al ámbito del módulo y se reubicaron todos los hooks ('useMemo' para 'visibleRoleDefinitions' y 'operatorHierarchyNotice') al inicio absoluto del componente, antes de cualquier retorno condicional ('if (!isOpen || !user ...) return null;'). Esto garantiza que el recuento y orden de hooks sea 100% idéntico tanto si el modal está abierto o cerrado. 2) Reordenamiento de Hooks en FreeHoursWidget: Se movieron los hooks 'useMemo' ('activeAbsencesToday' y 'freeHoursToday') al nivel superior del componente antes de los retornos condicionales por feriados ('if (holiday) return ...') y fines de semana ('if (todayDayName === \"Sábado\" ...) return null;'), garantizando estabilidad total de renderizado en el panel de control."
+  "Sincronización Total y Actualización de Horas Libres en Tiempo Real (FreeHoursWidget.tsx, dataService.ts, GeneralTab.tsx, NewAbsenceModal.tsx y dashboard/page.tsx): Se erradicó la falta de reactividad y el retraso en la detección de horas libres docentes en toda la plataforma. 1) Suscripción en Tiempo Real y Polling de Respaldo (dataService.ts): Se implementó 'subscribeToHorarios' con WebSockets de Appwrite, canales broadcast entre pestañas ('BroadcastChannel') y latido de seguridad (heartbeat polling) cada 15-25 segundos más re-sincronización al reenfocar la ventana. 2) Despacho Reactivo Inmediato ('notifyRealtimeUpdate'): Modales de licencias, reportes docentes y programación de clases ahora emiten eventos locales instantáneos (0ms) que actualizan el widget sin esperar recargas manuales. 3) Normalización Robusta y Zona Horaria Argentina (FreeHoursWidget.tsx): Se unificó la fecha y el día de la semana con la zona horaria 'America/Argentina/Buenos_Aires', se blindó la correspondencia de días numéricos y alfabéticos (ej. '1' <-> 'Lunes'), estados ('aprobada' / 'ap') y fechas sin límite ('fin || inicio'). 4) Soporte de Preceptores en Panel General: La pestaña general ahora traslada las divisiones asignadas al widget para reflejar con exactitud las horas libres que impactan a sus cursos a cargo."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.32.5",
+    date: "01/10/2026 10:38 hs",
+    notes: [
+      "Sincronización Total y Actualización de Horas Libres en Tiempo Real (FreeHoursWidget.tsx, dataService.ts, GeneralTab.tsx, NewAbsenceModal.tsx y dashboard/page.tsx): Se erradicó la falta de reactividad y el retraso en la detección de horas libres docentes en toda la plataforma. 1) Suscripción en Tiempo Real y Polling de Respaldo (dataService.ts): Se implementó 'subscribeToHorarios' con WebSockets de Appwrite, canales broadcast entre pestañas ('BroadcastChannel') y latido de seguridad (heartbeat polling) cada 15-25 segundos más re-sincronización al reenfocar la ventana. 2) Despacho Reactivo Inmediato ('notifyRealtimeUpdate'): Modales de licencias, reportes docentes y programación de clases ahora emiten eventos locales instantáneos (0ms) que actualizan el widget sin esperar recargas manuales. 3) Normalización Robusta y Zona Horaria Argentina (FreeHoursWidget.tsx): Se unificó la fecha y el día de la semana con la zona horaria 'America/Argentina/Buenos_Aires', se blindó la correspondencia de días numéricos y alfabéticos (ej. '1' <-> 'Lunes'), estados ('aprobada' / 'ap') y fechas sin límite ('fin || inicio'). 4) Soporte de Preceptores en Panel General: La pestaña general ahora traslada las divisiones asignadas al widget para reflejar con exactitud las horas libres que impactan a sus cursos a cargo."
+    ]
+  },
   {
     version: "v2.32.1",
     date: "30/09/2026 14:15 hs",

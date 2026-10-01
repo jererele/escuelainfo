@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, fromDbRol } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, fromDbRol, subscribeToHorarios, notifyRealtimeUpdate } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -379,8 +379,7 @@ export default function Dashboard() {
           }
           
           unsubscribes.push(subscribeToCursos(setCursos));
-
-          getHorarios().then(d => { if (isMounted) { setHorarios(d); stamp('horarios'); }});
+          unsubscribes.push(subscribeToHorarios(d => { if (isMounted) { setHorarios(d); stamp('horarios'); }}));
           if (roleForSubscriptions === 'admin') getLogs().then(d => { if (isMounted) { setLogs(d); stamp('logs'); }});
         } else {
           // Si no hay perfil en usuarios (ej. cuenta rechazada o eliminada), eliminar sesión activa de inmediato
@@ -479,7 +478,15 @@ export default function Dashboard() {
   }, [user]);
 
   const currentProfesor = profesores.find(p => p.email && p.email.toLowerCase() === (user?.email || userProfile?.email || "").toLowerCase());
-  const currentAlumno = alumnos.find(a => a.email && a.email.toLowerCase() === (user?.email || userProfile?.email || "").toLowerCase());
+  const currentAlumno = alumnos.find(a => a.email && a.email.toLowerCase() === (user?.email || userProfile?.email || "").toLowerCase()) ||
+    (userProfile?.rol === 'alumno' && userProfile.cursos && userProfile.cursos.length > 0 ? {
+      id: userProfile.id,
+      nombre: userProfile.nombre,
+      curso: userProfile.cursos[0],
+      email: userProfile.email,
+      dni: "",
+      telefono: userProfile.telefono || ""
+    } : null);
 
 
 
@@ -1585,9 +1592,7 @@ export default function Dashboard() {
               askConfirm={askConfirm}
               showToast={showToast}
               onRefreshAusencias={() => {
-                import('@/lib/dataService').then(mod => {
-                  mod.subscribeToAusencias(setAusencias);
-                });
+                notifyRealtimeUpdate("ausencias");
               }}
             />
           )}
@@ -1756,7 +1761,9 @@ export default function Dashboard() {
       <NewAbsenceModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSuccess={() => {}}
+        onSuccess={() => {
+          notifyRealtimeUpdate("ausencias");
+        }}
         lockedProfesor={userProfile?.rol === 'profesor' ? currentProfesor : undefined}
         ausencias={ausencias}
         userProfile={userProfile}
@@ -1788,7 +1795,10 @@ export default function Dashboard() {
       <NewScheduleModal 
         isOpen={isScheduleModalOpen} 
         onClose={() => setIsScheduleModalOpen(false)} 
-        onSuccess={() => { getHorarios().then(setHorarios); showToast("Horario actualizado"); }}
+        onSuccess={() => { 
+          notifyRealtimeUpdate("horarios");
+          showToast("Horario actualizado"); 
+        }}
       />
 
       <NewUserModal
@@ -1833,7 +1843,10 @@ export default function Dashboard() {
           initialTipo={reportModalInitialTipo}
           onClose={() => setIsTeacherReportModalOpen(false)}
           currentProfesor={currentProfesor}
-          onSuccess={() => { showToast("Reporte registrado correctamente", "success"); }}
+          onSuccess={() => { 
+            notifyRealtimeUpdate("ausencias");
+            showToast("Reporte registrado correctamente", "success"); 
+          }}
         />
       )}
 

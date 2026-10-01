@@ -13,6 +13,44 @@ interface FreeHoursWidgetProps {
   onNavigateToHorarios: (curso: string) => void;
 }
 
+const getTodayStr = (): string => {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+  } catch {
+    return new Date().toLocaleDateString("en-CA");
+  }
+};
+
+const getTodayDayName = (): string => {
+  try {
+    const raw = new Intl.DateTimeFormat("es-AR", { weekday: "long", timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  } catch {
+    const daysMap = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return daysMap[new Date().getDay()];
+  }
+};
+
+const normalizeDay = (dia?: string | null): string => {
+  const d = (dia || "").trim().toLowerCase();
+  if (d === "1" || d === "lunes") return "lunes";
+  if (d === "2" || d === "martes") return "martes";
+  if (d === "3" || d === "miércoles" || d === "miercoles") return "miércoles";
+  if (d === "4" || d === "jueves") return "jueves";
+  if (d === "5" || d === "viernes") return "viernes";
+  if (d === "6" || d === "sábado" || d === "sabado") return "sábado";
+  if (d === "0" || d === "7" || d === "domingo") return "domingo";
+  return d;
+};
+
+const normalizeText = (text?: string | null): string =>
+  (text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
   isStudent = false,
   currentAlumno,
@@ -23,13 +61,19 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
   onNavigateToAusencias,
   onNavigateToHorarios,
 }) => {
-  const todayStr = new Date().toLocaleDateString("en-CA");
-  const daysMap = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-  const todayDayName = daysMap[new Date().getDay()];
+  const [, setTick] = React.useState(0);
+  React.useEffect(() => {
+    // Ticking cada 30 segundos para recalcular horas libres automáticamente ante cambio de hora o fecha
+    const timer = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayStr = getTodayStr();
+  const todayDayName = getTodayDayName();
+  const normToday = normalizeDay(todayDayName);
 
   const getHolidayToday = () => {
-    const today = new Date();
-    const mmDd = today.toLocaleDateString("en-CA").slice(5);
+    const mmDd = todayStr.slice(5);
 
     const holidays: { [key: string]: { name: string; type: "nacional" | "provincial" | "local" } } = {
       // Nacionales (Argentina)
@@ -63,34 +107,36 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     return holidays[mmDd] || null;
   };
 
-  // Profesores ausentes hoy (aprobados) memoizado
+  // Profesores ausentes hoy (aprobados en formato estricto o DB simplificado "ap") memoizado
   const activeAbsencesToday = useMemo(() => {
-    return ausencias.filter(a => 
-      a.estado === 'aprobada' && 
-      todayStr >= a.inicio && 
-      todayStr <= a.fin
-    );
+    return ausencias.filter(a => {
+      const estadoStr = String(a.estado || "").toLowerCase();
+      const isApproved = estadoStr === 'aprobada' || estadoStr === 'ap';
+      if (!isApproved) return false;
+      const start = (a.inicio || "").slice(0, 10);
+      const end = (a.fin || a.inicio || "").slice(0, 10);
+      return todayStr >= start && todayStr <= end;
+    });
   }, [ausencias, todayStr]);
 
-  // Clases afectadas hoy memoizado
+  // Clases afectadas hoy memoizado con normalización resiliente
   const freeHoursToday = useMemo(() => {
-    const normToday = todayDayName.trim().toLowerCase();
     let list = horarios.filter(h => {
-      const matchDay = (h.dia || "").trim().toLowerCase() === normToday;
+      const matchDay = normalizeDay(h.dia) === normToday;
       if (!matchDay) return false;
-      const hProf = (h.profesor || "").trim().toLowerCase();
-      const hCourseNorm = (h.curso || "").trim().toLowerCase();
-      const hMatNorm = (h.materia || "").trim().toLowerCase();
+      const hProf = normalizeText(h.profesor);
+      const hCourseNorm = normalizeText(h.curso);
+      const hMatNorm = normalizeText(h.materia);
 
       return activeAbsencesToday.some(a => {
-        if ((a.profNombre || "").trim().toLowerCase() !== hProf) return false;
+        if (normalizeText(a.profNombre) !== hProf) return false;
 
         // Si la ausencia está acotada a un curso específico en materias:
         if (a.materias && a.materias.length > 0) {
           const hasCourseTag = a.materias.some(m => m.includes("(") && m.includes(")"));
           if (hasCourseTag) {
             return a.materias.some(m => {
-              const mNorm = m.toLowerCase();
+              const mNorm = normalizeText(m);
               return (hCourseNorm && mNorm.includes(hCourseNorm)) || (hMatNorm && mNorm.includes(hMatNorm));
             });
           }
@@ -101,14 +147,14 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
     });
 
     if (isStudent && currentAlumno?.curso) {
-      const studentCourse = currentAlumno.curso.trim().toLowerCase();
-      list = list.filter(h => (h.curso || "").trim().toLowerCase() === studentCourse);
+      const studentCourse = normalizeText(currentAlumno.curso);
+      list = list.filter(h => normalizeText(h.curso) === studentCourse);
     } else if (isPreceptor && preceptorCourses && preceptorCourses.length > 0) {
-      const normCourses = preceptorCourses.map(c => c.trim().toLowerCase());
-      list = list.filter(h => normCourses.includes((h.curso || "").trim().toLowerCase()));
+      const normCourses = preceptorCourses.map(c => normalizeText(c));
+      list = list.filter(h => normCourses.includes(normalizeText(h.curso)));
     }
     return list;
-  }, [horarios, todayDayName, activeAbsencesToday, isStudent, currentAlumno, isPreceptor, preceptorCourses]);
+  }, [horarios, normToday, activeAbsencesToday, isStudent, currentAlumno, isPreceptor, preceptorCourses]);
 
   const holiday = getHolidayToday();
   if (holiday) {
@@ -178,6 +224,13 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
                     : "Todas las clases programadas para hoy se dictan con total normalidad.")
               }
             </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start md:self-center">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--bg3)] border border-[var(--border)] text-[10px] font-bold text-[var(--text2)] shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-[var(--verde)] animate-pulse" />
+            <span>En vivo</span>
           </div>
         </div>
       </div>
