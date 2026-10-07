@@ -77,7 +77,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   return (
     <div className="space-y-10 animate-fade-in">
       {/* BANNER DE BIENVENIDA */}
-      <div className="p-6 sm:p-7 rounded-2xl border border-[var(--border)] bg-[var(--bg2)] shadow-sm">
+      <div className="p-6 sm:p-7 rounded-2xl border border-[var(--border)] bg-[var(--bg2)] card-elevated">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold title-font text-[var(--text)] tracking-tight flex flex-wrap items-center">
             <GravityText text="Escuela 713" className="text-[var(--verde)]" />
@@ -135,7 +135,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       />
 
       {/* LISTA COMPACTA */}
-      <div className="bg-[var(--bg3)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
+      <div className="bg-[var(--bg2)] rounded-2xl border border-[var(--border)] overflow-hidden card-elevated">
         <div className="p-6 sm:p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="title-font font-black text-xl text-[var(--text)]">
@@ -158,11 +158,11 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-[var(--bg4)]/50 border-b border-[var(--border)]">
+            <thead className="bg-[var(--bg3)] border-b border-[var(--border)]">
               <tr>
-                <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Profesor</th>
-                <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Tipo</th>
-                <th className="p-6 text-[10px] font-black uppercase text-[var(--text3)] tracking-[0.2em]">Estado</th>
+                <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Profesor</th>
+                <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Tipo</th>
+                <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-[0.2em]">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -179,7 +179,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                   <tr 
                     key={a.id} 
                     onClick={() => onNavigateToAusencias(isTeacher ? undefined : a.profNombre)}
-                    className="hover:bg-[var(--bg3)] transition-colors border-b border-[var(--border)] last:border-none cursor-pointer group"
+                    className="hover:bg-[var(--bg3)]/80 transition-colors border-b border-[var(--border)]/70 last:border-none cursor-pointer group"
                     title={isTeacher ? "Ver detalle de mi licencia" : `Ver ausencias de ${a.profNombre}`}
                   >
                     <td className="p-6 font-bold text-[var(--text)] group-hover:text-[var(--verde)] transition-colors flex items-center gap-2">

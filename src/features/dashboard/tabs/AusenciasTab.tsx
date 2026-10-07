@@ -334,7 +334,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
       )}
 
       {/* BARRA DE FILTRO Y BÚSQUEDA */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-[var(--bg2)] p-4 rounded-xl border border-[var(--border)]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-[var(--bg2)] p-4 rounded-xl border border-[var(--border)] shadow-xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
           <div className="relative flex-1">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={20} /></span>
@@ -420,7 +420,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
       <div className="card glass rounded-2xl border border-[var(--border)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-[var(--bg3)]/50">
+            <thead className="bg-[var(--bg3)] border-b border-[var(--border)]">
               <tr>
                 <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Personal / Agente</th>
                 <th className="p-5 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Detalles</th>

@@ -194,8 +194,8 @@ export default function TopNavSidebar({
     <div ref={navRef} className="relative z-[500]">
       {/* ── BARRA SUPERIOR FIJA ───────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex items-center justify-between px-4 md:px-6
-        bg-[var(--bg)]/95 border-b border-[var(--border)]
-        shadow-[0_2px_20px_-8px_rgba(0,0,0,0.12)] z-[500] backdrop-blur-md">
+        bg-[var(--bg2)]/90 border-b border-[var(--border)]
+        shadow-[0_1px_3px_0_rgba(15,23,42,0.05)] z-[500] backdrop-blur-md">
 
         {/* Left: hamburger + logo */}
         <div className="flex items-center gap-3">

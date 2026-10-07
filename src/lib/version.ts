@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.36.0";
-export const APP_BUILD_DATE = "07/10/2026 16:35 hs";
+export const APP_VERSION = "v2.36.1";
+export const APP_BUILD_DATE = "07/10/2026 17:35 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Rediseño Integral del Sistema Visual Institucional (Anti-Vibecoding & Ecosistema de Superficies Sólidas): Se llevó a cabo una modernización profunda de la estética de toda la plataforma para erradicar patrones genéricos de IA / vibecoding (partículas flotantes de canvas, orbes fluorescentes palpitantes, radios de curvatura excesivos de 32-40px y rebotes espasmódicos) e instaurar un estándar de diseño de software SaaS de grado institucional (Linear / Vercel design system). 1) Fondo Arquitectónico (InstitutionalBackground): Reemplazo del canvas de estrellas por una sutil cuadrícula milimétrica con halo ambiental de cero impacto computacional en CPU/GPU. 2) Paleta y Tokens de Superficie: Estandarización de fondos (#0b0f17, #111827, #1a2333), bordes con contraste limpio y eliminación de neones sobrecargados. 3) Jerarquía de Bordes y Contenedores: Normalización de todas las ventanas modales, tablas y paneles principales a 'rounded-2xl', subpaneles y campos a 'rounded-xl', e insignias/botones a 'rounded-lg'. 4) Microinteracciones Profesionales: Sustitución de escalados y rebotes acelerados por transiciones suaves de color y opacidad con feedback táctil refinado en más de 50 componentes y vistas."
+  "Optimización de Contraste, Jerarquía y Profundidad en Modo Claro (globals.css, TiltCard.tsx, GeneralTab.tsx, AusenciasTab.tsx, TopNavSidebar.tsx): Se corrigió la pérdida de diferenciación visual y sensación plana en modo claro. 1) Lienzo de Fondo Contrastado: Se ajustó el fondo del canvas (--bg) a tono pizarra frío (#f1f5f9) para generar contraste inmediato y natural contra las tarjetas blanco puro (#ffffff). 2) Elevación y Sombras Refinadas: Implementación de sombras multicapa suaves (shadow-sm, card-elevated) que desprenden nítidamente los contenedores, barras de filtro y tablas respecto del lienzo. 3) Superficies de Tarjetas y Métricas: Unificación de TiltCard y listas hacia superficies sólidas blancas (--bg2) con microinteracción de elevación y borde perimetral al pasar el cursor. 4) Barra de Navegación Anclada: Cabecera superior configurada con vidrio blanco esmerilado (--bg2/90 con backdrop-blur) y borde de división nítido."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.36.1",
+    date: "07/10/2026 17:35 hs",
+    notes: [
+      "Optimización de Contraste, Jerarquía y Profundidad en Modo Claro (globals.css, TiltCard.tsx, GeneralTab.tsx, AusenciasTab.tsx, TopNavSidebar.tsx): Se corrigió la pérdida de diferenciación visual y sensación plana en modo claro. 1) Lienzo de Fondo Contrastado: Se ajustó el fondo del canvas (--bg) a tono pizarra frío (#f1f5f9) para generar contraste inmediato y natural contra las tarjetas blanco puro (#ffffff). 2) Elevación y Sombras Refinadas: Implementación de sombras multicapa suaves (shadow-sm, card-elevated) que desprenden nítidamente los contenedores, barras de filtro y tablas respecto del lienzo. 3) Superficies de Tarjetas y Métricas: Unificación de TiltCard y listas hacia superficies sólidas blancas (--bg2) con microinteracción de elevación y borde perimetral al pasar el cursor. 4) Barra de Navegación Anclada: Cabecera superior configurada con vidrio blanco esmerilado (--bg2/90 con backdrop-blur) y borde de división nítido."
+    ]
+  },
   {
     version: "v2.36.0",
     date: "07/10/2026 16:35 hs",
