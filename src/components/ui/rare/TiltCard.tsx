@@ -74,7 +74,7 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   if (isMobile) {
     return (
       <div
-        className={`relative rounded-[32px] border border-[var(--border)] bg-[var(--bg3)] transition-all active:scale-[0.98] shadow-md ${className}`}
+        className={`relative rounded-2xl border border-[var(--border)] bg-[var(--bg3)] transition-all active:scale-[0.98] shadow-xs ${className}`}
         onClick={onClick}
       >
         {children}
@@ -94,16 +94,16 @@ export const TiltCard: React.FC<TiltCardProps> = ({
         rotateY,
         transformStyle: "preserve-3d",
       }}
-      className={`relative rounded-[32px] border border-[var(--border)] bg-[var(--bg3)] transition-shadow duration-200 overflow-hidden cursor-pointer ${
-        isHovered ? "shadow-2xl border-[var(--verde)]/50" : "shadow-md hover:shadow-xl"
+      className={`relative rounded-2xl border border-[var(--border)] bg-[var(--bg3)] transition-shadow duration-200 overflow-hidden cursor-pointer ${
+        isHovered ? "shadow-md border-[var(--verde)]/40" : "shadow-xs hover:shadow-sm"
       } ${className}`}
     >
       {/* Radial Glow follow cursor via pure CSS variables (Zero React Re-renders) */}
       {isHovered && (
         <div
-          className="pointer-events-none absolute -inset-px rounded-[32px] opacity-100 transition-opacity duration-200"
+          className="pointer-events-none absolute -inset-px rounded-2xl opacity-100 transition-opacity duration-200"
           style={{
-            background: `radial-gradient(360px circle at var(--glow-x, 50%) var(--glow-y, 50%), ${glowColor}, transparent 65%)`,
+            background: `radial-gradient(320px circle at var(--glow-x, 50%) var(--glow-y, 50%), ${glowColor}, transparent 65%)`,
           }}
         />
       )}

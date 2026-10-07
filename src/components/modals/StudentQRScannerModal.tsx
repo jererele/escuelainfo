@@ -258,7 +258,7 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
         }
       }}
     >
-      <div className="bg-[var(--bg)] w-full max-w-md rounded-[32px] sm:rounded-[40px] border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col relative z-10">
+      <div className="bg-[var(--bg)] w-full max-w-md rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col relative z-10">
         {/* Cabecera del Modal */}
         <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--bg2)]/80 backdrop-blur-md flex justify-between items-center shrink-0">
           <div className="flex items-center gap-2.5">

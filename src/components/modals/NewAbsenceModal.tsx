@@ -1191,7 +1191,7 @@ export default function NewAbsenceModal({
         className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
-        <div className="glass w-full max-w-xl rounded-[28px] border border-[var(--border)] flex flex-col max-h-[92vh] overflow-hidden shadow-2xl animate-zoom-in will-change-gpu">
+        <div className="card glass w-full max-w-xl rounded-2xl border border-[var(--border)] flex flex-col max-h-[92vh] overflow-hidden shadow-xl">
           <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg2)] flex-shrink-0">
             <div>
               <div className="flex items-center gap-2">

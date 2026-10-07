@@ -685,13 +685,13 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
       </div>
 
       {/* VISTA ESCRITORIO (lg+) */}
-      <div className="hidden lg:block card glass rounded-[40px] border border-[var(--border)] overflow-x-auto shadow-2xl">
+      <div className="hidden lg:block card glass rounded-2xl border border-[var(--border)] overflow-x-auto shadow-sm">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[var(--bg3)]/80">
-              <th className="p-5 border-b border-r border-[var(--border)] text-[10px] font-black uppercase text-[var(--verde)] sticky left-0 bg-[var(--bg)] z-20 w-32">Horario</th>
+              <th className="p-4 border-b border-r border-[var(--border)] text-[10px] font-bold uppercase text-[var(--verde)] sticky left-0 bg-[var(--bg)] z-20 w-32">Horario</th>
               {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'].map(dia => (
-                <th key={dia} className="p-5 border-b border-[var(--border)] text-[11px] font-black uppercase tracking-widest text-[var(--text)] min-w-[180px]">
+                <th key={dia} className="p-4 border-b border-[var(--border)] text-[11px] font-bold uppercase tracking-wider text-[var(--text)] min-w-[180px]">
                   {dia}
                 </th>
               ))}
@@ -756,20 +756,17 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                         className="p-2 border-r border-[var(--border)] last:border-r-0 relative group min-h-[80px]"
                       >
                         {h ? (
-                          <div className={`p-3 sm:p-4 rounded-[18px] sm:rounded-[22px] border transition-all duration-300 relative overflow-hidden ${
-                            isDimmed ? "opacity-15 grayscale scale-95 blur-[0.5px]" : ""
+                          <div className={`p-3 rounded-xl border transition-colors relative overflow-hidden ${
+                            isDimmed ? "opacity-20 grayscale" : ""
                           } ${
                             isAbsent 
-                              ? "bg-[var(--rojo-bg)] border-[var(--rojo-border)] shadow-[0_8px_20px_rgba(239,68,68,0.15)] ring-1 ring-[var(--rojo-border)]" 
-                              : "bg-[var(--bg3)] border-[var(--border)] shadow-sm hover:shadow-md group-hover:border-[var(--verde)]"
+                              ? "bg-[var(--rojo-bg)] border-[var(--rojo-border)]" 
+                              : "bg-[var(--bg3)] border-[var(--border)] hover:border-[var(--verde)]/50"
                           }`}>
-                            {isAbsent && (
-                              <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--rojo)]/5 blur-xl pointer-events-none rounded-full" />
-                            )}
-                            <div className="flex justify-between items-start mb-1 pr-6">
-                              <div className={`font-black text-xs sm:text-sm leading-tight ${isAbsent ? "text-[var(--rojo)] line-through decoration-[var(--rojo)]/80 decoration-2 opacity-80" : "text-[var(--text)]"}`}>{h.materia}</div>
+                            <div className="flex justify-between items-start mb-1 pr-3">
+                              <div className={`font-bold text-xs sm:text-sm leading-tight ${isAbsent ? "text-[var(--rojo)] line-through decoration-[var(--rojo)]/80 decoration-2 opacity-80" : "text-[var(--text)]"}`}>{h.materia}</div>
                               {isAbsent && (
-                                <span className="text-[var(--rojo)] animate-bounce shrink-0 ml-1">
+                                <span className="text-[var(--rojo)] shrink-0 ml-1">
                                   <Ban size={12} />
                                 </span>
                               )}

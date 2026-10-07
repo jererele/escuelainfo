@@ -185,15 +185,15 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
     <div className="space-y-10 animate-fade-in">
       {/* MIGRACIÓN A FORMATO COMPACTO */}
       {userProfile?.rol === 'admin' && (
-        <div className="card glass p-8 rounded-[32px] border border-[var(--amarillo-border)]/50 space-y-4">
+        <div className="card glass p-6 sm:p-7 rounded-2xl border border-[var(--amarillo-border)]/50 space-y-4">
           <div>
-            <h2 className="title-font font-black text-xl text-[var(--amarillo)]">Optimización de Base de Datos</h2>
-            <p className="text-xs text-[var(--text2)] mt-1">
+            <h2 className="title-font font-bold text-lg text-[var(--amarillo)]">Optimización de Base de Datos</h2>
+            <p className="text-xs text-[var(--text2)] mt-0.5">
               Migra los valores existentes en Appwrite al formato compacto (roles y estados abreviados). Ejecutar una sola vez.
             </p>
           </div>
           {migrationResult && (
-            <div className={`p-4 rounded-2xl text-xs font-bold space-y-1.5 ${
+            <div className={`p-3.5 rounded-xl text-xs font-medium space-y-1.5 ${
               migrationResult.errors.length > 0
                 ? 'bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)]'
                 : 'bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)]'
@@ -237,7 +237,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
                 setIsMigrating(false);
               }
             }}
-            className="w-full py-3 rounded-2xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] font-black text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] font-bold text-xs hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isMigrating ? "Migrando... no cierres la página" : "▶ Ejecutar Migración"}
           </button>
@@ -245,44 +245,44 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
       )}
 
       {/* REINICIAR DATOS */}
-      <div className="card glass p-8 rounded-[32px] border border-[var(--border)] space-y-6">
+      <div className="card glass p-6 sm:p-7 rounded-2xl border border-[var(--border)] space-y-5">
         <div>
-          <h2 className="title-font font-black text-xl text-[var(--rojo)]">Acciones de Fin de Ciclo Lectivo</h2>
-          <p className="text-xs text-[var(--text2)] mt-1">
+          <h2 className="title-font font-bold text-lg text-[var(--rojo)]">Acciones de Fin de Ciclo Lectivo</h2>
+          <p className="text-xs text-[var(--text2)] mt-0.5">
             Preparación del sistema para el inicio de un nuevo año escolar. Estas acciones son irreversibles.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* LIMPIAR HORARIOS */}
-          <div className="p-6 rounded-2xl bg-[var(--bg3)] border border-[var(--border)] flex flex-col justify-between gap-4 text-left">
+          <div className="p-5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] flex flex-col justify-between gap-4 text-left">
             <div>
-              <h4 className="font-extrabold text-sm text-[var(--text)]">Vaciar Horarios Anterior</h4>
-              <p className="text-[11px] text-[var(--text2)] mt-1">
+              <h4 className="font-bold text-sm text-[var(--text)]">Vaciar Horarios Anterior</h4>
+              <p className="text-[11px] text-[var(--text2)] mt-0.5">
                 Elimina la programación de materias de todos los cursos para comenzar el año escolar con una grilla limpia.
               </p>
             </div>
             <button
               onClick={handleClearHorarios}
-              className="w-full py-3 rounded-xl bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] hover:bg-[var(--rojo)] hover:text-white font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 rounded-lg bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] hover:bg-[var(--rojo)] hover:text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Trash2 size={14} />
+              <Trash2 size={13} />
               Vaciar Todos los Horarios
             </button>
           </div>
 
           {/* LIMPIAR AUSENCIAS */}
-          <div className="p-6 rounded-2xl bg-[var(--bg3)] border border-[var(--border)] flex flex-col justify-between gap-4 text-left">
+          <div className="p-5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] flex flex-col justify-between gap-4 text-left">
             <div>
-              <h4 className="font-extrabold text-sm text-[var(--text)]">Vaciar Historial de Ausencias</h4>
-              <p className="text-[11px] text-[var(--text2)] mt-1">
+              <h4 className="font-bold text-sm text-[var(--text)]">Vaciar Historial de Ausencias</h4>
+              <p className="text-[11px] text-[var(--text2)] mt-0.5">
                 Elimina el registro histórico de licencias, avisos y suspensiones docentes del ciclo lectivo anterior.
               </p>
             </div>
             <button
               onClick={handleClearAusencias}
-              className="w-full py-3 rounded-xl bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] hover:bg-[var(--rojo)] hover:text-white font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 rounded-lg bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] hover:bg-[var(--rojo)] hover:text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Trash2 size={14} />
+              <Trash2 size={13} />
               Vaciar Registro de Ausencias
             </button>
           </div>
@@ -290,7 +290,7 @@ export const CicloLectivoTab: React.FC<CicloLectivoTabProps> = ({
       </div>
 
       {/* PROMOCIÓN DE ALUMNOS */}
-      <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden shadow-sm">
+      <div className="card glass rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
         <div className="p-8 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-left">
             <h2 className="title-font font-black text-xl">Promoción y Repitencia de Alumnos</h2>

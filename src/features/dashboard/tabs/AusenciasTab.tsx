@@ -131,10 +131,10 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
     <div className="space-y-6 animate-fade-in">
       {/* PANEL DE AUTOGESTIÓN DE PERSONAL (Para Profesores y Preceptores) */}
       {showSelfService && (
-        <div className="card glass p-6 sm:p-8 rounded-[32px] border border-[var(--border)] space-y-6">
+        <div className="card glass p-5 sm:p-6 rounded-2xl border border-[var(--border)] space-y-5">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h2 className="title-font font-black text-xl">
+              <h2 className="title-font font-bold text-lg text-[var(--text)]">
                 {isPreceptor ? "Autogestión de Preceptoría" : "Autogestión Docente"}
               </h2>
               <p className="text-xs text-[var(--text2)] mt-1">
@@ -215,13 +215,13 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                   }
                 );
               }}
-              className="p-5 rounded-2xl bg-[var(--rojo-bg)]/20 border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)]/30 active:scale-95 transition-all text-left flex flex-col gap-3 group cursor-pointer"
+              className="p-4 rounded-xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)]/80 transition-colors text-left flex flex-col gap-2.5 group cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-[var(--rojo-bg)] text-[var(--rojo)] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <ShieldAlert size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--rojo-bg)] text-[var(--rojo)] flex items-center justify-center shrink-0 border border-[var(--rojo-border)]">
+                <ShieldAlert size={18} />
               </div>
               <div>
-                <h4 className="font-extrabold text-sm text-[var(--text)]">Adherirse al Paro</h4>
+                <h4 className="font-bold text-sm text-[var(--text)]">Adherirse al Paro</h4>
                 <p className="text-[11px] text-[var(--text2)] mt-0.5">Notifica al instante adhesión a medida de fuerza.</p>
               </div>
             </button>
@@ -288,13 +288,13 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                   );
                 }
               }}
-              className="p-5 rounded-2xl bg-[var(--amarillo-bg)]/20 border border-[var(--amarillo-border)] hover:bg-[var(--amarillo-bg)]/30 active:scale-95 transition-all text-left flex flex-col gap-3 group cursor-pointer"
+              className="p-4 rounded-xl bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] hover:bg-[var(--amarillo-bg)]/80 transition-colors text-left flex flex-col gap-2.5 group cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-[var(--amarillo-bg)] text-[var(--amarillo)] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <AlertTriangle size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--amarillo-bg)] text-[var(--amarillo)] flex items-center justify-center shrink-0 border border-[var(--amarillo-border)]">
+                <AlertTriangle size={18} />
               </div>
               <div>
-                <h4 className="font-extrabold text-sm text-[var(--text)]">Suspensión Urgente</h4>
+                <h4 className="font-bold text-sm text-[var(--text)]">Suspensión Urgente</h4>
                 <p className="text-[11px] text-[var(--text2)] mt-0.5">Informa inasistencia de último momento por fuerza mayor.</p>
               </div>
             </button>
@@ -302,13 +302,13 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
             {/* BOTÓN SOLICITAR AUSENCIA */}
             <button
               onClick={onOpenAbsenceModal}
-              className="p-5 rounded-2xl bg-[var(--verde-bg)]/20 border border-[var(--verde-border)] hover:bg-[var(--verde-bg)]/30 active:scale-95 transition-all text-left flex flex-col gap-3 group cursor-pointer"
+              className="p-4 rounded-xl bg-[var(--verde-bg)] border border-[var(--verde-border)] hover:bg-[var(--verde-bg)]/80 transition-colors text-left flex flex-col gap-2.5 group cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-[var(--verde-bg)] text-[var(--verde)] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <FileText size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] flex items-center justify-center shrink-0 border border-[var(--verde-border)]">
+                <FileText size={18} />
               </div>
               <div>
-                <h4 className="font-extrabold text-sm text-[var(--text)]">Solicitar Licencia</h4>
+                <h4 className="font-bold text-sm text-[var(--text)]">Solicitar Licencia</h4>
                 <p className="text-[11px] text-[var(--text2)] mt-0.5">Solicita una licencia sujeta a la aprobación directiva.</p>
               </div>
             </button>
@@ -319,13 +319,13 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                 setSelectedDbArticulo("");
                 setIsDbModalOpen(true);
               }}
-              className="p-5 rounded-2xl bg-[var(--azul-bg)]/20 border border-[var(--azul-border)] hover:bg-[var(--azul-bg)]/30 active:scale-95 transition-all text-left flex flex-col gap-3 group cursor-pointer"
+              className="p-4 rounded-xl bg-[var(--azul-bg)] border border-[var(--azul-border)] hover:bg-[var(--azul-bg)]/80 transition-colors text-left flex flex-col gap-2.5 group cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <BookOpen size={20} />
+              <div className="w-8 h-8 rounded-lg bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center shrink-0 border border-[var(--azul-border)]">
+                <BookOpen size={18} />
               </div>
               <div>
-                <h4 className="font-extrabold text-sm text-[var(--text)]">DB Licencias (SAE)</h4>
+                <h4 className="font-bold text-sm text-[var(--text)]">DB Licencias (SAE)</h4>
                 <p className="text-[11px] text-[var(--text2)] mt-0.5">Consultá los 166 artículos del estatuto y CCT Chubut.</p>
               </div>
             </button>
@@ -334,7 +334,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
       )}
 
       {/* BARRA DE FILTRO Y BÚSQUEDA */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-[var(--bg2)] p-4 rounded-xl border border-[var(--border)]">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
           <div className="relative flex-1">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={20} /></span>
@@ -417,7 +417,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
       </div>
 
       {/* TABLA PRINCIPAL DE LICENCIAS */}
-      <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+      <div className="card glass rounded-2xl border border-[var(--border)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-[var(--bg3)]/50">

@@ -789,17 +789,17 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
 
       {/* ─── BANNER INTELIGENTE PARA ALUMNOS (Autocompletado y Escáner) ──────── */}
       {role === "alumno" && (
-        <div className="p-6 rounded-[32px] bg-gradient-to-r from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/25 backdrop-blur-md shadow-lg space-y-4 animate-fade-in">
+        <div className="p-5 sm:p-6 rounded-2xl card glass border border-[var(--border)] shadow-xs space-y-4 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] shadow-[0_0_25px_rgba(var(--verde-rgb),0.3)] shrink-0">
-                <Sparkles size={24} />
+              <div className="w-10 h-10 rounded-xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] shrink-0">
+                <Sparkles size={20} />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-black text-[var(--text)]">
+                <h3 className="text-base sm:text-lg font-bold text-[var(--text)]">
                   Inscripción Rápida a Mesas de Examen
                 </h3>
-                <p className="text-xs font-semibold text-[var(--text2)]">
+                <p className="text-xs font-medium text-[var(--text2)]">
                   Sesión activa: <span className="font-bold text-[var(--text)]">{alumnoRecord?.nombre || userProfile?.nombre}</span>
                   {alumnoRecord?.dni && <span> · DNI: <span className="font-bold text-[var(--text)]">{alumnoRecord.dni}</span></span>}
                   {alumnoRecord?.curso && <span> · Curso: <span className="font-bold text-[var(--text)]">{alumnoRecord.curso}</span></span>}
@@ -817,17 +817,17 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                   setScannerMode("student");
                   setIsQRScannerOpen(true);
                 }}
-                className="flex-1 sm:flex-initial bg-[var(--verde)] hover:brightness-110 text-black font-black px-4 py-3 rounded-2xl shadow-md hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs cursor-pointer"
+                className="flex-1 sm:flex-initial bg-[var(--verde)] hover:brightness-105 text-black font-bold px-4 py-2.5 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer"
               >
-                <Camera size={16} />
+                <Camera size={15} />
                 <span>Escanear QR de Mesa</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsStudentQRModalOpen(true)}
-                className="flex-1 sm:flex-initial bg-[var(--bg3)] hover:bg-[var(--bg4)] border border-[var(--border)] text-[var(--text)] font-bold px-4 py-3 rounded-2xl hover:border-[var(--verde)] transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer"
+                className="flex-1 sm:flex-initial bg-[var(--bg3)] hover:bg-[var(--bg4)] border border-[var(--border)] text-[var(--text)] font-semibold px-4 py-2.5 rounded-xl hover:border-[var(--verde)] transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer"
               >
-                <IdCard size={16} className="text-[var(--verde)]" />
+                <IdCard size={15} className="text-[var(--verde)]" />
                 <span>Mi Credencial QR</span>
               </button>
             </div>
@@ -836,13 +836,13 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       )}
 
       {/* Header y Filtros */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
+      <div className="card glass border border-[var(--border)] rounded-2xl p-5 sm:p-6 shadow-xs space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-xl font-black text-[var(--text)] flex items-center gap-2">
+            <h3 className="text-xl font-bold text-[var(--text)] flex items-center gap-2">
               <ClipboardCheck className="text-[var(--verde)]" /> Cronograma de Mesas de Examen
             </h3>
-            <p className="text-[var(--text2)] text-xs font-bold uppercase tracking-wider mt-1">
+            <p className="text-[var(--text2)] text-xs font-semibold uppercase tracking-wider mt-0.5">
               Planificación oficial de tribunales y planillas de examen
             </p>
           </div>
@@ -1133,7 +1133,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
           className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
         >
-          <div className="bg-[var(--bg)] w-full max-w-2xl rounded-t-[32px] sm:rounded-[32px] p-5 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in my-0 sm:my-auto max-h-[92dvh] overflow-y-auto custom-scrollbar">
+          <div className="bg-[var(--bg)] w-full max-w-2xl rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 border-t sm:border border-[var(--border)] shadow-xl my-0 sm:my-auto max-h-[92dvh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h2 className="text-2xl font-black title-font text-[var(--text)]">

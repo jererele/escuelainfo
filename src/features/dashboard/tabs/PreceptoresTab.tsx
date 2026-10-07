@@ -303,12 +303,12 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       {/* TARJETAS DE ESTADÍSTICAS Y MÉTRICAS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Preceptores */}
-        <div className="card glass p-4 sm:p-5 rounded-[28px] border border-[var(--border)] flex flex-col justify-between shadow-xs">
+        <div className="card glass p-4 sm:p-5 rounded-xl border border-[var(--border)] flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[var(--text3)]">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text3)]">
               Preceptores
             </span>
-            <div className="w-8 h-8 rounded-xl bg-[var(--verde-bg)] text-[var(--verde)] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] flex items-center justify-center border border-[var(--verde-border)]">
               <UserCheck size={16} strokeWidth={2.5} />
             </div>
           </div>
@@ -323,12 +323,12 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
         </div>
 
         {/* Cursos Cubiertos */}
-        <div className="card glass p-4 sm:p-5 rounded-[28px] border border-[var(--border)] flex flex-col justify-between shadow-xs">
+        <div className="card glass p-4 sm:p-5 rounded-xl border border-[var(--border)] flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[var(--text3)]">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text3)]">
               Cursos Cubiertos
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
               <FolderOpen size={16} strokeWidth={2.5} />
             </div>
           </div>
@@ -343,19 +343,19 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
         </div>
 
         {/* Cursos sin Preceptor */}
-        <div className={`card glass p-4 sm:p-5 rounded-[28px] border flex flex-col justify-between shadow-xs ${
+        <div className={`card glass p-4 sm:p-5 rounded-xl border flex flex-col justify-between shadow-xs ${
           stats.unassignedCursosCount > 0 
             ? "border-[var(--amarillo-border)] bg-[var(--amarillo-bg)]/30" 
             : "border-[var(--border)]"
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[var(--text3)]">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text3)]">
               Sin Asignación
             </span>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
               stats.unassignedCursosCount > 0 
-                ? "bg-[var(--amarillo)]/20 text-[var(--amarillo)]" 
-                : "bg-[var(--bg3)] text-[var(--text3)]"
+                ? "bg-[var(--amarillo)]/20 text-[var(--amarillo)] border-[var(--amarillo-border)]" 
+                : "bg-[var(--bg3)] text-[var(--text3)] border-[var(--border)]"
             }`}>
               <AlertCircle size={16} strokeWidth={2.5} />
             </div>
@@ -373,12 +373,12 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
         </div>
 
         {/* Cobertura Institucional */}
-        <div className="card glass p-4 sm:p-5 rounded-[28px] border border-[var(--border)] flex flex-col justify-between shadow-xs">
+        <div className="card glass p-4 sm:p-5 rounded-xl border border-[var(--border)] flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[var(--text3)]">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text3)]">
               Cobertura Plena
             </span>
-            <div className="w-8 h-8 rounded-xl bg-[var(--verde-bg)] text-[var(--verde)] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] flex items-center justify-center border border-[var(--verde-border)]">
               <Percent size={16} strokeWidth={2.5} />
             </div>
           </div>
@@ -397,7 +397,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       </div>
 
       {/* MATRIZ DE COBERTURA DE DIVISIONES */}
-      <div className="card glass rounded-[32px] p-5 sm:p-6 border border-[var(--border)] space-y-4 shadow-sm">
+      <div className="card glass rounded-2xl p-5 sm:p-6 border border-[var(--border)] space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)]/60 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
@@ -471,30 +471,30 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       </div>
 
       {/* BARRA DE FILTROS Y BÚSQUEDA */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)] shadow-xs">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-[var(--bg2)] p-3 sm:p-4 rounded-xl border border-[var(--border)] shadow-xs">
         {/* Buscador */}
         <div className="relative flex-1">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]">
-            <Search size={18} />
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]">
+            <Search size={16} />
           </span>
           <input
             type="text"
             placeholder="Buscar por nombre, email o división..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-2.5 pl-11 pr-4 outline-none font-bold text-xs sm:text-sm text-[var(--text)] focus:border-[var(--verde)] transition-all placeholder:text-[var(--text3)]"
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg py-2 pl-10 pr-4 outline-none font-medium text-xs sm:text-sm text-[var(--text)] focus:border-[var(--verde)] transition-colors placeholder:text-[var(--text3)]"
           />
         </div>
 
         {/* Filtros rápidos */}
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
           {/* Filtro por estado de cursos */}
-          <div className="flex bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)]">
+          <div className="flex bg-[var(--bg)] p-1 rounded-lg border border-[var(--border)]">
             <button
               onClick={() => setCoverageFilter("todos")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 coverageFilter === "todos"
-                  ? "bg-[var(--verde)] text-black shadow-xs font-black"
+                  ? "bg-[var(--verde)] text-black font-bold"
                   : "text-[var(--text2)] hover:text-[var(--text)]"
               }`}
             >
@@ -502,9 +502,9 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             </button>
             <button
               onClick={() => setCoverageFilter("con_cursos")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 coverageFilter === "con_cursos"
-                  ? "bg-[var(--verde)] text-black shadow-xs font-black"
+                  ? "bg-[var(--verde)] text-black font-bold"
                   : "text-[var(--text2)] hover:text-[var(--text)]"
               }`}
             >
@@ -512,9 +512,9 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             </button>
             <button
               onClick={() => setCoverageFilter("sin_cursos")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 coverageFilter === "sin_cursos"
-                  ? "bg-[var(--verde)] text-black shadow-xs font-black"
+                  ? "bg-[var(--verde)] text-black font-bold"
                   : "text-[var(--text2)] hover:text-[var(--text)]"
               }`}
             >
@@ -526,7 +526,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
           <select
             value={selectedCourseFilter}
             onChange={(e) => setSelectedCourseFilter(e.target.value)}
-            className="bg-[var(--bg)] border border-[var(--border)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text)] outline-none focus:border-[var(--verde)] cursor-pointer"
+            className="bg-[var(--bg)] border border-[var(--border)] rounded-lg py-1.5 px-3 text-xs font-medium text-[var(--text)] outline-none focus:border-[var(--verde)] cursor-pointer"
           >
             <option value="todos">Cualquier división</option>
             {cursos.map(c => (
@@ -539,11 +539,11 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       </div>
 
       {/* GRILLA DE PRECEPTORES */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredPreceptores.length === 0 ? (
-          <div className="col-span-full p-16 sm:p-20 glass rounded-[32px] text-center border border-dashed border-[var(--border)]">
-            <UserCheck size={36} className="mx-auto text-[var(--text3)] mb-3 opacity-50" />
-            <p className="text-[var(--text2)] font-bold text-base">
+          <div className="col-span-full p-12 sm:p-16 glass rounded-2xl text-center border border-dashed border-[var(--border)]">
+            <UserCheck size={32} className="mx-auto text-[var(--text3)] mb-3 opacity-50" />
+            <p className="text-[var(--text2)] font-semibold text-sm">
               {searchQuery || selectedCourseFilter !== "todos" || coverageFilter !== "todos"
                 ? "No se encontraron preceptores que coincidan con los filtros aplicados."
                 : "No hay usuarios con rol de preceptor registrados en la institución."}
@@ -569,7 +569,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             return (
               <div
                 key={p.id}
-                className="glass p-6 sm:p-7 rounded-[32px] border border-[var(--border)] hover:border-[var(--verde)] transition-all flex flex-col justify-between group shadow-sm hover:shadow-lg"
+                className="glass p-5 sm:p-6 rounded-2xl border border-[var(--border)] hover:border-[var(--verde)] transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
               >
                 <div>
                   {/* Encabezado de la tarjeta: Avatar, Info y Badge */}
@@ -667,7 +667,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             }
           }}
         >
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 border-t sm:border border-[var(--border)] shadow-xl max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
             {/* Cabecera del modal */}
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -839,7 +839,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
             }
           }}
         >
-          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
+          <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 border-t sm:border border-[var(--border)] shadow-xl max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
             {/* Cabecera del modal */}
             <div>
               <div className="flex justify-between items-start mb-4">

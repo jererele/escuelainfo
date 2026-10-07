@@ -135,7 +135,7 @@ export default function MesaQRModal({ isOpen, onClose, mesa }: Props) {
       }}
     >
       <div
-        className="w-full max-w-lg bg-[var(--bg)] border border-[var(--border)] rounded-[32px] shadow-2xl overflow-hidden animate-zoom-in flex flex-col"
+        className="w-full max-w-lg bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-zoom-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

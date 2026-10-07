@@ -236,17 +236,17 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
 
       {/* SECCIÓN DESTACADA: DOCENTES REGISTRADOS SIN MATERIAS ASIGNADAS */}
       {effectiveCanManageMaterias && pendingConfigTeachers.length > 0 && (
-        <div className="card glass rounded-[28px] p-5 sm:p-6 border border-[var(--amarillo-border)] bg-[var(--amarillo-bg)] space-y-4 shadow-sm">
+        <div className="card glass rounded-xl p-5 border border-[var(--amarillo-border)] bg-[var(--amarillo-bg)] space-y-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[var(--amarillo)]/20 text-[var(--amarillo)] flex items-center justify-center shrink-0">
-                <AlertCircle size={20} strokeWidth={2.5} />
+              <div className="w-9 h-9 rounded-lg bg-[var(--amarillo)]/20 text-[var(--amarillo)] flex items-center justify-center shrink-0 border border-[var(--amarillo-border)]">
+                <AlertCircle size={18} strokeWidth={2.5} />
               </div>
               <div>
-                <h3 className="text-sm sm:text-base font-black text-[var(--amarillo)]">
+                <h3 className="text-sm font-bold text-[var(--amarillo)]">
                   Docentes Registrados sin Materias ({pendingConfigTeachers.length})
                 </h3>
-                <p className="text-xs text-[var(--text2)] font-semibold">
+                <p className="text-xs text-[var(--text2)] font-medium">
                   Tienen cuenta institucional pero aún no tienen materias asignadas en el cuerpo docente.
                 </p>
               </div>
@@ -257,10 +257,10 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
             {pendingConfigTeachers.map((u, idx) => (
               <div
                 key={u.id || u.email || idx}
-                className="bg-[var(--bg)]/90 backdrop-blur-md p-4 rounded-2xl border border-[var(--border)] flex items-center justify-between gap-3 shadow-xs hover:border-[var(--amarillo)] transition-all"
+                className="bg-[var(--bg)]/90 backdrop-blur-md p-3.5 rounded-xl border border-[var(--border)] flex items-center justify-between gap-3 shadow-xs hover:border-[var(--amarillo)] transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <UserAvatar name={u.nombre} email={u.email} size={38} showRing={true} />
+                  <UserAvatar name={u.nombre} email={u.email} size={36} showRing={true} />
                   <div className="min-w-0">
                     <h4 className="text-xs font-bold text-[var(--text)] truncate">
                       {u.nombre}
@@ -280,7 +280,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                       materias: [],
                     })
                   }
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] text-xs font-black hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-xs"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] text-xs font-bold hover:brightness-105 transition-colors cursor-pointer"
                   title={`Asignar materias a ${u.nombre}`}
                 >
                   <Plus size={13} strokeWidth={2.5} />
@@ -293,20 +293,20 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
       )}
 
       {/* BARRA DE BÚSQUEDA Y ESTADÍSTICAS */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)] shadow-xs">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--bg2)] p-3 sm:p-4 rounded-xl border border-[var(--border)] shadow-xs">
         <div className="relative w-full sm:max-w-md">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]">
-            <Search size={18} />
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]">
+            <Search size={16} />
           </span>
           <input
             type="text"
             placeholder="Buscar por nombre, materia o email..."
-            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-2.5 pl-11 pr-4 outline-none font-bold text-xs sm:text-sm text-[var(--text)] focus:border-[var(--verde)] transition-all placeholder:text-[var(--text3)]"
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg py-2 pl-10 pr-4 outline-none font-medium text-xs sm:text-sm text-[var(--text)] focus:border-[var(--verde)] transition-colors placeholder:text-[var(--text3)]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-[var(--text3)] shrink-0 self-end sm:self-center">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text3)] shrink-0 self-end sm:self-center">
           <GraduationCap size={15} className="text-[var(--verde)]" />
           <span>
             {filteredProfesores.length} {filteredProfesores.length === 1 ? "docente cargado" : "docentes cargados"}
@@ -315,11 +315,11 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
       </div>
 
       {/* GRILLA DE PROFESORES */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredProfesores.length === 0 ? (
-          <div className="col-span-full p-16 sm:p-20 glass rounded-[32px] text-center border border-dashed border-[var(--border)]">
-            <GraduationCap size={36} className="mx-auto text-[var(--text3)] mb-3 opacity-50" />
-            <p className="text-[var(--text2)] font-bold text-base">
+          <div className="col-span-full p-12 sm:p-16 glass rounded-2xl text-center border border-dashed border-[var(--border)]">
+            <GraduationCap size={32} className="mx-auto text-[var(--text3)] mb-3 opacity-50" />
+            <p className="text-[var(--text2)] font-semibold text-sm">
               {searchQuery ? "No se encontraron profesores que coincidan con la búsqueda." : "No hay profesores cargados todavía."}
             </p>
             {searchQuery && (
@@ -339,7 +339,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
               <div
                 key={p.id}
                 onClick={() => onNavigateToAusencias(p.nombre)}
-                className="glass p-6 sm:p-7 rounded-[32px] border border-[var(--border)] hover:border-[var(--verde)] transition-all group relative cursor-pointer flex flex-col justify-between hover:shadow-lg active:scale-[0.99]"
+                className="glass p-5 sm:p-6 rounded-2xl border border-[var(--border)] hover:border-[var(--verde)] transition-all group relative cursor-pointer flex flex-col justify-between hover:shadow-md"
                 title={`Ver ausencias y asistencias de ${p.nombre}`}
               >
                 {/* BOTONES DE EDICIÓN / BORRADO (ADMIN / DIRECTIVO) O GESTIÓN DE MATERIAS (PRECEPTOR) */}

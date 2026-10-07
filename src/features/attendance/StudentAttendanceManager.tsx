@@ -325,7 +325,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
       {/* VISTA 1: PRECEPTOR / ADMIN (Control General de Jornada) */}
       {(role === "admin" || role === "directivo" || role === "preceptor") && (
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-6">
+        <div className="card glass rounded-2xl border border-[var(--border)] p-5 sm:p-6 shadow-xs space-y-6">
           {/* Header con Título, Turno Escolar Activo y Selectores */}
           <div className="flex flex-col gap-4 border-b border-[var(--border)] pb-5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -696,14 +696,14 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
       {role === "alumno" && (
         <div className="space-y-6">
           {/* Banner de escaneo QR para el alumno */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 rounded-[28px] glass shadow-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 card glass rounded-2xl border border-[var(--border)] shadow-xs">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] shadow-[0_0_20px_rgba(16,185,129,0.25)] shrink-0">
-                <QrCode size={24} />
+              <div className="w-10 h-10 rounded-xl bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] shrink-0">
+                <QrCode size={20} />
               </div>
               <div>
-                <h3 className="text-base font-black text-[var(--text)]">Escanear Asistencia QR</h3>
-                <p className="text-xs font-semibold text-[var(--text3)]">
+                <h3 className="text-base font-bold text-[var(--text)]">Escanear Asistencia QR</h3>
+                <p className="text-xs text-[var(--text3)] font-medium">
                   Apuntá con tu cámara al código del profesor o preceptor para dar el presente al instante
                 </p>
               </div>
@@ -711,47 +711,47 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
             <button
               type="button"
               onClick={() => setIsQRScannerOpen(true)}
-              className="w-full sm:w-auto bg-[var(--verde)] hover:brightness-110 text-black font-black px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(var(--verde-rgb),0.35)] hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer text-sm shrink-0"
+              className="w-full sm:w-auto bg-[var(--verde)] hover:brightness-105 text-black font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm shrink-0"
             >
-              <Camera size={18} />
+              <Camera size={16} />
               <span>Abrir Cámara y Escanear</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
-              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">Inasistencias</p>
-              <p className="text-3xl font-black text-[var(--text)] mt-2">{totalFaltasJornada.toFixed(2)}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="card glass border border-[var(--border)] rounded-xl p-3.5 shadow-xs text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)]">Inasistencias</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] mt-1">{totalFaltasJornada.toFixed(2)}</p>
             </div>
             
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
-              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">Ausentes</p>
-              <p className="text-3xl font-black text-[var(--rojo)] mt-2">{totalAusentesJornada}</p>
+            <div className="card glass border border-[var(--border)] rounded-xl p-3.5 shadow-xs text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)]">Ausentes</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-[var(--rojo)] mt-1">{totalAusentesJornada}</p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
-              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">½ Faltas</p>
-              <p className="text-3xl font-black text-[var(--amarillo)] mt-2">{totalMediaFaltaJornada}</p>
+            <div className="card glass border border-[var(--border)] rounded-xl p-3.5 shadow-xs text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)]">½ Faltas</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-[var(--amarillo)] mt-1">{totalMediaFaltaJornada}</p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
-              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">Tardes</p>
-              <p className="text-3xl font-black text-[var(--azul)] mt-2">{totalTardesJornada}</p>
+            <div className="card glass border border-[var(--border)] rounded-xl p-3.5 shadow-xs text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)]">Tardes</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-[var(--azul)] mt-1">{totalTardesJornada}</p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
-              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">Retiros</p>
-              <p className="text-3xl font-black text-[var(--naranja)] mt-2">{totalRetirosJornada}</p>
+            <div className="card glass border border-[var(--border)] rounded-xl p-3.5 shadow-xs text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)]">Retiros</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-[var(--naranja)] mt-1">{totalRetirosJornada}</p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[24px] p-4 shadow-sm text-center">
-              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--text3)]">Justificados</p>
-              <p className="text-3xl font-black text-blue-500 mt-2">{totalJustificadosJornada}</p>
+            <div className="card glass border border-[var(--border)] rounded-xl p-3.5 shadow-xs text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)]">Justificados</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-blue-500 mt-1">{totalJustificadosJornada}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md will-change-gpu border border-[var(--border)] rounded-[32px] p-6 shadow-sm space-y-4">
+            <div className="card glass border border-[var(--border)] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
               <div>
                 <h4 className="text-lg font-black text-[var(--text)] flex items-center gap-2">
                   <Clock size={18} className="text-[var(--verde)]" /> Historial de Asistencia General

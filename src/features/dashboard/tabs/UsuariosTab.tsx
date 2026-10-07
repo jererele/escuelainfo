@@ -246,7 +246,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
       </div>
 
       {/* BARRA DE BÚSQUEDA Y FILTRO */}
-      <div className="flex flex-col sm:flex-row gap-3 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)]">
+      <div className="flex flex-col sm:flex-row gap-3 bg-[var(--bg2)] p-3 sm:p-4 rounded-xl border border-[var(--border)]">
         <div className="relative flex-1">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]">
             <Search size={18} />
@@ -375,7 +375,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           </div>
 
           {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
-          <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+          <div className="hidden md:block card glass rounded-2xl border border-[var(--border)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-[650px]">
                 <thead className="bg-[var(--bg3)]/50">
@@ -603,7 +603,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           </div>
 
           {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
-          <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+          <div className="hidden md:block card glass rounded-2xl border border-[var(--border)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-[650px]">
                 <thead className="bg-[var(--bg3)]/50">

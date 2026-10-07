@@ -75,14 +75,14 @@ export const CalendarioTab: React.FC<CalendarioTabProps> = ({ user, userProfile,
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <form onSubmit={handleAdd} className="card glass p-6 rounded-[32px] border border-[var(--border)] space-y-4 shadow-sm">
-            <h3 className="font-black text-lg text-[var(--text)]">Nueva Suspensión</h3>
+          <form onSubmit={handleAdd} className="card glass p-6 rounded-2xl border border-[var(--border)] space-y-4 shadow-sm">
+            <h3 className="font-bold text-base text-[var(--text)]">Nueva Suspensión</h3>
             <p className="text-xs text-[var(--text2)]">Este día aparecerá como "Suspensión Institucional" en el sistema y bloqueará la toma de licencias o firmas de asistencia.</p>
             
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label 
                 htmlFor="cal-fecha-suspension"
-                className="text-[10px] font-black uppercase text-[var(--text3)] cursor-pointer select-none"
+                className="text-[10px] font-bold uppercase text-[var(--text3)] cursor-pointer select-none"
                 onClick={() => { try { (document.getElementById("cal-fecha-suspension") as HTMLInputElement)?.showPicker?.(); } catch {} }}
               >
                 Fecha
@@ -91,20 +91,20 @@ export const CalendarioTab: React.FC<CalendarioTabProps> = ({ user, userProfile,
                 id="cal-fecha-suspension"
                 type="date" 
                 required
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold cursor-pointer"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--verde)] transition-colors font-medium text-sm cursor-pointer"
                 value={fecha}
                 onChange={e => setFecha(e.target.value)}
                 onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-[var(--text3)]">Motivo (Ej: Falta de Agua, Desinfección)</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-[var(--text3)]">Motivo (Ej: Falta de Agua, Desinfección)</label>
               <input 
                 type="text" 
                 required
                 placeholder="Falta de suministro eléctrico..."
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--verde)] transition-all font-bold"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--verde)] transition-colors font-medium text-sm"
                 value={motivo}
                 onChange={e => setMotivo(e.target.value)}
               />
@@ -113,20 +113,20 @@ export const CalendarioTab: React.FC<CalendarioTabProps> = ({ user, userProfile,
             <button 
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-2xl bg-[var(--verde)] text-black font-black text-sm hover:-translate-y-0.5 active:scale-95 transition-all shadow-md disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-[var(--verde)] text-black font-bold text-sm hover:brightness-105 transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Plus size={18} className="inline mr-1" />
-              Agregar al Calendario
+              <Plus size={16} />
+              <span>Agregar al Calendario</span>
             </button>
           </form>
         </div>
 
         <div className="md:col-span-2">
-          <div className="card glass p-6 rounded-[32px] border border-[var(--border)] shadow-sm">
-            <h3 className="font-black text-lg mb-4 text-[var(--text)]">Días Suspendidos Cargados</h3>
+          <div className="card glass p-6 rounded-2xl border border-[var(--border)] shadow-sm">
+            <h3 className="font-bold text-base mb-4 text-[var(--text)]">Días Suspendidos Cargados</h3>
             
             {suspensiones.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-[var(--border)] rounded-2xl">
+              <div className="text-center py-12 border border-dashed border-[var(--border)] rounded-xl">
                 <CalendarIcon size={32} className="mx-auto text-[var(--text3)] mb-2 opacity-50" />
                 <p className="text-sm font-bold text-[var(--text2)]">No hay suspensiones registradas actualmente.</p>
               </div>

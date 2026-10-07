@@ -147,7 +147,7 @@ export default function AssignTeacherSubjectsModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full sm:max-w-lg rounded-t-[32px] sm:rounded-[32px] p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar my-0 sm:my-auto">
+      <div className="bg-[var(--bg)] w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar my-0 sm:my-auto">
         {/* Cabecera del Modal */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3.5">

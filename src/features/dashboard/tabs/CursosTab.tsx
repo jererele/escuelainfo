@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Users, Trash2, Plus, GraduationCap, UserCheck, Edit, Clock } from "lucide-react";
 import { Curso, Alumno, UserProfile } from "@/lib/dataService";
-import { TiltCard, FluidOrb } from "@/components/ui/rare";
+import { TiltCard } from "@/components/ui/rare";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { parseCourseNameComponents } from "@/lib/curriculum";
 
@@ -34,28 +34,27 @@ export const CursosTab: React.FC<CursosTabProps> = ({
   }, [usuarios]);
   return (
     <div className="animate-fade-in space-y-8">
-      {/* HEADER CON FLUID ORB */}
-      <div className="relative overflow-hidden p-6 sm:p-8 rounded-[32px] border border-[var(--border)] bg-gradient-to-br from-[var(--bg2)] to-[var(--bg3)]/60 backdrop-blur-md shadow-sm flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
-        <FluidOrb color="rgba(16, 185, 129, 0.18)" size={260} className="-top-16 -right-12" />
-        <div className="text-center md:text-left relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] text-[10px] font-black uppercase tracking-wider mb-2">
+      {/* HEADER */}
+      <div className="overflow-hidden p-6 sm:p-7 rounded-2xl border border-[var(--border)] bg-[var(--bg2)] shadow-xs flex flex-col md:flex-row justify-between items-center md:items-start gap-5">
+        <div className="text-center md:text-left">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] text-[10px] font-bold uppercase tracking-wider mb-2">
             Aulas y Cursos Oficiales
           </div>
-          <h2 className="text-3xl font-black title-font text-[var(--text)]">Gestión de Cursos</h2>
-          <p className="text-[var(--text2)] text-sm mt-1">Organiza las divisiones, asigna alumnos y supervisa la matrícula por aula.</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold title-font text-[var(--text)]">Gestión de Cursos</h2>
+          <p className="text-[var(--text2)] text-xs sm:text-sm mt-1">Organiza las divisiones, asigna alumnos y supervisa la matrícula por aula.</p>
         </div>
         <button 
           onClick={onOpenCourseModal}
-          className="relative z-10 w-full md:w-auto bg-[var(--verde)] text-black font-black px-8 py-4 rounded-2xl hover:scale-105 transition-all shadow-xl shrink-0 cursor-pointer flex items-center justify-center gap-2"
+          className="w-full md:w-auto bg-[var(--verde)] text-black font-bold px-5 py-2.5 rounded-xl hover:brightness-105 transition-all text-sm shrink-0 cursor-pointer flex items-center justify-center gap-2 shadow-xs"
         >
-          <Plus size={18} />
+          <Plus size={16} />
           <span>Agregar Nuevo Curso</span>
         </button>
       </div>
 
-      {/* GRID DE CURSOS CON TILT CARDS DE RARE UI */}
+      {/* GRID DE CURSOS */}
       {cursos.length === 0 ? (
-        <div className="card glass rounded-[32px] border border-[var(--border)] p-16 sm:p-20 text-center text-[var(--text3)] italic">
+        <div className="card glass rounded-2xl border border-[var(--border)] p-12 sm:p-16 text-center text-[var(--text3)] italic text-sm">
           No hay cursos creados. Presiona "+ Agregar Nuevo Curso" para empezar.
         </div>
       ) : (

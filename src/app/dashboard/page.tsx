@@ -1382,14 +1382,10 @@ export default function Dashboard() {
 
     return (
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 py-8 bg-transparent text-[var(--text)]">
-        {/* Glows ambientales decorativos */}
-        <div className="hidden sm:block absolute top-[-10%] right-[-10%] w-[45%] h-[45%] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none animate-pulse" />
-        <div className="hidden sm:block absolute bottom-[-10%] left-[-10%] w-[45%] h-[45%] bg-[var(--verde-bg)] rounded-full blur-[140px] pointer-events-none animate-pulse" />
-
-        <div className="glass w-full max-w-[480px] p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/20 dark:border-white/10 shadow-2xl relative z-10 text-center animate-zoom-in">
+        <div className="glass w-full max-w-[480px] p-6 sm:p-10 rounded-2xl border border-[var(--border)] shadow-xl relative z-10 text-center animate-fade-in">
           {/* Header con Identidad Institucional */}
           <div className="flex flex-col items-center mb-6">
-            <div className="mb-3 shrink-0 transition-transform duration-300 hover:scale-105">
+            <div className="mb-3 shrink-0">
               <EscuelaInfoLogo size={52} />
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-[10px] font-black uppercase tracking-wider mb-2">
@@ -1403,12 +1399,11 @@ export default function Dashboard() {
           {/* Insignia Hero de Estado */}
           <div className="mb-6 flex flex-col items-center">
             <div className="relative mb-4">
-              <div className="absolute inset-0 rounded-3xl bg-amber-500/20 blur-xl animate-pulse" />
-              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/30 flex items-center justify-center relative shadow-[0_8px_30px_rgba(245,158,11,0.25)]">
-                <Clock size={36} className="text-amber-400 animate-[spin_16s_linear_infinite]" />
+              <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center relative shadow-sm">
+                <Clock size={32} className="text-amber-400" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-amber-500 text-black flex items-center justify-center border-2 border-[var(--bg)] shadow-md">
-                <Hourglass size={13} strokeWidth={2.5} className="animate-pulse" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-500 text-black flex items-center justify-center border-2 border-[var(--bg)] shadow-sm">
+                <Hourglass size={12} strokeWidth={2.5} />
               </div>
             </div>
 
@@ -1429,7 +1424,7 @@ export default function Dashboard() {
           </div>
 
           {/* Ficha de Información Institucional */}
-          <div className="bg-[var(--bg3)]/80 backdrop-blur-md border border-[var(--border)] p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-left space-y-3 mb-6 text-xs shadow-inner">
+          <div className="bg-[var(--bg3)]/80 backdrop-blur-md border border-[var(--border)] p-4 sm:p-5 rounded-xl text-left space-y-3 mb-6 text-xs shadow-inner">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-[var(--text3)] font-bold text-[11px] uppercase tracking-wider">
                 <Mail size={14} className="text-emerald-400 shrink-0" />
@@ -1475,7 +1470,7 @@ export default function Dashboard() {
 
               {/* Paso 1: Registro */}
               <div className="flex flex-col items-center z-10">
-                <div className="w-8 h-8 rounded-full bg-[var(--verde)] text-black font-black flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-transform hover:scale-110">
+                <div className="w-8 h-8 rounded-full bg-[var(--verde)] text-black font-black flex items-center justify-center shadow-sm">
                   <Check size={16} strokeWidth={3} />
                 </div>
                 <span className="mt-2 text-[10px] font-black uppercase tracking-wider text-[var(--text)]">Registro</span>
@@ -1508,16 +1503,16 @@ export default function Dashboard() {
               type="button"
               onClick={() => checkStatus(true)}
               disabled={loading}
-              className="w-full bg-[var(--verde)] hover:brightness-110 text-black rounded-2xl py-3.5 px-4 text-sm font-black cursor-pointer transition-all duration-300 shadow-[0_4px_20px_rgba(var(--verde-rgb),0.35)] hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50"
+              className="w-full bg-[var(--verde)] hover:opacity-90 text-black rounded-xl py-3 px-4 text-xs font-black cursor-pointer transition-opacity shadow-sm flex items-center justify-center gap-2.5 disabled:opacity-50"
             >
-              <RefreshCw size={17} className={loading ? "animate-spin" : "transition-transform group-hover:rotate-180"} />
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
               <span>{loading ? "Comprobando aprobación..." : "Verificar Estado de mi Cuenta"}</span>
             </button>
 
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full bg-[var(--bg3)] hover:bg-[var(--rojo-bg)] hover:text-[var(--rojo)] hover:border-[var(--rojo-border)] text-[var(--text2)] border border-[var(--border)] rounded-2xl py-3 px-4 text-xs font-bold cursor-pointer transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+              className="w-full bg-[var(--bg3)] hover:bg-[var(--rojo-bg)] hover:text-[var(--rojo)] hover:border-[var(--rojo-border)] text-[var(--text2)] border border-[var(--border)] rounded-xl py-2.5 px-4 text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2"
             >
               <LogOut size={15} />
               <span>Cerrar Sesión</span>
@@ -1970,7 +1965,7 @@ export default function Dashboard() {
       {/* CONFIRM MODAL */}
       {confirmDialog.isOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[var(--bg)] w-full max-w-sm rounded-[32px] p-8 border border-[var(--border)] shadow-2xl text-center">
+          <div className="bg-[var(--bg)] w-full max-w-sm rounded-2xl p-6 sm:p-7 border border-[var(--border)] shadow-xl text-center">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 transition-transform ${
               confirmDialog.variant === "success"
                 ? "bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-lg shadow-[var(--verde)]/10"

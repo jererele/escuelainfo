@@ -187,7 +187,7 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-[var(--bg)] w-full max-w-sm rounded-[32px] border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col max-h-[90vh]">
+      <div className="bg-[var(--bg)] w-full max-w-sm rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="p-6 border-b border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center shrink-0">
@@ -269,7 +269,7 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
           {tab === "qr" ? (
             // QR VIEW
             <div className="flex flex-col items-center space-y-6 animate-fade-in w-full">
-              <div className="bg-white p-4 rounded-[28px] shadow-sm border-[4px] border-[var(--verde-bg)]">
+              <div className="bg-white p-4 rounded-2xl shadow-sm border-[4px] border-[var(--verde-bg)]">
                 <QRCodeSVG value={qrUrl} size={200} level="H" includeMargin={false} />
               </div>
               

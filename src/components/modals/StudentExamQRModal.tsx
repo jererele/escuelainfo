@@ -53,7 +53,7 @@ export default function StudentExamQRModal({ isOpen, onClose, userProfile, alumn
       }}
     >
       <div
-        className="w-full max-w-md bg-[var(--bg)] border border-[var(--border)] rounded-[32px] shadow-2xl overflow-hidden animate-zoom-in flex flex-col"
+        className="w-full max-w-md bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-zoom-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cabecera */}

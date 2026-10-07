@@ -180,7 +180,7 @@ export const EarlyWarningDropoutWidget: React.FC<EarlyWarningDropoutWidgetProps>
   };
 
   return (
-    <div className="card glass rounded-[32px] border border-[var(--border)] p-6 sm:p-8 space-y-6 shadow-sm">
+    <div className="card glass rounded-2xl border border-[var(--border)] p-6 sm:p-8 space-y-6 shadow-sm">
       {/* CABECERA SATDE */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

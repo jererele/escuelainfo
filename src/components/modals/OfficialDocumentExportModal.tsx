@@ -145,7 +145,7 @@ export default function OfficialDocumentExportModal({
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
-        className="w-full max-w-2xl bg-[var(--bg)] border border-[var(--border)] rounded-[28px] sm:rounded-[36px] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
+        className="w-full max-w-2xl bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}

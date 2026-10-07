@@ -484,21 +484,18 @@ function LoginContent() {
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center relative overflow-hidden px-4 bg-transparent py-10">
-      <div className="hidden md:block absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
-      <div className="hidden md:block absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
-
-      <div className="login-box glass animate-zoom-in will-change-gpu w-full max-w-[480px] p-5 sm:p-8 md:p-12 rounded-[32px] sm:rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
+    <div className="flex-1 flex items-center justify-center relative px-4 bg-transparent py-10">
+      <div className="login-box w-full max-w-[440px] p-6 sm:p-9 rounded-2xl relative z-10 border border-[var(--border)] bg-[var(--bg2)] shadow-xl sm:shadow-2xl">
         {requestSuccess ? (
           <div className="text-center py-6 animate-fade-in">
-            <div className="w-16 h-16 bg-[var(--verde-bg)] text-[var(--verde)] rounded-full flex items-center justify-center mx-auto mb-6 border border-[var(--verde-border)] shadow-lg animate-bounce">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <div className="w-14 h-14 bg-[var(--verde-bg)] text-[var(--verde)] rounded-2xl flex items-center justify-center mx-auto mb-5 border border-[var(--verde-border)] shadow-sm">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-black mb-2 text-[var(--text)]">¡Solicitud Enviada!</h2>
-            <p className="text-[var(--text2)] text-sm font-medium mb-4">
-              Tu solicitud fue enviada.
+            <h2 className="text-xl font-bold mb-2 text-[var(--text)]">¡Solicitud Enviada!</h2>
+            <p className="text-[var(--text2)] text-sm font-medium mb-3">
+              Tu solicitud fue enviada con éxito.
             </p>
             <p className="text-[var(--text3)] text-xs">
               Esperá a ser aprobado por la administración para poder ingresar a la plataforma.
@@ -507,55 +504,55 @@ function LoginContent() {
         ) : (
           <>
             {/* Header */}
-            <div className="text-center mb-8 flex flex-col items-center">
-              <div className="flex items-center justify-center mb-4 shrink-0">
-                <EscuelaInfoLogo size={64} />
+            <div className="text-center mb-7 flex flex-col items-center">
+              <div className="flex items-center justify-center mb-3 shrink-0">
+                <EscuelaInfoLogo size={56} />
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-[10px] font-black uppercase tracking-wider mb-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-[11px] font-bold tracking-wide mb-3">
                 Escuela N° 713 &quot;Juan Abdala Chayep&quot;
               </div>
-              <div className="text-[2.8rem] font-black tracking-tighter mb-2 title-font leading-none">
+              <div className="text-3xl font-black tracking-tight mb-1 title-font leading-none">
                 Escuela<span className="text-[var(--verde)]">Info</span>
               </div>
-              <div className="text-[0.85rem] text-[var(--text2)] font-black uppercase tracking-widest">
+              <div className="text-xs text-[var(--text2)] font-semibold tracking-wider uppercase">
                 Portal de Horarios y Asistencias
               </div>
             </div>
 
             {/* Tabs */}
             {activeMode === "forgot" ? (
-              <div className="flex items-center justify-between mb-6 pb-2 border-b border-[var(--border)]">
+              <div className="flex items-center justify-between mb-5 pb-2 border-b border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => switchMode("login")}
-                  className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                  className="flex items-center gap-2 text-xs font-semibold text-[var(--text3)] hover:text-[var(--text)] transition-colors"
                 >
-                  <ArrowLeft size={16} /> Volver al Inicio
+                  <ArrowLeft size={15} /> Volver al Inicio
                 </button>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-full border border-[var(--verde-border)]">
+                <span className="text-[11px] font-semibold text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-0.5 rounded-md border border-[var(--verde-border)]">
                   Paso {forgotStep} de 2
                 </span>
               </div>
             ) : activeMode === "register" && registerStep === 2 ? (
-              <div className="flex items-center justify-between mb-6 pb-2 border-b border-[var(--border)]">
+              <div className="flex items-center justify-between mb-5 pb-2 border-b border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setRegisterStep(1)}
-                  className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                  className="flex items-center gap-2 text-xs font-semibold text-[var(--text3)] hover:text-[var(--text)] transition-colors"
                 >
-                  <ArrowLeft size={16} /> Modificar Datos
+                  <ArrowLeft size={15} /> Modificar Datos
                 </button>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-full border border-[var(--verde-border)]">
+                <span className="text-[11px] font-semibold text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-0.5 rounded-md border border-[var(--verde-border)]">
                   Paso 2 de 2: Código OTP
                 </span>
               </div>
             ) : (
-              <div className="bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)] flex mb-6">
+              <div className="bg-[var(--bg3)] p-1 rounded-xl border border-[var(--border)] flex mb-6">
                 {(["login", "register"] as const).map(mode => (
                   <button key={mode} type="button"
                     onClick={() => switchMode(mode)}
-                    className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                      activeMode === mode ? "bg-white shadow-sm text-black" : "text-[var(--text3)] hover:text-[var(--text2)]"
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                      activeMode === mode ? "bg-[var(--bg)] shadow-sm text-[var(--text)]" : "text-[var(--text3)] hover:text-[var(--text2)]"
                     }`}>
                     {mode === "login" ? "Iniciar Sesión" : "Registrarse"}
                   </button>
@@ -564,39 +561,39 @@ function LoginContent() {
             )}
 
             {successMsg && (
-              <div className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] p-4 rounded-xl text-xs font-bold text-center mb-5 animate-fade-in">
+              <div className="bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] p-3 rounded-xl text-xs font-medium text-center mb-4">
                 {successMsg}
               </div>
             )}
 
             {errorMsg && (
-              <div className="bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] p-4 rounded-xl text-xs font-bold text-center mb-5 animate-fade-in">
+              <div className="bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] p-3 rounded-xl text-xs font-medium text-center mb-4">
                 {errorMsg}
               </div>
             )}
 
             {/* FORGOT PASSWORD */}
             {activeMode === "forgot" ? (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 {forgotStep === 1 ? (
                   <form onSubmit={(e) => { e.preventDefault(); handleSendRecoveryCode(); }} className="space-y-4">
-                    <div className="bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-4 py-3 rounded-xl text-xs font-bold space-y-1">
-                      <div className="flex items-center gap-2">
+                    <div className="bg-[var(--azul-bg)] border border-[var(--azul-border)] text-[var(--azul)] px-3.5 py-2.5 rounded-xl text-xs space-y-1">
+                      <div className="flex items-center gap-2 font-bold">
                         <Mail size={14} />
                         <span>Recuperación con Código de Verificación</span>
                       </div>
-                      <div className="text-[10px] opacity-90 font-semibold">
-                        Ingresá tu correo electrónico institucional. Te enviaremos un código numérico de 6 dígitos para validar tu identidad y crear una nueva contraseña.
+                      <div className="text-[11px] opacity-90">
+                        Ingresá tu correo electrónico institucional. Te enviaremos un código numérico de 6 dígitos para validar tu identidad.
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Correo Electrónico</label>
+                      <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Correo Electrónico</label>
                       <input
                         required
                         type="email"
                         placeholder="correo@ejemplo.com"
-                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-sm text-[var(--text)] focus:border-[var(--verde)] transition-colors"
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                       />
@@ -605,13 +602,13 @@ function LoginContent() {
                     <button
                       type="submit"
                       disabled={loading || !forgotEmail.trim()}
-                      className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-4"
+                      className="w-full bg-[var(--verde)] text-black rounded-xl py-2.5 px-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 mt-2 text-sm"
                     >
                       {loading ? (
-                        <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-gray-400 border-t-black rounded-full animate-spin" />
                       ) : (
                         <>
-                          <Mail size={18} />
+                          <Mail size={16} />
                           Enviar Código de 6 Dígitos
                         </>
                       )}
@@ -619,22 +616,22 @@ function LoginContent() {
                   </form>
                 ) : (
                   <form onSubmit={handleVerifyAndResetPassword} className="space-y-4">
-                    <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-between">
+                    <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-3.5 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between">
                       <div className="truncate mr-2">
-                        <span className="opacity-75 font-normal block text-[10px]">Código enviado a:</span>
+                        <span className="opacity-75 block text-[10px]">Código enviado a:</span>
                         <span className="font-mono font-bold text-xs">{forgotEmail}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => { setForgotStep(1); setErrorMsg(""); }}
-                        className="text-[10px] uppercase font-black underline hover:opacity-80 shrink-0"
+                        className="text-[11px] font-bold underline hover:opacity-80 shrink-0"
                       >
                         Cambiar
                       </button>
                     </div>
 
                     <div className="space-y-2 py-1">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block text-center">
+                      <label className="text-xs font-semibold text-[var(--text3)] mb-1 block text-center">
                         Código de Verificación (6 dígitos)
                       </label>
                       <OtpVerificationInput
@@ -646,7 +643,7 @@ function LoginContent() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">
+                      <label className="text-xs font-semibold text-[var(--text3)] block">
                         Nueva Contraseña (Mín. 8 caracteres)
                       </label>
                       <div className="relative">
@@ -656,20 +653,20 @@ function LoginContent() {
                           placeholder="••••••••"
                           value={forgotNewPass}
                           onChange={(e) => setForgotNewPass(e.target.value)}
-                          className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 pr-12 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm"
+                          className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 pr-11 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] transition-colors text-sm"
                         />
                         <button
                           type="button"
                           onClick={() => setShowForgotPass(p => !p)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors"
                         >
-                          {showForgotPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showForgotPass ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">
+                      <label className="text-xs font-semibold text-[var(--text3)] block">
                         Confirmar Nueva Contraseña
                       </label>
                       <input
@@ -678,7 +675,7 @@ function LoginContent() {
                         placeholder="••••••••"
                         value={forgotConfirmPass}
                         onChange={(e) => setForgotConfirmPass(e.target.value)}
-                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm"
+                        className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] transition-colors text-sm"
                       />
                     </div>
 
@@ -687,7 +684,7 @@ function LoginContent() {
                         type="button"
                         disabled={loading || forgotTimer > 0}
                         onClick={handleSendRecoveryCode}
-                        className="text-[11px] font-bold text-[var(--text3)] hover:text-[var(--verde)] disabled:opacity-50 transition-colors"
+                        className="text-xs font-medium text-[var(--text3)] hover:text-[var(--verde)] disabled:opacity-50 transition-colors"
                       >
                         {forgotTimer > 0 ? `Reenviar código en ${forgotTimer}s` : "¿No te llegó? Reenviar código"}
                       </button>
@@ -696,13 +693,13 @@ function LoginContent() {
                     <button
                       type="submit"
                       disabled={loading || forgotCode.length !== 6 || forgotNewPass.length < 8}
-                      className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2"
+                      className="w-full bg-[var(--verde)] text-black rounded-xl py-2.5 px-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 mt-2 text-sm"
                     >
                       {loading ? (
-                        <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-gray-400 border-t-black rounded-full animate-spin" />
                       ) : (
                         <>
-                          <KeyRound size={18} />
+                          <KeyRound size={16} />
                           Restablecer Contraseña
                         </>
                       )}
@@ -711,87 +708,87 @@ function LoginContent() {
                 )}
               </div>
             ) : activeMode === "login" ? (
-              <form onSubmit={handleLogin} className="space-y-5 animate-fade-in">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Correo Electrónico</label>
+                  <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Correo Electrónico</label>
                   <input required type="email" placeholder="correo@ejemplo.com"
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-sm text-[var(--text)] focus:border-[var(--verde)] transition-colors"
                     value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Contraseña</label>
+                  <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Contraseña</label>
                   <div className="relative">
                     <input required type={showPassword ? "text" : "password"} placeholder="••••••••"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 pr-12 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 pr-11 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] transition-colors text-sm"
                       value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button type="button" onClick={() => setShowPassword(p => !p)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                   <div className="flex justify-end mt-1">
                     <button type="button" onClick={handleForgotPassword}
-                      className="text-[10px] font-black uppercase text-[var(--text3)] hover:text-[var(--verde)] transition-colors">
+                      className="text-xs font-medium text-[var(--text3)] hover:text-[var(--verde)] transition-colors">
                       ¿Olvidaste tu contraseña?
                     </button>
                   </div>
                 </div>
                 <button type="submit" disabled={loading}
-                  className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-6">
-                  {loading ? <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" /> : "Ingresar al Portal"}
+                  className="w-full bg-[var(--verde)] text-black rounded-xl py-2.5 px-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 mt-4 text-sm">
+                  {loading ? <div className="w-4 h-4 border-2 border-gray-400 border-t-black rounded-full animate-spin" /> : "Ingresar al Portal"}
                 </button>
-                <div className="text-center">
-                  <span className="text-[9px] text-[var(--text3)] uppercase font-black tracking-[0.2em]">Acceso institucional y jerárquico</span>
+                <div className="text-center pt-2">
+                  <span className="text-[10px] text-[var(--text3)] uppercase font-semibold tracking-wider">Acceso institucional y jerárquico</span>
                 </div>
               </form>
             ) : registerStep === 1 ? (
               /* REGISTRO — Paso 1: Datos Personales */
-              <form onSubmit={handleSendRegisterCode} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar animate-fade-in">
+              <form onSubmit={handleSendRegisterCode} className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
 
-                {/* Nombres y Apellidos con Avatar 100% redondo de costado */}
-                <div className="flex items-center gap-3.5 sm:gap-4">
+                {/* Nombres y Apellidos con Avatar */}
+                <div className="flex items-center gap-3">
                   <div className="shrink-0" title="Tu avatar institucional se actualiza en vivo al escribir">
                     <UserAvatar
                       name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
-                      size={64}
+                      size={54}
                       animate="always"
                       showRing={true}
-                      className="shadow-md ring-2 ring-[var(--verde)]/50 transition-all duration-300 rounded-full"
+                      className="ring-1 ring-[var(--verde)]/40 rounded-full"
                     />
                   </div>
 
-                  <div className="flex-1 min-w-0 space-y-2.5">
+                  <div className="flex-1 min-w-0 space-y-2">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-1">Nombres</label>
+                      <label className="text-xs font-semibold text-[var(--text3)] block">Nombres</label>
                       <input required type="text" placeholder="Juan"
-                        className="w-full min-w-0 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 sm:p-3.5 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                        className="w-full min-w-0 bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-2 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
                         value={nombres} onChange={(e) => setNombres(e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-1">Apellidos</label>
+                      <label className="text-xs font-semibold text-[var(--text3)] block">Apellidos</label>
                       <input required type="text" placeholder="Pérez"
-                        className="w-full min-w-0 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 sm:p-3.5 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                        className="w-full min-w-0 bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3 py-2 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
                         value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Correo Electrónico Institucional</label>
+                  <label className="text-xs font-semibold text-[var(--text3)] block">Correo Institucional</label>
                   <input required type="email" placeholder="ejemplo@gmail.com"
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
                     value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">DNI</label>
+                    <label className="text-xs font-semibold text-[var(--text3)] block">DNI</label>
                     <input required type="text" inputMode="numeric" maxLength={8} placeholder="12345678"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
                       value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))} />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Teléfono</label>
+                    <label className="text-xs font-semibold text-[var(--text3)] block">Teléfono</label>
                     <PhoneInputWithCountry
                       required
                       value={telefono}
@@ -801,45 +798,45 @@ function LoginContent() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] block ml-2">Contraseña (Mín. 8 caracteres)</label>
+                  <label className="text-xs font-semibold text-[var(--text3)] block">Contraseña (Mín. 8 caracteres)</label>
                   <div className="relative">
                     <input required type={showPassword ? "text" : "password"} placeholder="••••••••"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 pr-12 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] text-sm transition-all"
+                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 pr-11 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
                       value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button type="button" onClick={() => setShowPassword(p => !p)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
 
                 <button type="submit" disabled={loading}
-                  className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2">
+                  className="w-full bg-[var(--verde)] text-black rounded-xl py-2.5 px-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 mt-2 text-sm">
                   {loading
-                    ? <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                    ? <div className="w-4 h-4 border-2 border-gray-400 border-t-black rounded-full animate-spin" />
                     : <>
-                        <Mail size={18} />
+                        <Mail size={16} />
                         Continuar: Verificar Correo
                       </>}
                 </button>
 
-                {/* Texto de registro institucional sutil / pop-out en la parte inferior */}
-                <div className="pt-2 text-center">
+                {/* Información institucional */}
+                <div className="pt-1 text-center">
                   <button
                     type="button"
                     onClick={() => setShowRegisterInfo(p => !p)}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[var(--text3)] hover:text-[var(--text)] transition-colors py-1 px-2.5 rounded-lg hover:bg-white/5"
+                    className="inline-flex items-center gap-1.5 text-xs text-[var(--text3)] hover:text-[var(--text)] transition-colors py-1 px-2 rounded-lg"
                   >
-                    <Info size={12} className="text-[var(--text3)]" />
+                    <Info size={13} className="text-[var(--text3)]" />
                     <span>¿Cómo funciona la aprobación de cuenta?</span>
                   </button>
                   {showRegisterInfo && (
-                    <div className="mt-2 text-left bg-[var(--bg3)] border border-[var(--border)] p-3.5 rounded-2xl text-[11px] text-[var(--text3)] leading-relaxed animate-fade-in space-y-1">
-                      <div className="font-black text-[var(--text2)] flex items-center gap-1.5 text-xs">
-                        <BookOpen size={14} className="text-[var(--azul)] shrink-0" />
+                    <div className="mt-2 text-left bg-[var(--bg3)] border border-[var(--border)] p-3 rounded-xl text-xs text-[var(--text3)] leading-relaxed space-y-1">
+                      <div className="font-semibold text-[var(--text2)] flex items-center gap-1.5 text-xs">
+                        <BookOpen size={13} className="text-[var(--azul)] shrink-0" />
                         <span>Registro de la Institución</span>
                       </div>
-                      <p className="text-[10px]">
+                      <p className="text-[11px]">
                         Los alumnos quedan en espera de aprobación del preceptor. Si fuiste pre-autorizado por la administración (como administrador, directivo, preceptor o docente), registrate con tu correo y tu rol se activará automáticamente.
                       </p>
                     </div>
@@ -847,24 +844,24 @@ function LoginContent() {
                 </div>
               </form>
             ) : (
-              /* REGISTRO — Paso 2: Verificación OTP con casilla animada v3 */
-              <form onSubmit={handleVerifyAndCompleteRegister} className="space-y-4 animate-fade-in">
-                <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-between">
+              /* REGISTRO — Paso 2: Verificación OTP */
+              <form onSubmit={handleVerifyAndCompleteRegister} className="space-y-4">
+                <div className="bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] px-3.5 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between">
                   <div className="truncate mr-2">
-                    <span className="opacity-75 font-normal block text-[10px]">Código de validación enviado a:</span>
+                    <span className="opacity-75 block text-[10px]">Código de validación enviado a:</span>
                     <span className="font-mono font-bold text-xs">{email}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => { setRegisterStep(1); setErrorMsg(""); }}
-                    className="text-[10px] uppercase font-black underline hover:opacity-80 shrink-0"
+                    className="text-[11px] font-bold underline hover:opacity-80 shrink-0"
                   >
                     Modificar
                   </button>
                 </div>
 
-                <div className="space-y-2 py-2">
-                  <label className="text-[10px] font-black uppercase text-[var(--text3)] block text-center">
+                <div className="space-y-2 py-1">
+                  <label className="text-xs font-semibold text-[var(--text3)] block text-center">
                     Ingresá el código numérico de 6 dígitos
                   </label>
                   <OtpVerificationInput
@@ -880,7 +877,7 @@ function LoginContent() {
                     type="button"
                     disabled={loading || registerTimer > 0}
                     onClick={handleResendRegisterCode}
-                    className="text-[11px] font-bold text-[var(--text3)] hover:text-[var(--verde)] disabled:opacity-50 transition-colors"
+                    className="text-xs font-medium text-[var(--text3)] hover:text-[var(--verde)] disabled:opacity-50 transition-colors"
                   >
                     {registerTimer > 0 ? `Reenviar código en ${registerTimer}s` : "¿No te llegó? Reenviar código"}
                   </button>
@@ -889,23 +886,23 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={loading || registerOtpCode.length !== 6}
-                  className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-2"
+                  className="w-full bg-[var(--verde)] text-black rounded-xl py-2.5 px-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 mt-2 text-sm"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-black rounded-full animate-spin" />
                   ) : (
                     <>
-                      <Sparkles size={18} />
+                      <Sparkles size={16} />
                       Validar y Completar Registro
                     </>
                   )}
                 </button>
 
-                <div className="pt-2 text-center space-y-1">
-                  <span className="text-[10px] text-[var(--text3)] block">
+                <div className="pt-1 text-center space-y-1">
+                  <span className="text-[11px] text-[var(--text3)] block">
                     Al confirmar, validaremos tu casilla institucional y crearemos tu usuario de acceso.
                   </span>
-                  <span className="text-[10px] text-[var(--verde)] opacity-90 block font-medium">
+                  <span className="text-[11px] text-[var(--verde)] opacity-90 block font-medium">
                     Si el correo llegó a la carpeta Spam, el código de 6 dígitos es 100% válido.
                   </span>
                 </div>

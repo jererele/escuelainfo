@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.35.0";
-export const APP_BUILD_DATE = "07/10/2026 14:10 hs";
+export const APP_VERSION = "v2.36.0";
+export const APP_BUILD_DATE = "07/10/2026 16:35 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Base Normativa Integral de Licencias Educativas de Chubut (DB Licencias - SAE, LicenciasDBModal.tsx, NewAbsenceModal.tsx y AusenciasTab.tsx): Se incorporó el nomenclador completo y oficial de licencias estatutarias para la Provincia del Chubut con 166 artículos reglamentarios (96 de Personal Docente bajo Ley 2838 / Dto. 604 y 70 de Personal Auxiliar bajo CCT Auxiliares de la Educación). 1) Base de Datos Tipada (licenciasDB.ts): Mapeo exhaustivo de artículos, motivos SAE, duraciones máximas, goce de haberes, condiciones estatutarias, autoridad otorgante y marco normativo legal con funciones de búsqueda multicriterio. 2) Modal Interactivo de Consulta (LicenciasDBModal.tsx): Visor normativo con filtros por Personal (Docente/Auxiliar/Todos), estado de haberes (Con Goce/Sin Goce/Parcial), categorías temáticas, copia rápida de citas y selección directa. 3) Integración en Creación de Licencias (NewAbsenceModal.tsx): Autocompletado del catálogo completo de 166 artículos y botón de exploración rápida. 4) Visibilidad Estatutaria en Ausencias (AusenciasTab.tsx): Acceso directo desde autogestión y badges reglamentarios en cada fila de inasistencia."
+  "Rediseño Integral del Sistema Visual Institucional (Anti-Vibecoding & Ecosistema de Superficies Sólidas): Se llevó a cabo una modernización profunda de la estética de toda la plataforma para erradicar patrones genéricos de IA / vibecoding (partículas flotantes de canvas, orbes fluorescentes palpitantes, radios de curvatura excesivos de 32-40px y rebotes espasmódicos) e instaurar un estándar de diseño de software SaaS de grado institucional (Linear / Vercel design system). 1) Fondo Arquitectónico (InstitutionalBackground): Reemplazo del canvas de estrellas por una sutil cuadrícula milimétrica con halo ambiental de cero impacto computacional en CPU/GPU. 2) Paleta y Tokens de Superficie: Estandarización de fondos (#0b0f17, #111827, #1a2333), bordes con contraste limpio y eliminación de neones sobrecargados. 3) Jerarquía de Bordes y Contenedores: Normalización de todas las ventanas modales, tablas y paneles principales a 'rounded-2xl', subpaneles y campos a 'rounded-xl', e insignias/botones a 'rounded-lg'. 4) Microinteracciones Profesionales: Sustitución de escalados y rebotes acelerados por transiciones suaves de color y opacidad con feedback táctil refinado en más de 50 componentes y vistas."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.36.0",
+    date: "07/10/2026 16:35 hs",
+    notes: [
+      "Rediseño Integral del Sistema Visual Institucional (Anti-Vibecoding & Ecosistema de Superficies Sólidas): Se llevó a cabo una modernización profunda de la estética de toda la plataforma para erradicar patrones genéricos de IA / vibecoding (partículas flotantes de canvas, orbes fluorescentes palpitantes, radios de curvatura excesivos de 32-40px y rebotes espasmódicos) e instaurar un estándar de diseño de software SaaS de grado institucional (Linear / Vercel design system). 1) Fondo Arquitectónico (InstitutionalBackground): Reemplazo del canvas de estrellas por una sutil cuadrícula milimétrica con halo ambiental de cero impacto computacional en CPU/GPU. 2) Paleta y Tokens de Superficie: Estandarización de fondos (#0b0f17, #111827, #1a2333), bordes con contraste limpio y eliminación de neones sobrecargados. 3) Jerarquía de Bordes y Contenedores: Normalización de todas las ventanas modales, tablas y paneles principales a 'rounded-2xl', subpaneles y campos a 'rounded-xl', e insignias/botones a 'rounded-lg'. 4) Microinteracciones Profesionales: Sustitución de escalados y rebotes acelerados por transiciones suaves de color y opacidad con feedback táctil refinado en más de 50 componentes y vistas."
+    ]
+  },
   {
     version: "v2.35.0",
     date: "07/10/2026 14:10 hs",

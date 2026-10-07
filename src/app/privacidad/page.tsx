@@ -17,7 +17,7 @@ export default function PrivacidadPage() {
         </p>
       </div>
 
-      <div className="bg-[var(--bg3)]/50 backdrop-blur-md rounded-[32px] border border-[var(--border)] p-6 md:p-10 space-y-8 text-[var(--text2)] text-sm leading-relaxed shadow-sm">
+      <div className="bg-[var(--bg3)]/50 backdrop-blur-md rounded-2xl border border-[var(--border)] p-6 md:p-10 space-y-8 text-[var(--text2)] text-sm leading-relaxed shadow-sm">
         <section className="space-y-3">
           <h2 className="text-lg font-black text-[var(--text)] border-b border-[var(--border)] pb-2">
             1. Datos Recopilados

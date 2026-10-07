@@ -54,7 +54,7 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-[var(--amarillo)] animate-pulse inline-block"></span>
             Solicitudes de Acceso Pendientes
           </h3>
-          <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+          <div className="card glass rounded-2xl border border-[var(--border)] overflow-hidden">
             <table className="w-full text-left">
               <thead className="bg-[var(--bg3)]/50">
                 <tr>
@@ -85,14 +85,14 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
                       <td className="p-6 text-right space-x-2">
                         <button
                           onClick={() => onApproveRequest(u)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-xl text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-lg text-xs font-bold hover:bg-[var(--verde)] hover:text-black transition-colors cursor-pointer"
                         >
                           <Check size={13} strokeWidth={2.5} />
                           <span>Aprobar</span>
                         </button>
                         <button
                           onClick={() => onRejectRequest(u)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-xl text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] rounded-lg text-xs font-bold hover:bg-[var(--rojo)] hover:text-white transition-colors cursor-pointer"
                         >
                           <X size={13} strokeWidth={2.5} />
                           <span>Rechazar</span>
@@ -109,30 +109,30 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
 
       {/* FICHA DE VERSIÓN Y ESTADO DEL SISTEMA (Solo Admin) */}
       {userProfile?.rol === 'admin' && (
-        <div className="card glass rounded-[28px] p-6 border border-[var(--border)] bg-[var(--bg2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm mb-8">
+        <div className="card glass rounded-2xl p-5 sm:p-6 border border-[var(--border)] bg-[var(--bg2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] flex items-center justify-center shrink-0">
-              <Zap size={20} strokeWidth={2.5} />
+            <div className="w-10 h-10 rounded-xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] flex items-center justify-center shrink-0">
+              <Zap size={18} strokeWidth={2.5} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-black text-base text-[var(--text)]">Versión del Sistema EscuelaInfo</h4>
+                <h4 className="font-bold text-base text-[var(--text)]">Versión del Sistema EscuelaInfo</h4>
                 <button
                   onClick={onOpenVersionModal}
-                  className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:scale-105 transition-all cursor-pointer"
+                  className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde-border)]/20 transition-colors cursor-pointer"
                   title="Ver novedades de la versión"
                 >
                   {APP_VERSION}
                 </button>
               </div>
-              <p className="text-xs text-[var(--text2)] font-semibold mt-0.5">
+              <p className="text-xs text-[var(--text2)] font-medium mt-0.5">
                 Estado: <span className="inline-flex items-center gap-1 text-[var(--verde)] font-bold"><Check size={12} strokeWidth={2.5} /> Sistema Actualizado</span> · Compilación: {APP_BUILD_DATE}
               </p>
             </div>
           </div>
           <button
             onClick={onOpenVersionModal}
-            className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black px-4 py-2 rounded-xl border border-[var(--verde-border)] transition-all cursor-pointer shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--verde)] bg-[var(--verde-bg)] hover:bg-[var(--verde)] hover:text-black px-3.5 py-2 rounded-lg border border-[var(--verde-border)] transition-colors cursor-pointer shadow-xs"
           >
             <span>Ver Novedades</span>
             <ArrowRight size={13} strokeWidth={2.5} />
@@ -141,22 +141,22 @@ export const ConfiguracionTab: React.FC<ConfiguracionTabProps> = ({
       )}
 
       <div>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-5 mb-8">
           <div>
-            <h2 className="text-3xl font-black title-font text-[var(--text)]">Configuración de Accesos</h2>
-            <p className="text-[var(--text2)]">Gestión de colaboradores, directivos y preceptores autorizados.</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold title-font text-[var(--text)]">Configuración de Accesos</h2>
+            <p className="text-[var(--text2)] text-xs sm:text-sm mt-0.5">Gestión de colaboradores, directivos y preceptores autorizados.</p>
           </div>
           {isAdmin && (
             <button 
               onClick={onOpenUserModal}
-              className="bg-black text-white font-bold px-8 py-4 rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer"
+              className="bg-black text-white font-bold px-5 py-2.5 rounded-xl hover:brightness-110 transition-colors shadow-xs cursor-pointer text-sm"
             >
               + Autorizar Colaborador
             </button>
           )}
         </div>
 
-        <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+        <div className="card glass rounded-2xl border border-[var(--border)] overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-[var(--bg3)]/50">
               <tr>

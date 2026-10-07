@@ -81,16 +81,16 @@ export const LicenciasDBModal: React.FC<LicenciasDBModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div 
-        className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[var(--bg)] border border-[var(--border)] rounded-[32px] shadow-2xl overflow-hidden text-[var(--text)] transition-all"
+        className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden text-[var(--text)] transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
         <div className="p-5 sm:p-6 border-b border-[var(--border)] bg-[var(--bg2)]/60 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] flex items-center justify-center shrink-0 shadow-sm">
-              <BookOpen size={24} />
+            <div className="w-10 h-10 rounded-xl bg-[var(--verde-bg)] border border-[var(--verde-border)] text-[var(--verde)] flex items-center justify-center shrink-0 shadow-xs">
+              <BookOpen size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">

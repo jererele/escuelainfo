@@ -201,7 +201,7 @@ function ScanContent() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[var(--bg)] text-[var(--text)]">
-      <div className="w-full max-w-md p-8 glass rounded-[32px] border border-[var(--border)] shadow-2xl flex flex-col items-center text-center animate-zoom-in">
+      <div className="w-full max-w-md p-8 glass rounded-2xl border border-[var(--border)] shadow-2xl flex flex-col items-center text-center animate-zoom-in">
         <div className="mb-8">
           <EscuelaInfoLogo size={48} />
           <h1 className="text-2xl font-black title-font mt-4">Escuela<span className="text-[var(--verde)]">Info</span></h1>

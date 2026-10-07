@@ -97,13 +97,13 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--bg2)] p-4 rounded-[24px] border border-[var(--border)] mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3 bg-[var(--bg2)] p-3 sm:p-4 rounded-xl border border-[var(--border)] mb-6">
           <div className="relative w-full">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={20} /></span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)]"><Search size={16} /></span>
             <input 
               type="text" 
               placeholder="Buscar alumnos por nombre, DNI o curso..." 
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 outline-none focus:border-[var(--verde)] transition-all text-sm"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg py-2 pl-10 pr-4 outline-none focus:border-[var(--verde)] transition-colors text-sm font-medium"
               value={studentSearchQuery}
               onChange={(e) => setStudentSearchQuery(e.target.value)}
             />
@@ -113,12 +113,12 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
         {/* VISTA MÓVIL: Tarjetas de alumnos filtrados (< md) */}
         <div className="md:hidden space-y-3 mb-6">
           {filteredAlumnos.length === 0 ? (
-            <div className="card glass rounded-2xl border border-[var(--border)] p-8 text-center text-[var(--text3)] italic text-sm">
+            <div className="card glass rounded-xl border border-[var(--border)] p-8 text-center text-[var(--text3)] italic text-sm">
               No se encontraron alumnos.
             </div>
           ) : (
             filteredAlumnos.map(al => (
-              <div key={al.id} className="card glass rounded-2xl border border-[var(--border)] p-4 space-y-2">
+              <div key={al.id} className="card glass rounded-xl border border-[var(--border)] p-4 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
                     <UserAvatar name={al.nombre} email={al.email} size={38} />
@@ -145,7 +145,7 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                       onClick={() => isAdmin && onOpenAddStudent(al)}
                       disabled={!isAdmin}
                       className={`inline-block text-center px-2.5 py-0.5 bg-[var(--bg3)] border border-[var(--border)] rounded-lg text-[10px] font-bold leading-tight ${
-                        isAdmin ? "hover:border-[var(--verde)] cursor-pointer active:scale-95" : ""
+                        isAdmin ? "hover:border-[var(--verde)] cursor-pointer" : ""
                       }`}
                       title={isAdmin ? "Hacé clic para cambiar o asignar curso" : undefined}
                     >
@@ -157,7 +157,7 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
                       onClick={() => isAdmin && onOpenAddStudent(al)}
                       disabled={!isAdmin}
                       className={`inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--amarillo-bg)] border border-[var(--amarillo-border)] text-[var(--amarillo)] rounded-lg text-[10px] font-bold ${
-                        isAdmin ? "hover:border-[var(--verde)] hover:text-[var(--verde)] cursor-pointer active:scale-95" : ""
+                        isAdmin ? "hover:border-[var(--verde)] hover:text-[var(--verde)] cursor-pointer" : ""
                       }`}
                       title={isAdmin ? "Hacé clic para asignar curso" : undefined}
                     >
@@ -172,7 +172,7 @@ export const AlumnosTab: React.FC<AlumnosTabProps> = ({
         </div>
 
         {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
-        <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+        <div className="hidden md:block card glass rounded-2xl border border-[var(--border)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[550px]">
               <thead className="bg-[var(--bg3)]/50">

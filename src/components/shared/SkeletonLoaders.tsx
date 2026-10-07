@@ -23,7 +23,7 @@ export function SkeletonStatCards() {
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="glass p-3 sm:p-6 rounded-2xl sm:rounded-[28px] border border-[var(--border)] space-y-2 sm:space-y-3"
+          className="glass p-3 sm:p-6 rounded-xl border border-[var(--border)] space-y-2 sm:space-y-3"
         >
           <SkeletonBar className="h-7 sm:h-10 w-12 sm:w-16" />
           <SkeletonBar className="h-2.5 w-3/4" />
@@ -127,7 +127,7 @@ export function SkeletonExamGrid({ count = 3 }: { count?: number }) {
 // ─── Esqueleto para la lista de ausencias (tabla) ────────────────────────────
 export function SkeletonAbsenceList({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="card glass rounded-[32px] border border-[var(--border)] overflow-hidden">
+    <div className="card glass rounded-2xl border border-[var(--border)] overflow-hidden">
       <div className="p-5 sm:p-6 border-b border-[var(--border)] flex justify-between items-center">
         <SkeletonBar className="h-6 w-40" />
         <SkeletonBar className="h-8 w-28 rounded-xl" />

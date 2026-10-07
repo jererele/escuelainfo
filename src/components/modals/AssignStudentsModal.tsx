@@ -126,7 +126,7 @@ export default function AssignStudentsModal({ isOpen, onClose, onSuccess, curso,
       className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[var(--bg)] w-full max-w-2xl max-h-[90vh] rounded-[32px] border border-[var(--border)] shadow-2xl animate-zoom-in flex flex-col overflow-hidden">
+      <div className="bg-[var(--bg)] w-full max-w-2xl max-h-[90vh] rounded-2xl border border-[var(--border)] shadow-2xl animate-zoom-in flex flex-col overflow-hidden">
         
         {/* Header */}
         <div className="flex justify-between items-start p-6 sm:p-8 border-b border-[var(--border)] shrink-0">

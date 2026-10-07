@@ -137,7 +137,7 @@ export const AuditoriaTab: React.FC<AuditoriaTabProps> = ({ logs }) => {
       </div>
 
       {/* VISTA ESCRITORIO (>= md): Tabla completa con scroll horizontal garantizado */}
-      <div className="hidden md:block card glass rounded-[32px] border border-[var(--border)] overflow-hidden shadow-sm">
+      <div className="hidden md:block card glass rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left min-w-[760px]">
             <thead className="bg-[var(--bg3)]/80 border-b border-[var(--border)]">

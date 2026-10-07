@@ -40,7 +40,7 @@ export default function VersionModal({ isOpen, onClose }: VersionModalProps) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full max-w-xl rounded-[32px] border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col max-h-[85vh]">
+      <div className="bg-[var(--bg)] w-full max-w-xl rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="p-6 border-b border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">

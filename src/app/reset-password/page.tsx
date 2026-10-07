@@ -62,35 +62,32 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 bg-transparent py-10">
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--verde-bg)] rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--azul-bg)] rounded-full blur-[120px] animate-pulse" />
-
-      <div className="login-box glass animate-zoom-in w-full max-w-[480px] p-8 md:p-12 rounded-[40px] relative z-10 border border-white/40 shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center relative px-4 bg-transparent py-10">
+      <div className="login-box w-full max-w-[440px] p-6 sm:p-9 rounded-2xl relative z-10 border border-[var(--border)] bg-[var(--bg2)] shadow-xl sm:shadow-2xl">
         {success ? (
           <div className="text-center py-6 animate-fade-in">
-            <div className="w-16 h-16 bg-[var(--verde-bg)] text-[var(--verde)] rounded-full flex items-center justify-center mx-auto mb-6 border border-[var(--verde-border)] shadow-lg animate-bounce">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <div className="w-14 h-14 bg-[var(--verde-bg)] text-[var(--verde)] rounded-2xl flex items-center justify-center mx-auto mb-5 border border-[var(--verde-border)] shadow-sm">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-black mb-2 text-[var(--text)]">¡Contraseña Cambiada!</h2>
-            <p className="text-[var(--text2)] text-sm font-medium mb-4">
+            <h2 className="text-xl font-bold mb-2 text-[var(--text)]">¡Contraseña Cambiada!</h2>
+            <p className="text-[var(--text2)] text-sm font-medium mb-3">
               Tu contraseña fue restablecida con éxito.
             </p>
-            <p className="text-[var(--text3)] text-xs">Redirigiendo al login...</p>
+            <p className="text-[var(--text3)] text-xs">Redirigiendo al inicio de sesión...</p>
           </div>
         ) : (
           <>
-            <div className="text-center mb-8 flex flex-col items-center">
-              <div className="w-16 h-16 bg-[var(--verde-bg)] border border-[var(--verde-border)] rounded-2xl flex items-center justify-center text-[var(--verde)] shadow-md mb-4 p-2.5">
+            <div className="text-center mb-7 flex flex-col items-center">
+              <div className="w-14 h-14 bg-[var(--verde-bg)] border border-[var(--verde-border)] rounded-xl flex items-center justify-center text-[var(--verde)] mb-3 p-2">
                 <svg className="w-full h-full" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M 256 80 L 416 160 L 256 240 L 96 160 Z" fill="url(#grad-emerald-reset)" />
-                  <path d="M 416 160 C 430 200, 440 240, 440 260" stroke="currentColor" strokeWidth="12" strokeLinecap="round" />
+                  <path d="M 416 160 C 430 200, 440 240, 440 260" stroke="currentColor" strokeWidth={12} strokeLinecap="round" />
                   <circle cx="440" cy="275" r="20" fill="#F59E0B" />
-                  <path d="M 160 220 L 160 360 C 160 400, 220 420, 256 420" stroke="url(#grad-blue-reset)" strokeWidth="32" strokeLinecap="round" />
-                  <path d="M 352 220 L 352 360 C 352 400, 292 420, 256 420" stroke="url(#grad-emerald-reset)" strokeWidth="32" strokeLinecap="round" />
-                  <line x1="256" y1="200" x2="256" y2="440" stroke="currentColor" strokeWidth="28" strokeLinecap="round" />
+                  <path d="M 160 220 L 160 360 C 160 400, 220 420, 256 420" stroke="url(#grad-blue-reset)" strokeWidth={32} strokeLinecap="round" />
+                  <path d="M 352 220 L 352 360 C 352 400, 292 420, 256 420" stroke="url(#grad-emerald-reset)" strokeWidth={32} strokeLinecap="round" />
+                  <line x1="256" y1="200" x2="256" y2="440" stroke="currentColor" strokeWidth={28} strokeLinecap="round" />
                   <circle cx="256" cy="160" r="28" fill="currentColor" />
                   <circle cx="256" cy="160" r="14" fill="var(--bg)" />
                   <circle cx="160" cy="220" r="22" fill="#3B82F6" />
@@ -107,44 +104,44 @@ export default function ResetPasswordPage() {
                   </defs>
                 </svg>
               </div>
-              <div className="text-[2.8rem] font-black tracking-tighter mb-2 title-font leading-none">
+              <div className="text-3xl font-black tracking-tight mb-1 title-font leading-none">
                 Escuela<span className="text-[var(--verde)]">Info</span>
               </div>
-              <div className="text-[0.85rem] text-[var(--text2)] font-black uppercase tracking-widest">
+              <div className="text-xs text-[var(--text2)] font-semibold tracking-wider uppercase">
                 Nueva Contraseña
               </div>
             </div>
 
             {errorMsg && (
-              <div className="bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] p-4 rounded-xl text-xs font-bold text-center mb-5 animate-fade-in">
+              <div className="bg-[var(--rojo-bg)] text-[var(--rojo)] border border-[var(--rojo-border)] p-3 rounded-xl text-xs font-medium text-center mb-4">
                 {errorMsg}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Nueva Contraseña</label>
+                <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Nueva Contraseña</label>
                 <div className="relative">
                   <input required type={showPassword ? "text" : "password"} placeholder="Mínimo 8 caracteres"
-                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 pr-12 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 pr-11 outline-none font-medium text-sm text-[var(--text)] focus:border-[var(--verde)] transition-colors"
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                   <button type="button" onClick={() => setShowPassword(p => !p)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Confirmar Nueva Contraseña</label>
+                <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Confirmar Nueva Contraseña</label>
                 <input required type="password" placeholder="Repetí tu nueva contraseña"
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all"
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-sm text-[var(--text)] focus:border-[var(--verde)] transition-colors"
                   value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
               </div>
 
               <button type="submit" disabled={loading}
-                className="w-full bg-[var(--verde)] text-black rounded-2xl p-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-3 hover:-translate-y-1 shadow-md active:scale-95 disabled:opacity-50 mt-6">
-                {loading ? <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" /> : "Guardar Nueva Contraseña"}
+                className="w-full bg-[var(--verde)] text-black rounded-xl py-2.5 px-4 font-bold cursor-pointer transition-all flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 mt-4 text-sm">
+                {loading ? <div className="w-4 h-4 border-2 border-gray-400 border-t-black rounded-full animate-spin" /> : "Guardar Nueva Contraseña"}
               </button>
             </form>
           </>

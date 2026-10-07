@@ -85,7 +85,7 @@ export default function ContactForm({ showToast }: Props) {
   };
 
   return (
-    <div className="bg-[var(--bg3)]/80 backdrop-blur-md p-8 rounded-[32px] border border-[var(--border)] shadow-sm">
+    <div className="bg-[var(--bg3)]/80 backdrop-blur-md p-8 rounded-2xl border border-[var(--border)] shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="text-[var(--verde)]" size={20} />
         <h2 className="title-font font-black text-xl text-[var(--text)]">Email de Consultas</h2>

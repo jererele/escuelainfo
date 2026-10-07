@@ -68,10 +68,7 @@ export default function PreceptorCoverageModal({
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="card glass relative w-full max-w-lg rounded-[28px] border border-[var(--azul-border)] bg-[var(--bg2)]/95 shadow-2xl p-6 sm:p-7 space-y-5 overflow-hidden">
-        {/* Glow de fondo */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="card glass relative w-full max-w-lg rounded-2xl border border-[var(--azul-border)] bg-[var(--bg2)]/95 shadow-2xl p-6 sm:p-7 space-y-5 overflow-hidden">
         {/* Encabezado */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">

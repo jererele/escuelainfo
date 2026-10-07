@@ -99,7 +99,7 @@ export const MonitorAsistenciaTab = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {statsPorCurso.map(stats => (
-            <div key={stats.nombre} className="card glass p-6 rounded-[32px] border border-[var(--border)] shadow-sm hover:scale-[1.02] transition-transform">
+            <div key={stats.nombre} className="card glass p-5 sm:p-6 rounded-2xl border border-[var(--border)] shadow-xs transition-colors hover:border-[var(--border2)]">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-black text-[var(--text)]">{stats.nombre}</h3>
                 <div className="flex items-center gap-1 text-[var(--text2)] font-bold text-sm">
