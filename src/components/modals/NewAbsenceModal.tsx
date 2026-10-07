@@ -35,8 +35,15 @@ import {
   GraduationCap,
   Building2,
   ShieldAlert,
-  Info
+  Info,
+  BookOpen
 } from "lucide-react";
+import {
+  TODAS_LAS_LICENCIAS,
+  LicenciaItem,
+  matchAusenciaConDBLicencias
+} from "@/lib/licenciasDB";
+import LicenciasDBModal from "@/components/modals/LicenciasDBModal";
 
 export type StaffRole = "profesor" | "preceptor" | "directivo";
 
@@ -454,6 +461,45 @@ export const ARTICULOS_LICENCIA: ArticuloLicencia[] = [
   }
 ];
 
+export function buildArticuloFromLicencia(lic: LicenciaItem): ArticuloLicencia {
+  const isAnual = lic.duracionMaxima.toLowerCase().includes("año") || lic.duracionMaxima.toLowerCase().includes("anual");
+  const periodo: "año" | "evento" | "especial" = isAnual ? "año" : (lic.diasMaximosNum ? "evento" : "especial");
+
+  const baseRule: RoleRule = {
+    maxDias: lic.diasMaximosNum,
+    periodo,
+    limiteTexto: `${lic.duracionMaxima} (${lic.goceHaberes})`,
+    unidad: lic.tipoPersonal === "auxiliar" ? "Jornada Auxiliar (Servicio)" : "Horas Cátedra curriculares",
+    anticipacion: lic.condicionesRequisitos.length > 80 ? lic.condicionesRequisitos.slice(0, 80) + "..." : lic.condicionesRequisitos,
+    normativaChubut: `${lic.marcoNormativo} | Requisitos: ${lic.condicionesRequisitos}`
+  };
+
+  return {
+    codigo: lic.articulo.startsWith("Art.") ? lic.articulo : `Art. ${lic.articulo}`,
+    detalle: `${lic.motivoSae}${lic.descripcion && lic.descripcion !== lic.motivoSae ? ` (${lic.descripcion})` : ""} [${lic.tipoPersonal === 'docente' ? 'Docente' : 'Auxiliar'}]`,
+    reglas: {
+      profesor: baseRule,
+      preceptor: {
+        ...baseRule,
+        unidad: "Cargo Institucional Continuo (4.5 hs)"
+      },
+      directivo: {
+        ...baseRule,
+        unidad: "Conducción Escolar",
+        alertaEspecial: lic.autoridadOtorga !== "Dirección de la Escuela" ? `Autoridad: ${lic.autoridadOtorga}` : undefined
+      }
+    }
+  };
+}
+
+// Catálogo combinado con los 166 artículos normativos oficiales de Chubut
+export const CATALOGO_COMPLETO_ARTICULOS: ArticuloLicencia[] = [
+  ...ARTICULOS_LICENCIA.filter(a => a.codigo !== "Otro"),
+  ...TODAS_LAS_LICENCIAS.map(buildArticuloFromLicencia),
+  ...ARTICULOS_LICENCIA.filter(a => a.codigo === "Otro")
+];
+
+
 export default function NewAbsenceModal({
   isOpen,
   onClose,
@@ -505,6 +551,7 @@ export default function NewAbsenceModal({
   const [showArticuloDropdown, setShowArticuloDropdown] = useState(false);
   const articuloRef = useRef<HTMLDivElement>(null);
   const mobileArticuloRef = useRef<HTMLDivElement>(null);
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
 
   // — Estados para el buscador de personal (docente / preceptor / directivo) —
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
@@ -850,7 +897,7 @@ export default function NewAbsenceModal({
     if (selectedArticulo) return selectedArticulo;
     if (!formData.motivo && !articuloQuery) return null;
     const searchStr = `${formData.motivo} ${articuloQuery}`.toLowerCase();
-    return ARTICULOS_LICENCIA.find(a => searchStr.includes(a.codigo.toLowerCase())) || null;
+    return CATALOGO_COMPLETO_ARTICULOS.find(a => searchStr.includes(a.codigo.toLowerCase())) || null;
   }, [selectedArticulo, formData.motivo, articuloQuery]);
 
   // Duración en días corridos solicitados con las fechas ingresadas
@@ -866,10 +913,12 @@ export default function NewAbsenceModal({
 
   const articulosFiltrados = useMemo(() => {
     const q = articuloQuery.trim().toLowerCase();
-    if (!q) return ARTICULOS_LICENCIA;
-    return ARTICULOS_LICENCIA.filter(a =>
+    if (!q) {
+      return CATALOGO_COMPLETO_ARTICULOS.slice(0, 30);
+    }
+    return CATALOGO_COMPLETO_ARTICULOS.filter(a =>
       `${a.codigo} ${a.detalle}`.toLowerCase().includes(q)
-    );
+    ).slice(0, 50);
   }, [articuloQuery]);
 
   // Lista filtrada del personal según el rol y la búsqueda
@@ -904,6 +953,17 @@ export default function NewAbsenceModal({
     setArticuloQuery(`${art.codigo} - ${art.detalle}`);
     setShowArticuloDropdown(false);
   }, [getArticleQuota, selectedRole]);
+
+  const handleSelectFromDb = useCallback((lic: LicenciaItem) => {
+    const art = buildArticuloFromLicencia(lic);
+    handleSelectArticulo(art);
+    if (lic.categoria === "salud") {
+      setFormData(prev => ({ ...prev, tipo: "Licencia Médica" }));
+    } else {
+      setFormData(prev => ({ ...prev, tipo: "Artículo" }));
+    }
+    setIsDbModalOpen(false);
+  }, [handleSelectArticulo]);
 
   const handleProfChange = useCallback((id: string) => {
     setSelectedProfId(id);
@@ -1477,7 +1537,18 @@ export default function NewAbsenceModal({
               <div className="relative space-y-2 animate-fade-in z-20" ref={articuloRef}>
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Buscar Artículo de Licencia</label>
-                  <span className="text-[10px] font-bold text-[var(--text3)] uppercase">Cupos para: {selectedRole}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDbModalOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--verde)] hover:underline cursor-pointer"
+                      title="Abrir base completa de licencias de Chubut (166 artículos)"
+                    >
+                      <BookOpen size={12} />
+                      <span>Ver DB Oficial (166)</span>
+                    </button>
+                    <span className="text-[10px] font-bold text-[var(--text3)] uppercase">· Cupos: {selectedRole}</span>
+                  </div>
                 </div>
                 <div className="relative">
                   <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
@@ -2061,7 +2132,18 @@ export default function NewAbsenceModal({
             <div className="relative flex flex-col gap-1" ref={mobileArticuloRef}>
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-black uppercase text-[var(--text2)]">Artículo de Licencia</label>
-                <span className="text-[9px] font-bold text-[var(--text3)] uppercase">Rol: {selectedRole}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDbModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--verde)] hover:underline"
+                    title="Abrir base completa de licencias de Chubut (166 artículos)"
+                  >
+                    <BookOpen size={11} />
+                    <span>DB Licencias</span>
+                  </button>
+                  <span className="text-[9px] font-bold text-[var(--text3)] uppercase">· {selectedRole}</span>
+                </div>
               </div>
               <div className="relative">
                 <input
@@ -2307,6 +2389,14 @@ export default function NewAbsenceModal({
           </div>
         </form>
       </div>
+
+      {/* MODAL DE CONSULTA Y SELECCIÓN DE DB LICENCIAS (166 ARTÍCULOS) */}
+      <LicenciasDBModal
+        isOpen={isDbModalOpen}
+        onClose={() => setIsDbModalOpen(false)}
+        initialTipoPersonal={selectedRole === "profesor" || selectedRole === "directivo" ? "docente" : "todos"}
+        onSelectLicencia={handleSelectFromDb}
+      />
     </>
   );
 }

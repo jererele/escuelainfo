@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
-import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check } from "lucide-react";
+import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check, BookOpen, Scale } from "lucide-react";
 import { Ausencia, Profesor, UserProfile, Horario, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays, notifyRealtimeUpdate } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { LicenciasDBModal } from "@/components/modals/LicenciasDBModal";
+import { matchAusenciaConDBLicencias, LicenciaItem } from "@/lib/licenciasDB";
 
 interface AusenciasTabProps {
   ausencias: Ausencia[];
@@ -52,6 +54,8 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
 }) => {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const [filterMode, setFilterMode] = useState<"todas" | "pendientes" | "mis_licencias">("todas");
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [selectedDbArticulo, setSelectedDbArticulo] = useState<string>("");
 
   const isTeacher = userProfile?.rol === 'profesor' && Boolean(currentProfesor);
   const isPreceptor = userProfile?.rol === 'preceptor';
@@ -162,7 +166,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
               </div>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* BOTÓN ADHESIÓN AL PARO */}
             <button
               onClick={() => {
@@ -308,6 +312,23 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                 <p className="text-[11px] text-[var(--text2)] mt-0.5">Solicita una licencia sujeta a la aprobación directiva.</p>
               </div>
             </button>
+
+            {/* BOTÓN CONSULTAR DB LICENCIAS */}
+            <button
+              onClick={() => {
+                setSelectedDbArticulo("");
+                setIsDbModalOpen(true);
+              }}
+              className="p-5 rounded-2xl bg-[var(--azul-bg)]/20 border border-[var(--azul-border)] hover:bg-[var(--azul-bg)]/30 active:scale-95 transition-all text-left flex flex-col gap-3 group cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-full bg-[var(--azul-bg)] text-[var(--azul)] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <BookOpen size={20} />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm text-[var(--text)]">DB Licencias (SAE)</h4>
+                <p className="text-[11px] text-[var(--text2)] mt-0.5">Consultá los 166 artículos del estatuto y CCT Chubut.</p>
+              </div>
+            </button>
           </div>
         </div>
       )}
@@ -372,6 +393,18 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
+          <button 
+            type="button"
+            onClick={() => {
+              setSelectedDbArticulo("");
+              setIsDbModalOpen(true);
+            }} 
+            className="w-full md:w-auto bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] text-[var(--text)] font-bold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+            title="Consultar catálogo de licencias oficiales (166 artículos)"
+          >
+            <BookOpen size={16} className="text-[var(--verde)] shrink-0" />
+            <span>DB Licencias</span>
+          </button>
           {(canManageAusencias || isPreceptor) && (
             <button 
               onClick={onOpenAbsenceModal} 
@@ -574,6 +607,28 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                         ? (a.motivo || "Sin motivo especificado") 
                         : "Motivo confidencial · Reservado a Directivos"}
                     </div>
+                    {(() => {
+                      const matchedDbItem = matchAusenciaConDBLicencias(a.motivo || "", a.tipo);
+                      if (!matchedDbItem) return null;
+                      return (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedDbArticulo(matchedDbItem.articulo);
+                              setIsDbModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg3)] hover:bg-[var(--verde-bg)] border border-[var(--border)] hover:border-[var(--verde-border)] text-[10px] font-mono font-bold text-[var(--text2)] hover:text-[var(--verde)] transition-all cursor-pointer shadow-xs"
+                            title={`Consultar normativa oficial: Art. ${matchedDbItem.articulo} (${matchedDbItem.marcoNormativo})`}
+                          >
+                            <Scale size={10} className="shrink-0 text-[var(--verde)]" />
+                            <span>Art. {matchedDbItem.articulo}</span>
+                            <span className="text-[var(--text3)]">·</span>
+                            <span className="font-sans font-medium text-[9px]">{matchedDbItem.goceHaberes}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                     {a.certFileId && canViewMedicalCert && (
                       <div className="mt-1.5">
                         <a 
@@ -658,6 +713,21 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           </table>
         </div>
       </div>
+
+      {/* MODAL DE CONSULTA NORMATIVA Y DB DE LICENCIAS */}
+      <LicenciasDBModal
+        isOpen={isDbModalOpen}
+        onClose={() => {
+          setIsDbModalOpen(false);
+          setSelectedDbArticulo("");
+        }}
+        initialArticulo={selectedDbArticulo}
+        initialTipoPersonal={isPreceptor ? "docente" : (isTeacher ? "docente" : "todos")}
+        onSelectLicencia={() => {
+          setIsDbModalOpen(false);
+          onOpenAbsenceModal();
+        }}
+      />
     </div>
   );
 };

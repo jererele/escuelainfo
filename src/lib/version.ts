@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.34.0";
-export const APP_BUILD_DATE = "01/10/2026 17:25 hs";
+export const APP_VERSION = "v2.35.0";
+export const APP_BUILD_DATE = "07/10/2026 14:10 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Sistema de Cobertura y Notificaciones de Licencias de Preceptoría (PreceptorCoverageModal.tsx & NotificationsBell.tsx): Al aprobar la licencia de un preceptor, el Equipo Directivo recibe una notificación en tiempo real indicando con exactitud los cursos que quedaron sin preceptor durante el período de ausencia. Se implementó una ventana interactiva de designación que permite al directivo seleccionar los preceptores de reemplazo, despachando automáticamente notificaciones en la plataforma y correos institucionales a los preceptores elegidos comunicando los cursos asignados a su cargo."
+  "Base Normativa Integral de Licencias Educativas de Chubut (DB Licencias - SAE, LicenciasDBModal.tsx, NewAbsenceModal.tsx y AusenciasTab.tsx): Se incorporó el nomenclador completo y oficial de licencias estatutarias para la Provincia del Chubut con 166 artículos reglamentarios (96 de Personal Docente bajo Ley 2838 / Dto. 604 y 70 de Personal Auxiliar bajo CCT Auxiliares de la Educación). 1) Base de Datos Tipada (licenciasDB.ts): Mapeo exhaustivo de artículos, motivos SAE, duraciones máximas, goce de haberes, condiciones estatutarias, autoridad otorgante y marco normativo legal con funciones de búsqueda multicriterio. 2) Modal Interactivo de Consulta (LicenciasDBModal.tsx): Visor normativo con filtros por Personal (Docente/Auxiliar/Todos), estado de haberes (Con Goce/Sin Goce/Parcial), categorías temáticas, copia rápida de citas y selección directa. 3) Integración en Creación de Licencias (NewAbsenceModal.tsx): Autocompletado del catálogo completo de 166 artículos y botón de exploración rápida. 4) Visibilidad Estatutaria en Ausencias (AusenciasTab.tsx): Acceso directo desde autogestión y badges reglamentarios en cada fila de inasistencia."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.35.0",
+    date: "07/10/2026 14:10 hs",
+    notes: [
+      "Base Normativa Integral de Licencias Educativas de Chubut (DB Licencias - SAE, LicenciasDBModal.tsx, NewAbsenceModal.tsx y AusenciasTab.tsx): Se incorporó el nomenclador completo y oficial de licencias estatutarias para la Provincia del Chubut con 166 artículos reglamentarios (96 de Personal Docente bajo Ley 2838 / Dto. 604 y 70 de Personal Auxiliar bajo CCT Auxiliares de la Educación). 1) Base de Datos Tipada (licenciasDB.ts): Mapeo exhaustivo de artículos, motivos SAE, duraciones máximas, goce de haberes, condiciones estatutarias, autoridad otorgante y marco normativo legal con funciones de búsqueda multicriterio. 2) Modal Interactivo de Consulta (LicenciasDBModal.tsx): Visor normativo con filtros por Personal (Docente/Auxiliar/Todos), estado de haberes (Con Goce/Sin Goce/Parcial), categorías temáticas, copia rápida de citas y selección directa. 3) Integración en Creación de Licencias (NewAbsenceModal.tsx): Autocompletado del catálogo completo de 166 artículos y botón de exploración rápida. 4) Visibilidad Estatutaria en Ausencias (AusenciasTab.tsx): Acceso directo desde autogestión y badges reglamentarios en cada fila de inasistencia."
+    ]
+  },
   {
     version: "v2.34.0",
     date: "01/10/2026 17:25 hs",
