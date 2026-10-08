@@ -44,6 +44,7 @@ import {
   matchAusenciaConDBLicencias
 } from "@/lib/licenciasDB";
 import LicenciasDBModal from "@/components/modals/LicenciasDBModal";
+import { compressImageToWebP, formatFileSize, CompressionResult } from "@/lib/imageCompressor";
 
 export type StaffRole = "profesor" | "preceptor" | "directivo";
 
@@ -545,6 +546,8 @@ export default function NewAbsenceModal({
 
   const [feriados, setFeriados] = useState<Feriado[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [compressionInfo, setCompressionInfo] = useState<CompressionResult | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // — Estados para el buscador de artículos —
   const [articuloQuery, setArticuloQuery] = useState("");
@@ -1026,15 +1029,35 @@ export default function NewAbsenceModal({
     setFormData(prev => ({ ...prev, tipo }));
   }, []);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const original = e.target.files[0];
+      if (original.type.startsWith("image/")) {
+        setIsCompressing(true);
+        try {
+          const result = await compressImageToWebP(original);
+          setSelectedFile(result.file);
+          setCompressionInfo(result);
+        } catch {
+          setSelectedFile(original);
+          setCompressionInfo(null);
+        } finally {
+          setIsCompressing(false);
+        }
+      } else {
+        setSelectedFile(original);
+        setCompressionInfo(null);
+      }
     }
   }, []);
 
   const handleCertToggle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setFormData(prev => ({ ...prev, cert: checked }));
+    if (!checked) {
+      setSelectedFile(null);
+      setCompressionInfo(null);
+    }
   }, []);
 
   const handleFieldChange = useCallback((field: string, val: string) => {
@@ -1772,7 +1795,19 @@ export default function NewAbsenceModal({
                       accept="image/*,.pdf"
                       onChange={handleFileChange}
                     />
-                    {selectedFile ? (
+                    {isCompressing ? (
+                      <div className="space-y-1">
+                        <div className="mx-auto w-10 h-10 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] animate-spin">
+                          <Upload size={18} />
+                        </div>
+                        <p className="text-xs font-bold text-[var(--verde)] mt-1">
+                          Comprimiendo imagen a formato WebP...
+                        </p>
+                        <p className="text-[9px] text-[var(--text3)]">
+                          Optimizando archivo para reducir tamaño
+                        </p>
+                      </div>
+                    ) : selectedFile ? (
                       <div className="space-y-1">
                         <div className="mx-auto w-10 h-10 rounded-full bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center text-[var(--verde)] group-hover:scale-110 transition-transform">
                           <Check size={18} />
@@ -1780,6 +1815,14 @@ export default function NewAbsenceModal({
                         <p className="text-xs font-bold text-[var(--text)] truncate max-w-[280px] mt-1">
                           {selectedFile.name}
                         </p>
+                        {compressionInfo && compressionInfo.isWebP && compressionInfo.reductionPercentage > 0 && (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)]">
+                            <Sparkles size={11} />
+                            <span>
+                              WebP optimizado: {formatFileSize(compressionInfo.originalSize)} → {formatFileSize(compressionInfo.compressedSize)} (-{compressionInfo.reductionPercentage}%)
+                            </span>
+                          </div>
+                        )}
                         <p className="text-[9px] font-semibold text-[var(--text3)] uppercase tracking-wider">
                           Hacé clic para cambiar el archivo
                         </p>

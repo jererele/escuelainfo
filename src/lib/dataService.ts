@@ -2067,11 +2067,11 @@ export const deleteMesaExamen = async (id: string) => {
 export const uploadCertificateFile = async (file: File): Promise<string> => {
   try {
     // 🛡️ SECURITY AUDIT REF: Storage & File Upload Vulnerability Protection
-    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      throw new Error("SECURITY_BLOCK: Invalid file type. Only JPG, PNG, or PDF are allowed.");
+      throw new Error("SECURITY_BLOCK: Invalid file type. Only JPG, PNG, WEBP, or PDF are allowed.");
     }
     if (file.size > MAX_FILE_SIZE_BYTES) {
       throw new Error("SECURITY_BLOCK: File size exceeds the 5MB limit.");

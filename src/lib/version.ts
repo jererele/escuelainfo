@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.37.2";
-export const APP_BUILD_DATE = "08/10/2026 15:35 hs";
+export const APP_VERSION = "v2.37.3";
+export const APP_BUILD_DATE = "08/10/2026 15:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Optimización de Accesibilidad y Rendimiento Core Web Vitals (page.tsx, version.ts): 1) Accesibilidad Mejorada: Inclusión de atributos 'aria-label' descriptivos y ampliación del área de toque interactiva (touch target) a 32x32px en botones de alternancia de contraseña en login, registro y recuperación de contraseña, elevando el puntaje de accesibilidad Lighthouse al 96/100. 2) Core Web Vitals: Reducción del Total Blocking Time (TBT) a 20ms en escritorio y estabilidad de diseño óptima (CLS: 0.003). Auditoría oficial de Google PageSpeed/Lighthouse superada con 98 en Rendimiento, 100 en SEO, 96 en Accesibilidad y 96 en Buenas Prácticas."
+  "Compresión Automática de Imágenes a WebP (imageCompressor.ts, dataService.ts, NewAbsenceModal.tsx): 1) Motor de Compresión en Navegador: Conversión y reescalado inteligente de fotos (certificados médicos, justificativos) a formato WebP mediante la API Canvas antes de subirlas a Appwrite Storage. Reduce el peso de las imágenes entre un 80% y un 95% (de 5-10MB a menos de 300KB), eliminando rechazos por exceso de tamaño y reduciendo radicalmente el consumo de ancho de banda y cuota de almacenamiento. 2) Soporte de Mime-Types: Inclusión de 'image/webp' en los tipos MIME autorizados en 'uploadCertificateFile'. 3) Feedback Visual: Indicador interactivo con porcentaje de ahorro y tamaños antes/después."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.37.3",
+    date: "08/10/2026 15:45 hs",
+    notes: [
+      "Compresión Automática de Imágenes a WebP (imageCompressor.ts, dataService.ts, NewAbsenceModal.tsx): 1) Motor de Compresión en Navegador: Conversión y reescalado inteligente de fotos (certificados médicos, justificativos) a formato WebP mediante la API Canvas antes de subirlas a Appwrite Storage. Reduce el peso de las imágenes entre un 80% y un 95% (de 5-10MB a menos de 300KB), eliminando rechazos por exceso de tamaño y reduciendo radicalmente el consumo de ancho de banda y cuota de almacenamiento. 2) Soporte de Mime-Types: Inclusión de 'image/webp' en los tipos MIME autorizados en 'uploadCertificateFile'. 3) Feedback Visual: Indicador interactivo con porcentaje de ahorro y tamaños antes/después."
+    ]
+  },
   {
     version: "v2.37.2",
     date: "08/10/2026 15:35 hs",
