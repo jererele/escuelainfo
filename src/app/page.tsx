@@ -748,22 +748,6 @@ function LoginContent() {
               </div>
             ) : activeMode === "login" ? (
               <form onSubmit={handleLogin} className="space-y-4">
-                {/* Indicador y Selector de Institución para Inicio de Sesión */}
-                <div className="p-2.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-between gap-2 text-xs">
-                  <div className="min-w-0 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[var(--verde)] shrink-0 animate-pulse" />
-                    <div className="min-w-0 truncate">
-                      <span className="text-[10px] text-[var(--text3)] uppercase font-bold block">Institución</span>
-                      <span className="font-bold text-[var(--text)] text-xs truncate block">{currentSchool.nombreCompleto}</span>
-                    </div>
-                  </div>
-                  <ChubutSchoolSelector
-                    selectedSchoolId={selectedSchoolId}
-                    onSelect={(school) => setSelectedSchoolId(school.id)}
-                    variant="compact"
-                  />
-                </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Correo Electrónico</label>
                   <input required type="email" placeholder="correo@ejemplo.com"
@@ -801,13 +785,19 @@ function LoginContent() {
               /* REGISTRO — Paso 1: Datos Personales */
               <form onSubmit={handleSendRegisterCode} className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
 
-                {/* Selector Oficial de Escuela Secundaria de Chubut dividida por región */}
-                <ChubutSchoolSelector
-                  selectedSchoolId={selectedSchoolId}
-                  onSelect={(school) => setSelectedSchoolId(school.id)}
-                  variant="form-input"
-                  label="Escuela Secundaria de Chubut"
-                />
+                {/* Escuela asignada desde el selector superior */}
+                <div className="p-2.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--verde)] shrink-0 animate-pulse" />
+                    <div className="min-w-0 truncate">
+                      <span className="text-[10px] text-[var(--text3)] uppercase font-bold block">Escuela de Destino</span>
+                      <span className="font-bold text-[var(--text)] text-xs truncate block">{currentSchool.nombreCompleto}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold text-[var(--text3)] bg-[var(--bg)] px-2 py-0.5 rounded border border-[var(--border)] shrink-0">
+                    {currentSchool.ciudad}
+                  </span>
+                </div>
 
                 {/* Nombres y Apellidos con Avatar */}
                 <div className="flex items-center gap-3">
