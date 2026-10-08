@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Activity,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { UserProfile, fromDbRol } from "@/lib/dataService";
 import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { APP_VERSION } from "@/lib/version";
@@ -33,6 +34,11 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import { gamerEasterEgg } from "@/lib/gamerEasterEgg";
 import NotificationsBell from "@/components/layout/NotificationsBell";
 import { NotificacionSistema } from "@/lib/dataService";
+
+const InstitutionalGuideModal = dynamic(
+  () => import("@/components/modals/InstitutionalGuideModal"),
+  { ssr: false }
+);
 
 interface TopNavSidebarProps {
   user: any;
@@ -69,7 +75,15 @@ export default function TopNavSidebar({
   const [isExiting, setIsExiting] = useState(false);
   const [theme, setTheme]         = useState<"light" | "dark">("light");
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
+
+  // Escuchar evento global para abrir guía desde footer u otras partes
+  useEffect(() => {
+    const handleOpenGuide = () => setIsGuideModalOpen(true);
+    window.addEventListener("escuelainfo:open-guide", handleOpenGuide);
+    return () => window.removeEventListener("escuelainfo:open-guide", handleOpenGuide);
+  }, []);
 
   // Restore theme on mount
   useEffect(() => {
@@ -269,6 +283,17 @@ export default function TopNavSidebar({
           )}
 
           <button
+            onClick={() => setIsGuideModalOpen(true)}
+            title="Guía Oficial y Procedimientos Institucionales"
+            aria-label="Abrir guía de uso"
+            className="w-9 h-9 flex items-center justify-center rounded-xl
+              border border-[var(--border)] text-[var(--text2)]
+              hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] hover:text-[var(--verde)] transition-all cursor-pointer"
+          >
+            <BookOpen size={16} />
+          </button>
+
+          <button
             onClick={toggleTheme}
             title={theme === "dark" ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"}
             className="w-9 h-9 flex items-center justify-center rounded-xl
@@ -406,6 +431,11 @@ export default function TopNavSidebar({
       {userProfile?.rol === 'admin' && (
         <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
       )}
+      <InstitutionalGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+        defaultRole={(normalizedRole as any) || "preceptor"}
+      />
     </div>
   );
 }

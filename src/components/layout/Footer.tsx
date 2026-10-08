@@ -2,9 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Mail } from 'lucide-react';
 import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
 import { APP_VERSION } from '@/lib/version';
+
+const InstitutionalGuideModal = dynamic(
+  () => import('@/components/modals/InstitutionalGuideModal'),
+  { ssr: false }
+);
 
 // ─── Footer global de EscuelaInfo — SKBCraft ─────────────────────────────────
 
@@ -13,6 +19,7 @@ const COPYRIGHT_YEAR = CURRENT_YEAR > 2026 ? `2024 – ${CURRENT_YEAR}` : '2024 
 
 export default function Footer() {
   const [mounted, setMounted] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -108,6 +115,14 @@ export default function Footer() {
               aria-label="Links legales"
               className="flex items-center gap-1"
             >
+              <button
+                type="button"
+                onClick={() => setIsGuideOpen(true)}
+                className="text-[11px] px-2 py-1 rounded-md text-[var(--text3)] hover:text-[var(--verde)] transition-colors cursor-pointer"
+              >
+                Guía de Uso
+              </button>
+              <Separator />
               <FooterLink href="/terminos" label="Términos de Servicio" />
               <Separator />
               <FooterLink href="/privacidad" label="Privacidad" />
@@ -125,6 +140,14 @@ export default function Footer() {
           <span style={{ color: 'var(--verde)', opacity: 1 }}>SKBCraft</span>
         </p>
       </div>
+
+      {isGuideOpen && (
+        <InstitutionalGuideModal
+          isOpen={isGuideOpen}
+          onClose={() => setIsGuideOpen(false)}
+          defaultRole="preceptor"
+        />
+      )}
     </footer>
   );
 }

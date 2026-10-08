@@ -4,14 +4,28 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.36.1";
-export const APP_BUILD_DATE = "07/10/2026 17:35 hs";
+export const APP_VERSION = "v2.37.1";
+export const APP_BUILD_DATE = "08/10/2026 14:45 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Optimización de Contraste, Jerarquía y Profundidad en Modo Claro (globals.css, TiltCard.tsx, GeneralTab.tsx, AusenciasTab.tsx, TopNavSidebar.tsx): Se corrigió la pérdida de diferenciación visual y sensación plana en modo claro. 1) Lienzo de Fondo Contrastado: Se ajustó el fondo del canvas (--bg) a tono pizarra frío (#f1f5f9) para generar contraste inmediato y natural contra las tarjetas blanco puro (#ffffff). 2) Elevación y Sombras Refinadas: Implementación de sombras multicapa suaves (shadow-sm, card-elevated) que desprenden nítidamente los contenedores, barras de filtro y tablas respecto del lienzo. 3) Superficies de Tarjetas y Métricas: Unificación de TiltCard y listas hacia superficies sólidas blancas (--bg2) con microinteracción de elevación y borde perimetral al pasar el cursor. 4) Barra de Navegación Anclada: Cabecera superior configurada con vidrio blanco esmerilado (--bg2/90 con backdrop-blur) y borde de división nítido."
+  "Centro de Ayuda Institucional y Resiliencia de Red (InstitutionalGuideModal.tsx, NetworkStatusIndicator.tsx, TopNavSidebar.tsx, Footer.tsx): 1) Guía Oficial de Procedimientos Escolares: Implementación del manual interactivo e imprimible por roles (Preceptores POD/POT, Docentes, Directivos, Alumnos/Familias y Protocolo Oficial de Contingencia ante cortes de luz/internet). Incluye botón de impresión directa para carteleras escolares y acceso desde cabecera y pie de página. 2) Detector de Conectividad en Tiempo Real (NetworkStatusIndicator.tsx): Notificación no intrusiva de pérdida de conexión y sincronización de datos para acompañar el trabajo de preceptores en patios y pasillos de la escuela."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.37.1",
+    date: "08/10/2026 14:45 hs",
+    notes: [
+      "Centro de Ayuda Institucional y Resiliencia de Red (InstitutionalGuideModal.tsx, NetworkStatusIndicator.tsx, TopNavSidebar.tsx, Footer.tsx): 1) Guía Oficial de Procedimientos Escolares: Implementación del manual interactivo e imprimible por roles (Preceptores POD/POT, Docentes, Directivos, Alumnos/Familias y Protocolo Oficial de Contingencia ante cortes de luz/internet). Incluye botón de impresión directa para carteleras escolares y acceso desde cabecera y pie de página. 2) Detector de Conectividad en Tiempo Real (NetworkStatusIndicator.tsx): Notificación no intrusiva de pérdida de conexión y sincronización de datos para acompañar el trabajo de preceptores en patios y pasillos de la escuela."
+    ]
+  },
+  {
+    version: "v2.37.0",
+    date: "08/10/2026 14:35 hs",
+    notes: [
+      "Puesta a Punto para Etapa Final, PWA y Optimización React 19 (manifest.ts, layout.tsx, use-mobile.ts): 1) Soporte PWA Standalone: Configuración nativa del Web App Manifest (/manifest.webmanifest) con ícono vectorial institucional (/logo.svg) y metaetiquetas de iOS/Android para permitir instalación directa como aplicación móvil en dispositivos de preceptores y directivos. 2) Optimización React 19 / Turbopack: Refactorización de useIsMobile hook mediante useSyncExternalStore, suprimiendo renderizados en cascada y resolviendo advertencias de React Compiler. 3) Metadatos Unificados: Normalización de templates de títulos y descripciones SEO institucionales."
+    ]
+  },
   {
     version: "v2.36.1",
     date: "07/10/2026 17:35 hs",

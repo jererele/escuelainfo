@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import SileoToaster from "@/components/ui/SileoToaster";
 import DatePickerEnhancer from "@/components/ui/DatePickerEnhancer";
 import NyanCatGamerOverlay from "@/components/easter-egg/NyanCatGamerOverlay";
+import NetworkStatusIndicator from "@/components/shared/NetworkStatusIndicator";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -18,8 +19,21 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "EscuelaInfo — Registro de Ausencias",
-  description: "Sistema de registro de ausencias · La Escuela 713 \"Juan Abdala Chayep\"",
+  title: {
+    default: "EscuelaInfo — Escuela N° 713",
+    template: "%s · EscuelaInfo"
+  },
+  description: "Sistema de gestión escolar y ausencias · Escuela N° 713 \"Juan Abdala Chayep\"",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EscuelaInfo",
+  },
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -104,6 +118,7 @@ export default function RootLayout({
         <NyanCatGamerOverlay />
         <SileoToaster />
         <DatePickerEnhancer />
+        <NetworkStatusIndicator />
 
         {/*
           Contenedor principal: relative + z-10 para estar sobre el fondo.
