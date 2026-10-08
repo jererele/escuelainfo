@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.37.4";
-export const APP_BUILD_DATE = "08/10/2026 15:50 hs";
+export const APP_VERSION = "v2.38.0";
+export const APP_BUILD_DATE = "08/10/2026 16:05 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Blindaje de Privacidad y Seguridad en Autorización de Administradores (ChangeUserRoleModal.tsx, NewUserModal.tsx, send-admin-otp, change-role): 1) Ofuscación Total de Correo en Frontend: Eliminación completa de la dirección de correo personal en todas las interfaces de asignación y creación de administradores, sustituyéndola por la denominación institucional 'Administrador Principal del Sistema'. 2) Sanitización de Respuestas API: Supresión de la propiedad 'targetEmail' y ofuscación de mensajes de retorno en '/api/admin/send-admin-otp' y '/api/admin/change-role', impidiendo fugas de información sensible a través de inspección de red o mensajes de confirmación. 3) Desacoplamiento por Variables de Entorno: Configuración delegada a 'process.env.MASTER_ADMIN_EMAIL' en el servidor, garantizando máxima confidencialidad de la casilla titular institucional."
+  "Selector Provincial de Escuelas Secundarias de Chubut por Regiones Educativas (chubutSchools.ts, ChubutSchoolSelector.tsx, page.tsx, /api/auth/register): 1) Catálogo Provincial Oficial: Inclusión de 63 escuelas secundarias (técnicas, agrotécnicas, bachilleres y artísticas) de toda la Provincia del Chubut agrupadas en sus 6 Regiones Educativas del Ministerio de Educación (Región I: Noroeste Cordillerano, Región II: Península Valdés y Golfo Nuevo, Región III: Cordillera Central, Región IV: VIRCh, Región V: Meseta Central, Región VI: Golfo San Jorge y Cuenca Sur). 2) Selector Interactivo en Login y Registro: Buscador en tiempo real por número, nombre o ciudad, con filtros por pestañas de región, insignias por modalidad y persistencia automática en el dispositivo. 3) Integración en Registro: Campo interactivo obligatorio en el Paso 1 de registro y trazabilidad en los logs de auditoría institucional."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.38.0",
+    date: "08/10/2026 16:05 hs",
+    notes: [
+      "Selector Provincial de Escuelas Secundarias de Chubut por Regiones Educativas (chubutSchools.ts, ChubutSchoolSelector.tsx, page.tsx, /api/auth/register): 1) Catálogo Provincial Oficial: Inclusión de 63 escuelas secundarias (técnicas, agrotécnicas, bachilleres y artísticas) de toda la Provincia del Chubut agrupadas en sus 6 Regiones Educativas del Ministerio de Educación (Región I: Noroeste Cordillerano, Región II: Península Valdés y Golfo Nuevo, Región III: Cordillera Central, Región IV: VIRCh, Región V: Meseta Central, Región VI: Golfo San Jorge y Cuenca Sur). 2) Selector Interactivo en Login y Registro: Buscador en tiempo real por número, nombre o ciudad, con filtros por pestañas de región, insignias por modalidad y persistencia automática en el dispositivo. 3) Integración en Registro: Campo interactivo obligatorio en el Paso 1 de registro y trazabilidad en los logs de auditoría institucional."
+    ]
+  },
   {
     version: "v2.37.4",
     date: "08/10/2026 15:50 hs",

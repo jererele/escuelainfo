@@ -15,6 +15,8 @@ import {
   isPendingRole, isAuthorizedRole
 } from "@/lib/dataService";
 import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
+import ChubutSchoolSelector from "@/components/shared/ChubutSchoolSelector";
+import { getSchoolById, getSavedSchoolId, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
 
 function LoginContent() {
   const router = useRouter();
@@ -29,7 +31,22 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterInfo, setShowRegisterInfo] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>(DEFAULT_SCHOOL_ID);
   const sessionCheckedRef = useRef(false);
+
+  useEffect(() => {
+    setSelectedSchoolId(getSavedSchoolId());
+    const handleSchoolChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ schoolId: string }>;
+      if (customEvent.detail?.schoolId) {
+        setSelectedSchoolId(customEvent.detail.schoolId);
+      }
+    };
+    window.addEventListener("escuelainfo:school-changed", handleSchoolChange);
+    return () => window.removeEventListener("escuelainfo:school-changed", handleSchoolChange);
+  }, []);
+
+  const currentSchool = getSchoolById(selectedSchoolId);
 
   // Recuperar contraseña con código de verificación
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
@@ -442,6 +459,7 @@ function LoginContent() {
           dni: dni.trim(),
           telefono: telefono.trim(),
           password,
+          escuela: currentSchool.nombreCompleto,
         }),
       });
 
@@ -508,8 +526,12 @@ function LoginContent() {
               <div className="flex items-center justify-center mb-3 shrink-0">
                 <EscuelaInfoLogo size={56} />
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-[11px] font-bold tracking-wide mb-3">
-                Escuela N° 713 &quot;Juan Abdala Chayep&quot;
+              <div className="mb-3">
+                <ChubutSchoolSelector
+                  selectedSchoolId={selectedSchoolId}
+                  onSelect={(school) => setSelectedSchoolId(school.id)}
+                  variant="badge"
+                />
               </div>
               <div className="text-3xl font-black tracking-tight mb-1 title-font leading-none">
                 Escuela<span className="text-[var(--verde)]">Info</span>
@@ -710,6 +732,22 @@ function LoginContent() {
               </div>
             ) : activeMode === "login" ? (
               <form onSubmit={handleLogin} className="space-y-4">
+                {/* Indicador y Selector de Institución para Inicio de Sesión */}
+                <div className="p-2.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--verde)] shrink-0 animate-pulse" />
+                    <div className="min-w-0 truncate">
+                      <span className="text-[10px] text-[var(--text3)] uppercase font-bold block">Institución</span>
+                      <span className="font-bold text-[var(--text)] text-xs truncate block">{currentSchool.nombreCompleto}</span>
+                    </div>
+                  </div>
+                  <ChubutSchoolSelector
+                    selectedSchoolId={selectedSchoolId}
+                    onSelect={(school) => setSelectedSchoolId(school.id)}
+                    variant="compact"
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-[var(--text3)] mb-1 block">Correo Electrónico</label>
                   <input required type="email" placeholder="correo@ejemplo.com"
@@ -746,6 +784,14 @@ function LoginContent() {
             ) : registerStep === 1 ? (
               /* REGISTRO — Paso 1: Datos Personales */
               <form onSubmit={handleSendRegisterCode} className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+
+                {/* Selector Oficial de Escuela Secundaria de Chubut dividida por región */}
+                <ChubutSchoolSelector
+                  selectedSchoolId={selectedSchoolId}
+                  onSelect={(school) => setSelectedSchoolId(school.id)}
+                  variant="form-input"
+                  label="Escuela Secundaria de Chubut"
+                />
 
                 {/* Nombres y Apellidos con Avatar */}
                 <div className="flex items-center gap-3">

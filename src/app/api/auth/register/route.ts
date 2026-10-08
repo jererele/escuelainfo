@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       dni,
       telefono,
       password,
+      escuela,
     } = await request.json();
 
     // 1. Validaciones básicas de campos
@@ -192,7 +193,7 @@ export async function POST(request: Request) {
         await databases.createDocument(dbId, 'logs', ID.unique(), {
           usuarioEmail: cleanEmail,
           accion: 'REGISTRO_DOCENTE_EXITOSO',
-          detalles: `Registro de docente completado con verificación de correo. UID: ${targetUserId}`,
+          detalles: `Registro de docente completado en ${escuela || 'institución'} con verificación de correo. UID: ${targetUserId}`,
           fecha: new Date().toISOString(),
           ip: clientIp,
         });
@@ -257,7 +258,7 @@ export async function POST(request: Request) {
       await databases.createDocument(dbId, 'logs', ID.unique(), {
         usuarioEmail: cleanEmail,
         accion: 'REGISTRO_PENDIENTE_NUEVO',
-        detalles: `Nuevo usuario registrado pendiente de aprobación. DNI: ${cleanDni}, UID: ${targetUserId}`,
+        detalles: `Nuevo usuario registrado en ${escuela || 'institución'} pendiente de aprobación. DNI: ${cleanDni}, UID: ${targetUserId}`,
         fecha: new Date().toISOString(),
         ip: clientIp,
       });
