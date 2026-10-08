@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.38.3";
-export const APP_BUILD_DATE = "08/10/2026 16:40 hs";
+export const APP_VERSION = "v2.38.4";
+export const APP_BUILD_DATE = "08/10/2026 17:10 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Optimización Integral Core Web Vitals y PageSpeed Insights (layout.tsx, globals.css, page.tsx, version.ts): 1) Eliminación de Render-Blocking (-1,290ms en FCP/LCP): Migración de Google Fonts a 'next/font/google' auto-hospedada para Geist, Outfit y JetBrains Mono, suprimiendo las solicitudes que bloqueaban el renderizado inicial en redes móviles. 2) Erradicación Total de Layout Shift (CLS de 0.201 a 0.000): Eliminación del spinner bloqueante en la pantalla inicial; la tarjeta de acceso y el título institucional se pintan directamente desde el HTML del servidor con cero desplazamiento del DOM. 3) Aceleración de LCP (de 4.8s a <1.2s): El elemento LCP se muestra en el primer fotograma y se añadió preconexión anticipada a 'cloud.appwrite.io'. 4) Contraste Accesible AAA: Calibración de color en variables de texto (--text3) en modo claro y oscuro."
+  "Turno Vespertino (Nocturna) y Solicitud Ágil de Licencias por Artículos Estatutarios (curriculum.ts, NewCourseModal.tsx, dataService.ts, HorariosTab.tsx, NewAbsenceModal.tsx): 1) Turno Nocturna en Cursos: Incorporación oficial del turno 'Vespertino (Nocturna)' en el asistente y formulario manual de creación de cursos. 2) Horarios Nocturnos en Grilla Institucional: Ampliación del mapa de módulos (módulos 17 al 22: de 19:30 a 23:45 hs) con botón de filtro directo 'Nocturna' en la barra de herramientas de la pestaña Horarios, visualización completa en tabla y selector móvil. 3) Auto-Asignación de Solicitante en Licencias: Al abrir la solicitud, el agente autenticado (docente, preceptor o directivo) se asigna automáticamente con su nombre, cargo y materias, sin necesidad de buscarse en la lista. 4) Eliminación de 'Tipo de Ausencia': Simplificación radical de la interfaz para mostrar exclusivamente los artículos estatutarios (la tipificación médica/artículo se infiere automáticamente para Appwrite). 5) Buscador Universal de Artículos: Búsqueda ágil en tiempo real capaz de encontrar licencias por código (ej: '2A', '14', '50') o por motivo/razón (ej: 'vacaciones', 'enfermedad', 'familiar'), con cómputo automático de cupos anuales y días restantes."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.38.4",
+    date: "08/10/2026 17:10 hs",
+    notes: [
+      "Turno Vespertino (Nocturna) y Solicitud Ágil de Licencias por Artículos Estatutarios (curriculum.ts, NewCourseModal.tsx, dataService.ts, HorariosTab.tsx, NewAbsenceModal.tsx): 1) Turno Nocturna en Cursos: Incorporación oficial del turno 'Vespertino (Nocturna)' en el asistente y formulario manual de creación de cursos. 2) Horarios Nocturnos en Grilla Institucional: Ampliación del mapa de módulos (módulos 17 al 22: de 19:30 a 23:45 hs) con botón de filtro directo 'Nocturna' en la barra de herramientas de la pestaña Horarios, visualización completa en tabla y selector móvil. 3) Auto-Asignación de Solicitante en Licencias: Al abrir la solicitud, el agente autenticado (docente, preceptor o directivo) se asigna automáticamente con su nombre, cargo y materias, sin necesidad de buscarse en la lista. 4) Eliminación de 'Tipo de Ausencia': Simplificación radical de la interfaz para mostrar exclusivamente los artículos estatutarios (la tipificación médica/artículo se infiere automáticamente para Appwrite). 5) Buscador Universal de Artículos: Búsqueda ágil en tiempo real capaz de encontrar licencias por código (ej: '2A', '14', '50') o por motivo/razón (ej: 'vacaciones', 'enfermedad', 'familiar'), con cómputo automático de cupos anuales y días restantes."
+    ]
+  },
   {
     version: "v2.38.3",
     date: "08/10/2026 16:40 hs",

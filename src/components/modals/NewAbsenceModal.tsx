@@ -62,6 +62,9 @@ export interface RoleRule {
 export interface ArticuloLicencia {
   codigo: string;
   detalle: string;
+  categoria?: string;
+  motivoSae?: string;
+  descripcionCompleta?: string;
   reglas: Record<StaffRole, RoleRule>;
 }
 
@@ -478,6 +481,9 @@ export function buildArticuloFromLicencia(lic: LicenciaItem): ArticuloLicencia {
   return {
     codigo: lic.articulo.startsWith("Art.") ? lic.articulo : `Art. ${lic.articulo}`,
     detalle: `${lic.motivoSae}${lic.descripcion && lic.descripcion !== lic.motivoSae ? ` (${lic.descripcion})` : ""} [${lic.tipoPersonal === 'docente' ? 'Docente' : 'Auxiliar'}]`,
+    categoria: lic.categoria,
+    motivoSae: lic.motivoSae,
+    descripcionCompleta: `${lic.descripcion} ${lic.condicionesRequisitos} ${lic.marcoNormativo}`,
     reglas: {
       profesor: baseRule,
       preceptor: {
@@ -493,11 +499,15 @@ export function buildArticuloFromLicencia(lic: LicenciaItem): ArticuloLicencia {
   };
 }
 
-// Catálogo combinado con los 166 artículos normativos oficiales de Chubut
+// Catálogo combinado con deduplicación y los 166 artículos normativos oficiales de Chubut
+const baseArticulosCodes = new Set(ARTICULOS_LICENCIA.map(a => a.codigo.toLowerCase().replace(/\s+/g, "")));
+const licenciasDBArticulos = TODAS_LAS_LICENCIAS
+  .map(buildArticuloFromLicencia)
+  .filter(a => !baseArticulosCodes.has(a.codigo.toLowerCase().replace(/\s+/g, "")));
+
 export const CATALOGO_COMPLETO_ARTICULOS: ArticuloLicencia[] = [
   ...ARTICULOS_LICENCIA.filter(a => a.codigo !== "Otro"),
-  ...TODAS_LAS_LICENCIAS.map(buildArticuloFromLicencia),
-  ...ARTICULOS_LICENCIA.filter(a => a.codigo === "Otro")
+  ...licenciasDBArticulos
 ];
 
 
@@ -524,13 +534,22 @@ export default function NewAbsenceModal({
   const [error, setError] = useState("");
 
   const isPreceptorSelf = userProfile?.rol === "preceptor";
+  const isTeacherSelf = userProfile?.rol === "profesor";
+  const isDirectivoSelf = userProfile?.rol === "directivo";
+  const isSelf = Boolean(
+    userProfile && 
+    (isPreceptorSelf || isTeacherSelf || isDirectivoSelf) && 
+    userProfile.rol !== "admin"
+  );
   const preceptores = useMemo(() => allUsuarios.filter(u => u.rol === "preceptor"), [allUsuarios]);
 
   // Rol del personal para la licencia: profesor | preceptor | directivo
-  const [selectedRole, setSelectedRole] = useState<StaffRole>(userProfile?.rol === "preceptor" ? "preceptor" : "profesor");
+  const [selectedRole, setSelectedRole] = useState<StaffRole>(
+    userProfile?.rol === "preceptor" ? "preceptor" : userProfile?.rol === "directivo" ? "directivo" : "profesor"
+  );
 
   const [formData, setFormData] = useState({
-    tipo: "Licencia Médica",
+    tipo: "Artículo",
     inicio: "",
     fin: "",
     materias: "",
@@ -657,6 +676,7 @@ export default function NewAbsenceModal({
         setStaffSearchQuery(lockedProfesor.nombre);
         setFormData(prev => ({ ...prev, materias: (lockedProfesor.materias || []).join(", ") }));
       } else if (userProfile?.rol === "preceptor") {
+        setSelectedRole("preceptor");
         const pId = String(userProfile.uid || userProfile.id || userProfile.nombre);
         setSelectedProfId(pId);
         setStaffSearchQuery(userProfile.nombre || "");
@@ -664,9 +684,40 @@ export default function NewAbsenceModal({
           ? userProfile.cursos.map(c => `Preceptoría (${c})`).join(", ")
           : "Turno Preceptoría";
         setFormData(prev => ({ ...prev, materias: mats }));
+      } else if (userProfile?.rol === "profesor") {
+        setSelectedRole("profesor");
+        const defaultId = String(userProfile.uid || userProfile.id || userProfile.nombre);
+        setSelectedProfId(defaultId);
+        setStaffSearchQuery(userProfile.nombre || "");
+        getProfesores().then(profs => {
+          setProfesores(profs);
+          const userEmailNorm = (userProfile.email || "").trim().toLowerCase();
+          const userNameNorm = (userProfile.nombre || "").trim().toLowerCase();
+          const matchedProf = profs.find(p => 
+            (p.email && p.email.trim().toLowerCase() === userEmailNorm) ||
+            (p.nombre && p.nombre.trim().toLowerCase() === userNameNorm)
+          );
+          if (matchedProf) {
+            setSelectedProfId(String(matchedProf.id));
+            setStaffSearchQuery(matchedProf.nombre);
+            setFormData(prev => ({ ...prev, materias: (matchedProf.materias || []).join(", ") }));
+          }
+        });
+      } else if (userProfile?.rol === "directivo") {
+        setSelectedRole("directivo");
+        const pId = String(userProfile.uid || userProfile.id || userProfile.nombre);
+        setSelectedProfId(pId);
+        setStaffSearchQuery(userProfile.nombre || "");
+        setFormData(prev => ({ ...prev, materias: "Conducción Escolar" }));
+        getProfesores().then(setProfesores);
       } else {
-        setSelectedProfId("");
-        setStaffSearchQuery("");
+        if (userProfile?.nombre) {
+          setStaffSearchQuery(userProfile.nombre);
+          setSelectedProfId(String(userProfile.uid || userProfile.id || userProfile.nombre));
+        } else {
+          setSelectedProfId("");
+          setStaffSearchQuery("");
+        }
         getProfesores().then(setProfesores);
         if (!usuarios || usuarios.length === 0) {
           getUsuarios().then(setAllUsuarios).catch(() => {});
@@ -751,9 +802,17 @@ export default function NewAbsenceModal({
           cursos: [] as string[]
         };
       }
+      if (userProfile?.nombre) {
+        return {
+          id: selectedProfId,
+          nombre: userProfile.nombre,
+          materias: formData.materias ? formData.materias.split(", ") : [],
+          cursos: [] as string[]
+        };
+      }
     }
     return null;
-  }, [lockedProfesor, isPreceptorSelf, userProfile, selectedRole, selectedProfId, preceptores, profesores]);
+  }, [lockedProfesor, isPreceptorSelf, userProfile, selectedRole, selectedProfId, preceptores, profesores, formData.materias]);
 
   const activeProfesor = activeStaff;
 
@@ -917,11 +976,29 @@ export default function NewAbsenceModal({
   const articulosFiltrados = useMemo(() => {
     const q = articuloQuery.trim().toLowerCase();
     if (!q) {
-      return CATALOGO_COMPLETO_ARTICULOS.slice(0, 30);
+      return CATALOGO_COMPLETO_ARTICULOS.slice(0, 40);
     }
-    return CATALOGO_COMPLETO_ARTICULOS.filter(a =>
-      `${a.codigo} ${a.detalle}`.toLowerCase().includes(q)
-    ).slice(0, 50);
+    const cleanQ = q.replace(/^art\.?\s*/i, "").trim();
+
+    return CATALOGO_COMPLETO_ARTICULOS.filter(a => {
+      const codLower = a.codigo.toLowerCase();
+      const codClean = a.codigo.toLowerCase().replace(/^art\.?\s*/i, "").trim();
+      const detLower = a.detalle.toLowerCase();
+      const catLower = (a.categoria || "").toLowerCase();
+      const motLower = (a.motivoSae || "").toLowerCase();
+      const descLower = (a.descripcionCompleta || "").toLowerCase();
+
+      // Búsqueda por código de artículo (ej: "2A", "2a", "Art. 2A", "14", "Art. 14")
+      if (codClean === cleanQ || codClean.startsWith(cleanQ) || codLower.includes(q)) return true;
+
+      // Búsqueda por motivo / razón estatutaria (ej: "vacaciones", "enfermedad", "maternidad", "familiar", etc.)
+      if (detLower.includes(q) || detLower.includes(cleanQ)) return true;
+      if (motLower.includes(q) || motLower.includes(cleanQ)) return true;
+      if (catLower.includes(q) || catLower.includes(cleanQ)) return true;
+      if (descLower.includes(q) || descLower.includes(cleanQ)) return true;
+
+      return false;
+    }).slice(0, 60);
   }, [articuloQuery]);
 
   // Lista filtrada del personal según el rol y la búsqueda
@@ -948,12 +1025,31 @@ export default function NewAbsenceModal({
   const handleSelectArticulo = useCallback((art: ArticuloLicencia) => {
     setSelectedArticulo(art);
     const quota = getArticleQuota(art, selectedRole);
-    const label = quota.diasRestantes !== null
-      ? `${art.codigo} - ${art.detalle} (${quota.badgeText})`
-      : (quota.rule.limiteTexto ? `${art.codigo} - ${art.detalle} (${quota.rule.limiteTexto})` : `${art.codigo} - ${art.detalle}`);
+    const label = `${art.codigo} - ${art.detalle}`;
 
-    setFormData(prev => ({ ...prev, motivo: label }));
-    setArticuloQuery(`${art.codigo} - ${art.detalle}`);
+    // Inferir tipo de ausencia automáticamente para Appwrite
+    let inferredTipo = "Artículo";
+    const checkText = `${art.codigo} ${art.detalle} ${art.categoria || ""} ${art.motivoSae || ""}`.toLowerCase();
+    if (
+      checkText.includes("médic") || 
+      checkText.includes("salud") || 
+      checkText.includes("enfermedad") || 
+      checkText.includes("art. 50") || 
+      checkText.includes("art. 51") || 
+      checkText.includes("art. 5a") || 
+      checkText.includes("art. 5b")
+    ) {
+      inferredTipo = "Licencia Médica";
+    } else if (checkText.includes("capacit") || checkText.includes("congreso") || checkText.includes("perfeccionamiento")) {
+      inferredTipo = "Capacitación";
+    }
+
+    setFormData(prev => ({ 
+      ...prev, 
+      motivo: label,
+      tipo: inferredTipo
+    }));
+    setArticuloQuery(label);
     setShowArticuloDropdown(false);
   }, [getArticleQuota, selectedRole]);
 
@@ -1067,7 +1163,22 @@ export default function NewAbsenceModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!selectedProfId) { setError("Seleccioná un docente o personal antes de continuar."); return; }
+
+    let effectiveProfId = selectedProfId;
+    if (!effectiveProfId && (lockedProfesor || isSelf)) {
+      effectiveProfId = String(lockedProfesor?.id || userProfile?.uid || userProfile?.id || userProfile?.nombre || "self");
+      setSelectedProfId(effectiveProfId);
+    }
+
+    if (!effectiveProfId) {
+      setError("Seleccioná un docente o personal antes de continuar.");
+      return;
+    }
+
+    if (!formData.motivo || !formData.motivo.trim()) {
+      setError("Por favor seleccioná un artículo de licencia del buscador.");
+      return;
+    }
 
     if (currentHoliday) {
       setError(`No se puede registrar ausencias que contengan un día feriado: ${currentHoliday.nombre}`);
@@ -1242,237 +1353,236 @@ export default function NewAbsenceModal({
           {currentHoliday && (
             <div className="mx-6 mt-4 flex items-center gap-2 bg-[var(--rojo-bg)] border border-[var(--rojo-border)] text-[var(--rojo)] px-4 py-3 rounded-xl text-xs font-bold flex-shrink-0 animate-fade-in">
               <AlertCircle size={14} className="shrink-0" />
-              <span>El rango seleccionado contiene un día feriado: <span className="underline">{currentHoliday.nombre}</span> ({currentHoliday.tipo})</span>
+              <span>El rango seleccionado coincide con un feriado escolar: <strong>{currentHoliday.nombre}</strong> ({currentHoliday.tipo})</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-5">
-            {/* SELECTOR DE ROL ESTATUTARIO (Solo si no viene un docente o preceptor bloqueado) */}
-            {!lockedProfesor && !isPreceptorSelf && (
+          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 custom-scrollbar">
+            {/* SELECTOR O IDENTIFICADOR DEL SOLICITANTE */}
+            {lockedProfesor || isSelf ? (
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
-                  Tipo de Personal / Cargo
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); }}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      selectedRole === "profesor"
-                        ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black shadow-xs scale-[1.01]"
-                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
-                    }`}
-                  >
-                    <GraduationCap size={15} className="shrink-0" />
-                    <span>Profesor</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      selectedRole === "preceptor"
-                        ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black shadow-xs scale-[1.01]"
-                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
-                    }`}
-                  >
-                    <Clock size={15} className="shrink-0" />
-                    <span>Preceptor</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      selectedRole === "directivo"
-                        ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black shadow-xs scale-[1.01]"
-                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
-                    }`}
-                  >
-                    <Building2 size={15} className="shrink-0" />
-                    <span>Directivo</span>
-                  </button>
-                </div>
-                {/* Nota informativa de marco legal según el rol */}
-                <div className="p-2.5 rounded-xl bg-[var(--bg3)]/60 border border-[var(--border)] text-[11px] text-[var(--text3)] flex items-start gap-2">
-                  <Info size={14} className="shrink-0 text-[var(--text2)] mt-0.5" />
-                  <div>
-                    {selectedRole === "profesor" && (
-                      <span><strong>Docente Frente a Curso:</strong> Afecta módulos y horas cátedra curriculares. Genera horas libres si no hay suplencia institucional.</span>
-                    )}
-                    {selectedRole === "preceptor" && (
-                      <span><strong>Cargo de Preceptoría (POD):</strong> Cargo continuo indivisible de 4.5 horas por turno. Sujeto a cobertura (no más de 1 preceptor ausente por turno).</span>
-                    )}
-                    {selectedRole === "directivo" && (
-                      <span><strong>Equipo de Conducción:</strong> Elevación reglamentaria a Supervisión Técnica de Región. Prohibido en los 20 días previos al cierre o 20 posteriores al inicio de ciclo (Res. 517/90).</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!lockedProfesor && !isPreceptorSelf ? (
-              <div className="relative space-y-2 animate-fade-in z-30" ref={staffRef}>
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
-                    {selectedRole === "profesor"
-                      ? "Buscar Profesor"
-                      : selectedRole === "preceptor"
-                      ? "Buscar Preceptor / Agente"
-                      : "Buscar Directivo"}
-                  </label>
-                  {selectedProfId ? (
-                    <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] flex items-center gap-1">
-                      <Check size={10} strokeWidth={3} />
-                      Seleccionado
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-[var(--text3)] uppercase">
-                      Obligatorio
-                    </span>
-                  )}
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Agente Solicitante</label>
+                  <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] flex items-center gap-1">
+                    <Check size={10} strokeWidth={3} />
+                    Asignado Automáticamente
+                  </span>
                 </div>
-
-                <div className="relative">
-                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder={
-                      selectedRole === "profesor"
-                        ? "Escribí el nombre, materia o DNI del docente..."
-                        : selectedRole === "preceptor"
-                        ? "Escribí el nombre del preceptor..."
-                        : "Escribí el nombre del directivo..."
-                    }
-                    className={`w-full bg-[var(--bg3)] border rounded-xl pl-9 pr-10 py-3 outline-none transition-all font-semibold text-sm text-[var(--text)] ${
-                      selectedProfId ? "border-[var(--verde-border)] bg-[var(--verde-bg)]/10" : "border-[var(--border)] focus:border-[var(--verde)]"
-                    }`}
-                    value={staffSearchQuery}
-                    onChange={(e) => {
-                      setStaffSearchQuery(e.target.value);
-                      setShowStaffDropdown(true);
-                      if (selectedProfId && e.target.value !== activeStaff?.nombre) {
-                        setSelectedProfId("");
-                      }
-                    }}
-                    onFocus={() => setShowStaffDropdown(true)}
-                  />
-                  {staffSearchQuery ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStaffSearchQuery("");
-                        setSelectedProfId("");
-                        setSelectedCourse("");
-                        setShowStaffDropdown(true);
-                      }}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1 cursor-pointer"
-                      title="Limpiar y buscar otro"
-                    >
-                      <X size={14} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowStaffDropdown(prev => !prev);
-                      }}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1 cursor-pointer"
-                    >
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform duration-200 ${showStaffDropdown ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                  )}
-
-                  {showStaffDropdown && filteredStaffList.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-h-60 overflow-y-auto custom-scrollbar">
-                      {filteredStaffList.map((item) => {
-                        const id = String(item.id || (item as any).uid);
-                        const isSelected = selectedProfId === id;
-                        const subDetails = selectedRole === "preceptor"
-                          ? ((item as any).cursos && (item as any).cursos.length > 0 ? `Cursos: ${(item as any).cursos.join(", ")}` : "Turno Preceptoría")
-                          : (Array.isArray((item as any).materias) && (item as any).materias.length > 0 ? (item as any).materias.join(", ") : "Sin materias asignadas");
-
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => {
-                              if (selectedRole === "preceptor") {
-                                handlePreceptorChange(id);
-                              } else {
-                                handleProfChange(id);
-                              }
-                              setStaffSearchQuery(item.nombre);
-                              setShowStaffDropdown(false);
-                            }}
-                            className={`w-full text-left px-4 py-3 transition-colors border-b border-[var(--border)] last:border-none flex items-center justify-between gap-3 group cursor-pointer ${
-                              isSelected
-                                ? "bg-[var(--verde-bg)] text-[var(--verde)] font-black"
-                                : "hover:bg-[var(--bg3)] text-[var(--text)]"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-8 h-8 rounded-full bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-center text-xs font-bold shrink-0 text-[var(--text2)] group-hover:border-[var(--verde-border)]">
-                                {selectedRole === "preceptor" ? (
-                                  <Clock size={14} className="text-[var(--azul)]" />
-                                ) : selectedRole === "directivo" ? (
-                                  <Building2 size={14} className="text-purple-400" />
-                                ) : (
-                                  <GraduationCap size={14} className="text-[var(--verde)]" />
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-xs font-bold text-[var(--text)] group-hover:text-[var(--verde)] truncate">
-                                  {item.nombre}
-                                </div>
-                                <div className="text-[10px] text-[var(--text3)] truncate mt-0.5">
-                                  {subDetails}
-                                </div>
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <span className="w-5 h-5 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
-                                <Check size={12} strokeWidth={3} />
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {showStaffDropdown && filteredStaffList.length === 0 && (
-                    <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl p-4 text-center animate-fade-in">
-                      <p className="text-xs text-[var(--text3)] font-semibold">
-                        No se encontró personal para «{staffSearchQuery}»
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : isPreceptorSelf ? (
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Preceptor/a</label>
                 <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 font-bold text-[var(--text)] flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Clock size={16} className="text-[var(--azul,#0284c7)]" />
-                    {userProfile?.nombre}
+                    {selectedRole === "profesor" && <GraduationCap size={16} className="text-[var(--verde)]" />}
+                    {selectedRole === "preceptor" && <Clock size={16} className="text-[var(--azul)]" />}
+                    {selectedRole === "directivo" && <Building2 size={16} className="text-purple-400" />}
+                    <span className="text-sm font-black">{activeStaff?.nombre || staffSearchQuery || userProfile?.nombre || lockedProfesor?.nombre || "Agente"}</span>
                   </span>
-                  <span className="text-[10px] font-black uppercase text-[var(--azul,#0284c7)] bg-[var(--azul-bg,#0ea5e920)] px-2 py-0.5 rounded-md border border-[var(--azul-border,#0ea5e940)]">
-                    Personal de Preceptoría (POD)
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border bg-[var(--bg)] text-[var(--text2)] border-[var(--border)]">
+                    {selectedRole === "profesor" ? "Docente Frente a Curso" : selectedRole === "preceptor" ? "Personal de Preceptoría (POD)" : "Equipo Directivo"}
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Docente</label>
-                <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-4 py-3 font-bold text-[var(--text)] cursor-not-allowed opacity-80 flex items-center justify-between">
-                  <span>{lockedProfesor?.nombre || "Docente"}</span>
-                  <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)]">Docente Frente a Curso</span>
+              <>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
+                    Tipo de Personal / Cargo
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        selectedRole === "profesor"
+                          ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black shadow-xs scale-[1.01]"
+                          : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
+                      }`}
+                    >
+                      <GraduationCap size={15} className="shrink-0" />
+                      <span>Profesor</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        selectedRole === "preceptor"
+                          ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black shadow-xs scale-[1.01]"
+                          : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
+                      }`}
+                    >
+                      <Clock size={15} className="shrink-0" />
+                      <span>Preceptor</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        selectedRole === "directivo"
+                          ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black shadow-xs scale-[1.01]"
+                          : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
+                      }`}
+                    >
+                      <Building2 size={15} className="shrink-0" />
+                      <span>Directivo</span>
+                    </button>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--bg3)]/60 border border-[var(--border)] text-[11px] text-[var(--text3)] flex items-start gap-2">
+                    <Info size={14} className="shrink-0 text-[var(--text2)] mt-0.5" />
+                    <div>
+                      {selectedRole === "profesor" && (
+                        <span><strong>Docente Frente a Curso:</strong> Afecta módulos y horas cátedra curriculares.</span>
+                      )}
+                      {selectedRole === "preceptor" && (
+                        <span><strong>Cargo de Preceptoría (POD):</strong> Cargo continuo indivisible de 4.5 horas por turno.</span>
+                      )}
+                      {selectedRole === "directivo" && (
+                        <span><strong>Equipo de Conducción:</strong> Elevación reglamentaria a Supervisión Técnica de Región.</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                <div className="relative space-y-2 animate-fade-in z-30" ref={staffRef}>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">
+                      {selectedRole === "profesor"
+                        ? "Buscar Profesor"
+                        : selectedRole === "preceptor"
+                        ? "Buscar Preceptor / Agente"
+                        : "Buscar Directivo"}
+                    </label>
+                    {selectedProfId ? (
+                      <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2 py-0.5 rounded-md border border-[var(--verde-border)] flex items-center gap-1">
+                        <Check size={10} strokeWidth={3} />
+                        Seleccionado
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-[var(--text3)] uppercase">
+                        Obligatorio
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder={
+                        selectedRole === "profesor"
+                          ? "Escribí el nombre, materia o DNI del docente..."
+                          : selectedRole === "preceptor"
+                          ? "Escribí el nombre del preceptor..."
+                          : "Escribí el nombre del directivo..."
+                      }
+                      className={`w-full bg-[var(--bg3)] border rounded-xl pl-9 pr-10 py-3 outline-none transition-all font-semibold text-sm text-[var(--text)] ${
+                        selectedProfId ? "border-[var(--verde-border)] bg-[var(--verde-bg)]/10" : "border-[var(--border)] focus:border-[var(--verde)]"
+                      }`}
+                      value={staffSearchQuery}
+                      onChange={(e) => {
+                        setStaffSearchQuery(e.target.value);
+                        setShowStaffDropdown(true);
+                        if (selectedProfId && e.target.value !== activeStaff?.nombre) {
+                          setSelectedProfId("");
+                        }
+                      }}
+                      onFocus={() => setShowStaffDropdown(true)}
+                    />
+                    {staffSearchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStaffSearchQuery("");
+                          setSelectedProfId("");
+                          setSelectedCourse("");
+                          setShowStaffDropdown(true);
+                        }}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1 cursor-pointer"
+                        title="Limpiar y buscar otro"
+                      >
+                        <X size={14} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowStaffDropdown(prev => !prev);
+                        }}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors p-1 cursor-pointer"
+                      >
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-200 ${showStaffDropdown ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+
+                    {showStaffDropdown && filteredStaffList.length > 0 && (
+                      <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-h-60 overflow-y-auto custom-scrollbar">
+                        {filteredStaffList.map((item) => {
+                          const id = String(item.id || (item as any).uid);
+                          const isSelected = selectedProfId === id;
+                          const subDetails = selectedRole === "preceptor"
+                            ? ((item as any).cursos && (item as any).cursos.length > 0 ? `Cursos: ${(item as any).cursos.join(", ")}` : "Turno Preceptoría")
+                            : (Array.isArray((item as any).materias) && (item as any).materias.length > 0 ? (item as any).materias.join(", ") : "Sin materias asignadas");
+
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                if (selectedRole === "preceptor") {
+                                  handlePreceptorChange(id);
+                                } else {
+                                  handleProfChange(id);
+                                }
+                                setStaffSearchQuery(item.nombre);
+                                setShowStaffDropdown(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 transition-colors border-b border-[var(--border)] last:border-none flex items-center justify-between gap-3 group cursor-pointer ${
+                                isSelected
+                                  ? "bg-[var(--verde-bg)] text-[var(--verde)] font-black"
+                                  : "hover:bg-[var(--bg3)] text-[var(--text)]"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-full bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-center text-xs font-bold shrink-0 text-[var(--text2)] group-hover:border-[var(--verde-border)]">
+                                  {selectedRole === "preceptor" ? (
+                                    <Clock size={14} className="text-[var(--azul)]" />
+                                  ) : selectedRole === "directivo" ? (
+                                    <Building2 size={14} className="text-purple-400" />
+                                  ) : (
+                                    <GraduationCap size={14} className="text-[var(--verde)]" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-[var(--text)] group-hover:text-[var(--verde)] truncate">
+                                    {item.nombre}
+                                  </div>
+                                  <div className="text-[10px] text-[var(--text3)] truncate mt-0.5">
+                                    {subDetails}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <span className="w-5 h-5 rounded-full bg-[var(--verde)] text-black flex items-center justify-center shrink-0">
+                                  <Check size={12} strokeWidth={3} />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {showStaffDropdown && filteredStaffList.length === 0 && (
+                      <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl p-4 text-center animate-fade-in">
+                        <p className="text-xs text-[var(--text3)] font-semibold">
+                          No se encontró personal para «{staffSearchQuery}»
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Selector de Curso Afectado (solo para profesor; para preceptor se asignan automáticamente todos sus cursos a cargo) */}
@@ -1536,44 +1646,28 @@ export default function NewAbsenceModal({
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Tipo de Ausencia</label>
-              <div className="grid grid-cols-4 gap-2">
-                {["Licencia Médica", "Artículo", "Capacitación", "Otro"].map(t => (
+            {/* Motivo de Licencia: Solo Artículos Oficiales con Buscador */}
+            <div className="relative space-y-2 animate-fade-in z-20" ref={articuloRef}>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)] flex items-center gap-1.5">
+                  <BookOpen size={14} className="text-[var(--verde)]" />
+                  <span>Motivo de Licencia (Artículos Estatutarios)</span>
+                </label>
+                <div className="flex items-center gap-2">
                   <button
-                    key={t}
                     type="button"
-                    onClick={() => handleTipoChange(t)}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all active:scale-95 text-center cursor-pointer ${
-                      formData.tipo === t
-                        ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] shadow-sm font-black scale-[1.02]"
-                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)] hover:border-[var(--text3)]"
-                    }`}
+                    onClick={() => setIsDbModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--verde)] hover:underline cursor-pointer"
+                    title="Abrir base completa de licencias de Chubut (166 artículos)"
                   >
-                    {t}
+                    <BookOpen size={12} />
+                    <span>Ver DB Oficial (166)</span>
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {formData.tipo === "Artículo" && (
-              <div className="relative space-y-2 animate-fade-in z-20" ref={articuloRef}>
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text2)]">Buscar Artículo de Licencia</label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsDbModalOpen(true)}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--verde)] hover:underline cursor-pointer"
-                      title="Abrir base completa de licencias de Chubut (166 artículos)"
-                    >
-                      <BookOpen size={12} />
-                      <span>Ver DB Oficial (166)</span>
-                    </button>
-                    <span className="text-[10px] font-bold text-[var(--text3)] uppercase">· Cupos: {selectedRole}</span>
-                  </div>
+                  <span className="text-[10px] font-bold text-[var(--text3)] uppercase">· Cupos: {selectedRole}</span>
                 </div>
-                <div className="relative">
+              </div>
+
+              <div className="relative">
                   <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
                   <input
                     type="text"
@@ -1773,7 +1867,6 @@ export default function NewAbsenceModal({
                   El contador computa automáticamente las licencias del ciclo en curso del personal según su rol estatutario.
                 </p>
               </div>
-            )}
 
             <div className="space-y-3 z-10">
               <label className="flex items-center gap-3 cursor-pointer select-none py-3.5 px-4 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl w-full hover:bg-[var(--bg4)]/40 transition-colors">
@@ -1949,157 +2042,158 @@ export default function NewAbsenceModal({
         )}
 
         <form onSubmit={handleSubmit} className="p-4 flex-1 overflow-y-auto flex flex-col gap-4">
-          {!lockedProfesor && !isPreceptorSelf && (
+          {lockedProfesor || isSelf ? (
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-black uppercase text-[var(--text2)]">Rol Estatutario</label>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
-                  className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
-                    selectedRole === "profesor"
-                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black"
-                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
-                  }`}
-                >
-                  <GraduationCap size={13} />
-                  <span>Profesor</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
-                  className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
-                    selectedRole === "preceptor"
-                      ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black"
-                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
-                  }`}
-                >
-                  <Clock size={13} />
-                  <span>Preceptor</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
-                  className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
-                    selectedRole === "directivo"
-                      ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black"
-                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
-                  }`}
-                >
-                  <Building2 size={13} />
-                  <span>Directivo</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {!lockedProfesor && !isPreceptorSelf ? (
-            <div className="relative flex flex-col gap-1 z-30" ref={mobileStaffRef}>
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-black uppercase text-[var(--text2)]">
-                  {selectedRole === "profesor" ? "Buscar Docente" : selectedRole === "preceptor" ? "Buscar Preceptor / Personal" : "Buscar Directivo"}
-                </label>
-                {selectedProfId && (
-                  <span className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-1.5 py-0.2 rounded border border-[var(--verde-border)]">
-                    OK
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder={selectedRole === "profesor" ? "Escribí para buscar docente..." : "Escribí para buscar..."}
-                  className={`w-full bg-[var(--bg3)] border rounded-lg pl-8 pr-9 p-3 outline-none text-sm font-bold text-[var(--text)] transition-all ${
-                    selectedProfId ? "border-[var(--verde-border)] bg-[var(--verde-bg)]/10" : "border-[var(--border)] focus:border-[var(--verde)]"
-                  }`}
-                  value={staffSearchQuery}
-                  onChange={(e) => {
-                    setStaffSearchQuery(e.target.value);
-                    setShowStaffDropdown(true);
-                    if (selectedProfId && e.target.value !== activeStaff?.nombre) {
-                      setSelectedProfId("");
-                    }
-                  }}
-                  onFocus={() => setShowStaffDropdown(true)}
-                />
-                {staffSearchQuery ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStaffSearchQuery("");
-                      setSelectedProfId("");
-                      setSelectedCourse("");
-                      setShowStaffDropdown(true);
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] p-1 cursor-pointer"
-                  >
-                    <X size={13} />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowStaffDropdown(prev => !prev);
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] p-1 cursor-pointer"
-                  >
-                    <ChevronDown size={13} className={`transition-transform ${showStaffDropdown ? "rotate-180" : ""}`} />
-                  </button>
-                )}
-
-                {showStaffDropdown && filteredStaffList.length > 0 && (
-                  <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden max-h-52 overflow-y-auto custom-scrollbar">
-                    {filteredStaffList.map((item) => {
-                      const id = String(item.id || (item as any).uid);
-                      const isSelected = selectedProfId === id;
-                      return (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => {
-                            if (selectedRole === "preceptor") {
-                              handlePreceptorChange(id);
-                            } else {
-                              handleProfChange(id);
-                            }
-                            setStaffSearchQuery(item.nombre);
-                            setShowStaffDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2.5 border-b border-[var(--border)] last:border-none flex items-center justify-between text-xs ${
-                            isSelected ? "bg-[var(--verde-bg)] text-[var(--verde)] font-black" : "text-[var(--text)] hover:bg-[var(--bg3)]"
-                          }`}
-                        >
-                          <span className="truncate">{item.nombre}</span>
-                          {isSelected && <Check size={12} strokeWidth={3} className="shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : isPreceptorSelf ? (
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-black uppercase text-[var(--text2)]">Preceptor/a</label>
-              <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 font-bold text-sm text-[var(--text)] flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Clock size={14} className="text-[var(--azul,#0284c7)]" />
-                  {userProfile?.nombre}
+                <label className="text-[11px] font-black uppercase text-[var(--text2)]">Agente Solicitante</label>
+                <span className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-1.5 py-0.5 rounded border border-[var(--verde-border)] flex items-center gap-1">
+                  <Check size={9} strokeWidth={3} />
+                  Asignado
                 </span>
-                <span className="text-[9px] font-black uppercase text-[var(--azul,#0284c7)] bg-[var(--azul-bg,#0ea5e920)] px-1.5 py-0.5 rounded border border-[var(--azul-border,#0ea5e940)]">
-                  Preceptoría (POD)
+              </div>
+              <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 font-bold text-sm text-[var(--text)] flex items-center justify-between">
+                <span className="flex items-center gap-2 truncate">
+                  {selectedRole === "profesor" && <GraduationCap size={15} className="text-[var(--verde)] shrink-0" />}
+                  {selectedRole === "preceptor" && <Clock size={15} className="text-[var(--azul)] shrink-0" />}
+                  {selectedRole === "directivo" && <Building2 size={15} className="text-purple-400 shrink-0" />}
+                  <span className="truncate">{activeStaff?.nombre || staffSearchQuery || userProfile?.nombre || lockedProfesor?.nombre || "Agente"}</span>
+                </span>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded border bg-[var(--bg)] text-[var(--text2)] border-[var(--border)] shrink-0">
+                  {selectedRole === "profesor" ? "Docente" : selectedRole === "preceptor" ? "Preceptor" : "Directivo"}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-black uppercase text-[var(--text2)]">Docente</label>
-              <div className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 font-bold text-sm text-[var(--text2)] opacity-80">
-                {lockedProfesor?.nombre || "Docente"}
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-black uppercase text-[var(--text2)]">Rol Estatutario</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedRole("profesor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
+                    className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
+                      selectedRole === "profesor"
+                        ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black"
+                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
+                    }`}
+                  >
+                    <GraduationCap size={13} />
+                    <span>Profesor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedRole("preceptor"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
+                    className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
+                      selectedRole === "preceptor"
+                        ? "bg-[var(--azul-bg,#0ea5e920)] text-[var(--azul,#0284c7)] border-[var(--azul-border,#0ea5e940)] font-black"
+                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
+                    }`}
+                  >
+                    <Clock size={13} />
+                    <span>Preceptor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedRole("directivo"); setSelectedProfId(""); setSelectedCourse(""); setStaffSearchQuery(""); setShowStaffDropdown(false); }}
+                    className={`p-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${
+                      selectedRole === "directivo"
+                        ? "bg-purple-500/20 text-purple-400 border-purple-500/40 font-black"
+                        : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
+                    }`}
+                  >
+                    <Building2 size={13} />
+                    <span>Directivo</span>
+                  </button>
+                </div>
               </div>
-            </div>
+
+              <div className="relative flex flex-col gap-1 z-30" ref={mobileStaffRef}>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black uppercase text-[var(--text2)]">
+                    {selectedRole === "profesor" ? "Buscar Docente" : selectedRole === "preceptor" ? "Buscar Preceptor / Personal" : "Buscar Directivo"}
+                  </label>
+                  {selectedProfId && (
+                    <span className="text-[9px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-1.5 py-0.2 rounded border border-[var(--verde-border)]">
+                      OK
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text3)] pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder={selectedRole === "profesor" ? "Escribí para buscar docente..." : "Escribí para buscar..."}
+                    className={`w-full bg-[var(--bg3)] border rounded-lg pl-8 pr-9 p-3 outline-none text-sm font-bold text-[var(--text)] transition-all ${
+                      selectedProfId ? "border-[var(--verde-border)] bg-[var(--verde-bg)]/10" : "border-[var(--border)] focus:border-[var(--verde)]"
+                    }`}
+                    value={staffSearchQuery}
+                    onChange={(e) => {
+                      setStaffSearchQuery(e.target.value);
+                      setShowStaffDropdown(true);
+                      if (selectedProfId && e.target.value !== activeStaff?.nombre) {
+                        setSelectedProfId("");
+                      }
+                    }}
+                    onFocus={() => setShowStaffDropdown(true)}
+                  />
+                  {staffSearchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStaffSearchQuery("");
+                        setSelectedProfId("");
+                        setSelectedCourse("");
+                        setShowStaffDropdown(true);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] p-1 cursor-pointer"
+                    >
+                      <X size={13} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowStaffDropdown(prev => !prev);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] p-1 cursor-pointer"
+                    >
+                      <ChevronDown size={13} className={`transition-transform ${showStaffDropdown ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
+
+                  {showStaffDropdown && filteredStaffList.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden max-h-52 overflow-y-auto custom-scrollbar">
+                      {filteredStaffList.map((item) => {
+                        const id = String(item.id || (item as any).uid);
+                        const isSelected = selectedProfId === id;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => {
+                              if (selectedRole === "preceptor") {
+                                handlePreceptorChange(id);
+                              } else {
+                                handleProfChange(id);
+                              }
+                              setStaffSearchQuery(item.nombre);
+                              setShowStaffDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 border-b border-[var(--border)] last:border-none flex items-center justify-between text-xs ${
+                              isSelected ? "bg-[var(--verde-bg)] text-[var(--verde)] font-black" : "text-[var(--text)] hover:bg-[var(--bg3)]"
+                            }`}
+                          >
+                            <span className="truncate">{item.nombre}</span>
+                            {isSelected && <Check size={12} strokeWidth={3} className="shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
 
           {/* Selector de Curso Afectado Móvil (solo profesor; preceptor auto-afecta todos sus cursos) */}
@@ -2151,47 +2245,29 @@ export default function NewAbsenceModal({
             </div>
           )}
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-black uppercase text-[var(--text2)]">Tipo de Ausencia</label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {["Licencia Médica", "Artículo", "Capacitación", "Otro"].map(t => (
+          <div className="relative flex flex-col gap-1" ref={mobileArticuloRef}>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-black uppercase text-[var(--text2)] flex items-center gap-1">
+                <BookOpen size={12} className="text-[var(--verde)]" />
+                <span>Motivo de Licencia (Artículos Estatutarios)</span>
+              </label>
+              <div className="flex items-center gap-2">
                 <button
-                  key={t}
                   type="button"
-                  onClick={() => handleTipoChange(t)}
-                  className={`p-2.5 rounded-lg border text-xs font-bold text-center ${
-                    formData.tipo === t
-                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)] font-black"
-                      : "bg-[var(--bg3)] text-[var(--text2)] border-[var(--border)]"
-                  }`}
+                  onClick={() => setIsDbModalOpen(true)}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--verde)] hover:underline"
+                  title="Abrir base completa de licencias de Chubut (166 artículos)"
                 >
-                  {t}
+                  <BookOpen size={11} />
+                  <span>DB Licencias</span>
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {formData.tipo === "Artículo" && (
-            <div className="relative flex flex-col gap-1" ref={mobileArticuloRef}>
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-black uppercase text-[var(--text2)]">Artículo de Licencia</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsDbModalOpen(true)}
-                    className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--verde)] hover:underline"
-                    title="Abrir base completa de licencias de Chubut (166 artículos)"
-                  >
-                    <BookOpen size={11} />
-                    <span>DB Licencias</span>
-                  </button>
-                  <span className="text-[9px] font-bold text-[var(--text3)] uppercase">· {selectedRole}</span>
-                </div>
+                <span className="text-[9px] font-bold text-[var(--text3)] uppercase">· {selectedRole}</span>
               </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ej: Art. 14, 15, 50..."
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por código (ej: 2A, 14) o motivo (vacaciones)..."
                   className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-lg p-3 outline-none text-sm font-semibold text-[var(--text)]"
                   value={articuloQuery}
                   onChange={(e) => {
@@ -2326,7 +2402,6 @@ export default function NewAbsenceModal({
                 );
               })()}
             </div>
-          )}
 
           <div className="flex flex-col gap-2">
             <label className="flex items-center gap-3 py-3 px-3 bg-[var(--bg3)] border border-[var(--border)] rounded-lg w-full">

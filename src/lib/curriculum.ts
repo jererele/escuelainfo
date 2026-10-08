@@ -246,8 +246,11 @@ export const DIVISIONES_OFICIALES = [
 export const TURNOS_OFICIALES = [
   "Mañana",
   "Tarde",
+  "Vespertino (Nocturna)",
   "Doble Turno"
 ] as const;
+
+export type TurnoOficial = (typeof TURNOS_OFICIALES)[number];
 
 /**
  * Formatea el nombre estándar de un curso combinando Año, División, Orientación y Turno.
@@ -292,8 +295,12 @@ export const parseCourseNameComponents = (courseName: string): {
   const clean = (courseName || "").trim();
   if (!clean) return {};
 
-  const turnoMatch = clean.match(/\((Mañana|Tarde|Doble Turno)\)/i) || clean.match(/-\s*(Mañana|Tarde|Doble Turno)/i);
-  const turno = turnoMatch ? turnoMatch[1] : undefined;
+  const turnoMatch = clean.match(/\((Mañana|Tarde|Vespertino \(Nocturna\)|Nocturna|Vespertino|Doble Turno)\)/i) || 
+                     clean.match(/-\s*(Mañana|Tarde|Vespertino \(Nocturna\)|Nocturna|Vespertino|Doble Turno)/i);
+  let turno = turnoMatch ? turnoMatch[1] : undefined;
+  if (turno && (turno.toLowerCase() === "nocturna" || turno.toLowerCase() === "vespertino")) {
+    turno = "Vespertino (Nocturna)";
+  }
 
   // Extraer año (ej: 1°, 2°, 3°, 4°, 5°, 6°, 7° o 1ro, 2do...)
   const anioMatch = clean.match(/([1-7])(?:°|ro|do|to|mo|vo|no)?/i);

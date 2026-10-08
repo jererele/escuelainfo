@@ -45,14 +45,17 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
   const isPreceptor = userProfile?.rol === 'preceptor';
   const teacherName = currentProfesor?.nombre || userProfile?.nombre || "";
   const [preceptorOnlyMine, setPreceptorOnlyMine] = useState<boolean>(true);
-  const [preceptorShiftFilter, setPreceptorShiftFilter] = useState<"todos" | "manana" | "tarde">("todos");
+  const [shiftFilter, setShiftFilter] = useState<"todos" | "manana" | "tarde" | "nocturna">("todos");
+  const preceptorShiftFilter = shiftFilter;
+  const setPreceptorShiftFilter = setShiftFilter;
 
   // Determinar turno de curso
-  const getCourseShift = (courseName: string): "manana" | "tarde" | "doble" => {
+  const getCourseShift = (courseName: string): "manana" | "tarde" | "nocturna" | "doble" => {
     const lower = (courseName || "").toLowerCase();
     if (lower.includes("doble") || lower.includes("ambos")) return "doble";
+    if (lower.includes("nocturn") || lower.includes("vespertin") || /\b(tv|tn)\b/.test(lower) || lower.includes("turno nocturn") || lower.includes("turno vespertin")) return "nocturna";
     if (lower.includes("mañana") || lower.includes("manana") || /\b(tm)\b/.test(lower) || lower.includes("turno mañana")) return "manana";
-    if (lower.includes("tarde") || lower.includes("vespertino") || /\b(tt)\b/.test(lower) || lower.includes("turno tarde")) return "tarde";
+    if (lower.includes("tarde") || /\b(tt)\b/.test(lower) || lower.includes("turno tarde")) return "tarde";
     return "doble";
   };
 
@@ -62,24 +65,53 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     return parseUserCursos(userProfile.cursos);
   }, [userProfile?.cursos]);
 
+  const filteredCursosList = useMemo(() => {
+    let list = cursos;
+    if (shiftFilter === "manana") {
+      list = cursos.filter(c => {
+        const s = getCourseShift(c.nombre);
+        return s === "manana" || s === "doble";
+      });
+    } else if (shiftFilter === "tarde") {
+      list = cursos.filter(c => {
+        const s = getCourseShift(c.nombre);
+        return s === "tarde" || s === "doble";
+      });
+    } else if (shiftFilter === "nocturna") {
+      list = cursos.filter(c => {
+        const s = getCourseShift(c.nombre);
+        return s === "nocturna" || s === "doble";
+      });
+    }
+    return [
+      { value: "", label: shiftFilter === "todos" ? "Todos los cursos" : `Todos (${shiftFilter === "manana" ? "Mañana" : shiftFilter === "tarde" ? "Tarde" : "Nocturna"})` },
+      ...list.map(c => ({ value: c.nombre, label: c.nombre }))
+    ];
+  }, [cursos, shiftFilter]);
+
   const filteredCursosForPreceptor = useMemo(() => {
     if (preceptorOnlyMine && preceptorCursos.length > 0) {
       return preceptorCursos.map(c => ({ value: c, label: c }));
     }
     let list = cursos;
-    if (preceptorShiftFilter === "manana") {
+    if (shiftFilter === "manana") {
       list = cursos.filter(c => {
         const s = getCourseShift(c.nombre);
         return s === "manana" || s === "doble";
       });
-    } else if (preceptorShiftFilter === "tarde") {
+    } else if (shiftFilter === "tarde") {
       list = cursos.filter(c => {
         const s = getCourseShift(c.nombre);
         return s === "tarde" || s === "doble";
       });
+    } else if (shiftFilter === "nocturna") {
+      list = cursos.filter(c => {
+        const s = getCourseShift(c.nombre);
+        return s === "nocturna" || s === "doble";
+      });
     }
     return [
-      { value: "", label: preceptorShiftFilter === "todos" ? "Todos los cursos" : `Todos (${preceptorShiftFilter === "manana" ? "Mañana" : "Tarde"})` },
+      { value: "", label: shiftFilter === "todos" ? "Todos los cursos" : `Todos (${shiftFilter === "manana" ? "Mañana" : shiftFilter === "tarde" ? "Tarde" : "Nocturna"})` },
       ...list.map(c => ({
         value: c.nombre,
         label: isPreceptor && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre)
@@ -87,7 +119,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
           : c.nombre
       }))
     ];
-  }, [cursos, preceptorOnlyMine, preceptorCursos, preceptorShiftFilter, isPreceptor]);
+  }, [cursos, preceptorOnlyMine, preceptorCursos, shiftFilter, isPreceptor]);
 
   // Si es preceptor, auto-seleccionar por defecto su primer curso asignado
   useEffect(() => {
@@ -125,6 +157,17 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     "18:40 - 19:20"
   ];
 
+  const nightSlots = [
+    "19:30 - 20:10",
+    "20:10 - 20:50",
+    "RECREO: 20:50 - 21:00",
+    "21:00 - 21:40",
+    "21:40 - 22:20",
+    "RECREO: 22:20 - 22:25",
+    "22:25 - 23:05",
+    "23:05 - 23:45"
+  ];
+
   const normalizeStr = (s?: string | null) => (s || "").trim().toLowerCase();
   const normalizeSlot = (s?: string | null) => (s || "").replace(/\s+/g, "").toLowerCase();
 
@@ -132,28 +175,45 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
     const allSlots = [
       ...morningSlots,
       "RECESO",
-      ...afternoonSlots
+      ...afternoonSlots,
+      "RECESO",
+      ...nightSlots
     ];
 
-    if (userProfile?.rol !== 'alumno') {
+    if (userProfile?.rol === 'alumno') {
+      const effectiveCourse = currentAlumno?.curso || "";
+      if (!effectiveCourse) return allSlots;
+
+      const courseSchedules = horarios.filter(h => normalizeStr(h.curso) === normalizeStr(effectiveCourse));
+      if (courseSchedules.length === 0) return allSlots;
+
+      const hasMorning = courseSchedules.some(h => morningSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
+      const hasAfternoon = courseSchedules.some(h => afternoonSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
+      const hasNight = courseSchedules.some(h => nightSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
+
+      if (hasNight && !hasMorning && !hasAfternoon) {
+        return nightSlots;
+      }
+      if (hasMorning && !hasAfternoon && !hasNight) {
+        return [...morningSlots, "RECESO", afternoonSlots[0], afternoonSlots[1]];
+      }
+      if (hasAfternoon && !hasMorning && !hasNight) {
+        const peSlots = morningSlots.filter(s => !s.startsWith("RECREO:")).slice(-2);
+        return [...peSlots, "RECESO", ...afternoonSlots];
+      }
+
       return allSlots;
     }
 
-    const effectiveCourse = currentAlumno?.curso || "";
-    if (!effectiveCourse) return allSlots;
+    if (shiftFilter === "manana") return morningSlots;
+    if (shiftFilter === "tarde") return afternoonSlots;
+    if (shiftFilter === "nocturna") return nightSlots;
 
-    const courseSchedules = horarios.filter(h => normalizeStr(h.curso) === normalizeStr(effectiveCourse));
-    if (courseSchedules.length === 0) return allSlots;
-
-    const hasMorning = courseSchedules.some(h => morningSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
-    const hasAfternoon = courseSchedules.some(h => afternoonSlots.some(s => normalizeSlot(s) === normalizeSlot(h.hora)));
-
-    if (hasMorning && !hasAfternoon) {
-      return [...morningSlots, "RECESO", afternoonSlots[0], afternoonSlots[1]];
-    }
-    if (hasAfternoon && !hasMorning) {
-      const peSlots = morningSlots.filter(s => !s.startsWith("RECREO:")).slice(-2);
-      return [...peSlots, "RECESO", ...afternoonSlots];
+    if (selectedCourse) {
+      const cShift = getCourseShift(selectedCourse);
+      if (cShift === "manana") return morningSlots;
+      if (cShift === "tarde") return afternoonSlots;
+      if (cShift === "nocturna") return nightSlots;
     }
 
     return allSlots;
@@ -342,14 +402,14 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                 </button>
               )}
 
-              {/* Filtro por turno para preceptores al ver todos los cursos */}
-              {isPreceptor && !preceptorOnlyMine && (
+              {/* Filtro por turno para usuarios al ver cursos o grilla */}
+              {(!isPreceptor || !preceptorOnlyMine) && (
                 <div className="flex items-center gap-1 bg-[var(--bg3)] p-1 rounded-2xl border border-[var(--border)]">
                   <button
                     type="button"
-                    onClick={() => setPreceptorShiftFilter("todos")}
+                    onClick={() => setShiftFilter("todos")}
                     className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
-                      preceptorShiftFilter === "todos"
+                      shiftFilter === "todos"
                         ? "bg-[var(--verde)] text-black"
                         : "text-[var(--text2)] hover:text-[var(--text)]"
                     }`}
@@ -358,9 +418,9 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreceptorShiftFilter("manana")}
+                    onClick={() => setShiftFilter("manana")}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
-                      preceptorShiftFilter === "manana"
+                      shiftFilter === "manana"
                         ? "bg-amber-500 text-black"
                         : "text-[var(--text2)] hover:text-[var(--text)]"
                     }`}
@@ -370,15 +430,27 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreceptorShiftFilter("tarde")}
+                    onClick={() => setShiftFilter("tarde")}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
-                      preceptorShiftFilter === "tarde"
+                      shiftFilter === "tarde"
                         ? "bg-indigo-600 text-white"
                         : "text-[var(--text2)] hover:text-[var(--text)]"
                     }`}
                   >
                     <Moon size={12} />
                     <span>Tarde</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShiftFilter("nocturna")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                      shiftFilter === "nocturna"
+                        ? "bg-purple-600 text-white"
+                        : "text-[var(--text2)] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    <Moon size={12} className="text-purple-300" />
+                    <span>Nocturna</span>
                   </button>
                 </div>
               )}
@@ -422,12 +494,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                       options={
                         isPreceptor
                           ? filteredCursosForPreceptor
-                          : [
-                              { value: "", label: "Todos los cursos" },
-                              ...cursos.map(c => ({
-                                value: c.nombre, label: c.nombre
-                              }))
-                            ]
+                          : filteredCursosList
                       }
                     />
                   )}

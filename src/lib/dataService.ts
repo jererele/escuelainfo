@@ -218,10 +218,10 @@ export const canManageUserRole = (operatorRole?: string | null, targetRole?: str
 };
 
 
-// ─── MÓDULOS HORARIOS: Almacenado como número entero (1–16) en Appwrite ───────
+// ─── MÓDULOS HORARIOS: Almacenado como número entero (1–22) en Appwrite ───────
 // Appwrite attribute type: INTEGER (size: 2)
 // El campo `hora` en la colección `horarios` guarda el número de módulo.
-// Este mapa es la fuente de verdad única para la UI y el formulario.
+// Este mapa es la fuente de verdad única para la UI y el formulario (Mañana, Tarde y Vespertino/Nocturna).
 export const MODULO_MAP: Record<number, string> = {
   1:  "07:40 - 08:20",
   2:  "08:20 - 09:00",
@@ -239,6 +239,12 @@ export const MODULO_MAP: Record<number, string> = {
   14: "17:20 - 18:00",
   15: "18:00 - 18:40",
   16: "18:40 - 19:20",
+  17: "19:30 - 20:10",
+  18: "20:10 - 20:50",
+  19: "21:00 - 21:40",
+  20: "21:40 - 22:20",
+  21: "22:25 - 23:05",
+  22: "23:05 - 23:45",
 };
 // Mapa inverso: texto -> número (para guardar en Appwrite)
 export const MODULO_REVERSE: Record<string, number> = Object.fromEntries(
@@ -248,14 +254,14 @@ export const MODULO_REVERSE: Record<string, number> = Object.fromEntries(
 export const toDbHora = (display: string | number | null | undefined): number => {
   if (display === null || display === undefined) return 1;
   if (typeof display === "number") {
-    return display >= 1 && display <= 16 ? display : 1;
+    return display >= 1 && display <= 22 ? display : 1;
   }
   const str = String(display).trim();
   if (MODULO_REVERSE[str]) return MODULO_REVERSE[str];
 
-  // Si ya es un dígito del 1 al 16
+  // Si ya es un dígito del 1 al 22
   const num = Number(str);
-  if (!isNaN(num) && num >= 1 && num <= 16) return num;
+  if (!isNaN(num) && num >= 1 && num <= 22) return num;
 
   // Matching flexible ignorando espacios (ej: "07:40-08:20")
   const cleanStr = str.replace(/\s+/g, "").toLowerCase();
@@ -269,7 +275,7 @@ export const toDbHora = (display: string | number | null | undefined): number =>
   const m = str.match(/(\d+)/);
   if (m) {
     const extracted = parseInt(m[1], 10);
-    if (extracted >= 1 && extracted <= 16) return extracted;
+    if (extracted >= 1 && extracted <= 22) return extracted;
   }
 
   return 1;
@@ -284,9 +290,9 @@ export const fromDbHora = (code: number | string | null | undefined): string => 
     return "Hora a confirmar";
   }
 
-  // Si es un número del 1 al 16 (código de módulo)
+  // Si es un número del 1 al 22 (código de módulo)
   const num = Number(rawStr);
-  if (!isNaN(num) && num >= 1 && num <= 16 && MODULO_MAP[num]) {
+  if (!isNaN(num) && num >= 1 && num <= 22 && MODULO_MAP[num]) {
     return MODULO_MAP[num];
   }
 
@@ -299,7 +305,7 @@ export const fromDbHora = (code: number | string | null | undefined): string => 
   const modMatch = rawStr.match(/(\d+)/);
   if (modMatch) {
     const extractedNum = parseInt(modMatch[1], 10);
-    if (extractedNum >= 1 && extractedNum <= 16 && MODULO_MAP[extractedNum]) {
+    if (extractedNum >= 1 && extractedNum <= 22 && MODULO_MAP[extractedNum]) {
       return MODULO_MAP[extractedNum];
     }
   }

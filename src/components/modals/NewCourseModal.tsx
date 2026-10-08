@@ -8,6 +8,7 @@ import {
   ORIENTACIONES_OFICIALES, 
   DIVISIONES_OFICIALES, 
   TURNOS_OFICIALES, 
+  TurnoOficial,
   formatOfficialCourseName, 
   parseCourseNameComponents,
   OrientacionItem 
@@ -28,7 +29,7 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess, initialCurs
   const [orientacionId, setOrientacionId] = useState<string>("ciclo_basico");
   const [anio, setAnio] = useState<string>("1°");
   const [division, setDivision] = useState<string>("1ra");
-  const [turno, setTurno] = useState<"Mañana" | "Tarde" | "Doble Turno">("Mañana");
+  const [turno, setTurno] = useState<TurnoOficial>("Mañana");
 
   // Estado para modo manual
   const [nombreManual, setNombreManual] = useState("");
@@ -43,8 +44,8 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess, initialCurs
       const parsed = parseCourseNameComponents(initialCurso.nombre);
       if (parsed.anio) setAnio(parsed.anio);
       if (parsed.division) setDivision(parsed.division);
-      if (parsed.turno && (parsed.turno === "Mañana" || parsed.turno === "Tarde" || parsed.turno === "Doble Turno")) {
-        setTurno(parsed.turno as any);
+      if (parsed.turno && (parsed.turno === "Mañana" || parsed.turno === "Tarde" || parsed.turno === "Vespertino (Nocturna)" || parsed.turno === "Doble Turno")) {
+        setTurno(parsed.turno as TurnoOficial);
       }
       if (parsed.orientacion) {
         const found = ORIENTACIONES_OFICIALES.find(o => 
@@ -271,7 +272,7 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess, initialCurs
                 <select
                   required
                   value={turno}
-                  onChange={(e) => setTurno(e.target.value as "Mañana" | "Tarde" | "Doble Turno")}
+                  onChange={(e) => setTurno(e.target.value as TurnoOficial)}
                   className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3.5 outline-none font-bold text-xs sm:text-sm text-[var(--text)] focus:border-[var(--verde)] transition-all cursor-pointer"
                 >
                   {TURNOS_OFICIALES.map((t) => (
@@ -303,10 +304,11 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess, initialCurs
               <div>
                 <label className="text-[10px] font-black uppercase text-[var(--text3)] mb-1 block ml-2">Turno Horario</label>
                 <select required
-                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm"
-                  value={turno} onChange={(e) => setTurno(e.target.value as "Mañana" | "Tarde" | "Doble Turno")}>
+                  className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-4 outline-none font-bold text-[var(--text)] focus:border-[var(--verde)] transition-all text-sm cursor-pointer"
+                  value={turno} onChange={(e) => setTurno(e.target.value as TurnoOficial)}>
                   <option value="Mañana">Mañana (Turno Mañana)</option>
                   <option value="Tarde">Tarde (Turno Tarde)</option>
+                  <option value="Vespertino (Nocturna)">Vespertino / Nocturna (Turno Noche)</option>
                   <option value="Doble Turno">Doble Turno (Mañana y Tarde)</option>
                 </select>
               </div>
