@@ -658,7 +658,8 @@ function LoginContent() {
                         <button
                           type="button"
                           onClick={() => setShowForgotPass(p => !p)}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors"
+                          aria-label={showForgotPass ? "Ocultar contraseña" : "Ver contraseña"}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text3)] hover:text-[var(--text)] transition-colors cursor-pointer"
                         >
                           {showForgotPass ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -722,7 +723,8 @@ function LoginContent() {
                       className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 pr-11 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] transition-colors text-sm"
                       value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button type="button" onClick={() => setShowPassword(p => !p)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
+                      aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text3)] hover:text-[var(--text)] transition-colors cursor-pointer">
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
@@ -804,7 +806,8 @@ function LoginContent() {
                       className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 pr-11 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
                       value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button type="button" onClick={() => setShowPassword(p => !p)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors">
+                      aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text3)] hover:text-[var(--text)] transition-colors cursor-pointer">
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
