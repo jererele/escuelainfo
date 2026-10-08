@@ -511,17 +511,15 @@ function LoginContent() {
     }
   };
 
-  if (!mounted || checkingSession) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-transparent">
-        <div className="w-10 h-10 border-4 border-[var(--border)] border-t-[var(--verde)] rounded-full animate-spin"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex items-center justify-center relative px-4 bg-transparent py-10">
-      <div className="login-box w-full max-w-[440px] p-6 sm:p-9 rounded-2xl relative z-10 border border-[var(--border)] bg-[var(--bg2)] shadow-xl sm:shadow-2xl">
+      <div className="login-box w-full max-w-[440px] p-6 sm:p-9 rounded-2xl relative z-10 border border-[var(--border)] bg-[var(--bg2)] shadow-xl sm:shadow-2xl overflow-hidden">
+        {checkingSession && (
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-[var(--verde)]/20 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div className="h-full bg-[var(--verde)] w-1/3 animate-pulse" />
+          </div>
+        )}
         {requestSuccess ? (
           <div className="text-center py-6 animate-fade-in">
             <div className="w-14 h-14 bg-[var(--verde-bg)] text-[var(--verde)] rounded-2xl flex items-center justify-center mx-auto mb-5 border border-[var(--verde-border)] shadow-sm">

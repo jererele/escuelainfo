@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Outfit, Geist, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import CosmosBackground from "@/components/layout/CosmosBackground";
 import TermsModal from "@/components/modals/TermsModal";
@@ -7,6 +8,24 @@ import SileoToaster from "@/components/ui/SileoToaster";
 import DatePickerEnhancer from "@/components/ui/DatePickerEnhancer";
 import NyanCatGamerOverlay from "@/components/easter-egg/NyanCatGamerOverlay";
 import NetworkStatusIndicator from "@/components/shared/NetworkStatusIndicator";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -44,14 +63,11 @@ export default function RootLayout({
   return (
     // suppressHydrationWarning en <html> evita el warning de hidratación cuando
     // el JS de tema agrega/quita la clase 'dark' antes del primer render.
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className={`${geistSans.variable} ${outfit.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
-          rel="stylesheet"
-        />
+        {/* Preconexión de baja latencia a Appwrite Cloud para máxima velocidad de carga (LCP) */}
+        <link rel="preconnect" href="https://cloud.appwrite.io" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cloud.appwrite.io" />
         {/* Script de tema y recuperación automática de chunks tras nuevo despliegue */}
         <script
           suppressHydrationWarning
