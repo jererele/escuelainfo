@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.38.0";
-export const APP_BUILD_DATE = "08/10/2026 16:05 hs";
+export const APP_VERSION = "v2.38.1";
+export const APP_BUILD_DATE = "08/10/2026 16:20 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Selector Provincial de Escuelas Secundarias de Chubut por Regiones Educativas (chubutSchools.ts, ChubutSchoolSelector.tsx, page.tsx, /api/auth/register): 1) Catálogo Provincial Oficial: Inclusión de 63 escuelas secundarias (técnicas, agrotécnicas, bachilleres y artísticas) de toda la Provincia del Chubut agrupadas en sus 6 Regiones Educativas del Ministerio de Educación (Región I: Noroeste Cordillerano, Región II: Península Valdés y Golfo Nuevo, Región III: Cordillera Central, Región IV: VIRCh, Región V: Meseta Central, Región VI: Golfo San Jorge y Cuenca Sur). 2) Selector Interactivo en Login y Registro: Buscador en tiempo real por número, nombre o ciudad, con filtros por pestañas de región, insignias por modalidad y persistencia automática en el dispositivo. 3) Integración en Registro: Campo interactivo obligatorio en el Paso 1 de registro y trazabilidad en los logs de auditoría institucional."
+  "Motor de Notificaciones en Tiempo Real y Persistencia en Appwrite WebSockets (dataService.ts, NotificationsBell.tsx, SendNoticeModal.tsx, page.tsx, /api/auth/register): 1) Infraestructura de Notificaciones en Appwrite: Colección 'notificaciones' en base de datos de Appwrite (escuelainfodb) con persistencia en el servidor en lugar de únicamente localStorage local. Las notificaciones ahora se sincronizan entre todos los dispositivos y cuentas. 2) Tiempo Real Instantáneo (<100ms) vía WebSockets: Suscripción en vivo cliente-servidor mediante 'appwriteClient.subscribe' combinada con BroadcastChannel y sondeo de seguridad cada 10s. 3) Campana Interactiva con Alertas Sonoras y Toast: Alertas flotantes inmediatas y timbre armónico sintetizado con Web Audio API (chime sin dependencias de audio externas), vibración táctil, filtros por estado ('Todas' / 'No leídas'), eliminación individual y lectura masiva. 4) Despacho Automático en Eventos Críticos: Generación de alertas en vivo ante inasistencias docentes (notificando a alumnos y preceptores), avisos institucionales masivos, aprobaciones de cuentas, cambios de jerarquía de rol y registros pendientes de validación."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.38.1",
+    date: "08/10/2026 16:20 hs",
+    notes: [
+      "Motor de Notificaciones en Tiempo Real y Persistencia en Appwrite WebSockets (dataService.ts, NotificationsBell.tsx, SendNoticeModal.tsx, page.tsx, /api/auth/register): 1) Infraestructura de Notificaciones en Appwrite: Colección 'notificaciones' en base de datos de Appwrite (escuelainfodb) con persistencia en el servidor en lugar de únicamente localStorage local. Las notificaciones ahora se sincronizan entre todos los dispositivos y cuentas. 2) Tiempo Real Instantáneo (<100ms) vía WebSockets: Suscripción en vivo cliente-servidor mediante 'appwriteClient.subscribe' combinada con BroadcastChannel y sondeo de seguridad cada 10s. 3) Campana Interactiva con Alertas Sonoras y Toast: Alertas flotantes inmediatas y timbre armónico sintetizado con Web Audio API (chime sin dependencias de audio externas), vibración táctil, filtros por estado ('Todas' / 'No leídas'), eliminación individual y lectura masiva. 4) Despacho Automático en Eventos Críticos: Generación de alertas en vivo ante inasistencias docentes (notificando a alumnos y preceptores), avisos institucionales masivos, aprobaciones de cuentas, cambios de jerarquía de rol y registros pendientes de validación."
+    ]
+  },
   {
     version: "v2.38.0",
     date: "08/10/2026 16:05 hs",

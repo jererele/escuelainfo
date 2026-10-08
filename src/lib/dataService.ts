@@ -33,6 +33,7 @@ const APPWRITE_CURSOS_COLLECTION_ID  = "cursos";
 const APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID = "asistencias_alumnos_jornada";
 const APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID = "asistencias_alumnos_materia";
 const APPWRITE_MESAS_EXAMEN_COLLECTION_ID = "mesas_examen";
+const APPWRITE_NOTIFS_COLLECTION_ID  = "notificaciones";
 
 const DEFAULT_LIMIT = 200;
 
@@ -1318,6 +1319,23 @@ export const saveAusencia = async (ausencia: Ausencia) => {
                 fechaReg: new Date().toISOString()
               } });
     notifyRealtimeUpdate("ausencias");
+
+    // Notificación en tiempo real para la comunidad educativa (Directivos, Preceptores, Alumnos)
+    saveNotificacion({
+      tipo: "inasistencia_docente",
+      titulo: `Aviso de Inasistencia: ${ausencia.profNombre}`,
+      mensaje: `El docente ${ausencia.profNombre} registró ${ausencia.tipo} (${ausencia.inicio === ausencia.fin ? ausencia.inicio : `del ${ausencia.inicio} al ${ausencia.fin}`}). Materias: ${ausencia.materias.join(", ")}.`,
+      destinatarioRol: "todos",
+      metadata: {
+        profId: String(ausencia.profId),
+        profNombre: ausencia.profNombre,
+        tipo: ausencia.tipo,
+        inicio: ausencia.inicio,
+        fin: ausencia.fin || ausencia.inicio,
+        materias: ausencia.materias,
+      }
+    }).catch(() => {});
+
     return response.$id;
   } catch (err) { devLog("saveAusencia", err); throw err; }
 };
@@ -2142,64 +2160,156 @@ export const deleteSuspension = async (id: string) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICACIONES INTERNAS DEL SISTEMA (DIRECTIVOS, PRECEPTORES, PERSONAL)
+// NOTIFICACIONES INTERNAS DEL SISTEMA (EN TIEMPO REAL CON APPWRITE Y WEBSOCKETS)
 // ─────────────────────────────────────────────────────────────────────────────
+
+export type NotificacionTipo = 
+  | "licencia_preceptor_aprobada" 
+  | "cobertura_asignada" 
+  | "aviso_general" 
+  | "inasistencia_docente" 
+  | "nuevo_usuario_pendiente" 
+  | "rol_actualizado";
 
 export interface NotificacionSistema {
   id: string;
-  tipo: "licencia_preceptor_aprobada" | "cobertura_asignada" | "aviso_general";
+  tipo: NotificacionTipo;
   titulo: string;
   mensaje: string;
-  destinatarioRol?: "directivo" | "admin" | "preceptor" | "todos";
+  destinatarioRol?: "directivo" | "admin" | "preceptor" | "profesor" | "alumno" | "todos";
   destinatarioEmail?: string;
   destinatarioId?: string;
   leida: boolean;
   fecha: string;
-  metadata?: {
-    preceptorTitularNombre?: string;
-    preceptorTitularId?: string;
-    preceptorCubridorNombre?: string;
-    preceptorCubridorEmail?: string;
-    preceptorCubridorId?: string;
-    cursosAfectados?: string[];
-    inicio?: string;
-    fin?: string;
-    licenciaId?: string;
-  };
+  metadata?: Record<string, any>;
 }
 
-export const getNotificaciones = (userEmail?: string, userRole?: string): NotificacionSistema[] => {
+/**
+ * Consulta síncrona en memoria/localStorage para carga instantánea de UI.
+ */
+export const getCachedNotificaciones = (userEmail?: string, userRole?: string): NotificacionSistema[] => {
   const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
   const cleanEmail = (userEmail || "").trim().toLowerCase();
-  const cleanRole = (userRole || "").trim().toLowerCase();
+  const cleanRole = fromDbRol(userRole || "").trim().toLowerCase();
 
-  return all.filter(n => {
-    // Si tiene destinatario específico por email
-    if (n.destinatarioEmail && cleanEmail) {
-      if (n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+  return all.filter((n) => {
+    if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+    if (!n.destinatarioRol || n.destinatarioRol === "todos") return true;
+    if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) return true;
+    if (n.destinatarioRol === "admin" && cleanRole === "admin") return true;
+    if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") {
+      if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
     }
-    // Si tiene destinatario por rol
-    if (n.destinatarioRol) {
-      if (n.destinatarioRol === "todos") return true;
-      if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) return true;
-      if (n.destinatarioRol === "admin" && cleanRole === "admin") return true;
-      if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") {
-        // Si no tiene destinatarioEmail, va para todos los preceptores
-        if (!n.destinatarioEmail) return true;
-      }
+    if (n.destinatarioRol === "profesor" && cleanRole === "profesor") {
+      if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+    }
+    if (n.destinatarioRol === "alumno" && cleanRole === "alumno") {
+      if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
     }
     return false;
   }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 };
 
-export const saveNotificacion = (notif: Omit<NotificacionSistema, "id" | "fecha" | "leida">): NotificacionSistema => {
-  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+/**
+ * Obtiene las notificaciones activas desde Appwrite Databases con fallback a caché local.
+ */
+export const getNotificaciones = async (userEmail?: string, userRole?: string): Promise<NotificacionSistema[]> => {
+  const cleanEmail = (userEmail || "").trim().toLowerCase();
+  const cleanRole = fromDbRol(userRole || "").trim().toLowerCase();
+
+  try {
+    const res = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+      queries: [
+        Query.orderDesc("fecha"),
+        Query.limit(100)
+      ]
+    });
+
+    const notifs: NotificacionSistema[] = res.documents.map((doc: any) => ({
+      id: doc.$id,
+      tipo: doc.tipo as NotificacionTipo,
+      titulo: doc.titulo,
+      mensaje: doc.mensaje,
+      destinatarioRol: doc.destinatarioRol,
+      destinatarioEmail: doc.destinatarioEmail,
+      destinatarioId: doc.destinatarioId,
+      leida: !!doc.leida,
+      fecha: doc.fecha,
+      metadata: doc.metadata ? (typeof doc.metadata === "string" ? JSON.parse(doc.metadata) : doc.metadata) : undefined,
+    }));
+
+    const filtered = notifs.filter((n) => {
+      if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) {
+        return true;
+      }
+      if (!n.destinatarioRol || n.destinatarioRol === "todos") {
+        return true;
+      }
+      if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) {
+        return true;
+      }
+      if (n.destinatarioRol === "admin" && cleanRole === "admin") {
+        return true;
+      }
+      if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") {
+        if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+      }
+      if (n.destinatarioRol === "profesor" && cleanRole === "profesor") {
+        if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+      }
+      if (n.destinatarioRol === "alumno" && cleanRole === "alumno") {
+        if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+      }
+      return false;
+    }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+    setLocalStorageData("notificaciones_sistema", filtered);
+    return filtered;
+  } catch (err) {
+    devLog("getNotificaciones", err);
+    return getCachedNotificaciones(userEmail, userRole);
+  }
+};
+
+/**
+ * Guarda una nueva notificación en la base de datos de Appwrite y la difunde en tiempo real.
+ */
+export const saveNotificacion = async (
+  notif: Omit<NotificacionSistema, "id" | "fecha" | "leida">
+): Promise<NotificacionSistema> => {
   const newNotif: NotificacionSistema = {
     ...notif,
     id: "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
     leida: false,
     fecha: new Date().toISOString(),
   };
+
+  try {
+    const doc = await databases.createDocument({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+      documentId: ID.unique(),
+      data: {
+        tipo: notif.tipo,
+        titulo: sanitize(notif.titulo, 250),
+        mensaje: sanitize(notif.mensaje, 1000),
+        destinatarioRol: notif.destinatarioRol || "todos",
+        destinatarioEmail: notif.destinatarioEmail ? notif.destinatarioEmail.trim().toLowerCase() : "",
+        destinatarioId: notif.destinatarioId || "",
+        leida: false,
+        fecha: newNotif.fecha,
+        metadata: notif.metadata ? JSON.stringify(notif.metadata) : "",
+      }
+    });
+    newNotif.id = doc.$id;
+  } catch (err) {
+    devLog("saveNotificacion/appwrite", err);
+  }
+
+  // Actualizar backup en caché local
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
   all.unshift(newNotif);
   setLocalStorageData("notificaciones_sistema", all);
 
@@ -2215,10 +2325,137 @@ export const saveNotificacion = (notif: Omit<NotificacionSistema, "id" | "fecha"
   return newNotif;
 };
 
-export const markNotificacionAsRead = (id: string) => {
+/**
+ * Suscripción en Tiempo Real con Appwrite WebSockets para notificaciones instantáneas.
+ */
+export const subscribeToNotificaciones = (
+  userEmail: string | undefined,
+  userRole: string | undefined,
+  callback: (data: NotificacionSistema[], newArrival?: NotificacionSistema) => void
+) => {
+  let isSubscribed = true;
+  let retryTimeout: NodeJS.Timeout | null = null;
+
+  // Entrega inmediata desde caché para visualización instantánea sin latencia
+  const initialCache = getCachedNotificaciones(userEmail, userRole);
+  if (initialCache.length > 0) {
+    callback(initialCache);
+  }
+
+  const fetchNotifs = async (newArrival?: NotificacionSistema) => {
+    try {
+      const data = await getNotificaciones(userEmail, userRole);
+      if (isSubscribed) {
+        callback(data, newArrival);
+      }
+    } catch (err) {
+      devLog("subscribeToNotificaciones/fetch", err);
+    }
+  };
+
+  fetchNotifs();
+
+  // Suscripción WebSocket oficial de Appwrite Realtime
+  const unsubscribeAppwrite = appwriteClient.subscribe(
+    `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_NOTIFS_COLLECTION_ID}.documents`,
+    (response: any) => {
+      let incoming: NotificacionSistema | undefined;
+      if (response?.payload) {
+        const doc = response.payload;
+        incoming = {
+          id: doc.$id,
+          tipo: doc.tipo as NotificacionTipo,
+          titulo: doc.titulo,
+          mensaje: doc.mensaje,
+          destinatarioRol: doc.destinatarioRol,
+          destinatarioEmail: doc.destinatarioEmail,
+          destinatarioId: doc.destinatarioId,
+          leida: !!doc.leida,
+          fecha: doc.fecha,
+          metadata: doc.metadata ? (typeof doc.metadata === "string" ? JSON.parse(doc.metadata) : doc.metadata) : undefined,
+        };
+      }
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = setTimeout(() => {
+        if (isSubscribed) fetchNotifs(incoming);
+      }, 80);
+    }
+  );
+
+  // Evento local en la misma pestaña
+  const handleLocal = (e: Event) => {
+    const customEvent = e as CustomEvent<NotificacionSistema>;
+    if (isSubscribed) fetchNotifs(customEvent.detail);
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:notificaciones-updated", handleLocal);
+  }
+
+  // BroadcastChannel entre pestañas abiertas
+  let bc: BroadcastChannel | null = null;
+  if (typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") {
+    try {
+      bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "notificaciones" && isSubscribed) {
+          fetchNotifs(event.data.notif);
+        }
+      };
+    } catch {}
+  }
+
+  // Polling de seguridad de alta resiliencia cada 10 segundos
+  const interval = setInterval(() => {
+    if (isSubscribed) fetchNotifs();
+  }, 10000);
+
+  // Sincronización al regresar a la ventana
+  const handleFocus = () => {
+    if (isSubscribed) fetchNotifs();
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isSubscribed) fetchNotifs();
+    });
+  }
+
+  return () => {
+    isSubscribed = false;
+    if (retryTimeout) clearTimeout(retryTimeout);
+    clearInterval(interval);
+    unsubscribeAppwrite();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:notificaciones-updated", handleLocal);
+      window.removeEventListener("focus", handleFocus);
+    }
+    if (bc) {
+      try { bc.close(); } catch {}
+    }
+  };
+};
+
+/**
+ * Marca una notificación individual como leída en Appwrite y en local.
+ */
+export const markNotificacionAsRead = async (id: string) => {
+  try {
+    if (!id.startsWith("notif_")) {
+      await databases.updateDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+        documentId: id,
+        data: { leida: true }
+      });
+    }
+  } catch (err) {
+    devLog("markNotificacionAsRead", err);
+  }
+
   const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
   const updated = all.map(n => n.id === id ? { ...n, leida: true } : n);
   setLocalStorageData("notificaciones_sistema", updated);
+
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
@@ -2229,22 +2466,78 @@ export const markNotificacionAsRead = (id: string) => {
   }
 };
 
-export const markAllNotificacionesAsRead = (userEmail?: string, userRole?: string) => {
+/**
+ * Marca todas las notificaciones del usuario como leídas.
+ */
+export const markAllNotificacionesAsRead = async (userEmail?: string, userRole?: string) => {
+  try {
+    const current = await getNotificaciones(userEmail, userRole);
+    const unread = current.filter(n => !n.leida);
+
+    Promise.all(
+      unread.map(n => {
+        if (!n.id.startsWith("notif_")) {
+          return databases.updateDocument({
+            databaseId: APPWRITE_DB_ID,
+            collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+            documentId: n.id,
+            data: { leida: true }
+          }).catch(() => {});
+        }
+        return Promise.resolve();
+      })
+    ).catch(() => {});
+  } catch {}
+
   const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
   const cleanEmail = (userEmail || "").trim().toLowerCase();
-  const cleanRole = (userRole || "").trim().toLowerCase();
+  const cleanRole = fromDbRol(userRole || "").trim().toLowerCase();
 
   const updated = all.map(n => {
     let belongs = false;
     if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) belongs = true;
+    if (!n.destinatarioRol || n.destinatarioRol === "todos") belongs = true;
     if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) belongs = true;
     if (n.destinatarioRol === "admin" && cleanRole === "admin") belongs = true;
-    if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor" && (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail)) belongs = true;
+    if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") belongs = true;
+    if (n.destinatarioRol === "profesor" && cleanRole === "profesor") belongs = true;
+    if (n.destinatarioRol === "alumno" && cleanRole === "alumno") belongs = true;
     if (belongs) return { ...n, leida: true };
     return n;
   });
 
   setLocalStorageData("notificaciones_sistema", updated);
+
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "notificaciones", timestamp: Date.now() });
+      bc.close();
+    } catch {}
+  }
+};
+
+/**
+ * Elimina una notificación del sistema.
+ */
+export const deleteNotificacion = async (id: string) => {
+  try {
+    if (!id.startsWith("notif_")) {
+      await databases.deleteDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+        documentId: id
+      });
+    }
+  } catch (err) {
+    devLog("deleteNotificacion", err);
+  }
+
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const updated = all.filter(n => n.id !== id);
+  setLocalStorageData("notificaciones_sistema", updated);
+
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));

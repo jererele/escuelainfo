@@ -262,6 +262,19 @@ export async function POST(request: Request) {
         fecha: new Date().toISOString(),
         ip: clientIp,
       });
+
+      // Notificación en tiempo real para el equipo de directivos y preceptores
+      await databases.createDocument(dbId, 'notificaciones', ID.unique(), {
+        tipo: 'nuevo_usuario_pendiente',
+        titulo: 'Nueva Solicitud de Acceso',
+        mensaje: `${fullName} (${cleanEmail}) se ha registrado y requiere aprobación de rol.`,
+        destinatarioRol: 'directivo',
+        destinatarioEmail: '',
+        destinatarioId: '',
+        leida: false,
+        fecha: new Date().toISOString(),
+        metadata: JSON.stringify({ email: cleanEmail, nombre: fullName, dni: cleanDni, escuela: escuela || '' }),
+      });
     } catch {}
 
     // Invalidar token OTP usado y limpiar límites

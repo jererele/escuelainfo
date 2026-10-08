@@ -883,6 +883,21 @@ export default function Dashboard() {
           : undefined,
       }).catch(err => console.error("Error al enviar email de aprobación:", err));
 
+      // Guardar notificación en tiempo real para la campana del usuario
+      saveNotificacion({
+        tipo: "rol_actualizado",
+        titulo: "¡Cuenta institucional aprobada!",
+        mensaje: `Bienvenido/a ${u.nombre}. Tu cuenta fue aprobada con el rol de ${label}${targetRole === "alumno" && selectedCurso ? ` en ${selectedCurso}` : ""}.`,
+        destinatarioEmail: u.email,
+        destinatarioRol: targetRole,
+        destinatarioId: u.id || u.uid,
+        metadata: {
+          aprobadoPor: user?.email || "autoridad",
+          rolAsignado: targetRole,
+          curso: selectedCurso || null
+        }
+      }).catch(err => console.error("Error al guardar notificación de aprobación:", err));
+
       // Forzar actualización ignorando caché local de sesión
       await Promise.all([
         getUsuarios(true).then(setUsuarios),
@@ -985,6 +1000,11 @@ export default function Dashboard() {
     };
     const newLabel = roleLabels[normalizedNewRole] || normalizedNewRole;
     const isPromotingToAdmin = normalizedNewRole === "admin" && normalizedTargetRole !== "admin";
+    const extraDetails = normalizedNewRole === "alumno" && selectedCurso
+      ? ` (Curso: ${selectedCurso})`
+      : normalizedNewRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
+      ? ` (Cursos: ${preceptorCursos.join(", ")})`
+      : "";
 
     try {
       // Actualización optimista local solo para roles que no son elevación a administrador
@@ -1110,11 +1130,6 @@ export default function Dashboard() {
         }
 
         const oldLabel = roleLabels[normalizedTargetRole] || normalizedTargetRole;
-        const extraDetails = normalizedNewRole === "alumno" && selectedCurso
-          ? ` (Curso: ${selectedCurso})`
-          : normalizedNewRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
-          ? ` (Cursos: ${preceptorCursos.join(", ")})`
-          : "";
 
         await logAction(
           user?.email || "admin",
@@ -1124,6 +1139,21 @@ export default function Dashboard() {
       }
 
       showToast(`Rol de ${targetUser.nombre} actualizado a ${newLabel}`, "success");
+
+      // Despachar notificación en tiempo real al usuario destinatario
+      saveNotificacion({
+        tipo: "rol_actualizado",
+        titulo: `Rol institucional actualizado a ${newLabel}`,
+        mensaje: `Tu jerarquía institucional ha sido actualizada a ${newLabel}${extraDetails}.`,
+        destinatarioEmail: targetUserEmail,
+        destinatarioRol: normalizedNewRole as any,
+        destinatarioId: targetUserId,
+        metadata: {
+          modificadoPor: user?.email || "admin",
+          nuevoRol: normalizedNewRole,
+          rolAnterior: normalizedTargetRole
+        }
+      }).catch(err => console.error("Error al guardar notificación de cambio de rol:", err));
 
       // Invalidar caché y forzar recarga de datos actualizados desde la base de datos
       await Promise.all([

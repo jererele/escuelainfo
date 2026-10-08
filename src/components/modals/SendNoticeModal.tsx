@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { X, Mail, AlertCircle, Send, Loader2, Lightbulb, ShieldCheck, UserCheck } from "lucide-react";
-import { Alumno, Profesor, UserProfile, Curso, logAction } from "@/lib/dataService";
+import { Alumno, Profesor, UserProfile, Curso, logAction, saveNotificacion } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 import { notify } from "@/lib/notify";
 
@@ -241,6 +241,15 @@ export default function SendNoticeModal({
       if (!res.ok) {
         throw new Error(data.error || "No se pudo enviar el correo");
       }
+
+      // Despachar notificación del sistema en tiempo real para la campana de notificaciones
+      saveNotificacion({
+        tipo: "aviso_general",
+        titulo: `Comunicado: ${subject}`,
+        mensaje: message.length > 250 ? message.slice(0, 247) + "..." : message,
+        destinatarioRol: destino === "profesores" ? "profesor" : (destino === "alumnos" || destino === "curso" || destino === "mis_cursos") ? "alumno" : "todos",
+      }).catch(() => {});
+
       return data;
     };
 
