@@ -3,7 +3,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { logAction } from '@/lib/dataService';
 import EscuelaInfoLogo from '@/components/shared/EscuelaInfoLogo';
-import { Check } from 'lucide-react';
+import { Check, X, BookOpen, FileText } from 'lucide-react';
+
+export interface TermsModalProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  onAccept?: () => void;
+}
+
+export function openTermsModal() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('escuelainfo:open-terms'));
+  }
+}
 
 // ─── Constantes de versión del acuerdo ───────────────────────────────────────
 // IMPORTANTE: Incrementar AGREEMENT_VERSION cada vez que se modifiquen los TyC.
@@ -282,35 +294,67 @@ leído, comprendido y aceptado la totalidad de estos Términos.
 ════════════════════════════════════════════════════════════`;
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function TermsModal() {
-  const [accepted, setAccepted] = useState<boolean | null>(null);
-  const [visible, setVisible]   = useState(false);
-  const [canAccept, setCanAccept] = useState(false);
-  const [saving, setSaving]     = useState(false);
+export default function TermsModal({
+  isOpen: propIsOpen,
+  onClose: propOnClose,
+  onAccept: propOnAccept,
+}: TermsModalProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [canAccept, setCanAccept] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // ── Leer localStorage — solo en cliente ───────────────────────────────────
+  const isControlled = propIsOpen !== undefined;
+  const showModal = isControlled ? Boolean(propIsOpen) : internalOpen;
+
+  // Escuchar evento para abrir bajo demanda desde cualquier punto de la aplicación
   useEffect(() => {
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === 'true') {
-        setAccepted(true);
-      } else {
-        setAccepted(false);
-        // Bloquear scroll del body mientras el modal está abierto
-        document.body.style.overflow = 'hidden';
-        requestAnimationFrame(() => setVisible(true));
-      }
-    } catch {
-      setAccepted(false);
-      document.body.style.overflow = 'hidden';
-      requestAnimationFrame(() => setVisible(true));
-    }
-    // Limpiar overflow al desmontar (por si acaso)
-    return () => { document.body.style.overflow = ''; };
+    const handleOpen = () => {
+      setInternalOpen(true);
+    };
+    window.addEventListener('escuelainfo:open-terms', handleOpen);
+    return () => {
+      window.removeEventListener('escuelainfo:open-terms', handleOpen);
+    };
   }, []);
 
-  // ── Scroll obligatorio (prueba legal de lectura con tolerancia móvil) ─────
+  // Controlar animación de visibilidad y bloqueo de scroll solo mientras está abierto
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+      const frame = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setVisible(false);
+      document.body.style.overflow = '';
+    }
+  }, [showModal]);
+
+  const handleClose = useCallback(() => {
+    document.body.style.overflow = '';
+    setVisible(false);
+    setTimeout(() => {
+      if (isControlled) {
+        propOnClose?.();
+      } else {
+        setInternalOpen(false);
+      }
+    }, 220);
+  }, [isControlled, propOnClose]);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    if (!showModal) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [showModal, handleClose]);
+
+  // Medir progreso de lectura
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -323,7 +367,6 @@ export default function TermsModal() {
     const currentProgress = Math.min(100, Math.round((el.scrollTop / maxScroll) * 100));
     setReadProgress(currentProgress);
 
-    // Tolerancia de 15px o >= 95% para dispositivos móviles con subpíxeles y rebote
     if (!canAccept && (el.scrollTop + el.clientHeight >= el.scrollHeight - 15 || currentProgress >= 95)) {
       setCanAccept(true);
       setReadProgress(100);
@@ -337,26 +380,15 @@ export default function TermsModal() {
     }
   };
 
-  // ── Aceptar: guardar timestamp en localStorage + Appwrite logs ───────────
+  // Aceptar acuerdos
   const handleAccept = useCallback(async () => {
-    if (!canAccept || saving) return;
+    if (saving) return;
     setSaving(true);
 
     const ts = new Date().toISOString();
-    const record = JSON.stringify({
-      accepted: true,
-      version: AGREEMENT_VERSION,
-      timestamp: ts,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-    });
 
-    // 1. Persistir localmente (acceso instantáneo en próximas visitas)
     try { localStorage.setItem(STORAGE_KEY, 'true'); } catch { /* noop */ }
 
-    // 2. Registrar en Appwrite logs como prueba auditable server-side
-    //    La función logAction ya existe en dataService.ts y escribe en la
-    //    colección "logs" vinculada al email de sesión activa.
-    //    Si el usuario aún no inició sesión, se registra como "anonimo".
     try {
       await logAction(
         'anonimo@pre-login',
@@ -364,26 +396,41 @@ export default function TermsModal() {
         `version=${AGREEMENT_VERSION} | timestamp=${ts} | key=${STORAGE_KEY}`
       );
     } catch {
-      // El fallo de logging NO bloquea el flujo — el record local es suficiente.
+      // noop
     }
 
-    // 3. Restaurar scroll del body + animación de salida → desmontaje físico
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('escuelainfo:terms-accepted'));
+    }
+
+    if (isControlled) {
+      propOnAccept?.();
+    }
+
     document.body.style.overflow = '';
     setVisible(false);
-    setTimeout(() => setAccepted(true), 220);
-  }, [canAccept, saving]);
+    setTimeout(() => {
+      if (isControlled) {
+        propOnClose?.();
+      } else {
+        setInternalOpen(false);
+      }
+      setSaving(false);
+    }, 220);
+  }, [saving, isControlled, propOnAccept, propOnClose]);
 
-  // ── Si ya aceptó (o hidratación pendiente = null) → NO renderizar nada ───
-  if (accepted !== false) return null;
+  if (!showModal) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="terms-modal-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
       className="fixed inset-0 flex items-center justify-center p-3 sm:p-6"
       style={{
-        // z-[9999]: por encima de sidebar, toasts y cualquier overlay de la app
         zIndex: 9999,
         backgroundColor: 'rgba(0, 0, 0, 0.82)',
         backdropFilter: 'blur(8px)',
@@ -408,53 +455,53 @@ export default function TermsModal() {
           willChange: 'transform, opacity',
         }}
       >
-
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div
-          className="flex-shrink-0 flex items-center gap-4 px-5 py-4"
+          className="flex-shrink-0 flex items-center justify-between gap-4 px-5 py-4"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: '#050810' }}
         >
-          {/* Logo vectorial de EscuelaInfo */}
-          <div
-            className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #0d2a40, #1a4a35)' }}
-            aria-hidden="true"
-          >
-            <EscuelaInfoLogo size={26} />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <h2
-              id="terms-modal-title"
-              className="text-sm font-semibold leading-tight tracking-tight"
-              style={{ color: '#f1f5f9', fontFamily: 'var(--font-title)' }}
+          <div className="flex items-center gap-3.5 min-w-0">
+            {/* Logo vectorial de EscuelaInfo */}
+            <div
+              className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #0d2a40, #1a4a35)' }}
+              aria-hidden="true"
             >
-              Acuerdo Legal de Uso — EscuelaInfo
-            </h2>
-            <p className="text-[11px] mt-0.5" style={{ color: '#475569' }}>
-              SKBCraft · Versión {AGREEMENT_VERSION} · Contrato vinculante
-            </p>
+              <EscuelaInfoLogo size={26} />
+            </div>
+
+            <div className="min-w-0">
+              <h2
+                id="terms-modal-title"
+                className="text-sm font-semibold leading-tight tracking-tight text-white"
+                style={{ fontFamily: 'var(--font-title)' }}
+              >
+                Acuerdos y Términos de Convivencia
+              </h2>
+              <p className="text-[11px] mt-0.5 text-slate-400">
+                EscuelaInfo · Versión {AGREEMENT_VERSION} · Normas institucionales
+              </p>
+            </div>
           </div>
 
-          {/* Badge legal */}
-          <span
-            className="flex-shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase"
-            style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Cerrar modal de acuerdos"
           >
-            Obligatorio
-          </span>
+            <X size={18} />
+          </button>
         </div>
 
-        {/* ── Aviso de scroll obligatorio ─────────────────────────────────── */}
+        {/* ── Aviso informativo de acuerdos ─────────────────────────────────── */}
         <div
-          className="flex-shrink-0 flex items-start gap-3 mx-4 mt-3 px-3.5 py-3 rounded-xl text-xs"
-          style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', color: '#d97706' }}
+          className="flex-shrink-0 flex items-start gap-3 mx-4 mt-3 px-3.5 py-2.5 rounded-xl text-xs"
+          style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981' }}
         >
-          <svg className="flex-shrink-0 w-4 h-4 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-          </svg>
-          <span>
-            <strong style={{ color: '#f59e0b' }}>Lectura obligatoria:</strong> Debe desplazarse hasta el final del documento. Su aceptación queda registrada con marca de tiempo en nuestros servidores como evidencia legal vinculante.
+          <BookOpen className="flex-shrink-0 w-4 h-4 mt-0.5" />
+          <span className="text-slate-300">
+            <strong className="text-emerald-400 font-semibold">Acuerdos Institucionales:</strong> Podés revisar los términos y condiciones de uso, derechos, deberes y normas de convivencia de la plataforma escolar.
           </span>
         </div>
 
@@ -488,15 +535,13 @@ export default function TermsModal() {
             <span style={{ color: canAccept ? '#10B981' : '#64748b' }}>
               {canAccept ? "100% Leído" : `Progreso de lectura: ${readProgress}%`}
             </span>
-            {!canAccept && (
-              <button
-                type="button"
-                onClick={scrollToBottom}
-                className="text-[10px] text-[var(--verde)] hover:underline active:scale-95 transition-transform cursor-pointer font-sans"
-              >
-                Desplazar al final ↓
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="text-[10px] text-[var(--verde)] hover:underline active:scale-95 transition-transform cursor-pointer font-sans"
+            >
+              Desplazar al final ↓
+            </button>
           </div>
           <div
             className="h-1 rounded-full overflow-hidden"
@@ -517,45 +562,28 @@ export default function TermsModal() {
 
         {/* ── Footer del modal ────────────────────────────────────────────── */}
         <div
-          className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-4"
+          className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-5 py-3.5"
           style={{ borderTop: '1px solid rgba(255,255,255,0.07)', background: '#050810' }}
         >
-          {/* Indicador de estado */}
-          <p className="text-[11px] text-center sm:text-left order-2 sm:order-1" style={{ color: canAccept ? '#10B981' : '#64748b' }}>
-            {canAccept ? (
-              <>
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-500">
-                  <Check size={12} strokeWidth={2.5} className="shrink-0" />
-                  <span>Lectura completada.</span>
-                </span>
-                {' '}Su aceptación quedará certificada con timestamp legal.
-              </>
-            ) : (
-              'Desplace el texto hasta el final para habilitar el botón.'
-            )}
-          </p>
+          {/* Botón de cerrar secundario */}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="order-2 sm:order-1 px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 transition-colors cursor-pointer"
+          >
+            Cerrar lectura
+          </button>
 
-          {/* Botón de aceptar */}
+          {/* Botón de aceptar y guardar */}
           <button
             id="terms-accept-btn"
             onClick={handleAccept}
-            disabled={!canAccept || saving}
-            aria-disabled={!canAccept || saving}
-            className="order-1 sm:order-2 flex-shrink-0 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold"
+            disabled={saving}
+            className="order-1 sm:order-2 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer transition-all active:scale-[0.99]"
             style={{
-              background: canAccept && !saving
-                ? 'linear-gradient(135deg, #10B981, #059669)'
-                : 'rgba(255,255,255,0.05)',
-              color: canAccept && !saving ? '#fff' : '#475569',
-              cursor: canAccept && !saving ? 'pointer' : 'not-allowed',
-              border: canAccept && !saving
-                ? '1px solid rgba(16,185,129,0.4)'
-                : '1px solid rgba(255,255,255,0.06)',
-              boxShadow: canAccept && !saving ? '0 4px 20px -4px rgba(16,185,129,0.4)' : 'none',
-              transform: 'translate3d(0,0,0)',
-              willChange: 'transform, box-shadow',
-              transition: 'background 250ms ease, box-shadow 250ms ease, color 250ms ease',
-              minWidth: '180px',
+              background: 'linear-gradient(135deg, #10B981, #059669)',
+              color: '#fff',
+              boxShadow: '0 4px 15px -3px rgba(16,185,129,0.4)',
             }}
           >
             {saving ? (
@@ -568,10 +596,8 @@ export default function TermsModal() {
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Aceptar y Continuar
+                <Check size={16} strokeWidth={2.5} />
+                Aceptar Acuerdos
               </>
             )}
           </button>

@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.38.1";
-export const APP_BUILD_DATE = "08/10/2026 16:20 hs";
+export const APP_VERSION = "v2.38.2";
+export const APP_BUILD_DATE = "08/10/2026 16:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Motor de Notificaciones en Tiempo Real y Persistencia en Appwrite WebSockets (dataService.ts, NotificationsBell.tsx, SendNoticeModal.tsx, page.tsx, /api/auth/register): 1) Infraestructura de Notificaciones en Appwrite: Colección 'notificaciones' en base de datos de Appwrite (escuelainfodb) con persistencia en el servidor en lugar de únicamente localStorage local. Las notificaciones ahora se sincronizan entre todos los dispositivos y cuentas. 2) Tiempo Real Instantáneo (<100ms) vía WebSockets: Suscripción en vivo cliente-servidor mediante 'appwriteClient.subscribe' combinada con BroadcastChannel y sondeo de seguridad cada 10s. 3) Campana Interactiva con Alertas Sonoras y Toast: Alertas flotantes inmediatas y timbre armónico sintetizado con Web Audio API (chime sin dependencias de audio externas), vibración táctil, filtros por estado ('Todas' / 'No leídas'), eliminación individual y lectura masiva. 4) Despacho Automático en Eventos Críticos: Generación de alertas en vivo ante inasistencias docentes (notificando a alumnos y preceptores), avisos institucionales masivos, aprobaciones de cuentas, cambios de jerarquía de rol y registros pendientes de validación."
+  "Aceptación Ágil de Acuerdos Institucionales y Eliminación de Modal Bloqueante Invasivo (TermsModal.tsx, page.tsx, version.ts): 1) Eliminación de Pantalla Invasiva al Ingresar: Se erradicó el bloqueo obligatorio de pantalla completa que impedía ver la web o iniciar sesión sin scrollear 500 líneas. 2) Aceptación Rápida con Tilde en Registro: Casilla de verificación interactiva en el Paso 1 de creación de cuenta para aceptar los términos y acuerdos de convivencia en un solo clic. 3) Enlace 'Leer los acuerdos' Bajo Demanda: Acceso limpio y no invasivo mediante botón dedicado que despliega el visor de acuerdos institucionales con botón de cierre (X), navegación ágil y botón de aceptación directa que marca automáticamente el tilde."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.38.2",
+    date: "08/10/2026 16:30 hs",
+    notes: [
+      "Aceptación Ágil de Acuerdos Institucionales y Eliminación de Modal Bloqueante Invasivo (TermsModal.tsx, page.tsx, version.ts): 1) Eliminación de Pantalla Invasiva al Ingresar: Se erradicó el bloqueo obligatorio de pantalla completa que impedía ver la web o iniciar sesión sin scrollear 500 líneas. 2) Aceptación Rápida con Tilde en Registro: Casilla de verificación interactiva en el Paso 1 de creación de cuenta para aceptar los términos y acuerdos de convivencia en un solo clic. 3) Enlace 'Leer los acuerdos' Bajo Demanda: Acceso limpio y no invasivo mediante botón dedicado que despliega el visor de acuerdos institucionales con botón de cierre (X), navegación ágil y botón de aceptación directa que marca automáticamente el tilde."
+    ]
+  },
   {
     version: "v2.38.1",
     date: "08/10/2026 16:20 hs",

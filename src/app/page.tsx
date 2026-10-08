@@ -5,7 +5,8 @@ import EscuelaInfoLogo from "@/components/shared/EscuelaInfoLogo";
 import { account, client } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound, Info, BookOpen } from "lucide-react";
+import { Eye, EyeOff, Sparkles, ArrowLeft, Mail, KeyRound, Info, BookOpen, FileText } from "lucide-react";
+import { openTermsModal } from "@/components/modals/TermsModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 import OtpVerificationInput from "@/components/ui/OtpVerificationInput";
 import {
@@ -46,6 +47,18 @@ function LoginContent() {
     return () => window.removeEventListener("escuelainfo:school-changed", handleSchoolChange);
   }, []);
 
+  // Sincronizar estado de acuerdos aceptados
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("skbcraft_terms_accepted_v2.0-2026-06") === "true") {
+        setAcceptAgreements(true);
+      }
+    } catch {}
+    const handleAccepted = () => setAcceptAgreements(true);
+    window.addEventListener("escuelainfo:terms-accepted", handleAccepted);
+    return () => window.removeEventListener("escuelainfo:terms-accepted", handleAccepted);
+  }, []);
+
   const currentSchool = getSchoolById(selectedSchoolId);
 
   // Recuperar contraseña con código de verificación
@@ -74,6 +87,7 @@ function LoginContent() {
   const [apellidos, setApellidos] = useState("");
   const [telefono, setTelefono] = useState("");
   const [dni, setDni] = useState("");
+  const [acceptAgreements, setAcceptAgreements] = useState(false);
 
   const resetForgotForm = useCallback(() => {
     setForgotStep(1);
@@ -377,6 +391,10 @@ function LoginContent() {
     }
     if (!/^\+?[0-9\s\-]{10,18}$/.test(telefono.trim())) {
       setErrorMsg("El teléfono debe tener un formato válido con código de país."); return;
+    }
+    if (!acceptAgreements) {
+      setErrorMsg("Marcá el tilde para aceptar los acuerdos y términos de uso antes de continuar.");
+      return;
     }
 
     setLoading(true); setErrorMsg(""); setSuccessMsg("");
@@ -855,6 +873,38 @@ function LoginContent() {
                       aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                       className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text3)] hover:text-[var(--text)] transition-colors cursor-pointer">
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Aceptación ágil de Acuerdos Institucionales */}
+                <div className="pt-2 pb-1 space-y-1.5 border-t border-[var(--border)]/60 mt-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={acceptAgreements}
+                      onChange={(e) => {
+                        setAcceptAgreements(e.target.checked);
+                        if (e.target.checked) {
+                          try {
+                            localStorage.setItem("skbcraft_terms_accepted_v2.0-2026-06", "true");
+                          } catch {}
+                        }
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded border-[var(--border)] text-[var(--verde)] bg-[var(--bg3)] focus:ring-[var(--verde)]/40 focus:ring-offset-0 cursor-pointer accent-[var(--verde)]"
+                    />
+                    <span className="text-xs text-[var(--text2)] group-hover:text-[var(--text)] transition-colors leading-snug">
+                      Acepto los términos de uso, condiciones y acuerdos de convivencia institucional
+                    </span>
+                  </label>
+                  <div className="pl-6.5">
+                    <button
+                      type="button"
+                      onClick={() => openTermsModal()}
+                      className="inline-flex items-center gap-1.5 text-xs text-[var(--verde)] hover:underline font-semibold cursor-pointer transition-colors"
+                    >
+                      <FileText size={13} className="shrink-0" />
+                      <span>Leer los acuerdos</span>
                     </button>
                   </div>
                 </div>
