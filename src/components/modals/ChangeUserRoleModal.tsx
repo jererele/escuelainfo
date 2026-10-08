@@ -134,7 +134,7 @@ export default function ChangeUserRoleModal({
   const [confirmAdminEscalation, setConfirmAdminEscalation] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Estados de seguridad para validación OTP de Administrador (jeree.castroo10@gmail.com)
+  // Estados de seguridad para validación OTP de Administrador
   const [adminOtpCode, setAdminOtpCode] = useState<string>("");
   const [adminOtpToken, setAdminOtpToken] = useState<string>("");
   const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
@@ -315,10 +315,10 @@ export default function ChangeUserRoleModal({
       if (res.success) {
         setOtpSent(true);
         if (res.token) setAdminOtpToken(res.token);
-        setOtpSuccessMessage(res.message || "Código enviado exitosamente a jeree.castroo10@gmail.com");
+        setOtpSuccessMessage(res.message || "Código enviado exitosamente a la casilla del Administrador Principal");
         setOtpCooldown(60);
       } else {
-        setOtpError(res.error || "No se pudo enviar el código a jeree.castroo10@gmail.com");
+        setOtpError(res.error || "No se pudo enviar el código al Administrador Principal");
       }
     } catch (err: any) {
       setOtpError(err?.message || "Error al solicitar código de verificación.");
@@ -341,10 +341,10 @@ export default function ChangeUserRoleModal({
 
     const isPromotingToAdmin = selectedRole === "admin" && fromDbRol(user?.rol || "").toLowerCase() !== "admin";
 
-    // Salvaguarda: Exigir código OTP verificado en jeree.castroo10@gmail.com
+    // Salvaguarda: Exigir código OTP verificado del Administrador Principal
     if (isPromotingToAdmin) {
       if (!otpSent) {
-        setOtpError("Primero debés solicitar el código de verificación para jeree.castroo10@gmail.com");
+        setOtpError("Primero debés solicitar el código de verificación del Administrador Principal");
         setTimeout(() => {
           if (adminSectionRef.current && modalBodyRef.current) {
             const topPos = adminSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
@@ -354,7 +354,7 @@ export default function ChangeUserRoleModal({
         return;
       }
       if (!adminOtpCode || adminOtpCode.trim().length !== 6) {
-        setOtpError("Ingresá el código numérico de 6 dígitos recibido en jeree.castroo10@gmail.com");
+        setOtpError("Ingresá el código numérico de 6 dígitos enviado al Administrador Principal");
         return;
       }
     }
@@ -653,11 +653,11 @@ export default function ChangeUserRoleModal({
               </div>
 
               <p className="text-xs text-[var(--text)] leading-relaxed">
-                Para otorgarle privilegios de Administrador a este usuario, es indispensable ingresar el código de verificación de 6 dígitos enviado al correo del Administrador Principal:
+                Por motivos de seguridad institucional, para otorgar privilegios de Administrador se requiere un código de verificación de 6 dígitos enviado a la casilla del:
                 <br />
-                <span className="font-mono text-xs font-bold text-[var(--rojo)] bg-black/40 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 mt-1.5 border border-[var(--rojo-border)]">
-                  <Mail size={13} />
-                  jeree.castroo10@gmail.com
+                <span className="font-sans text-xs font-bold text-[var(--rojo)] bg-black/40 px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 mt-1.5 border border-[var(--rojo-border)]">
+                  <ShieldCheck size={14} className="text-[var(--rojo)]" />
+                  Administrador Principal del Sistema
                 </span>
               </p>
 
@@ -673,12 +673,12 @@ export default function ChangeUserRoleModal({
                     {isSendingOtp ? (
                       <>
                         <Loader2 size={15} className="animate-spin" />
-                        <span>Enviando código a jeree.castroo10@gmail.com...</span>
+                        <span>Enviando código al Administrador Principal...</span>
                       </>
                     ) : (
                       <>
                         <Send size={15} />
-                        <span>Enviar Código a jeree.castroo10@gmail.com</span>
+                        <span>Enviar Código al Administrador Principal</span>
                       </>
                     )}
                   </button>
@@ -687,7 +687,7 @@ export default function ChangeUserRoleModal({
                     <div className="flex items-center justify-between text-xs flex-wrap gap-1">
                       <span className="text-[10px] font-black uppercase text-[var(--verde)] flex items-center gap-1">
                         <Check size={12} strokeWidth={3} />
-                        Código enviado a jeree.castroo10@gmail.com
+                        Código enviado al Administrador Principal
                       </span>
                       <button
                         type="button"

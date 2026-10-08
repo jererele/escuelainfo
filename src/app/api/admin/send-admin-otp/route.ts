@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 import { setOtp, generateOtpToken } from '@/lib/otpStore';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
-export const MASTER_ADMIN_EMAIL = 'jeree.castroo10@gmail.com';
+export const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || 'jeree.castroo10@gmail.com';
 
 export async function POST(request: Request) {
   try {
@@ -191,14 +191,13 @@ export async function POST(request: Request) {
         );
       }
 
-      console.log(`[CÓDIGO OTP ADMIN SIMULADO DEV] Destino: ${MASTER_ADMIN_EMAIL} | Target: ${cleanTargetEmail} | Código: ${code}`);
+      console.log(`[CÓDIGO OTP ADMIN SIMULADO DEV] Destino: Administrador Principal | Target: ${cleanTargetEmail} | Código: ${code}`);
       return NextResponse.json({
         success: true,
-        message: `Código de verificación generado (Simulado en entorno de desarrollo para ${MASTER_ADMIN_EMAIL}).`,
+        message: 'Código de verificación generado (Simulado en entorno de desarrollo).',
         simulated: true,
         code,
         token,
-        targetEmail: MASTER_ADMIN_EMAIL,
       });
     }
 
@@ -232,9 +231,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Enviamos un código de 6 dígitos a ${MASTER_ADMIN_EMAIL}. Revisá tu bandeja de entrada o spam.`,
+      message: 'Código de verificación de 6 dígitos enviado a la casilla del Administrador Principal. Revisá la bandeja de entrada o spam.',
       token,
-      targetEmail: MASTER_ADMIN_EMAIL,
     });
   } catch (error: any) {
     console.error('Error al enviar código OTP de administrador:', error);

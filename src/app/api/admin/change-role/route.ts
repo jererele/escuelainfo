@@ -3,7 +3,7 @@ import { Client, Databases, Users, Query, ID } from 'node-appwrite';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { verifyOtpToken, verifyOtp, markTokenUsed } from '@/lib/otpStore';
 
-export const MASTER_ADMIN_EMAIL = 'jeree.castroo10@gmail.com';
+export const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || 'jeree.castroo10@gmail.com';
 
 // Mapeos compactos institucionales
 const ROL_MAP: Record<string, string> = {
@@ -230,13 +230,13 @@ export async function POST(request: Request) {
 
     // 🛡️ REQUISITO DE SEGURIDAD ESTRICTO:
     // Para otorgar rol de Administrador (si el usuario no lo era previamente),
-    // se exige verificación de código OTP de 6 dígitos enviado exclusivamente a jeree.castroo10@gmail.com
+    // se exige verificación de código OTP de 6 dígitos enviado exclusivamente al Administrador Principal
     const isPromotingToAdmin = cleanNewRole === 'admin' && targetCurrentRole !== 'admin';
     if (isPromotingToAdmin) {
       const cleanOtp = typeof adminOtpCode === 'string' ? adminOtpCode.trim() : '';
       if (!cleanOtp) {
         return NextResponse.json({
-          error: "Para asignar el rol de Administrador es obligatorio ingresar el código de verificación enviado a jeree.castroo10@gmail.com"
+          error: "Para asignar el rol de Administrador es obligatorio ingresar el código de verificación enviado a la casilla del Administrador Principal."
         }, { status: 403 });
       }
 
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
 
       if (!isValidOtp) {
         return NextResponse.json({
-          error: "Código de autorización incorrecto o expirado. Solicitá un nuevo código enviado a jeree.castroo10@gmail.com"
+          error: "Código de autorización incorrecto o expirado. Solicitá un nuevo código enviado al Administrador Principal."
         }, { status: 403 });
       }
     }
@@ -377,7 +377,7 @@ export async function POST(request: Request) {
         ? ` (Cursos: ${preceptorCursos.join(", ")})`
         : "";
 
-      const isVerifiedAdmin = isPromotingToAdmin ? " [AUTORIZADO CON CÓDIGO OTP jeree.castroo10@gmail.com]" : "";
+      const isVerifiedAdmin = isPromotingToAdmin ? " [AUTORIZADO CON CÓDIGO OTP ADMINISTRADOR PRINCIPAL]" : "";
       await db.createDocument(dbId, 'logs', ID.unique(), {
         usuarioEmail: cleanCallerEmail || 'admin',
         accion: isPromotingToAdmin ? 'PROMOTE_ADMIN' : 'C_ROL',

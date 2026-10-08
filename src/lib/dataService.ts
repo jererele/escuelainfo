@@ -1081,7 +1081,7 @@ export const rejectUserApi = async (userId?: string, email?: string): Promise<{ 
   }
 };
 
-// 🛡️ SECURITY AUDIT REF: Solicitud de código OTP enviado a jeree.castroo10@gmail.com para autorizar administradores
+// 🛡️ SECURITY AUDIT REF: Solicitud de código OTP enviado al Administrador Principal para autorizar administradores
 export const requestAdminOtpApi = async (
   targetUserEmail: string,
   targetUserName?: string
@@ -1210,7 +1210,7 @@ export const promoteUserToRole = async (
   clearCache("usuarios");
   const cleanEmail = email.toLowerCase().trim();
 
-  // Si se promueve a Administrador, es MANDATORIO validar con la API del servidor y el OTP de jeree.castroo10@gmail.com
+  // Si se promueve a Administrador, es MANDATORIO validar con la API del servidor y el OTP del Administrador Principal
   if (rol === "admin") {
     const res = await changeUserRoleApi("", cleanEmail, "admin", undefined, undefined, adminOtpCode, adminOtpToken);
     if (!res.success) {

@@ -4,14 +4,21 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.37.3";
-export const APP_BUILD_DATE = "08/10/2026 15:45 hs";
+export const APP_VERSION = "v2.37.4";
+export const APP_BUILD_DATE = "08/10/2026 15:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Compresión Automática de Imágenes a WebP (imageCompressor.ts, dataService.ts, NewAbsenceModal.tsx): 1) Motor de Compresión en Navegador: Conversión y reescalado inteligente de fotos (certificados médicos, justificativos) a formato WebP mediante la API Canvas antes de subirlas a Appwrite Storage. Reduce el peso de las imágenes entre un 80% y un 95% (de 5-10MB a menos de 300KB), eliminando rechazos por exceso de tamaño y reduciendo radicalmente el consumo de ancho de banda y cuota de almacenamiento. 2) Soporte de Mime-Types: Inclusión de 'image/webp' en los tipos MIME autorizados en 'uploadCertificateFile'. 3) Feedback Visual: Indicador interactivo con porcentaje de ahorro y tamaños antes/después."
+  "Blindaje de Privacidad y Seguridad en Autorización de Administradores (ChangeUserRoleModal.tsx, NewUserModal.tsx, send-admin-otp, change-role): 1) Ofuscación Total de Correo en Frontend: Eliminación completa de la dirección de correo personal en todas las interfaces de asignación y creación de administradores, sustituyéndola por la denominación institucional 'Administrador Principal del Sistema'. 2) Sanitización de Respuestas API: Supresión de la propiedad 'targetEmail' y ofuscación de mensajes de retorno en '/api/admin/send-admin-otp' y '/api/admin/change-role', impidiendo fugas de información sensible a través de inspección de red o mensajes de confirmación. 3) Desacoplamiento por Variables de Entorno: Configuración delegada a 'process.env.MASTER_ADMIN_EMAIL' en el servidor, garantizando máxima confidencialidad de la casilla titular institucional."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.37.4",
+    date: "08/10/2026 15:50 hs",
+    notes: [
+      "Blindaje de Privacidad y Seguridad en Autorización de Administradores (ChangeUserRoleModal.tsx, NewUserModal.tsx, send-admin-otp, change-role): 1) Ofuscación Total de Correo en Frontend: Eliminación completa de la dirección de correo personal en todas las interfaces de asignación y creación de administradores, sustituyéndola por la denominación institucional 'Administrador Principal del Sistema'. 2) Sanitización de Respuestas API: Supresión de la propiedad 'targetEmail' y ofuscación de mensajes de retorno en '/api/admin/send-admin-otp' y '/api/admin/change-role', impidiendo fugas de información sensible a través de inspección de red o mensajes de confirmación. 3) Desacoplamiento por Variables de Entorno: Configuración delegada a 'process.env.MASTER_ADMIN_EMAIL' en el servidor, garantizando máxima confidencialidad de la casilla titular institucional."
+    ]
+  },
   {
     version: "v2.37.3",
     date: "08/10/2026 15:45 hs",
@@ -107,7 +114,7 @@ export const APP_VERSION_HISTORY: VersionItem[] = [
     version: "v2.33.0",
     date: "01/10/2026 15:46 hs",
     notes: [
-      "Autorización de Máxima Seguridad para Asignación de Administradores mediante Código OTP (send-admin-otp, change-role/route.ts, ChangeUserRoleModal.tsx, NewUserModal.tsx, UsuariosTab.tsx, dataService.ts y page.tsx): Implementación de salvaguarda de doble factor obligatorio para la asignación del rol de Administrador. 1) Envío Exclusivo a Casilla Titular (/api/admin/send-admin-otp): Para otorgar permisos de Administrador a cualquier usuario, el sistema despacha automáticamente un código numérico de 6 dígitos firmado criptográficamente con HMAC (SHA-256) de forma exclusiva al correo del Administrador Principal: jeree.castroo10@gmail.com. 2) Blindaje en Servidor (/api/admin/change-role): Se bloqueó cualquier intento de promover a administrador sin el código OTP válido y token verificado, impidiendo desvíos por cliente o fallbacks locales. 3) Interfaz Interactiva (ChangeUserRoleModal.tsx y NewUserModal.tsx): Panel de seguridad de privilegios elevados con botón de solicitud con temporizador de 60s, entrada de 6 dígitos numéricos y confirmación condicionada a la validación."
+      "Autorización de Máxima Seguridad para Asignación de Administradores mediante Código OTP (send-admin-otp, change-role/route.ts, ChangeUserRoleModal.tsx, NewUserModal.tsx, UsuariosTab.tsx, dataService.ts y page.tsx): Implementación de salvaguarda de doble factor obligatorio para la asignación del rol de Administrador. 1) Envío Exclusivo a Casilla Titular (/api/admin/send-admin-otp): Para otorgar permisos de Administrador a cualquier usuario, el sistema despacha automáticamente un código numérico de 6 dígitos firmado criptográficamente con HMAC (SHA-256) de forma exclusiva a la casilla del Administrador Principal. 2) Blindaje en Servidor (/api/admin/change-role): Se bloqueó cualquier intento de promover a administrador sin el código OTP válido y token verificado, impidiendo desvíos por cliente o fallbacks locales. 3) Interfaz Interactiva (ChangeUserRoleModal.tsx y NewUserModal.tsx): Panel de seguridad de privilegios elevados con botón de solicitud con temporizador de 60s, entrada de 6 dígitos numéricos y confirmación condicionada a la validación."
     ]
   },
   {

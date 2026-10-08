@@ -33,7 +33,7 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
   const [rol, setRol] = useState<UserProfile["rol"]>(isDirectivoOrAdmin ? "preceptor" : "profesor");
   const [error, setError] = useState("");
 
-  // Estados para validación OTP de Administrador (jeree.castroo10@gmail.com)
+  // Estados para validación OTP de Administrador
   const [adminOtpCode, setAdminOtpCode] = useState("");
   const [adminOtpToken, setAdminOtpToken] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -88,10 +88,10 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
       if (res.success) {
         setOtpSent(true);
         if (res.token) setAdminOtpToken(res.token);
-        setOtpSuccessMessage(res.message || "Código enviado a jeree.castroo10@gmail.com");
+        setOtpSuccessMessage(res.message || "Código enviado al Administrador Principal");
         setOtpCooldown(60);
       } else {
-        setError(res.error || "No se pudo enviar el código a jeree.castroo10@gmail.com");
+        setError(res.error || "No se pudo enviar el código al Administrador Principal");
       }
     } catch (err: any) {
       setError(err?.message || "Error al solicitar código de verificación.");
@@ -114,11 +114,11 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
     // Salvaguarda: Exigir código OTP si se agrega un Administrador
     if (rol === "admin") {
       if (!otpSent) {
-        setError("Para agregar un Administrador debés solicitar el código de verificación para jeree.castroo10@gmail.com");
+        setError("Para agregar un Administrador debés solicitar el código de verificación del Administrador Principal");
         return;
       }
       if (!adminOtpCode || adminOtpCode.trim().length !== 6) {
-        setError("Ingresá el código numérico de 6 dígitos enviado a jeree.castroo10@gmail.com");
+        setError("Ingresá el código numérico de 6 dígitos enviado al Administrador Principal");
         return;
       }
     }
@@ -137,7 +137,7 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
       await logAction(
         userEmail, 
         rol === "admin" ? "PROMOTE_ADMIN" : "AUTORIZAR_COLABORADOR", 
-        `Email: ${email}, Rol: ${rol}${rol === "admin" ? " [AUTORIZADO CON CÓDIGO OTP jeree.castroo10@gmail.com]" : ""}`
+        `Email: ${email}, Rol: ${rol}${rol === "admin" ? " [AUTORIZADO CON CÓDIGO OTP ADMINISTRADOR PRINCIPAL]" : ""}`
       );
 
       onSuccess(); 
@@ -209,11 +209,11 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
                 <span>Autorización Obligatoria</span>
               </div>
               <p className="text-xs text-[var(--text)] leading-relaxed">
-                Para autorizar a un nuevo Administrador, se requiere un código de verificación de 6 dígitos enviado a:
+                Por motivos de seguridad institucional, para autorizar a un nuevo Administrador se requiere un código de verificación de 6 dígitos enviado a la casilla del:
                 <br />
-                <span className="font-mono text-xs font-bold text-[var(--rojo)] bg-black/40 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 mt-1.5 border border-[var(--rojo-border)]">
-                  <Mail size={13} />
-                  jeree.castroo10@gmail.com
+                <span className="font-sans text-xs font-bold text-[var(--rojo)] bg-black/40 px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 mt-1.5 border border-[var(--rojo-border)]">
+                  <ShieldCheck size={14} className="text-[var(--rojo)]" />
+                  Administrador Principal del Sistema
                 </span>
               </p>
 
@@ -227,12 +227,12 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
                   {isSendingOtp ? (
                     <>
                       <Loader2 size={15} className="animate-spin" />
-                      <span>Enviando código...</span>
+                      <span>Enviando código al Administrador Principal...</span>
                     </>
                   ) : (
                     <>
                       <Send size={15} />
-                      <span>Enviar Código a jeree.castroo10@gmail.com</span>
+                      <span>Enviar Código al Administrador Principal</span>
                     </>
                   )}
                 </button>
@@ -241,7 +241,7 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
                   <div className="flex items-center justify-between text-xs flex-wrap gap-1">
                     <span className="text-[10px] font-black uppercase text-[var(--verde)] flex items-center gap-1">
                       <Check size={12} strokeWidth={3} />
-                      Código enviado
+                      Código enviado al Administrador Principal
                     </span>
                     <button
                       type="button"
@@ -275,7 +275,7 @@ export default function NewUserModal({ isOpen, onClose, onSuccess, currentUserRo
                     </div>
                   </div>
                   <p className="text-[10px] text-[var(--text3)] text-center">
-                    Ingresá los 6 dígitos recibidos en jeree.castroo10@gmail.com
+                    Ingresá los 6 dígitos recibidos en la casilla del Administrador Principal
                   </p>
                 </div>
               )}
