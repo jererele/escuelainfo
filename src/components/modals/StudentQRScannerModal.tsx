@@ -14,9 +14,10 @@ import {
   CalendarCheck
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
+import { account } from "@/lib/appwrite";
 import { 
   UserProfile, 
-  getAlumnos, 
+  getAlumnoByEmail, 
   saveAsistenciasJornada, 
   saveAsistenciasMateria, 
   logAction 
@@ -72,83 +73,141 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
         throw new Error("No se detectó un perfil de usuario activo.");
       }
 
-      // Extraer token de la URL o texto directo
       let rawToken = decodedText.trim();
+
+      // Validación preventiva: si el alumno escaneó el QR de una Mesa de Examen
+      if (rawToken.includes("mesaId=") || rawToken.startsWith("ESCUELA713_MESA:")) {
+        throw new Error("Este código QR pertenece a una Mesa de Examen, no a la asistencia diaria. Inscribite desde la pestaña Mesas de Examen.");
+      }
+
+      // Extraer token de la URL o texto directo
       if (rawToken.includes("token=")) {
         try {
           const parsedUrl = new URL(rawToken);
           rawToken = parsedUrl.searchParams.get("token") || rawToken;
         } catch {
-          const match = rawToken.match(/token=([^&]+)/);
+          const match = rawToken.match(/[?&]token=([^&#]+)/) || rawToken.match(/token=([^&#]+)/);
           if (match) rawToken = match[1];
         }
       }
-
-      // Decodificar Base64 del token
-      let payload;
       try {
-        payload = JSON.parse(atob(rawToken));
-      } catch {
-        throw new Error("El código QR no pertenece al sistema de asistencia de la escuela.");
-      }
+        rawToken = decodeURIComponent(rawToken.trim());
+      } catch {}
 
-      const { t, m, s, p } = payload;
-      if (!t || !m) {
-        throw new Error("El formato del código QR de asistencia es inválido.");
-      }
+      let recorded = false;
+      let resultType = "Jornada Institucional";
+      let resultDetail = `Fecha: ${new Date().toISOString().split("T")[0]} · Presente registrado`;
 
-      // Validar expiración (tolerancia de 25 segundos para evitar fotos en WhatsApp)
-      if (Date.now() - t > 25000) {
-        throw new Error("Este código QR ya expiró por seguridad. Pedíle al docente o preceptor que muestre uno nuevo.");
-      }
-
-      // Buscar legajo de alumno del usuario logueado
-      const allAlumnos = await getAlumnos();
-      const studentRecord = allAlumnos.find(
-        (a) => a.email.toLowerCase() === userProfile.email.toLowerCase()
-      );
-
-      if (!studentRecord || !studentRecord.id) {
-        throw new Error("No se encontró tu legajo de alumno en la base de datos.");
-      }
-
-      const todayDate = new Date().toISOString().split("T")[0];
-
-      if (m === "jornada") {
-        await saveAsistenciasJornada([
-          {
-            alumnoId: studentRecord.id,
-            alumnoNombre: studentRecord.nombre,
-            fecha: todayDate,
-            estado: "P",
-            preceptorId: p || "QR_SISTEMA",
+      // 1. Verificación segura en Servidor mediante HMAC y API Key de Appwrite
+      try {
+        const jwtRes = await account.createJWT();
+        const res = await fetch("/api/attendance/verify-qr", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${jwtRes.jwt}`,
           },
-        ]);
-        await logAction(userProfile.email, "C_AJ", "Presente por Lector QR Integrado (Jornada)");
-        setSuccessInfo({
-          tipo: "Jornada Institucional",
-          detalle: `Fecha: ${todayDate} · Turno habitual`,
+          body: JSON.stringify({ token: rawToken }),
         });
-      } else if (m === "materia") {
-        await saveAsistenciasMateria([
-          {
-            alumnoId: studentRecord.id,
-            alumnoNombre: studentRecord.nombre,
-            fecha: todayDate,
-            materia: s || "Materia",
-            curso: studentRecord.curso,
-            estado: "P",
-            profesorId: p || "QR_SISTEMA",
-          },
-        ]);
-        await logAction(userProfile.email, "C_AM", `Presente por Lector QR Integrado (${s})`);
-        setSuccessInfo({
-          tipo: `Materia: ${s}`,
-          detalle: `Curso: ${studentRecord.curso} · Fecha: ${todayDate}`,
-        });
-      } else {
-        throw new Error("Tipo de asistencia desconocido en el código QR.");
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          recorded = true;
+          resultType = data.mode === "jornada" ? "Jornada Institucional" : `Materia: ${data.materia || "Materia"}`;
+          resultDetail = data.message || `Fecha: ${data.date || new Date().toISOString().split("T")[0]} · Presente registrado`;
+        } else if (res.status === 400 && data.error && (data.error.includes("expir") || data.error.includes("vencid"))) {
+          throw new Error(data.error || "Este código QR ya expiró. Pedíle al docente o preceptor que muestre uno nuevo.");
+        } else if (res.status === 401 || res.status === 403 || res.status === 404 || res.status === 429) {
+          throw new Error(data.error || "No se pudo registrar la asistencia.");
+        } else if (!res.ok && data.error) {
+          throw new Error(data.error);
+        }
+      } catch (serverErr: any) {
+        // Si el servidor devolvió un error de validación o credenciales, propagar directamente
+        if (
+          serverErr.message &&
+          !serverErr.message.includes("Failed to fetch") &&
+          !serverErr.message.includes("NetworkError") &&
+          !serverErr.message.includes("Load failed") &&
+          !serverErr.message.includes("fetch")
+        ) {
+          throw serverErr;
+        }
+        console.warn("[QR Scanner] Servidor verify-qr inaccesible, ejecutando fallback seguro:", serverErr);
       }
+
+      // 2. Fallback de cliente con tolerancia y decodificación base64url segura
+      if (!recorded) {
+        let payload: any;
+        try {
+          const tokenPart = rawToken.includes(".") ? rawToken.split(".")[0] : rawToken;
+          const base64 = tokenPart.replace(/-/g, "+").replace(/_/g, "/");
+          const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+          const decodedStr = atob(padded);
+          try {
+            payload = JSON.parse(decodeURIComponent(escape(decodedStr)));
+          } catch {
+            payload = JSON.parse(decodedStr);
+          }
+        } catch {
+          throw new Error("El código QR no pertenece al sistema de asistencia o su formato es irreconocible.");
+        }
+
+        const { t, m, s, p } = payload || {};
+        if (!t || !m) {
+          throw new Error("El formato del código QR de asistencia es inválido.");
+        }
+
+        // Tolerancia de 40 segundos para evitar retransmisión de capturas
+        if (Date.now() - t > 40000) {
+          throw new Error("Este código QR ya expiró por seguridad. Pedíle al docente o preceptor que muestre uno nuevo.");
+        }
+
+        // Buscar legajo individual del alumno autenticado
+        const studentRecord = await getAlumnoByEmail(userProfile.email);
+        if (!studentRecord || !studentRecord.id) {
+          throw new Error("No se encontró tu legajo de alumno en la base de datos.");
+        }
+
+        const todayDate = new Date().toISOString().split("T")[0];
+
+        if (m === "jornada") {
+          await saveAsistenciasJornada([
+            {
+              alumnoId: studentRecord.id,
+              alumnoNombre: studentRecord.nombre,
+              fecha: todayDate,
+              estado: "P",
+              preceptorId: p || "QR_SISTEMA",
+            },
+          ]);
+          await logAction(userProfile.email, "C_AJ", "Presente por Lector QR Integrado (Jornada)");
+          resultType = "Jornada Institucional";
+          resultDetail = `Fecha: ${todayDate} · Turno habitual`;
+        } else if (m === "materia") {
+          await saveAsistenciasMateria([
+            {
+              alumnoId: studentRecord.id,
+              alumnoNombre: studentRecord.nombre,
+              fecha: todayDate,
+              materia: s || "Materia",
+              curso: studentRecord.curso,
+              estado: "P",
+              profesorId: p || "QR_SISTEMA",
+            },
+          ]);
+          await logAction(userProfile.email, "C_AM", `Presente por Lector QR Integrado (${s})`);
+          resultType = `Materia: ${s}`;
+          resultDetail = `Curso: ${studentRecord.curso} · Fecha: ${todayDate}`;
+        } else {
+          throw new Error("Tipo de asistencia desconocido en el código QR.");
+        }
+      }
+
+      setSuccessInfo({
+        tipo: resultType,
+        detalle: resultDetail,
+      });
 
       // Vibración háptica en celulares si está disponible
       if (typeof navigator !== "undefined" && navigator.vibrate) {

@@ -145,7 +145,14 @@ function ScanContent() {
           let payload;
           try {
             const rawToken = token.includes(".") ? token.split(".")[0] : token;
-            payload = JSON.parse(atob(rawToken));
+            const base64 = rawToken.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+            const decodedStr = atob(padded);
+            try {
+              payload = JSON.parse(decodeURIComponent(escape(decodedStr)));
+            } catch {
+              payload = JSON.parse(decodedStr);
+            }
           } catch {
             throw new Error("El código QR es inválido o está corrupto.");
           }
