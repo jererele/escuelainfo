@@ -485,7 +485,7 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                           ? "Seleccionar curso..." 
                           : "Todos los cursos"
                       }
-                      className="w-48 sm:w-56"
+                      className="w-48 sm:w-60"
                       buttonClassName={
                         isPreceptor && preceptorOnlyMine 
                           ? "text-[var(--azul)] bg-[var(--bg3)] text-xs font-bold" 

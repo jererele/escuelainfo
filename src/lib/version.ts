@@ -4,10 +4,11 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.41.4";
-export const APP_BUILD_DATE = "22/10/2026 15:45 hs";
+export const APP_VERSION = "v2.41.5";
+export const APP_BUILD_DATE = "22/10/2026 15:52 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
+  "Ajuste y Compactación del Menú Desplegable de Cursos (CustomSelect.tsx, HorariosTab.tsx): Se corrigió el ensanchamiento desproporcionado del menú desplegable ('Filtrar por curso'), restaurando el ajuste de ancho exacto al botón disparador (width: rect.width) y truncamiento elegante de etiquetas largas, eliminando la expansión horizontal desmedida por sobre la pantalla.",
   "Sincronización Criptográfica y Registro Exitoso de Asistencias por QR (StudentQRScannerModal.tsx, scan/page.tsx, verify-qr): Se resolvió la imposibilidad de registrar la asistencia al escanear el código QR dinámico desde la cámara del celular. 1) Integración con API de Verificación HMAC (/api/attendance/verify-qr): El lector integrado ahora autentica la sesión del alumno mediante JWT y valida el token criptográfico firmado en el servidor con permisos administrativos. 2) Decodificación Base64URL Resiliente: Se subsanó el error fatal en 'atob' que fallaba al procesar tokens con firma HMAC o caracteres URL-safe ('-', '_'), habilitando la compatibilidad universal de lectura. 3) Búsqueda Individual de Legajo (Zero Permissions Error): Se reemplazó la consulta masiva de alumnos ('getAlumnos') por 'getAlumnoByEmail', eliminando errores de permisos en cuentas con rol estudiante. 4) Detección Preventiva de Mesas de Examen: Mensaje informativo guiado si el alumno escanea accidentalmente un código de examen en lugar de asistencia escolar.",
   "Priorización Estricta de Cámara Trasera Principal (1.0x) en Lector QR (StudentQRScannerModal.tsx, ExamQRScannerModal.tsx, cameraHelper.ts): Se resolvió la anomalía en dispositivos móviles donde el escáner se iniciaba en la lente ultra gran angular (0.5x/0.6x) y alternaba cíclicamente a la cámara frontal y sensores auxiliares. 1) Algoritmo de Detección de Cámara Principal: Identificación y selección directa del sensor trasero 1.0x por ID descartando explícitamente lentes ultra-wide, teleobjetivos y macro. 2) Supresión del Bucle de Re-renderizado: Desacople del ciclo de vida del escáner en 'useEffect' mediante referencias estables ([isOpen]), impidiendo reinicios y saltos continuos de cámara. 3) Alternancia Limpia: El botón de rotar cámara ahora conmuta exclusivamente entre la Cámara Trasera Principal y la Frontal.",
   "Corrección de Desplazamiento y Cierre Involuntario en Menú Desplegable de Cursos (CustomSelect.tsx): Se subsanó la incidencia donde al utilizar la rueda del ratón o arrastrar la barra de scroll dentro del menú de cursos ('Filtrar por curso'), el desplegable se cerraba instantáneamente. Se ajustó el listener global de scroll para aislar los eventos originados dentro del contenedor del menú, incorporando contención de sobre-desplazamiento ('overscroll-contain') y reposicionamiento dinámico ante scroll exterior.",
@@ -19,6 +20,13 @@ export const APP_RELEASE_NOTES: string[] = [
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.41.5",
+    date: "22/10/2026 15:52 hs",
+    notes: [
+      "Ajuste y Compactación del Menú Desplegable de Cursos (CustomSelect.tsx, HorariosTab.tsx): Restauración del ajuste de ancho exacto al botón disparador (width: rect.width) y truncamiento de etiquetas largas."
+    ]
+  },
   {
     version: "v2.41.4",
     date: "22/10/2026 15:45 hs",

@@ -44,12 +44,12 @@ export default function CustomSelect({
   const updateMenuPosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const left = Math.min(rect.left, Math.max(8, window.innerWidth - rect.width - 8));
       setMenuStyle({
         position: 'fixed',
         top: rect.bottom + 8,
-        left: rect.left,
-        minWidth: rect.width,
-        maxWidth: '90vw',
+        left,
+        width: rect.width,
         zIndex: 9999
       });
     }
@@ -114,7 +114,7 @@ export default function CustomSelect({
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between gap-2 w-full glass border border-[var(--border)] hover:border-[var(--verde-border)] transition-all outline-none rounded-xl px-4 py-2 text-sm font-bold shadow-sm ${buttonClassName} ${selectedOption?.colorClass || 'text-[var(--text)]'}`}
       >
-        <span>{selectedOption ? selectedOption.label : placeholder}</span>
+        <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         <svg
           className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
           fill="none"
@@ -140,7 +140,8 @@ export default function CustomSelect({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-colors hover:bg-[var(--bg3)] hover:text-[var(--text)] ${opt.value === value ? "bg-[var(--bg4)] text-[var(--verde)]" : "text-[var(--text)]"} ${opt.colorClass || ''}`}
+                title={opt.label}
+                className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-colors hover:bg-[var(--bg3)] hover:text-[var(--text)] truncate ${opt.value === value ? "bg-[var(--bg4)] text-[var(--verde)]" : "text-[var(--text)]"} ${opt.colorClass || ''}`}
               >
                 {opt.label}
               </button>
