@@ -247,12 +247,14 @@ export const sendAbsenceNoticeEmail = async (params: AbsenceNoticeParams): Promi
 
   const isOneDay = params.inicio === params.fin;
   const fechaTexto = isOneDay ? `el día ${params.inicio}` : `desde el ${params.inicio} hasta el ${params.fin}`;
+  const isParo = /paro|gremial/i.test(params.tipo || "") || /paro|gremial/i.test(params.motivo || "");
+  const motivoPublico = isParo ? "adhesión a medida gremial / paro" : "inasistencia justificada";
 
   const subject = `Aviso Institucional: Inasistencia Docente (${cleanCursos}) - Escuela N° 713`;
 
   const plainText = `Aviso Institucional - Escuela N° 713 "Juan Abdala Chayep"\n\n` +
     `Estimados estudiantes de ${cleanCursos}:\n\n` +
-    `Les informamos que el/la docente ${params.profesor} no concurrirá a dictar clases ${fechaTexto} (${params.tipo}).\n\n` +
+    `Les informamos que el/la docente ${params.profesor} no concurrirá a dictar clases ${fechaTexto} (${motivoPublico}).\n\n` +
     `Materias afectadas: ${cleanMaterias}.\n` +
     `Los módulos correspondientes se computan como Hora Libre o según las pautas de su preceptoría.\n\n` +
     `Pueden consultar la grilla horaria actualizada en tiempo real en: ${origin}\n\n` +
@@ -287,7 +289,7 @@ export const sendAbsenceNoticeEmail = async (params: AbsenceNoticeParams): Promi
             </p>
 
             <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0 0 20px 0;">
-              Se informa que el/la docente <strong style="color: #ffffff;">${params.profesor}</strong> no dictará clases <strong>${fechaTexto}</strong> debido a: <strong>${params.tipo}</strong>.
+              Se informa que el/la docente <strong style="color: #ffffff;">${params.profesor}</strong> no dictará clases <strong>${fechaTexto}</strong> (${motivoPublico}).
             </p>
 
             <!-- Ficha de Datos -->

@@ -1469,16 +1469,15 @@ export const saveAusencia = async (ausencia: Ausencia, schoolId?: string) => {
     });
     notifyRealtimeUpdate("ausencias");
 
-    // Notificación en tiempo real para la comunidad educativa de esta escuela
+    // Notificación en tiempo real para el equipo de conducción de esta escuela
     saveNotificacion({
       tipo: "inasistencia_docente",
       titulo: `Aviso de Inasistencia: ${ausencia.profNombre}`,
-      mensaje: `El docente ${ausencia.profNombre} registró ${ausencia.tipo} (${ausencia.inicio === ausencia.fin ? ausencia.inicio : `del ${ausencia.inicio} al ${ausencia.fin}`}). Materias: ${ausencia.materias.join(", ")}.`,
-      destinatarioRol: "todos",
+      mensaje: `El docente ${ausencia.profNombre} registró inasistencia (${ausencia.inicio === ausencia.fin ? ausencia.inicio : `del ${ausencia.inicio} al ${ausencia.fin}`}). Materias: ${ausencia.materias.join(", ")}.`,
+      destinatarioRol: "directivo",
       metadata: {
         profId: String(ausencia.profId),
         profNombre: ausencia.profNombre,
-        tipo: ausencia.tipo,
         inicio: ausencia.inicio,
         fin: ausencia.fin || ausencia.inicio,
         materias: ausencia.materias,
@@ -2507,7 +2506,24 @@ export const getCachedNotificaciones = (userEmail?: string, userRole?: string, s
   const isProfesorUser = cleanRole === "profesor" || cleanRole === "preceptor_profesor";
 
   return all.filter((n) => {
+    // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
+    // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
+    if (cleanRole === "alumno") {
+      if (
+        n.tipo === "inasistencia_docente" ||
+        n.tipo === "licencia_preceptor_aprobada" ||
+        n.tipo === "cobertura_asignada" ||
+        n.tipo === "nuevo_usuario_pendiente"
+      ) {
+        return false;
+      }
+      if ((!n.destinatarioRol || n.destinatarioRol === "todos") && n.tipo !== "aviso_general") {
+        return false;
+      }
+    }
+
     if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+    if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() !== cleanEmail) return false;
     if (!n.destinatarioRol || n.destinatarioRol === "todos") return true;
     if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) return true;
     if (n.destinatarioRol === "admin" && cleanRole === "admin") return true;
@@ -2563,8 +2579,27 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string, s
     }));
 
     const filtered = notifs.filter((n) => {
+      // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
+      // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
+      if (cleanRole === "alumno") {
+        if (
+          n.tipo === "inasistencia_docente" ||
+          n.tipo === "licencia_preceptor_aprobada" ||
+          n.tipo === "cobertura_asignada" ||
+          n.tipo === "nuevo_usuario_pendiente"
+        ) {
+          return false;
+        }
+        if ((!n.destinatarioRol || n.destinatarioRol === "todos") && n.tipo !== "aviso_general") {
+          return false;
+        }
+      }
+
       if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) {
         return true;
+      }
+      if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() !== cleanEmail) {
+        return false;
       }
       if (!n.destinatarioRol || n.destinatarioRol === "todos") {
         return true;
@@ -2676,7 +2711,9 @@ export const subscribeToNotificaciones = (
     try {
       const data = await getNotificaciones(userEmail, userRole, schoolId);
       if (isSubscribed) {
-        callback(data, newArrival);
+        // Solo propagar newArrival si superó la validación y autorización para este usuario
+        const validArrival = newArrival && data.some(n => n.id === newArrival.id) ? newArrival : undefined;
+        callback(data, validArrival);
       }
     } catch (err) {
       devLog("subscribeToNotificaciones/fetch", err);

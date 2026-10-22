@@ -713,17 +713,23 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigateToAusencias(h.profesor);
-                    }}
-                    className={`text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
-                    title={`Ver licencias de ${h.profesor}`}
-                  >
-                    Prof. {h.profesor}
-                  </button>
+                  {isStudent ? (
+                    <span className={`text-xs font-bold text-left block ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}>
+                      Prof. {h.profesor}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigateToAusencias(h.profesor);
+                      }}
+                      className={`text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
+                      title={`Ver licencias de ${h.profesor}`}
+                    >
+                      Prof. {h.profesor}
+                    </button>
+                  )}
                   {isAdmin && (
                     <button 
                       onClick={() => onDeleteHorario(h)}
@@ -838,17 +844,23 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
                                 </span>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onNavigateToAusencias(h.profesor);
-                              }}
-                              className={`text-[10px] sm:text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors block ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
-                              title={`Ver licencias de ${h.profesor}`}
-                            >
-                              Prof. {h.profesor}
-                            </button>
+                            {isStudent ? (
+                              <span className={`text-[10px] sm:text-xs font-bold text-left block ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}>
+                                Prof. {h.profesor}
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onNavigateToAusencias(h.profesor);
+                                }}
+                                className={`text-[10px] sm:text-xs font-bold text-left hover:text-[var(--verde)] hover:underline transition-colors block ${isAbsent ? "text-[var(--rojo)]/70" : "text-[var(--text2)]"}`}
+                                title={`Ver licencias de ${h.profesor}`}
+                              >
+                                Prof. {h.profesor}
+                              </button>
+                            )}
                             <div className="flex items-center justify-between mt-2.5 gap-2">
                               {isTeacher ? (
                                 <span

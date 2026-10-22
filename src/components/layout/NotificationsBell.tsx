@@ -76,7 +76,9 @@ export default function NotificationsBell({
       setNotifications(list);
 
       // Notificación emergente Toast y sonido en tiempo real al recibir un aviso nuevo
-      if (newArrival && !newArrival.leida && !seenIdsRef.current.has(newArrival.id)) {
+      // Verificar estrictamente que la notificación pertenezca a la lista autorizada de este usuario
+      const isAuthorizedForMe = Boolean(newArrival && list.some((item) => item.id === newArrival.id));
+      if (newArrival && isAuthorizedForMe && !newArrival.leida && !seenIdsRef.current.has(newArrival.id)) {
         seenIdsRef.current.add(newArrival.id);
         if (!isInitialMountRef.current) {
           const ageSec = (Date.now() - new Date(newArrival.fecha).getTime()) / 1000;

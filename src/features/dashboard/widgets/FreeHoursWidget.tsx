@@ -216,9 +216,11 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
             </h3>
             <p className="text-xs text-[var(--text2)] mt-0.5">
               {hasFreeHours 
-                ? (isPreceptor && preceptorCourses && preceptorCourses.length > 0
-                    ? "Se detectaron los siguientes bloques libres en tus cursos asignados por licencias docentes."
-                    : "Se detectaron los siguientes bloques libres debido a licencias docentes confirmadas.")
+                ? (isStudent
+                    ? "Se detectaron los siguientes bloques de hora libre para tu curso hoy."
+                    : isPreceptor && preceptorCourses && preceptorCourses.length > 0
+                    ? "Se detectaron los siguientes bloques libres en tus cursos asignados."
+                    : "Se detectaron los siguientes bloques de horas libres en la jornada de hoy.")
                 : (isPreceptor && preceptorCourses && preceptorCourses.length > 0
                     ? "Todas las clases programadas para tus cursos asignados se dictan con total normalidad hoy."
                     : "Todas las clases programadas para hoy se dictan con total normalidad.")
@@ -243,11 +245,17 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
             return (
               <div 
                 key={free.id || `${free.curso}-${free.materia}-${idx}`} 
-                className="bg-[var(--bg3)] hover:bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--verde)] p-4 rounded-2xl shadow-sm hover:shadow-md flex flex-col justify-between hover:-translate-y-0.5 transition-all cursor-pointer group"
+                className={`bg-[var(--bg3)] p-4 rounded-2xl shadow-sm flex flex-col justify-between transition-all ${
+                  isStudent 
+                    ? "border border-[var(--border)]" 
+                    : "hover:bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--verde)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
+                }`}
                 onClick={() => {
-                  onNavigateToAusencias(free.profesor);
+                  if (!isStudent) {
+                    onNavigateToAusencias(free.profesor);
+                  }
                 }}
-                title={`Ver licencias de ${free.profesor}`}
+                title={isStudent ? `Hora libre: ${free.materia} (${displayHora})` : `Ver licencias de ${free.profesor}`}
               >
                 <div className="flex justify-between items-start gap-2 mb-3">
                   <button
@@ -282,9 +290,15 @@ export const FreeHoursWidget: React.FC<FreeHoursWidgetProps> = ({
                       <User size={13} className="text-[var(--text3)] shrink-0" />
                       <span className="truncate">Prof: {free.profesor}</span>
                     </span>
-                    <span className="text-[10px] font-black text-[var(--verde)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5 ml-2">
-                      Ver licencias <ArrowRight size={11} />
-                    </span>
+                    {isStudent ? (
+                      <span className="text-[10px] font-bold text-[var(--rojo)] shrink-0">
+                        Hora Libre
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-black text-[var(--verde)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5 ml-2">
+                        Ver licencias <ArrowRight size={11} />
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
