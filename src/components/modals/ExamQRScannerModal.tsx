@@ -14,6 +14,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
+import { getCamerasWithLabels, getBestMainRearCameraId, getOptimizedCameraList } from "@/lib/cameraHelper";
 
 interface Props {
   isOpen: boolean;
@@ -149,7 +150,7 @@ export default function ExamQRScannerModal({
   );
 
   const startScanner = useCallback(
-    async (cameraIdOrFacingMode?: string | { facingMode: string }) => {
+    async (preferredCameraId?: string) => {
       try {
         setScannerStatus("initializing");
         setErrorMessage("");
@@ -161,16 +162,27 @@ export default function ExamQRScannerModal({
         const html5Qr = new Html5Qrcode(containerId);
         scannerRef.current = html5Qr;
 
-        try {
-          const availableDevices = await Html5Qrcode.getCameras();
-          if (availableDevices && availableDevices.length > 0) {
-            setCameras(availableDevices);
-          }
-        } catch {
-          // Ignorar si getCameras falla antes de permisos
+        // 1. Obtener cámaras con etiquetas descriptivas resueltas
+        const availableDevices = await getCamerasWithLabels();
+        const optimized = getOptimizedCameraList(availableDevices);
+        if (optimized.length > 0) {
+          setCameras(optimized);
         }
 
-        const cameraConfig = cameraIdOrFacingMode || { facingMode: "environment" };
+        // 2. Determinar cámara principal 1.0x (descartando 0.5x, 0.6x, macro y frontales)
+        let targetCameraId = preferredCameraId;
+        if (!targetCameraId) {
+          targetCameraId = getBestMainRearCameraId(availableDevices) || undefined;
+        }
+
+        if (targetCameraId && optimized.length > 0) {
+          const idx = optimized.findIndex(c => c.id === targetCameraId);
+          if (idx !== -1) setActiveCameraIndex(idx);
+        }
+
+        const cameraConfig = targetCameraId 
+          ? { deviceId: { exact: targetCameraId } }
+          : { facingMode: { ideal: "environment" } };
 
         await html5Qr.start(
           cameraConfig,
@@ -182,6 +194,13 @@ export default function ExamQRScannerModal({
           (decoded) => handleDecodedText(decoded),
           () => {}
         );
+
+        // 3. Forzar zoom a 1.0 si es soportado
+        try {
+          await html5Qr.applyVideoConstraints({
+            advanced: [{ zoom: 1.0 } as any]
+          });
+        } catch {}
 
         setScannerStatus("scanning");
       } catch (err: any) {
@@ -205,22 +224,30 @@ export default function ExamQRScannerModal({
     await startScanner(cameras[nextIndex].id);
   };
 
+  const startScannerRef = useRef(startScanner);
+  startScannerRef.current = startScanner;
+
+  const stopScannerRef = useRef(stopScanner);
+  stopScannerRef.current = stopScanner;
+
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
     if (isOpen) {
       isProcessingRef.current = false;
       setSuccessInfo(null);
       setErrorMessage("");
-      const timer = setTimeout(() => {
-        startScanner();
+      timer = setTimeout(() => {
+        startScannerRef.current();
       }, 250);
-      return () => {
-        clearTimeout(timer);
-        stopScanner();
-      };
     } else {
-      stopScanner();
+      stopScannerRef.current();
     }
-  }, [isOpen, startScanner, stopScanner]);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      stopScannerRef.current();
+    };
+  }, [isOpen]);
 
   if (!isOpen || !mounted || typeof document === "undefined" || !document.body) return null;
 

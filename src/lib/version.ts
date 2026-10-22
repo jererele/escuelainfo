@@ -4,10 +4,11 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.41.2";
-export const APP_BUILD_DATE = "22/10/2026 15:25 hs";
+export const APP_VERSION = "v2.41.3";
+export const APP_BUILD_DATE = "22/10/2026 15:35 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
+  "Priorización Estricta de Cámara Trasera Principal (1.0x) en Lector QR (StudentQRScannerModal.tsx, ExamQRScannerModal.tsx, cameraHelper.ts): Se resolvió la anomalía en dispositivos móviles donde el escáner se iniciaba en la lente ultra gran angular (0.5x/0.6x) y alternaba cíclicamente a la cámara frontal y sensores auxiliares. 1) Algoritmo de Detección de Cámara Principal: Identificación y selección directa del sensor trasero 1.0x por ID descartando explícitamente lentes ultra-wide, teleobjetivos y macro. 2) Supresión del Bucle de Re-renderizado: Desacople del ciclo de vida del escáner en 'useEffect' mediante referencias estables ([isOpen]), impidiendo reinicios y saltos continuos de cámara. 3) Alternancia Limpia: El botón de rotar cámara ahora conmuta exclusivamente entre la Cámara Trasera Principal y la Frontal.",
   "Corrección de Desplazamiento y Cierre Involuntario en Menú Desplegable de Cursos (CustomSelect.tsx): Se subsanó la incidencia donde al utilizar la rueda del ratón o arrastrar la barra de scroll dentro del menú de cursos ('Filtrar por curso'), el desplegable se cerraba instantáneamente. Se ajustó el listener global de scroll para aislar los eventos originados dentro del contenedor del menú, incorporando contención de sobre-desplazamiento ('overscroll-contain') y reposicionamiento dinámico ante scroll exterior.",
   "Corrección Integral de Visibilidad en Formulario de Registro y Entrada de Teléfono (page.tsx, PhoneInputWithCountry.tsx): 1) Erradicación del recorte superior por centrado flex: Uso de 'my-auto' y contención natural para evitar que el logo y cabecera institucional se corten fuera del viewport. 2) Supresión del contenedor de scroll interno restrictivo: Eliminación de 'max-h-[60vh] overflow-y-auto' para permitir que el botón de envío y los términos se visualicen de forma completa y continua. 3) Fila exclusiva y redimensionamiento de Teléfono (PhoneInputWithCountry): Se independizó el campo a fila completa con paddings compactos (rounded-xl, py-2.5), asegurando más de 250px para el número telefónico sin truncamiento de dígitos. 4) Depuración de encabezado: Supresión de la caja redundante de escuela dentro del formulario y reordenamiento del logo y título.",
   "Blindaje de Jerarquía y Control de Acceso en Aprobación de Usuarios (dashboard/page.tsx, dataService.ts): Corrección de vulnerabilidad donde preceptores con acceso operativo (isAdmin) podían autorizar o auto-asignar roles de Administrador o Directivo. Se separó estrictamente la verificación de permisos en super-administradores ('admin'), directivos ('directivo') y preceptores ('preceptor'), impidiendo que roles no directivos alteren o promuevan rangos superiores.",
@@ -17,6 +18,13 @@ export const APP_RELEASE_NOTES: string[] = [
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.41.3",
+    date: "22/10/2026 15:35 hs",
+    notes: [
+      "Priorización Estricta de Cámara Trasera Principal (1.0x) en Lector QR (StudentQRScannerModal.tsx, ExamQRScannerModal.tsx, cameraHelper.ts): Detección inteligente de la lente 1.0x descartando 0.6x/macro/frontal, eliminación de bucles de cambio de cámara en móviles y alternancia limpia trasera/frontal."
+    ]
+  },
   {
     version: "v2.41.2",
     date: "22/10/2026 15:25 hs",

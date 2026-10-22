@@ -22,6 +22,7 @@ import {
   logAction 
 } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
+import { getCamerasWithLabels, getBestMainRearCameraId, getOptimizedCameraList } from "@/lib/cameraHelper";
 
 interface Props {
   isOpen: boolean;
@@ -167,7 +168,7 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
   }, [userProfile, stopScanner, onSuccess]);
 
   // Iniciar la cámara y el escáner
-  const startScanner = useCallback(async (cameraIdOrFacingMode?: string | { facingMode: string }) => {
+  const startScanner = useCallback(async (preferredCameraId?: string) => {
     try {
       setScannerStatus("initializing");
       setErrorMessage("");
@@ -180,17 +181,27 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
       const html5Qr = new Html5Qrcode(containerId);
       scannerRef.current = html5Qr;
 
-      // Obtener cámaras disponibles
-      try {
-        const availableDevices = await Html5Qrcode.getCameras();
-        if (availableDevices && availableDevices.length > 0) {
-          setCameras(availableDevices);
-        }
-      } catch {
-        // Ignorar si getCameras no es soportado antes del permiso
+      // 1. Obtener cámaras disponibles asegurando etiquetas descriptivas
+      const availableDevices = await getCamerasWithLabels();
+      const optimized = getOptimizedCameraList(availableDevices);
+      if (optimized.length > 0) {
+        setCameras(optimized);
       }
 
-      const cameraConfig = cameraIdOrFacingMode || { facingMode: "environment" };
+      // 2. Determinar cámara principal 1.0x (descartando 0.5x, 0.6x, macro y frontales)
+      let targetCameraId = preferredCameraId;
+      if (!targetCameraId) {
+        targetCameraId = getBestMainRearCameraId(availableDevices) || undefined;
+      }
+
+      if (targetCameraId && optimized.length > 0) {
+        const idx = optimized.findIndex(c => c.id === targetCameraId);
+        if (idx !== -1) setActiveCameraIndex(idx);
+      }
+
+      const cameraConfig = targetCameraId 
+        ? { deviceId: { exact: targetCameraId } }
+        : { facingMode: { ideal: "environment" } };
 
       await html5Qr.start(
         cameraConfig,
@@ -207,6 +218,13 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
         }
       );
 
+      // 3. Forzar zoom óptico/estándar a 1.0 si el navegador lo soporta
+      try {
+        await html5Qr.applyVideoConstraints({
+          advanced: [{ zoom: 1.0 } as any]
+        });
+      } catch {}
+
       setScannerStatus("scanning");
     } catch (err: any) {
       console.error("[QR Scanner Init Error]:", err);
@@ -220,7 +238,7 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
     }
   }, [stopScanner, handleDecodedText]);
 
-  // Cambiar entre cámara trasera y frontal
+  // Cambiar entre cámara trasera principal y frontal
   const handleToggleCamera = async () => {
     if (cameras.length <= 1) return;
     const nextIndex = (activeCameraIndex + 1) % cameras.length;
@@ -228,23 +246,30 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
     await startScanner(cameras[nextIndex].id);
   };
 
+  const startScannerRef = useRef(startScanner);
+  startScannerRef.current = startScanner;
+
+  const stopScannerRef = useRef(stopScanner);
+  stopScannerRef.current = stopScanner;
+
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
     if (isOpen) {
       isProcessingRef.current = false;
       setSuccessInfo(null);
       setErrorMessage("");
-      // Pequeño retardo para asegurar que el modal se monte en el DOM
-      const timer = setTimeout(() => {
-        startScanner();
+      timer = setTimeout(() => {
+        startScannerRef.current();
       }, 250);
-      return () => {
-        clearTimeout(timer);
-        stopScanner();
-      };
     } else {
-      stopScanner();
+      stopScannerRef.current();
     }
-  }, [isOpen, startScanner, stopScanner]);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      stopScannerRef.current();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
