@@ -15,12 +15,16 @@ import {
   User, 
   Filter,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  School
 } from "lucide-react";
 import { UserProfile, Alumno, Curso, isPendingRole, canManageUserRole, getAllowedAssignableRoles, fromDbRol } from "@/lib/dataService";
+import { getSchoolById, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ApproveStudentRoleModal from "@/components/modals/ApproveStudentRoleModal";
 import ChangeUserRoleModal from "@/components/modals/ChangeUserRoleModal";
+import ChangeSchoolModal from "@/components/modals/ChangeSchoolModal";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 
 interface UsuariosTabProps {
@@ -44,6 +48,10 @@ interface UsuariosTabProps {
     adminOtpCode?: string,
     adminOtpToken?: string
   ) => Promise<void> | void;
+  onChangeUserSchool?: (
+    user: UserProfile,
+    targetSchoolId: string
+  ) => Promise<void> | void;
   showToast: (message: string, type?: "success" | "error") => void;
   onRefreshUsuarios?: () => void;
 }
@@ -57,6 +65,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   onApproveStudent,
   onRejectStudent,
   onChangeUserRole,
+  onChangeUserSchool,
   showToast,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<"solicitudes" | "activos">("solicitudes");
@@ -66,6 +75,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [roleChangingUser, setRoleChangingUser] = useState<UserProfile | null>(null);
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
+  const [schoolChangingUser, setSchoolChangingUser] = useState<UserProfile | null>(null);
+  const [isChangeSchoolModalOpen, setIsChangeSchoolModalOpen] = useState(false);
 
   // Determinar roles jerárquicos del operador con normalización compacta
   const normalizedOperatorRole = fromDbRol(userProfile?.rol);
@@ -560,6 +571,33 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       </div>
                     </div>
 
+                    {/* Escuela Designada */}
+                    {(() => {
+                      const userSchool = getSchoolById(u.schoolId || DEFAULT_SCHOOL_ID);
+                      return (
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-[var(--border)]/50">
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text2)] truncate">
+                            <Building2 size={13} className="text-[var(--verde)] shrink-0" />
+                            <span className="truncate max-w-[200px]" title={userSchool.nombreCompleto}>
+                              {userSchool.numero ? `N° ${userSchool.numero} · ${userSchool.ciudad}` : userSchool.nombre}
+                            </span>
+                          </div>
+                          {isOperatorAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSchoolChangingUser(u);
+                                setIsChangeSchoolModalOpen(true);
+                              }}
+                              className="text-[10px] font-black uppercase text-[var(--verde)] hover:underline shrink-0"
+                            >
+                              Cambiar
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div className="flex items-center justify-between text-xs text-[var(--text2)] pt-1 border-t border-[var(--border)]/50">
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--verde)]">
                         <span className="w-2 h-2 rounded-full bg-[var(--verde)]" />
@@ -592,21 +630,34 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                       )}
                     </div>
 
-                    {canManageUserRole(effectiveOperatorRole, u.rol) && (
-                      <div className="pt-1 border-t border-[var(--border)]/50">
+                    <div className="pt-1 border-t border-[var(--border)]/50 flex items-center gap-2">
+                      {canManageUserRole(effectiveOperatorRole, u.rol) && (
                         <button
                           type="button"
                           onClick={() => {
                             setRoleChangingUser(u);
                             setIsChangeRoleModalOpen(true);
                           }}
-                          className="w-full min-h-[44px] flex items-center justify-center gap-2 bg-[var(--bg3)] hover:bg-[var(--bg2)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-xs"
+                          className="flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-[var(--bg3)] hover:bg-[var(--bg2)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-xs"
                         >
                           <UserCog size={15} strokeWidth={2.2} />
-                          <span>Cambiar Rol</span>
+                          <span>Rol</span>
                         </button>
-                      </div>
-                    )}
+                      )}
+                      {isOperatorAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSchoolChangingUser(u);
+                            setIsChangeSchoolModalOpen(true);
+                          }}
+                          className="flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-xs"
+                        >
+                          <Building2 size={15} strokeWidth={2.2} />
+                          <span>Escuela</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -616,12 +667,13 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           {/* VISTA ESCRITORIO: Tabla horizontal (>= md) */}
           <div className="hidden md:block card glass rounded-2xl border border-[var(--border)] overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-[650px]">
+              <table className="w-full text-left min-w-[750px]">
                 <thead className="bg-[var(--bg3)]/50">
                   <tr>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Usuario</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Email</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Rol Asignado</th>
+                    <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Escuela Designada</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Detalle / Curso</th>
                     <th className="p-6 text-[10px] font-black uppercase text-[var(--text2)] tracking-widest">Estado</th>
                     {canOperatorManageRoles && (
@@ -632,7 +684,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                 <tbody>
                   {filteredActive.length === 0 ? (
                     <tr>
-                      <td colSpan={canOperatorManageRoles ? 6 : 5} className="p-20 text-center text-[var(--text3)] italic">
+                      <td colSpan={canOperatorManageRoles ? 7 : 6} className="p-20 text-center text-[var(--text3)] italic">
                         No se encontraron usuarios con ese criterio.
                       </td>
                     </tr>
@@ -685,6 +737,26 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                               getRoleBadge(u.rol)
                             )}
                           </td>
+                          <td className="p-6">
+                            {(() => {
+                              const sch = getSchoolById(u.schoolId || DEFAULT_SCHOOL_ID);
+                              return (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text)]">
+                                    <Building2 size={13} className="text-[var(--verde)] shrink-0" />
+                                    <span className="truncate max-w-[190px]" title={sch.nombreCompleto}>
+                                      {sch.numero ? `N° ${sch.numero} «${sch.nombre}»` : sch.nombre}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-[var(--text3)] flex items-center gap-1">
+                                    <span>{sch.ciudad}</span>
+                                    <span>•</span>
+                                    <span>{sch.regionNombre.split("·")[0].trim()}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="p-6 text-xs">
                             {fromDbRol(u.rol) === "alumno" ? (
                               studDetails?.curso && studDetails.curso !== "pendiente" ? (
@@ -721,21 +793,36 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                             </span>
                           </td>
                           {canOperatorManageRoles && (
-                            <td className="p-6 text-right">
-                              {canModifyThisUser ? (
+                            <td className="p-6 text-right space-x-2">
+                              {canModifyThisUser && (
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setRoleChangingUser(u);
                                     setIsChangeRoleModalOpen(true);
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--bg3)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg3)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
                                   title="Cambiar rol y permisos de este usuario"
                                 >
                                   <UserCog size={13} strokeWidth={2.2} />
-                                  <span>Cambiar Rol</span>
+                                  <span>Rol</span>
                                 </button>
-                              ) : (
+                              )}
+                              {isOperatorAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSchoolChangingUser(u);
+                                    setIsChangeSchoolModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                                  title="Asignar o reasignar escuela provincial a este usuario"
+                                >
+                                  <Building2 size={13} strokeWidth={2.2} />
+                                  <span>Escuela</span>
+                                </button>
+                              )}
+                              {!canModifyThisUser && !isOperatorAdmin && (
                                 <span className="text-[11px] font-mono text-[var(--text3)]" title="Jerarquía protegida">—</span>
                               )}
                             </td>
@@ -801,6 +888,26 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             }
             isAdmin={isOperatorAdmin}
             operatorRole={effectiveOperatorRole}
+          />
+        </ErrorBoundary>
+      )}
+
+      {/* MODAL DE REASIGNACIÓN DE ESCUELA (Exclusivo Administradores) */}
+      {isChangeSchoolModalOpen && schoolChangingUser && (
+        <ErrorBoundary fallbackTitle="Error al abrir modal de asignación de escuela">
+          <ChangeSchoolModal
+            isOpen={isChangeSchoolModalOpen}
+            onClose={() => {
+              setIsChangeSchoolModalOpen(false);
+              setSchoolChangingUser(null);
+            }}
+            onConfirm={async (targetSchoolId) => {
+              if (onChangeUserSchool) {
+                await onChangeUserSchool(schoolChangingUser, targetSchoolId);
+              }
+            }}
+            user={schoolChangingUser}
+            currentSchoolId={schoolChangingUser.schoolId}
           />
         </ErrorBoundary>
       )}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { runAppwriteHealthCheck, logHealthCheckSummary } from "@/lib/healthCheck";
 import { account } from "@/lib/appwrite";
-import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, fromDbRol, subscribeToHorarios, notifyRealtimeUpdate, saveNotificacion, NotificacionSistema } from "@/lib/dataService";
+import { subscribeToAusencias, saveAusencia, Ausencia, deleteAusencia, updateAusenciaStatus, getUserProfile, getUserProfileByEmail, UserProfile, logAction, getProfesores, Profesor, getAlumnos, getAlumnoByEmail, rejectUserApi, getHorarios, Alumno, Horario, deleteProfesor, deleteAlumno, deleteHorario, saveProfesor, saveAlumno, saveHorario, getLogs, getUsuarios, deleteUserProfile, getCursos, deleteCurso, Curso, updateUserProfile, updateAlumno, migrateToCompactFormat, MigrationResult, subscribeToUsuarios, subscribeToAlumnos, subscribeToProfesores, subscribeToCursos, getCertificateFileUrl, isPendingRole, isAuthorizedRole, getAllowedAssignableRoles, canManageUserRole, UserRole, changeUserRoleApi, changeUserSchoolApi, fromDbRol, subscribeToHorarios, notifyRealtimeUpdate, saveNotificacion, NotificacionSistema } from "@/lib/dataService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -15,7 +15,7 @@ import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/S
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
 import { sendApprovalEmail, sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia, sendPreceptorCoverageEmail } from "@/lib/emailService";
-import { ChubutSchool, getSchoolById, getSavedSchoolId, setSavedSchoolId } from "@/lib/chubutSchools";
+import { ChubutSchool, getSchoolById, getSavedSchoolId, setSavedSchoolId, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
 import {
   GeneralTab,
   UsuariosTab,
@@ -202,15 +202,26 @@ export default function Dashboard() {
   useEffect(() => {
     const handleSchoolChanged = (e: Event) => {
       const customEvent = e as CustomEvent<{ schoolId: string }>;
-      if (customEvent.detail?.schoolId) {
-        setCurrentSchool(getSchoolById(customEvent.detail.schoolId));
-        dataCache.current.clear();
-        getLogs(true).then(d => setLogs(d)).catch(() => {});
+      const newSchoolId = customEvent.detail?.schoolId;
+      if (!newSchoolId) return;
+
+      // Salvaguarda: si el usuario no es admin, solo puede permanecer en su escuela designada
+      if (userProfile && fromDbRol(userProfile.rol) !== 'admin') {
+        const assignedSchool = userProfile.schoolId || DEFAULT_SCHOOL_ID;
+        if (newSchoolId !== assignedSchool) {
+          setSavedSchoolId(assignedSchool);
+          setCurrentSchool(getSchoolById(assignedSchool));
+          return;
+        }
       }
+
+      setCurrentSchool(getSchoolById(newSchoolId));
+      dataCache.current.clear();
+      getLogs(true).then(d => setLogs(d)).catch(() => {});
     };
     window.addEventListener("escuelainfo:school-changed", handleSchoolChanged);
     return () => window.removeEventListener("escuelainfo:school-changed", handleSchoolChanged);
-  }, []);
+  }, [userProfile]);
   
 
 
@@ -366,11 +377,16 @@ export default function Dashboard() {
 
         if (profile) {
           setUserProfile(profile);
-          if (profile.schoolId) {
-            setCurrentSchool(getSchoolById(profile.schoolId));
-            if (profile.schoolId !== getSavedSchoolId()) {
-              setSavedSchoolId(profile.schoolId);
+          const isUserAdmin = fromDbRol(profile.rol) === 'admin';
+          if (!isUserAdmin) {
+            const assignedSchool = profile.schoolId || DEFAULT_SCHOOL_ID;
+            setCurrentSchool(getSchoolById(assignedSchool));
+            if (getSavedSchoolId() !== assignedSchool) {
+              setSavedSchoolId(assignedSchool);
             }
+          } else if (profile.schoolId && !getSavedSchoolId()) {
+            setCurrentSchool(getSchoolById(profile.schoolId));
+            setSavedSchoolId(profile.schoolId);
           }
           // Si el usuario no cuenta con un rol oficial autorizado, no suscribir a colecciones internas ni cargar datos sensibles
           if (!isAuthorizedRole(profile.rol)) {
@@ -1193,6 +1209,36 @@ export default function Dashboard() {
     }
   };
 
+  // ASIGNACIÓN Y REASIGNACIÓN DE ESCUELA INSTITUCIONAL (Exclusivo Administradores)
+  const handleChangeUserSchool = async (targetUser: UserProfile, targetSchoolId: string) => {
+    try {
+      const targetUserId = targetUser.id || targetUser.uid || "";
+      const targetUserEmail = (targetUser.email || "").toLowerCase().trim();
+      const res = await changeUserSchoolApi(targetUserId, targetSchoolId, targetUserEmail);
+      if (res.success) {
+        showToast(
+          res.schoolNombre
+            ? `Escuela de ${targetUser.nombre} actualizada a ${res.schoolNombre}`
+            : "Escuela reasignada exitosamente.",
+          "success"
+        );
+        // Actualizar localmente optimista
+        setUsuarios(prev => prev.map(u => {
+          const matches = (targetUserId && (u.id === targetUserId || u.uid === targetUserId)) ||
+            (targetUserEmail && (u.email || "").toLowerCase().trim() === targetUserEmail);
+          return matches ? { ...u, schoolId: targetSchoolId } : u;
+        }));
+        // Refrescar datos
+        getUsuarios(true).then(setUsuarios).catch(() => {});
+      } else {
+        showToast(res.error || "No se pudo cambiar la escuela asignada.", "error");
+      }
+    } catch (err: any) {
+      console.error("Error al asignar escuela:", err);
+      showToast(err?.message || "Error al asignar escuela institucional", "error");
+    }
+  };
+
   // Memoized derived state — avoids costly recalculations on every render
   const filteredAusencias = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -1808,6 +1854,7 @@ export default function Dashboard() {
               onApproveStudent={handleApproveStudent}
               onRejectStudent={handleRejectStudent}
               onChangeUserRole={handleChangeUserRole}
+              onChangeUserSchool={handleChangeUserSchool}
               showToast={showToast}
               onRefreshUsuarios={() => getUsuarios(true).then(setUsuarios)}
             />

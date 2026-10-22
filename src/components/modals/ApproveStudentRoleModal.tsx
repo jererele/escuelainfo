@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Check, GraduationCap, BookOpen, Users, AlertCircle } from "lucide-react";
+import { X, Check, GraduationCap, BookOpen, Users, AlertCircle, School } from "lucide-react";
 import { UserProfile, Alumno, Curso, getAllowedAssignableRoles, UserRole, fromDbRol } from "@/lib/dataService";
+import { getSchoolById, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
 import UserAvatar from "@/components/ui/UserAvatar";
 import CourseSelect from "@/components/shared/CourseSelect";
 
@@ -233,22 +234,38 @@ export default function ApproveStudentRoleModal({
         {/* Contenido Desplazable */}
         <div ref={modalBodyRef} className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
           {/* Ficha rápida del solicitante */}
-          <div className="bg-[var(--bg3)] p-3 rounded-2xl border border-[var(--border)] text-xs flex items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <div className="text-[10px] font-black uppercase text-[var(--text3)]">DNI Registrado</div>
-              <div className="font-bold text-[var(--text)] font-mono">{alumnoDetails?.dni || "No especificado"}</div>
-            </div>
-            <div className="space-y-0.5 text-right">
-              <div className="text-[10px] font-black uppercase text-[var(--text3)]">Curso Solicitado</div>
-              <div className="font-bold text-[var(--text)]">
-                {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? (
-                  <span className="font-mono">{alumnoDetails.curso}</span>
-                ) : (
-                  <span className="text-[var(--amarillo)] italic">Sin asignar</span>
-                )}
+          {(() => {
+            const userSchool = getSchoolById(user?.schoolId || DEFAULT_SCHOOL_ID);
+            return (
+              <div className="bg-[var(--bg3)] p-3 rounded-2xl border border-[var(--border)] text-xs space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] font-black uppercase text-[var(--text3)]">DNI Registrado</div>
+                    <div className="font-bold text-[var(--text)] font-mono">{alumnoDetails?.dni || "No especificado"}</div>
+                  </div>
+                  <div className="space-y-0.5 text-right">
+                    <div className="text-[10px] font-black uppercase text-[var(--text3)]">Curso Solicitado</div>
+                    <div className="font-bold text-[var(--text)]">
+                      {alumnoDetails?.curso && alumnoDetails.curso !== "pendiente" ? (
+                        <span className="font-mono">{alumnoDetails.curso}</span>
+                      ) : (
+                        <span className="text-[var(--amarillo)] italic">Sin asignar</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-[var(--border)]/60 flex items-center justify-between text-[11px]">
+                  <span className="text-[var(--text3)] font-medium flex items-center gap-1">
+                    <School size={12} className="text-[var(--verde)]" />
+                    Escuela:
+                  </span>
+                  <span className="font-bold text-[var(--verde)] truncate max-w-[200px]" title={userSchool.nombreCompleto}>
+                    {userSchool.numero ? `N° ${userSchool.numero} · ${userSchool.ciudad}` : userSchool.nombre}
+                  </span>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Selector de Rol */}
           <div className="space-y-1.5">

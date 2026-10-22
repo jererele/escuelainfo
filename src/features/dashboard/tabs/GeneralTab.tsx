@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
-import { Ausencia, Horario, Alumno, Profesor, parseUserCursos } from "@/lib/dataService";
+import { Ausencia, Horario, Alumno, Profesor, parseUserCursos, fromDbRol } from "@/lib/dataService";
 import { ChubutSchool } from "@/lib/chubutSchools";
 import ChubutSchoolSelector from "@/components/shared/ChubutSchoolSelector";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
@@ -95,7 +95,11 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             </p>
           </div>
           <div className="shrink-0">
-            <ChubutSchoolSelector variant="badge" />
+            <ChubutSchoolSelector 
+              variant="badge" 
+              isReadOnly={fromDbRol(userProfile?.rol) !== 'admin'}
+              selectedSchoolId={userProfile?.schoolId || currentSchool?.id}
+            />
           </div>
         </div>
       </div>

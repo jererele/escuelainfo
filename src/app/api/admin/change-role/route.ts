@@ -110,7 +110,8 @@ export async function POST(request: Request) {
       preceptorCursos,
       adminOtpCode,
       adminOtpToken,
-      targetUserName
+      targetUserName,
+      targetSchoolId
     } = await request.json();
 
     if (!newRole) {
@@ -304,16 +305,22 @@ export async function POST(request: Request) {
       updateData.cursos = "[]";
     }
 
+    if (targetSchoolId && typeof targetSchoolId === 'string' && targetSchoolId.trim()) {
+      updateData.schoolId = targetSchoolId.trim();
+    }
+
     await db.updateDocument(dbId, 'usuarios', targetDoc.$id, updateData);
 
-    const targetSchoolId = targetDoc.schoolId || "esc-713-esquel";
+    const finalSchoolId = (targetSchoolId && typeof targetSchoolId === 'string' && targetSchoolId.trim())
+      ? targetSchoolId.trim()
+      : (targetDoc.schoolId || "esc-713-esquel");
 
     // 5. Sincronización con colección 'alumnos'
     if (cleanTargetEmail) {
       try {
         const alumnosList = await db.listDocuments(dbId, 'alumnos', [
           Query.equal('email', cleanTargetEmail),
-          Query.equal('schoolId', targetSchoolId)
+          Query.equal('schoolId', finalSchoolId)
         ]);
         
         if (cleanNewRole === "alumno") {
@@ -322,7 +329,7 @@ export async function POST(request: Request) {
             if (selectedCurso) {
               await db.updateDocument(dbId, 'alumnos', alumnoDoc.$id, {
                 curso: selectedCurso,
-                schoolId: targetSchoolId
+                schoolId: finalSchoolId
               });
             }
           } else {
@@ -331,7 +338,7 @@ export async function POST(request: Request) {
               dni: "",
               curso: selectedCurso || "pendiente",
               email: cleanTargetEmail,
-              schoolId: targetSchoolId
+              schoolId: finalSchoolId
             });
           }
         } else {
@@ -350,7 +357,7 @@ export async function POST(request: Request) {
       try {
         const profsList = await db.listDocuments(dbId, 'profesores', [
           Query.equal('email', cleanTargetEmail),
-          Query.equal('schoolId', targetSchoolId)
+          Query.equal('schoolId', finalSchoolId)
         ]);
         
         if (cleanNewRole === "profesor" || cleanNewRole === "preceptor_profesor") {
@@ -360,7 +367,7 @@ export async function POST(request: Request) {
               dni: "",
               materias: [],
               email: cleanTargetEmail,
-              schoolId: targetSchoolId
+              schoolId: finalSchoolId
             });
           }
         } else if (cleanNewRole === "alumno") {

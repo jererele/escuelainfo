@@ -28,6 +28,9 @@ interface ChubutSchoolSelectorProps {
   className?: string;
   variant?: "badge" | "compact" | "form-input";
   label?: string;
+  isReadOnly?: boolean;
+  allowedSchoolIds?: string[];
+  readOnlyMessage?: string;
 }
 
 export default function ChubutSchoolSelector({
@@ -35,7 +38,10 @@ export default function ChubutSchoolSelector({
   onSelect,
   className = "",
   variant = "badge",
-  label = "Escuela Secundaria"
+  label = "Escuela Secundaria",
+  isReadOnly = false,
+  allowedSchoolIds,
+  readOnlyMessage = "Institución asignada a tu cuenta. Solo un administrador puede reasignarla."
 }: ChubutSchoolSelectorProps) {
   const [internalSchoolId, setInternalSchoolId] = useState<string>(DEFAULT_SCHOOL_ID);
   const [isOpen, setIsOpen] = useState(false);
@@ -71,6 +77,10 @@ export default function ChubutSchoolSelector({
   const filteredSchools = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return CHUBUT_SCHOOLS.filter((school) => {
+      // Filtro por escuelas permitidas si se especificó
+      if (allowedSchoolIds && allowedSchoolIds.length > 0 && !allowedSchoolIds.includes(school.id)) {
+        return false;
+      }
       // Filtro por región
       if (selectedRegionFilter !== "todas" && school.regionId !== selectedRegionFilter) {
         return false;
@@ -86,7 +96,7 @@ export default function ChubutSchoolSelector({
         school.tipo.toLowerCase().includes(q)
       );
     });
-  }, [searchQuery, selectedRegionFilter]);
+  }, [searchQuery, selectedRegionFilter, allowedSchoolIds]);
 
   // Agrupación de las escuelas filtradas por región
   const groupedFiltered = useMemo(() => {
@@ -171,74 +181,138 @@ export default function ChubutSchoolSelector({
                 <School size={13} className="text-[var(--verde)]" />
                 {label}
               </span>
-              <span className="text-[10px] text-[var(--text3)] font-medium">Chubut · 6 Regiones</span>
+              <span className="text-[10px] text-[var(--text3)] font-medium">
+                {isReadOnly ? "Escuela Designada" : "Chubut · 6 Regiones"}
+              </span>
             </label>
           )}
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="w-full bg-[var(--bg3)] hover:bg-[var(--bg)] border border-[var(--border)] focus:border-[var(--verde)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-sm text-[var(--text)] transition-all flex items-center justify-between gap-2 text-left group shadow-sm"
-          >
-            <div className="min-w-0 flex items-center gap-2.5 truncate">
-              <div className="w-8 h-8 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center shrink-0 text-[var(--verde)]">
-                <GraduationCap size={16} />
-              </div>
-              <div className="min-w-0 truncate">
-                <div className="font-bold text-xs truncate text-[var(--text)] flex items-center gap-1.5">
-                  <span>{activeSchool.nombreCompleto}</span>
+          {isReadOnly ? (
+            <div
+              className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 font-medium text-sm text-[var(--text)] flex items-center justify-between gap-2 shadow-xs cursor-default"
+              title={readOnlyMessage}
+            >
+              <div className="min-w-0 flex items-center gap-2.5 truncate">
+                <div className="w-8 h-8 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center shrink-0 text-[var(--verde)]">
+                  <GraduationCap size={16} />
                 </div>
-                <div className="text-[11px] text-[var(--text3)] flex items-center gap-1 truncate">
-                  <MapPin size={11} className="shrink-0 text-[var(--verde)]" />
-                  <span>{activeSchool.ciudad}</span>
-                  <span className="opacity-40">•</span>
-                  <span>{activeSchool.regionNombre.split("·")[0].trim()}</span>
+                <div className="min-w-0 truncate">
+                  <div className="font-bold text-xs truncate text-[var(--text)] flex items-center gap-1.5">
+                    <span>{activeSchool.nombreCompleto}</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--text3)] flex items-center gap-1 truncate">
+                    <MapPin size={11} className="shrink-0 text-[var(--verde)]" />
+                    <span>{activeSchool.ciudad}</span>
+                    <span className="opacity-40">•</span>
+                    <span>{activeSchool.regionNombre.split("·")[0].trim()}</span>
+                  </div>
                 </div>
               </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] px-2 py-0.5 rounded-md bg-[var(--bg)] border border-[var(--border)] shrink-0">
+                Fija
+              </span>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0 text-xs font-bold text-[var(--verde)] group-hover:underline">
-              <span>Elegir</span>
-              <ChevronDown size={14} className="text-[var(--text3)] group-hover:text-[var(--verde)] transition-colors" />
-            </div>
-          </button>
-        </div>
-      ) : variant === "compact" ? (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg3)] hover:bg-[var(--bg2)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition-all"
-        >
-          <Building2 size={13} className="text-[var(--verde)]" />
-          <span className="truncate max-w-[200px]">{activeSchool.nombreCompleto}</span>
-          <ChevronDown size={12} className="text-[var(--text3)]" />
-        </button>
-      ) : (
-        /* VARIANTE "badge" PARA CABECERAS DE ACCESO */
-        <div className="inline-flex flex-col items-center">
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 bg-[var(--verde-bg)] hover:brightness-110 active:scale-[0.98] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-xs font-bold tracking-wide transition-all shadow-sm cursor-pointer"
-            title="Hacé clic para cambiar la escuela secundaria"
-          >
-            <div className="w-2 h-2 rounded-full bg-[var(--verde)] animate-pulse" />
-            <span className="truncate max-w-[280px] sm:max-w-[360px]">
-              {activeSchool.nombreCompleto}
-            </span>
-            <span className="text-[10px] opacity-75 font-normal px-1.5 py-0.2 bg-black/20 rounded-md">
-              {activeSchool.ciudad}
-            </span>
-            <ChevronDown size={13} className="text-[var(--verde)] opacity-70 group-hover:opacity-100 group-hover:translate-y-0.5 transition-all" />
-          </button>
-          <span className="text-[10px] text-[var(--text3)] mt-1 font-medium flex items-center gap-1">
-            <span>{activeSchool.regionNombre}</span>
-            <span>•</span>
+          ) : (
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="text-[var(--verde)] hover:underline font-semibold cursor-pointer"
+              className="w-full bg-[var(--bg3)] hover:bg-[var(--bg)] border border-[var(--border)] focus:border-[var(--verde)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-sm text-[var(--text)] transition-all flex items-center justify-between gap-2 text-left group shadow-sm"
             >
-              Cambiar escuela
+              <div className="min-w-0 flex items-center gap-2.5 truncate">
+                <div className="w-8 h-8 rounded-lg bg-[var(--verde-bg)] border border-[var(--verde-border)] flex items-center justify-center shrink-0 text-[var(--verde)]">
+                  <GraduationCap size={16} />
+                </div>
+                <div className="min-w-0 truncate">
+                  <div className="font-bold text-xs truncate text-[var(--text)] flex items-center gap-1.5">
+                    <span>{activeSchool.nombreCompleto}</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--text3)] flex items-center gap-1 truncate">
+                    <MapPin size={11} className="shrink-0 text-[var(--verde)]" />
+                    <span>{activeSchool.ciudad}</span>
+                    <span className="opacity-40">•</span>
+                    <span>{activeSchool.regionNombre.split("·")[0].trim()}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 text-xs font-bold text-[var(--verde)] group-hover:underline">
+                <span>Elegir</span>
+                <ChevronDown size={14} className="text-[var(--text3)] group-hover:text-[var(--verde)] transition-colors" />
+              </div>
             </button>
+          )}
+        </div>
+      ) : variant === "compact" ? (
+        isReadOnly ? (
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] cursor-default"
+            title={readOnlyMessage}
+          >
+            <Building2 size={13} className="text-[var(--verde)]" />
+            <span className="truncate max-w-[200px]">{activeSchool.nombreCompleto}</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg3)] hover:bg-[var(--bg2)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition-all"
+          >
+            <Building2 size={13} className="text-[var(--verde)]" />
+            <span className="truncate max-w-[200px]">{activeSchool.nombreCompleto}</span>
+            <ChevronDown size={12} className="text-[var(--text3)]" />
+          </button>
+        )
+      ) : (
+        /* VARIANTE "badge" PARA CABECERAS DE ACCESO */
+        <div className="inline-flex flex-col items-center">
+          {isReadOnly ? (
+            <div
+              className="relative inline-flex items-center gap-2 px-3.5 py-1.5 bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-xs font-bold tracking-wide shadow-sm cursor-default"
+              title={readOnlyMessage}
+            >
+              <div className="w-2 h-2 rounded-full bg-[var(--verde)]" />
+              <span className="truncate max-w-[280px] sm:max-w-[360px]">
+                {activeSchool.nombreCompleto}
+              </span>
+              <span className="text-[10px] opacity-75 font-normal px-1.5 py-0.2 bg-black/20 rounded-md">
+                {activeSchool.ciudad}
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 bg-[var(--verde-bg)] hover:brightness-110 active:scale-[0.98] text-[var(--verde)] border border-[var(--verde-border)] rounded-full text-xs font-bold tracking-wide transition-all shadow-sm cursor-pointer"
+              title="Hacé clic para cambiar la escuela secundaria"
+            >
+              <div className="w-2 h-2 rounded-full bg-[var(--verde)] animate-pulse" />
+              <span className="truncate max-w-[280px] sm:max-w-[360px]">
+                {activeSchool.nombreCompleto}
+              </span>
+              <span className="text-[10px] opacity-75 font-normal px-1.5 py-0.2 bg-black/20 rounded-md">
+                {activeSchool.ciudad}
+              </span>
+              <ChevronDown size={13} className="text-[var(--verde)] opacity-70 group-hover:opacity-100 group-hover:translate-y-0.5 transition-all" />
+            </button>
+          )}
+
+          <span className="text-[10px] text-[var(--text3)] mt-1 font-medium flex items-center gap-1">
+            <span>{activeSchool.regionNombre}</span>
+            {isReadOnly ? (
+              <>
+                <span>•</span>
+                <span className="text-[var(--verde)] font-semibold">Escuela Designada</span>
+              </>
+            ) : (
+              <>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(true)}
+                  className="text-[var(--verde)] hover:underline font-semibold cursor-pointer"
+                >
+                  Cambiar escuela
+                </button>
+              </>
+            )}
           </span>
         </div>
       )}

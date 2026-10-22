@@ -1269,7 +1269,8 @@ export const changeUserRoleApi = async (
   preceptorCursos?: string[],
   adminOtpCode?: string,
   adminOtpToken?: string,
-  targetUserName?: string
+  targetUserName?: string,
+  targetSchoolId?: string
 ): Promise<{ success: boolean; error?: string; targetUserId?: string; newRole?: string }> => {
   try {
     let authHeader = "";
@@ -1296,7 +1297,8 @@ export const changeUserRoleApi = async (
         preceptorCursos,
         adminOtpCode,
         adminOtpToken,
-        targetUserName
+        targetUserName,
+        targetSchoolId
       })
     });
 
@@ -1308,6 +1310,53 @@ export const changeUserRoleApi = async (
     clearCache("alumnos");
     clearCache("profesores");
     return { success: true, targetUserId: data.targetUserId, newRole: data.newRole };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Error al comunicarse con el servidor institucional." };
+  }
+};
+
+// 🏛️ Asignación y Reasignación de Escuela Institucional por Administrador
+export const changeUserSchoolApi = async (
+  targetUserId: string,
+  targetSchoolId: string,
+  targetUserEmail?: string
+): Promise<{ success: boolean; error?: string; schoolId?: string; schoolNombre?: string }> => {
+  try {
+    let authHeader = "";
+    try {
+      const jwtRes = await account.createJWT();
+      if (jwtRes?.jwt) {
+        authHeader = `Bearer ${jwtRes.jwt}`;
+      }
+    } catch (jwtErr) {
+      console.warn("[changeUserSchoolApi] No se pudo obtener JWT de sesión:", jwtErr);
+    }
+
+    const res = await fetch("/api/admin/change-school", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { "Authorization": authHeader } : {})
+      },
+      body: JSON.stringify({
+        targetUserId,
+        targetSchoolId,
+        targetUserEmail,
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      return { success: false, error: data.error || "No se pudo reasignar la escuela del usuario." };
+    }
+    clearCache("usuarios");
+    clearCache("alumnos");
+    clearCache("profesores");
+    return { 
+      success: true, 
+      schoolId: data.schoolId, 
+      schoolNombre: data.schoolNombre 
+    };
   } catch (err: any) {
     return { success: false, error: err?.message || "Error al comunicarse con el servidor institucional." };
   }
