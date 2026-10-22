@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from "react";
-import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check, BookOpen, Scale } from "lucide-react";
-import { Ausencia, Profesor, UserProfile, Horario, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays, notifyRealtimeUpdate } from "@/lib/dataService";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, ShieldAlert, AlertTriangle, FileText, Trash2, Paperclip, Clock, Check, BookOpen, Scale, Lock, Megaphone, XCircle } from "lucide-react";
+import { Ausencia, Profesor, UserProfile, Horario, saveAusencia, logAction, getCertificateFileUrl, calculateAbsenceDays, notifyRealtimeUpdate, AvisoParo, subscribeToAvisosParo, cerrarAvisoParo } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { LicenciasDBModal } from "@/components/modals/LicenciasDBModal";
 import { matchAusenciaConDBLicencias, LicenciaItem } from "@/lib/licenciasDB";
+import NewStrikeNoticeModal from "@/components/modals/NewStrikeNoticeModal";
 
 interface AusenciasTabProps {
   ausencias: Ausencia[];
@@ -57,9 +58,47 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [selectedDbArticulo, setSelectedDbArticulo] = useState<string>("");
 
-  const isTeacher = userProfile?.rol === 'profesor' && Boolean(currentProfesor);
-  const isPreceptor = userProfile?.rol === 'preceptor';
+  // Estado reactivo del aviso oficial de paro
+  const [avisosParo, setAvisosParo] = useState<AvisoParo[]>([]);
+  const [avisoParoActivo, setAvisoParoActivo] = useState<AvisoParo | null>(null);
+  const [isStrikeModalOpen, setIsStrikeModalOpen] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeToAvisosParo(userProfile?.schoolId, (list, activo) => {
+      setAvisosParo(list);
+      setAvisoParoActivo(activo);
+    });
+    return () => unsub();
+  }, [userProfile?.schoolId]);
+
+  const isTeacher = (userProfile?.rol === 'profesor' || userProfile?.rol === 'preceptor_profesor') && Boolean(currentProfesor);
+  const isPreceptor = userProfile?.rol === 'preceptor' || userProfile?.rol === 'preceptor_profesor';
+  const isDirectivo = userProfile?.rol === 'directivo';
+  const canEmitStrikeNotice = isAdmin || isDirectivo || isPreceptor;
   const showSelfService = isTeacher || isPreceptor;
+
+  const todayStr = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+  const staffName = isTeacher ? (currentProfesor?.nombre || "") : (userProfile?.nombre || "");
+  const hasAdheredToday = useMemo(() => {
+    if (!staffName) return false;
+    const clean = staffName.trim().toLowerCase();
+    return ausencias.some(a => 
+      a.tipo === "Paro Docente" &&
+      a.profNombre?.trim().toLowerCase() === clean && 
+      todayStr >= a.inicio && 
+      todayStr <= a.fin &&
+      a.estado !== "rechazada"
+    );
+  }, [ausencias, staffName, todayStr]);
+
+  const adheridosHoyCount = useMemo(() => {
+    return ausencias.filter(a => 
+      a.tipo === "Paro Docente" &&
+      todayStr >= a.inicio && 
+      todayStr <= a.fin &&
+      a.estado !== "rechazada"
+    ).length;
+  }, [ausencias, todayStr]);
 
   // Cupos anuales del personal logueado (profesor o preceptor)
   const staffQuotas = useMemo(() => {
@@ -129,6 +168,81 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* BANNER INSTITUCIONAL DE MEDIDA DE FUERZA OFICIAL */}
+      {avisoParoActivo && (
+        <div className="card bg-gradient-to-r from-red-500/10 via-[var(--bg2)] to-red-500/5 p-4 sm:p-5 rounded-2xl border-2 border-red-500/40 shadow-lg space-y-3 relative overflow-hidden animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center justify-center shrink-0">
+                <ShieldAlert size={22} className="animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500 text-white">
+                    Medida de Fuerza Activa
+                  </span>
+                  <span className="text-xs font-black text-[var(--text)] uppercase tracking-wide">
+                    {avisoParoActivo.gremio}
+                  </span>
+                  <span className="text-xs text-[var(--text3)]">
+                    • Vigencia: {avisoParoActivo.fechaInicio} {avisoParoActivo.fechaFin !== avisoParoActivo.fechaInicio ? `al ${avisoParoActivo.fechaFin}` : "(24hs)"}
+                  </span>
+                </div>
+                <h3 className="font-bold text-sm sm:text-base text-[var(--text)] mt-1">
+                  {avisoParoActivo.motivo}
+                </h3>
+                {avisoParoActivo.descripcion && (
+                  <p className="text-xs text-[var(--text2)] mt-0.5 max-w-2xl">
+                    {avisoParoActivo.descripcion}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--text3)] mt-2">
+                  <span>
+                    Emitido por: <strong className="text-[var(--text2)]">{avisoParoActivo.creadoPorNombre || avisoParoActivo.creadoPor}</strong> ({avisoParoActivo.creadoPorRol || "Autoridad"})
+                  </span>
+                  <span>
+                    Docentes adheridos hoy: <strong className="text-red-500 font-bold">{adheridosHoyCount}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              {canEmitStrikeNotice && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    askConfirm(
+                      `¿Deseás levantar o dar por finalizada la medida de fuerza oficial (${avisoParoActivo.gremio})?`,
+                      async () => {
+                        try {
+                          await cerrarAvisoParo(avisoParoActivo.id, user?.email || userProfile?.email || "autoridad", userProfile?.schoolId);
+                          await logAction(user?.email || "desconocido", "LEVANTAR_AVISO_PARO", `Gremio: ${avisoParoActivo.gremio}`);
+                          showToast("Medida de fuerza oficial dada por concluida.", "success");
+                          setAvisoParoActivo(null);
+                        } catch {
+                          showToast("Error al levantar el aviso de paro", "error");
+                        }
+                      },
+                      {
+                        title: "Levantar Medida de Fuerza",
+                        confirmText: "Levantar Paro",
+                        variant: "warning"
+                      }
+                    );
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-[var(--bg3)] hover:bg-red-500/10 text-xs font-bold text-[var(--text2)] hover:text-red-500 border border-[var(--border)] hover:border-red-500/40 transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Concluir medida de fuerza oficial"
+                >
+                  <XCircle size={14} />
+                  <span>Levantar Paro</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PANEL DE AUTOGESTIÓN DE PERSONAL (Para Profesores y Preceptores) */}
       {showSelfService && (
         <div className="card glass p-5 sm:p-6 rounded-2xl border border-[var(--border)] space-y-5">
@@ -169,18 +283,27 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* BOTÓN ADHESIÓN AL PARO */}
             <button
+              disabled={!avisoParoActivo || hasAdheredToday}
               onClick={() => {
+                if (!avisoParoActivo) {
+                  showToast("No hay aviso de paro activo convocado para hoy. El aviso oficial debe ser generado por el Equipo Directivo o Preceptoría.", "error");
+                  return;
+                }
+                if (hasAdheredToday) {
+                  showToast("Ya registraste tu adhesión a la medida de fuerza para hoy.", "error");
+                  return;
+                }
+
                 askConfirm(
                   isPreceptor 
-                    ? "¿Confirmás tu adhesión al Paro para el día de hoy? Quedará registrado tu turno en la planilla."
-                    : "¿Confirmás tu adhesión al Paro Docente para el día de hoy? Esto marcará automáticamente tus materias de hoy como Hora Libre.",
+                    ? `¿Confirmás tu adhesión al Paro Oficial (${avisoParoActivo.gremio}) para el día de hoy? Quedará registrado en la planilla institucional.`
+                    : `¿Confirmás tu adhesión al Paro Docente Oficial (${avisoParoActivo.gremio}) para hoy? Esto marcará automáticamente tus materias de hoy como Hora Libre y notificará a los alumnos.`,
                   async () => {
                     try {
-                      const todayStr = new Date().toLocaleDateString("en-CA");
-                      const staffName = isTeacher ? currentProfesor!.nombre : userProfile!.nombre;
                       const staffId = isTeacher ? currentProfesor!.id! : (userProfile?.uid || userProfile?.id || userProfile?.nombre || "preceptor");
+
                       const alreadyLogged = ausencias.some(a => 
-                        a.profNombre?.toLowerCase() === staffName.toLowerCase() && 
+                        a.profNombre?.trim().toLowerCase() === staffName.trim().toLowerCase() && 
                         todayStr >= a.inicio && 
                         todayStr <= a.fin
                       );
@@ -199,30 +322,84 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
                         materias: isTeacher 
                           ? (currentProfesor!.materias || []) 
                           : ((userProfile?.cursos && userProfile.cursos.length > 0) ? userProfile.cursos.map(c => `Preceptoría (${c})`) : ["Turno Preceptoría"]),
-                        motivo: isPreceptor ? "Medida de fuerza gremial / Adhesión de Preceptoría al Paro" : "Medida de fuerza gremial / Adhesión al Paro Docente",
+                        motivo: `Medida de fuerza oficial (${avisoParoActivo.gremio}): ${avisoParoActivo.motivo}`,
                         cert: false,
                         estado: "aprobada",
                         fechaReg: new Date().toISOString()
                       };
 
                       await saveAusencia(newAbsence);
-                      await logAction(user?.email || "desconocido", "REGISTRAR_PARO_DOCENTE", `${isPreceptor ? "Preceptor" : "Profesor"}: ${staffName}`);
+                      await logAction(
+                        user?.email || "desconocido", 
+                        "REGISTRAR_PARO_DOCENTE", 
+                        `${isPreceptor ? "Preceptor" : "Profesor"}: ${staffName} - Gremio: ${avisoParoActivo.gremio}`
+                      );
+                      notifyRealtimeUpdate("ausencias");
                       onRefreshAusencias();
-                      showToast("Adhesión al paro registrada con éxito", "success");
+                      showToast(`Adhesión al paro de ${avisoParoActivo.gremio} registrada con éxito`, "success");
                     } catch (err) {
                       showToast("Error al registrar adhesión", "error");
                     }
+                  },
+                  {
+                    title: `Confirmar Adhesión al Paro (${avisoParoActivo.gremio})`,
+                    confirmText: "Confirmar Adhesión",
+                    variant: "danger"
                   }
                 );
               }}
-              className="p-4 rounded-xl bg-[var(--rojo-bg)] border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)]/80 transition-colors text-left flex flex-col gap-2.5 group cursor-pointer"
+              className={`p-4 rounded-xl text-left flex flex-col gap-2.5 transition-all ${
+                !avisoParoActivo 
+                  ? "bg-[var(--bg3)]/60 border border-[var(--border)] opacity-60 cursor-not-allowed"
+                  : hasAdheredToday
+                    ? "bg-[var(--verde-bg)]/40 border border-[var(--verde-border)] cursor-default"
+                    : "bg-[var(--rojo-bg)] border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)]/80 cursor-pointer shadow-sm"
+              }`}
             >
-              <div className="w-8 h-8 rounded-lg bg-[var(--rojo-bg)] text-[var(--rojo)] flex items-center justify-center shrink-0 border border-[var(--rojo-border)]">
-                <ShieldAlert size={18} />
+              <div className="flex items-center justify-between w-full">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                  !avisoParoActivo
+                    ? "bg-[var(--bg)] text-[var(--text3)] border-[var(--border)]"
+                    : hasAdheredToday
+                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]"
+                      : "bg-[var(--rojo-bg)] text-[var(--rojo)] border-[var(--rojo-border)]"
+                }`}>
+                  {!avisoParoActivo ? (
+                    <Lock size={16} />
+                  ) : hasAdheredToday ? (
+                    <Check size={18} />
+                  ) : (
+                    <ShieldAlert size={18} />
+                  )}
+                </div>
+                {avisoParoActivo ? (
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                    hasAdheredToday
+                      ? "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]"
+                      : "bg-[var(--rojo)] text-white border-transparent animate-pulse"
+                  }`}>
+                    {hasAdheredToday ? "Adherido Hoy" : "Habilitado"}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[var(--bg)] text-[var(--text3)] border border-[var(--border)]">
+                    Sin Paro
+                  </span>
+                )}
               </div>
               <div>
-                <h4 className="font-bold text-sm text-[var(--text)]">Adherirse al Paro</h4>
-                <p className="text-[11px] text-[var(--text2)] mt-0.5">Notifica al instante adhesión a medida de fuerza.</p>
+                <h4 className="font-bold text-sm text-[var(--text)] flex items-center gap-1.5">
+                  <span>Adherirse al Paro</span>
+                  {avisoParoActivo && (
+                    <span className="text-xs text-[var(--rojo)] font-black">({avisoParoActivo.gremio})</span>
+                  )}
+                </h4>
+                <p className="text-[11px] text-[var(--text2)] mt-0.5">
+                  {!avisoParoActivo 
+                    ? "Inhabilitado. Requiere aviso oficial de directivos o preceptoría."
+                    : hasAdheredToday 
+                      ? "Tu adhesión para hoy ya está registrada en el sistema."
+                      : `Habilitado por aviso oficial de ${avisoParoActivo.gremio}.`}
+                </p>
               </div>
             </button>
 
@@ -392,14 +569,25 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          {canEmitStrikeNotice && (
+            <button 
+              type="button"
+              onClick={() => setIsStrikeModalOpen(true)}
+              className="w-full sm:w-auto bg-[var(--rojo-bg)] border border-[var(--rojo-border)] hover:bg-[var(--rojo-bg)]/80 text-[var(--rojo)] font-bold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs text-sm"
+              title="Emitir un aviso oficial de medida de fuerza / paro docente"
+            >
+              <Megaphone size={16} />
+              <span>Emitir Aviso de Paro</span>
+            </button>
+          )}
           <button 
             type="button"
             onClick={() => {
               setSelectedDbArticulo("");
               setIsDbModalOpen(true);
             }} 
-            className="w-full md:w-auto bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] text-[var(--text)] font-bold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+            className="w-full sm:w-auto bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--verde)] hover:text-[var(--verde)] text-[var(--text)] font-bold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm text-sm"
             title="Consultar catálogo de licencias oficiales (166 artículos)"
           >
             <BookOpen size={16} className="text-[var(--verde)] shrink-0" />
@@ -408,7 +596,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           {(canManageAusencias || isPreceptor) && (
             <button 
               onClick={onOpenAbsenceModal} 
-              className="w-full md:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto bg-black text-white dark:bg-white dark:text-black font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm"
             >
               <span>{canManageAusencias ? "+ Nueva Licencia" : "+ Solicitar Licencia"}</span>
             </button>
@@ -727,6 +915,22 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
           setIsDbModalOpen(false);
           onOpenAbsenceModal();
         }}
+      />
+
+      {/* MODAL DE EMISIÓN DE AVISO OFICIAL DE PARO */}
+      <NewStrikeNoticeModal
+        isOpen={isStrikeModalOpen}
+        onClose={() => setIsStrikeModalOpen(false)}
+        onSuccess={(nuevoAviso) => {
+          setAvisoParoActivo(nuevoAviso);
+          showToast(`Aviso de paro oficial de ${nuevoAviso.gremio} emitido y difundido con éxito`, "success");
+          onRefreshAusencias();
+        }}
+        operatorEmail={user?.email || userProfile?.email || ""}
+        operatorNombre={userProfile?.nombre || "Autoridad"}
+        operatorRole={userProfile?.rol || "directivo"}
+        schoolId={userProfile?.schoolId}
+        schoolNombre={userProfile?.schoolId}
       />
     </div>
   );

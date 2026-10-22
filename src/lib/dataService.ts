@@ -86,7 +86,7 @@ export const clearCache = (key: string, schoolId?: string) => {
 };
 
 // ─── Despachador de Eventos en Tiempo Real (Local & Multi-Pestaña) ─────────────
-export const notifyRealtimeUpdate = (type: "ausencias" | "horarios" | "notificaciones") => {
+export const notifyRealtimeUpdate = (type: "ausencias" | "horarios" | "notificaciones" | "avisos_paro") => {
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent(`escuelainfo:${type}-updated`));
@@ -446,6 +446,8 @@ export const ACTION_NAME_MAP: Record<string, string> = {
   "CAMBIO_ESTADO": "Cambio de Estado",
   "RP_D": "Registrar Paro Docente",
   "REGISTRAR_PARO_DOCENTE": "Registrar Paro Docente",
+  "EMITIR_AVISO_PARO": "Emitir Aviso Oficial de Paro",
+  "LEVANTAR_AVISO_PARO": "Levantar Medida de Fuerza",
   "RE_A": "Reiniciar Ausencias",
   "REINICIAR_AUSENCIAS": "Reiniciar Ausencias",
   "AGREGAR_SUSPENSION_EDILICIA": "Suspensión Edilicia",
@@ -2612,6 +2614,7 @@ export type NotificacionTipo =
   | "licencia_preceptor_aprobada" 
   | "cobertura_asignada" 
   | "aviso_general" 
+  | "aviso_paro"
   | "inasistencia_docente" 
   | "nuevo_usuario_pendiente" 
   | "rol_actualizado";
@@ -2653,7 +2656,7 @@ export const getCachedNotificaciones = (userEmail?: string, userRole?: string, s
       ) {
         return false;
       }
-      if ((!n.destinatarioRol || n.destinatarioRol === "todos") && n.tipo !== "aviso_general") {
+      if ((!n.destinatarioRol || n.destinatarioRol === "todos") && n.tipo !== "aviso_general" && n.tipo !== "aviso_paro") {
         return false;
       }
     }
@@ -2726,7 +2729,7 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string, s
         ) {
           return false;
         }
-        if ((!n.destinatarioRol || n.destinatarioRol === "todos") && n.tipo !== "aviso_general") {
+        if ((!n.destinatarioRol || n.destinatarioRol === "todos") && n.tipo !== "aviso_general" && n.tipo !== "aviso_paro") {
           return false;
         }
       }
@@ -3060,3 +3063,282 @@ export const deleteNotificacion = async (id: string, schoolId?: string) => {
     } catch {}
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GESTIÓN OFICIAL DE AVISOS DE PARO DOCENTE / MEDIDAS DE FUERZA GREMIALES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AvisoParo {
+  id: string;
+  fechaInicio: string; // YYYY-MM-DD
+  fechaFin: string;    // YYYY-MM-DD
+  gremio: string;      // ATECh, CTERA, SADOP, etc.
+  motivo: string;      // Motivo de la medida de fuerza
+  descripcion?: string;
+  activo: boolean;
+  creadoPor: string;   // email del directivo/preceptor/admin
+  creadoPorNombre?: string;
+  creadoPorRol?: string;
+  fechaCreacion: string; // ISO
+  cerradoPor?: string;
+  fechaCierre?: string;
+  schoolId?: string;
+}
+
+/**
+ * Crea y difunde un aviso oficial de paro docente.
+ * Accesible únicamente para Admin, Directivos y Preceptores.
+ */
+export const crearAvisoParo = async (
+  aviso: Omit<AvisoParo, "id" | "fechaCreacion">
+): Promise<AvisoParo> => {
+  const sId = aviso.schoolId || getActiveSchoolId();
+  const fechaCreacion = new Date().toISOString();
+  const tempId = "aviso_paro_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+
+  const nuevoAviso: AvisoParo = {
+    ...aviso,
+    id: tempId,
+    fechaCreacion,
+    schoolId: sId,
+    activo: true
+  };
+
+  // 1. Guardar en Appwrite en la colección de notificaciones como tipo "aviso_paro"
+  try {
+    const doc = await databases.createDocument({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+      documentId: ID.unique(),
+      data: {
+        tipo: "aviso_paro",
+        titulo: `Aviso Oficial de Paro: ${sanitize(aviso.gremio, 80)}`,
+        mensaje: sanitize(
+          `${aviso.motivo} (Desde ${aviso.fechaInicio} hasta ${aviso.fechaFin})` + 
+          (aviso.descripcion ? ` - ${aviso.descripcion}` : ""),
+          1000
+        ),
+        destinatarioRol: "todos",
+        destinatarioEmail: "",
+        destinatarioId: "",
+        leida: false,
+        fecha: fechaCreacion,
+        metadata: JSON.stringify(nuevoAviso),
+        schoolId: sId,
+      }
+    });
+    nuevoAviso.id = doc.$id;
+  } catch (err) {
+    devLog("crearAvisoParo/appwrite", err);
+  }
+
+  // 2. Almacenar en caché local
+  const key = `avisos_paro_${sId}`;
+  const avisos = getLocalStorageData<AvisoParo[]>(key, [], sId);
+  avisos.unshift(nuevoAviso);
+  setLocalStorageData(key, avisos, sId);
+
+  // 3. Notificar en tiempo real
+  notifyRealtimeUpdate("avisos_paro");
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("escuelainfo:paro-updated", { detail: nuevoAviso }));
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "aviso_paro", aviso: nuevoAviso, timestamp: Date.now(), schoolId: sId });
+      bc.close();
+    } catch {}
+  }
+
+  return nuevoAviso;
+};
+
+/**
+ * Obtiene los avisos de paro de la escuela desde Appwrite con fallback local.
+ */
+export const getAvisosParo = async (schoolId?: string): Promise<AvisoParo[]> => {
+  const sId = getActiveSchoolId(schoolId);
+  const key = `avisos_paro_${sId}`;
+
+  try {
+    const res = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+      queries: [
+        Query.equal("schoolId", sId),
+        Query.equal("tipo", "aviso_paro"),
+        Query.orderDesc("fecha"),
+        Query.limit(50)
+      ]
+    });
+
+    const parsedAvisos: AvisoParo[] = res.documents.map((doc: any) => {
+      let meta: any = {};
+      try {
+        meta = typeof doc.metadata === "string" ? JSON.parse(doc.metadata) : doc.metadata;
+      } catch {}
+      return {
+        id: doc.$id,
+        fechaInicio: meta.fechaInicio || doc.fecha?.substring(0, 10) || "",
+        fechaFin: meta.fechaFin || meta.fechaInicio || doc.fecha?.substring(0, 10) || "",
+        gremio: meta.gremio || "Gremial",
+        motivo: meta.motivo || doc.titulo || "Medida de fuerza gremial",
+        descripcion: meta.descripcion || "",
+        activo: meta.activo !== false,
+        creadoPor: meta.creadoPor || "",
+        creadoPorNombre: meta.creadoPorNombre || "",
+        creadoPorRol: meta.creadoPorRol || "",
+        fechaCreacion: meta.fechaCreacion || doc.fecha || new Date().toISOString(),
+        cerradoPor: meta.cerradoPor,
+        fechaCierre: meta.fechaCierre,
+        schoolId: doc.schoolId || sId
+      };
+    });
+
+    setLocalStorageData(key, parsedAvisos, sId);
+    return parsedAvisos;
+  } catch (err) {
+    devLog("getAvisosParo/fallback", err);
+    return getLocalStorageData<AvisoParo[]>(key, [], sId);
+  }
+};
+
+/**
+ * Comprueba si hay un aviso de paro activo para la fecha actual (o especificada).
+ */
+export const getAvisoParoActivoParaHoy = async (schoolId?: string, targetDateStr?: string): Promise<AvisoParo | null> => {
+  const sId = getActiveSchoolId(schoolId);
+  const targetDate = targetDateStr || new Date().toLocaleDateString("en-CA");
+
+  // Primero comprobación inmediata en caché para evitar demoras visuales
+  const cached = getLocalStorageData<AvisoParo[]>(`avisos_paro_${sId}`, [], sId);
+  const cachedActive = cached.find(a => a.activo && targetDate >= a.fechaInicio && targetDate <= a.fechaFin);
+
+  try {
+    const list = await getAvisosParo(sId);
+    const active = list.find(a => a.activo && targetDate >= a.fechaInicio && targetDate <= a.fechaFin);
+    return active || null;
+  } catch {
+    return cachedActive || null;
+  }
+};
+
+/**
+ * Cierra o levanta una medida de fuerza gremial activa.
+ */
+export const cerrarAvisoParo = async (
+  avisoId: string,
+  operatorEmail: string,
+  schoolId?: string
+): Promise<void> => {
+  const sId = getActiveSchoolId(schoolId);
+  const nowIso = new Date().toISOString();
+
+  try {
+    if (!avisoId.startsWith("aviso_paro_")) {
+      const doc = await databases.getDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+        documentId: avisoId
+      });
+      let meta: any = {};
+      try {
+        meta = typeof doc.metadata === "string" ? JSON.parse(doc.metadata) : doc.metadata;
+      } catch {}
+      meta.activo = false;
+      meta.cerradoPor = operatorEmail;
+      meta.fechaCierre = nowIso;
+
+      await databases.updateDocument({
+        databaseId: APPWRITE_DB_ID,
+        collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
+        documentId: avisoId,
+        data: {
+          metadata: JSON.stringify(meta)
+        }
+      });
+    }
+  } catch (err) {
+    devLog("cerrarAvisoParo/appwrite", err);
+  }
+
+  // Actualizar caché local
+  const key = `avisos_paro_${sId}`;
+  const avisos = getLocalStorageData<AvisoParo[]>(key, [], sId);
+  const updated = avisos.map(a => 
+    a.id === avisoId ? { ...a, activo: false, cerradoPor: operatorEmail, fechaCierre: nowIso } : a
+  );
+  setLocalStorageData(key, updated, sId);
+
+  notifyRealtimeUpdate("avisos_paro");
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("escuelainfo:paro-updated", { detail: { id: avisoId, activo: false } }));
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "aviso_paro_cerrado", avisoId, timestamp: Date.now(), schoolId: sId });
+      bc.close();
+    } catch {}
+  }
+};
+
+/**
+ * Suscripción reactiva para avisos de paro en tiempo real.
+ */
+export const subscribeToAvisosParo = (
+  schoolId: string | undefined,
+  callback: (avisos: AvisoParo[], activoHoy: AvisoParo | null) => void
+) => {
+  const sId = getActiveSchoolId(schoolId);
+  let isSubscribed = true;
+
+  const update = async () => {
+    try {
+      const list = await getAvisosParo(sId);
+      const todayStr = new Date().toLocaleDateString("en-CA");
+      const activo = list.find(a => a.activo && todayStr >= a.fechaInicio && todayStr <= a.fechaFin) || null;
+      if (isSubscribed) {
+        callback(list, activo);
+      }
+    } catch {}
+  };
+
+  // Carga inicial
+  update();
+
+  const handleUpdate = () => {
+    update();
+  };
+
+  let bc: BroadcastChannel | null = null;
+  try {
+    bc = new BroadcastChannel("escuelainfo-realtime");
+    bc.onmessage = (e) => {
+      if (
+        e.data?.type === "avisos_paro" ||
+        e.data?.type === "aviso_paro" ||
+        e.data?.type === "aviso_paro_cerrado" ||
+        e.data?.type === "notificaciones"
+      ) {
+        update();
+      }
+    };
+  } catch {}
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:paro-updated", handleUpdate);
+    window.addEventListener("escuelainfo:avisos_paro-updated", handleUpdate);
+    window.addEventListener("escuelainfo:notificaciones-updated", handleUpdate);
+  }
+
+  return () => {
+    isSubscribed = false;
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:paro-updated", handleUpdate);
+      window.removeEventListener("escuelainfo:avisos_paro-updated", handleUpdate);
+      window.removeEventListener("escuelainfo:notificaciones-updated", handleUpdate);
+    }
+    if (bc) {
+      try { bc.close(); } catch {}
+    }
+  };
+};
+

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { saveAusencia, Ausencia, Profesor, logAction, getAlumnos, getHorarios } from "@/lib/dataService";
+import { saveAusencia, Ausencia, Profesor, logAction, getAlumnos, getHorarios, getAvisoParoActivoParaHoy } from "@/lib/dataService";
 import { sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia } from "@/lib/emailService";
 import { account } from "@/lib/appwrite";
 import { notify } from "@/lib/notify";
@@ -91,8 +91,14 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
     }
 
     if (formData.tipo === "Paro Docente") {
+      const activeStrike = await getAvisoParoActivoParaHoy(undefined, formData.fecha);
+      if (!activeStrike) {
+        showToast("No hay un aviso de paro oficial convocado para esa fecha. El aviso debe ser generado por Directivos o Preceptoría.");
+        return;
+      }
+
       const confirmed = window.confirm(
-        `¿Confirmás la declaración de adhesión al paro para el ${formData.fecha}?\n\nSe registrará en el sistema y se enviará la notificación por email a los alumnos de los cursos afectados.`
+        `¿Confirmás la declaración de adhesión a la medida de fuerza oficial (${activeStrike.gremio}) para el ${formData.fecha}?\n\nSe registrará en el sistema y se enviará la notificación por email a los alumnos de los cursos afectados.`
       );
       if (!confirmed) return;
     }
