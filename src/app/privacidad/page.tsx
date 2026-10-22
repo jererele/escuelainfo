@@ -59,7 +59,7 @@ export default function PrivacidadPage() {
             5. Derechos de Acceso, Rectificación y Supresión
           </h2>
           <p>
-            Los usuarios pueden solicitar el acceso, rectificación o eliminación de sus datos personales comunicándose de forma directa con la administración de la institución escolar o enviando una solicitud formal por correo electrónico a: <strong>skbcraft.info@gmail.com</strong>.
+            Los usuarios pueden solicitar el acceso, rectificación o eliminación de sus datos personales comunicándose de forma directa con la administración de la institución escolar o enviando una solicitud formal por correo electrónico a: <a href="https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com" target="_blank" rel="noopener noreferrer" className="text-[var(--verde)] font-bold hover:underline" title="Abrir en Gmail">skbcraft.info@gmail.com</a>.
           </p>
         </section>
       </div>

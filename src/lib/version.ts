@@ -4,10 +4,11 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.41.8";
-export const APP_BUILD_DATE = "22/10/2026 16:35 hs";
+export const APP_VERSION = "v2.41.9";
+export const APP_BUILD_DATE = "22/10/2026 16:38 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
+  "Redirección Directa a Redactor de Gmail en Enlace de Soporte Institucional (Footer.tsx, InstitutionalGuideModal.tsx, privacidad/page.tsx): Se actualizó el botón oficial de correo ('skbcraft.info@gmail.com') en el pie de página institucional, guía de uso y sección de privacidad para redirigir directamente a la interfaz web de redacción de Gmail ('https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com') en una nueva pestaña segura ('_blank' con 'noopener noreferrer'), evitando que el navegador dependa de clientes locales de correo (mailto) y precargando automáticamente el destinatario.",
   "Consolidación Automática de Inasistencias y Cómputo Real Acumulado (StudentAttendanceManager.tsx, MonitorAsistenciaTab.tsx, EarlyWarningDropoutWidget.tsx, /api/attendance/consolidate-absences, verify-qr): Se resolvió la anomalía donde las inasistencias quedaban pendientes indefinidamente, no se acumulaban en el historial del alumno ni en el SATDE, y los presentes por QR fallaban al registrarse. 1) Persistencia Inmediata en Base de Datos: El botón 'Todos Ausentes (Guardar QR)' en StudentAttendanceManager ahora asienta los registros de 'A' directamente en la colección de Appwrite, impidiendo que queden solo en memoria volátil de React. 2) Motor de Consolidación de Faltas (/api/attendance/consolidate-absences): Endpoint administrativo y botones de acción rápida en Monitor y Planilla para cerrar días transcurridos y asentar oficialmente como Ausentes a todos los alumnos regulares que no hayan validado presente. 3) Cómputo Integral de Acumulación (SATDE / Alerta Temprana y Perfil del Alumno): Cálculo reactivo y unificado que suma las faltas reales de todas las jornadas escolares transcurridas. 4) Registro Resiliente de Asistencias por QR (verify-qr): Búsqueda insensible a mayúsculas/minúsculas, vinculación bidireccional por DNI/nombre y auto-provisión de legajo para cuentas de alumnos autenticadas, asegurando que el 100% de los escaneos QR se asienten exitosamente de Ausente a Presente.",
   "Erradicación Definitiva de Lente Ultra Gran Angular (0.5x/0.6x) y Fijación de Cámara Trasera Principal 1.0x (cameraHelper.ts, StudentQRScannerModal.tsx, ExamQRScannerModal.tsx): Se corrigió la lógica de selección de dispositivos de captura de video en Android e iOS. 1) Corrección de Índice en API Camera2 HAL de Android: Se corrigió la asignación errónea de índices donde se buscaban sensores distintos de 0, seleccionando inadvertidamente la lente 0.6x (cámara 2). Ahora 'camera2 0' / 'camera 0' (la cámara trasera 1.0x oficial del sistema) tiene máxima prioridad jerárquica. 2) Filtrado Estricto de Sensores Auxiliares: Descarte de lentes 'ultra', '0.5', '0.6', 'telephoto', 'macro' y sensores Android con índice mayor o igual a 2. 3) Lista de Alternancia Optimizada: 'getOptimizedCameraList' ahora contiene única y exclusivamente la Cámara Trasera Principal (1.0x) y la Cámara Frontal, impidiendo que el usuario alterne o quede atrapado en lentes secundarias. 4) Fallback Resiliente en Html5Qrcode: Uso de compatibilidad nativa con 'facingMode: environment' ante fallos de restricciones específicas de hardware.",
   "Blindaje Integral de Privacidad y Confidencialidad de Licencias Docentes (dataService.ts, NotificationsBell.tsx, FreeHoursWidget.tsx, HorariosTab.tsx, emailService.ts): En estricto apego a las normas de protección de datos personales y reserva laboral/médica (Ley 25.326), se eliminó cualquier exposición de licencias docentes y personal hacia cuentas con rol Alumno. 1) Notificaciones y Alertas Toast (dataService.ts, NotificationsBell.tsx): Se bloquearon las notificaciones de 'inasistencia_docente', 'licencia_preceptor_aprobada', 'cobertura_asignada' y 'nuevo_usuario_pendiente' para alumnos, restringiendo los avisos de inasistencia docente exclusivamente a directivos y validando autorización previa antes de reproducir sonido o emitir alertas emergentes. 2) Horas Libres y Cronograma (FreeHoursWidget.tsx, HorariosTab.tsx): Se suprimieron enlaces, botones y tooltips de 'Ver licencias' en la vista de estudiantes, manteniendo únicamente el indicador neutral de hora libre sin desvelar motivos de ausencia. 3) Comunicados por Email (emailService.ts): Anonimización de diagnósticos o artículos estatutarios reemplazándolos por 'inasistencia justificada' o 'adhesión a medida gremial'.",
@@ -22,6 +23,13 @@ export const APP_RELEASE_NOTES: string[] = [
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.41.9",
+    date: "22/10/2026 16:38 hs",
+    notes: [
+      "Redirección Directa a Redactor de Gmail en Enlace de Soporte Institucional (Footer.tsx, InstitutionalGuideModal.tsx, privacidad/page.tsx): Enlace oficial actualizado a Gmail compose ('https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com') con apertura en nueva pestaña y precarga del destinatario."
+    ]
+  },
   {
     version: "v2.41.8",
     date: "22/10/2026 16:35 hs",

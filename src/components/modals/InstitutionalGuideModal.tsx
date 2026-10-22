@@ -426,7 +426,7 @@ export default function InstitutionalGuideModal({
                   </div>
                   <p className="text-xs">
                     Para reporte de incidentes técnicos o reseteo administrativo de contraseñas:<br />
-                    • Correo Oficial de Soporte: <strong>skbcraft.info@gmail.com</strong><br />
+                    • Correo Oficial de Soporte: <a href="https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com" target="_blank" rel="noopener noreferrer" className="text-[var(--verde)] font-bold hover:underline" title="Abrir en Gmail">skbcraft.info@gmail.com</a><br />
                     • Administración de la Escuela N° 713 «Juan Abdala Chayep»
                   </p>
                 </div>

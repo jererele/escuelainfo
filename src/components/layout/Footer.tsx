@@ -88,7 +88,9 @@ export default function Footer() {
           {/* ── Bloque derecho: Email oficial y Links legales ───────────────── */}
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5">
             <a
-              href="mailto:skbcraft.info@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
               style={{
                 color: 'var(--text2)',
@@ -105,7 +107,8 @@ export default function Footer() {
                 e.currentTarget.style.borderColor = 'var(--border)';
                 e.currentTarget.style.background = 'var(--bg2)';
               }}
-              aria-label="Correo oficial de contacto: skbcraft.info@gmail.com"
+              aria-label="Redactar correo a skbcraft.info@gmail.com en Gmail"
+              title="Abrir en Gmail para redactar mensaje"
             >
               <Mail size={13} style={{ color: 'var(--verde)' }} className="shrink-0" />
               <span>skbcraft.info@gmail.com</span>
