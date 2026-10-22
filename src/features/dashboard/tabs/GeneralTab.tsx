@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { Ausencia, Horario, Alumno, Profesor, parseUserCursos } from "@/lib/dataService";
+import { ChubutSchool } from "@/lib/chubutSchools";
+import ChubutSchoolSelector from "@/components/shared/ChubutSchoolSelector";
 import FreeHoursWidget from "../widgets/FreeHoursWidget";
-import { TiltCard, GravityText } from "@/components/ui/rare";
+import { TiltCard } from "@/components/ui/rare";
 
 interface GeneralTabProps {
   stats: { hoy: number; pendientes: number; total: number };
@@ -11,6 +13,7 @@ interface GeneralTabProps {
   canManageAusencias: boolean;
   currentAlumno?: Alumno | null;
   currentProfesor?: Profesor | null;
+  currentSchool?: ChubutSchool;
   userProfile?: any;
   onNavigateToAusencias: (search?: string) => void;
   onNavigateToHorarios: (curso: string) => void;
@@ -26,6 +29,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   canManageAusencias,
   currentAlumno,
   currentProfesor,
+  currentSchool,
   userProfile,
   onNavigateToAusencias,
   onNavigateToHorarios,
@@ -33,7 +37,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   onOpenProfile,
   showToast,
 }) => {
-  const isTeacher = userProfile?.rol === 'profesor';
+  const isTeacher = userProfile?.rol === 'profesor' || userProfile?.rol === 'preceptor_profesor';
 
   // Si el usuario es profesor, filtrar novedades para mostrar ÚNICAMENTE sus propios registros
   const displayedAusencias = useMemo(() => {
@@ -78,14 +82,21 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
     <div className="space-y-10 animate-fade-in">
       {/* BANNER DE BIENVENIDA */}
       <div className="p-6 sm:p-7 rounded-2xl border border-[var(--border)] bg-[var(--bg2)] card-elevated">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold title-font text-[var(--text)] tracking-tight flex flex-wrap items-center">
-            <GravityText text="Escuela 713" className="text-[var(--verde)]" />
-            <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
-          </h1>
-          <p className="text-xs sm:text-sm font-medium text-[var(--text3)] mt-1.5 max-w-xl">
-            Control de asistencias, licencias docentes y novedades en tiempo real con sincronización directa.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold title-font text-[var(--text)] tracking-tight flex flex-wrap items-center">
+              Escuela<span className="text-[var(--verde)]">Info</span>
+              <span className="ml-2 font-normal text-[var(--text2)]">· Sistema de Gestión</span>
+            </h1>
+            <p className="text-xs sm:text-sm font-medium text-[var(--text3)] mt-1.5 max-w-xl">
+              {currentSchool
+                ? `${currentSchool.nombreCompleto} · ${currentSchool.ciudad} (${currentSchool.regionNombre})`
+                : "Control de asistencias, licencias docentes y novedades en tiempo real con sincronización directa."}
+            </p>
+          </div>
+          <div className="shrink-0">
+            <ChubutSchoolSelector variant="badge" />
+          </div>
         </div>
       </div>
 
@@ -126,7 +137,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       <FreeHoursWidget 
         isStudent={userProfile?.rol === 'alumno'}
         currentAlumno={currentAlumno}
-        isPreceptor={userProfile?.rol === 'preceptor' || userProfile?.rol === 'pp'}
+        isPreceptor={userProfile?.rol === 'preceptor' || userProfile?.rol === 'pp' || userProfile?.rol === 'preceptor_profesor'}
         preceptorCourses={parseUserCursos(userProfile?.cursos)}
         ausencias={ausencias}
         horarios={horarios}

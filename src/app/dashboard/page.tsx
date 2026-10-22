@@ -15,6 +15,7 @@ import { SkeletonExamGrid, SkeletonAttendanceTable } from "@/components/shared/S
 import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
 import { sendApprovalEmail, sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia, sendPreceptorCoverageEmail } from "@/lib/emailService";
+import { ChubutSchool, getSchoolById, getSavedSchoolId, setSavedSchoolId } from "@/lib/chubutSchools";
 import {
   GeneralTab,
   UsuariosTab,
@@ -196,6 +197,20 @@ export default function Dashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
+  const [currentSchool, setCurrentSchool] = useState<ChubutSchool>(() => getSchoolById(getSavedSchoolId()));
+
+  useEffect(() => {
+    const handleSchoolChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ schoolId: string }>;
+      if (customEvent.detail?.schoolId) {
+        setCurrentSchool(getSchoolById(customEvent.detail.schoolId));
+        dataCache.current.clear();
+        getLogs(true).then(d => setLogs(d)).catch(() => {});
+      }
+    };
+    window.addEventListener("escuelainfo:school-changed", handleSchoolChanged);
+    return () => window.removeEventListener("escuelainfo:school-changed", handleSchoolChanged);
+  }, []);
   
 
 
@@ -351,6 +366,12 @@ export default function Dashboard() {
 
         if (profile) {
           setUserProfile(profile);
+          if (profile.schoolId) {
+            setCurrentSchool(getSchoolById(profile.schoolId));
+            if (profile.schoolId !== getSavedSchoolId()) {
+              setSavedSchoolId(profile.schoolId);
+            }
+          }
           // Si el usuario no cuenta con un rol oficial autorizado, no suscribir a colecciones internas ni cargar datos sensibles
           if (!isAuthorizedRole(profile.rol)) {
             setLoading(false);
@@ -523,10 +544,11 @@ export default function Dashboard() {
 
 
   const normalizedUserRole = fromDbRol(userProfile?.rol);
-  const isAdmin = normalizedUserRole === 'admin' || normalizedUserRole === 'directivo' || normalizedUserRole === 'preceptor';
   const isSuperAdmin = normalizedUserRole === 'admin';
   const isDirector = normalizedUserRole === 'directivo';
-  const isPreceptor = normalizedUserRole === 'preceptor';
+  const isPreceptor = normalizedUserRole === 'preceptor' || normalizedUserRole === 'preceptor_profesor';
+  const isProfesor = normalizedUserRole === 'profesor' || normalizedUserRole === 'preceptor_profesor';
+  const isAdmin = isSuperAdmin || isDirector || isPreceptor;
   
   // Jerarquía: Preceptor no puede gestionar ausencias. Solo Directivo y Admin.
   const canManageAusencias = isSuperAdmin || isDirector;
@@ -782,14 +804,14 @@ export default function Dashboard() {
   // APROBACIONES DE ALUMNOS (Permite elegir rol: alumno, profesor o preceptor, y el curso en caso de alumno)
   const handleApproveStudent = async (
     u: UserProfile, 
-    targetRole: "alumno" | "profesor" | "preceptor" = "alumno",
+    targetRole: "alumno" | "profesor" | "preceptor" | "preceptor_profesor" = "alumno",
     selectedCurso?: string,
     preceptorCursos?: string[]
   ) => {
-    const effectiveOperatorRole = isSuperAdmin || isAdmin ? "admin" : fromDbRol(userProfile?.rol);
+    const effectiveOperatorRole = isSuperAdmin ? "admin" : isDirector ? "directivo" : isPreceptor ? "preceptor" : fromDbRol(userProfile?.rol);
 
-    // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor
-    if (effectiveOperatorRole === "preceptor" && targetRole === "preceptor") {
+    // Salvaguarda: Los preceptores bajo ninguna circunstancia pueden asignar el rol de preceptor o preceptor_profesor
+    if ((effectiveOperatorRole === "preceptor" || effectiveOperatorRole === "preceptor_profesor") && (targetRole === "preceptor" || targetRole === "preceptor_profesor")) {
       showToast("Los preceptores no tienen permisos para designar usuarios como preceptor", "error");
       return;
     }
@@ -803,7 +825,7 @@ export default function Dashboard() {
 
     try {
       const updatePayload: Partial<UserProfile> = { rol: targetRole };
-      if (targetRole === "preceptor" && preceptorCursos) {
+      if ((targetRole === "preceptor" || targetRole === "preceptor_profesor") && preceptorCursos) {
         updatePayload.cursos = preceptorCursos;
       }
       await updateUserProfile(u.id!, updatePayload);
@@ -822,8 +844,8 @@ export default function Dashboard() {
             email: u.email.toLowerCase().trim()
           });
         }
-      } else if (targetRole === "profesor") {
-        // Si se aprobó como profesor, asegurar que tenga registro en profesores y remover de alumnos
+      } else if (targetRole === "profesor" || targetRole === "preceptor_profesor") {
+        // Asegurar que tenga registro en profesores y remover de alumnos
         const teachers = await getProfesores();
         const alreadyExists = teachers.some(t => t.email.toLowerCase() === u.email.toLowerCase());
         if (!alreadyExists) {
@@ -849,13 +871,14 @@ export default function Dashboard() {
         alumno: "Alumno",
         profesor: "Profesor",
         preceptor: "Preceptor",
+        preceptor_profesor: "Preceptor y Profesor",
       };
       const label = roleLabels[targetRole] || targetRole;
 
       const logDesc = targetRole === "alumno" && selectedCurso
         ? `Email: ${u.email}, Rol: Alumno, Curso: ${selectedCurso}`
-        : targetRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
-        ? `Email: ${u.email}, Rol: Preceptor, Cursos: ${preceptorCursos.join(", ")}`
+        : (targetRole === "preceptor" || targetRole === "preceptor_profesor") && preceptorCursos && preceptorCursos.length > 0
+        ? `Email: ${u.email}, Rol: ${label}, Cursos: ${preceptorCursos.join(", ")}`
         : `Email: ${u.email}, Rol asignado: ${label}`;
 
       await logAction(
@@ -866,8 +889,8 @@ export default function Dashboard() {
 
       const toastMessage = targetRole === "alumno" && selectedCurso
         ? `Solicitud de ${u.nombre} aprobada en curso ${selectedCurso}`
-        : targetRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
-        ? `Solicitud de ${u.nombre} aprobada como Preceptor (${preceptorCursos.length} cursos)`
+        : (targetRole === "preceptor" || targetRole === "preceptor_profesor") && preceptorCursos && preceptorCursos.length > 0
+        ? `Solicitud de ${u.nombre} aprobada como ${label} (${preceptorCursos.length} cursos)`
         : `Solicitud de ${u.nombre} aprobada como ${label}`;
       showToast(toastMessage, "success");
 
@@ -878,7 +901,7 @@ export default function Dashboard() {
         rol: targetRole,
         curso: targetRole === "alumno" 
           ? selectedCurso 
-          : targetRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0 
+          : (targetRole === "preceptor" || targetRole === "preceptor_profesor") && preceptorCursos && preceptorCursos.length > 0 
           ? preceptorCursos.join(", ") 
           : undefined,
       }).catch(err => console.error("Error al enviar email de aprobación:", err));
@@ -996,13 +1019,14 @@ export default function Dashboard() {
       directivo: "Directivo",
       preceptor: "Preceptor",
       profesor: "Profesor",
+      preceptor_profesor: "Preceptor y Profesor",
       alumno: "Alumno",
     };
     const newLabel = roleLabels[normalizedNewRole] || normalizedNewRole;
     const isPromotingToAdmin = normalizedNewRole === "admin" && normalizedTargetRole !== "admin";
     const extraDetails = normalizedNewRole === "alumno" && selectedCurso
       ? ` (Curso: ${selectedCurso})`
-      : normalizedNewRole === "preceptor" && preceptorCursos && preceptorCursos.length > 0
+      : (normalizedNewRole === "preceptor" || normalizedNewRole === "preceptor_profesor") && preceptorCursos && preceptorCursos.length > 0
       ? ` (Cursos: ${preceptorCursos.join(", ")})`
       : "";
 
@@ -1015,7 +1039,7 @@ export default function Dashboard() {
           return matches ? { 
             ...u, 
             rol: normalizedNewRole as any,
-            cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? u.cursos) : u.cursos
+            cursos: (normalizedNewRole === "preceptor" || normalizedNewRole === "preceptor_profesor") ? (preceptorCursos ?? u.cursos) : u.cursos
           } : u;
         }));
 
@@ -1026,7 +1050,7 @@ export default function Dashboard() {
           setUserProfile(prev => prev ? {
             ...prev,
             rol: normalizedNewRole as any,
-            cursos: normalizedNewRole === "preceptor" ? (preceptorCursos ?? prev.cursos) : prev.cursos
+            cursos: (normalizedNewRole === "preceptor" || normalizedNewRole === "preceptor_profesor") ? (preceptorCursos ?? prev.cursos) : prev.cursos
           } : prev);
         }
       }
@@ -1077,7 +1101,7 @@ export default function Dashboard() {
       // Si la API no respondió éxito, ejecutar fallback del cliente (SOLO permitido si no es administrador)
       if (!apiSuccess && targetUserId && !isPromotingToAdmin) {
         const updatePayload: Partial<UserProfile> = { rol: normalizedNewRole as any };
-        if (normalizedNewRole === "preceptor") {
+        if (normalizedNewRole === "preceptor" || normalizedNewRole === "preceptor_profesor") {
           updatePayload.cursos = preceptorCursos || [];
         } else {
           updatePayload.cursos = [];
@@ -1102,8 +1126,8 @@ export default function Dashboard() {
           }
         }
 
-        // 2. Si el rol asignado es PROFESOR
-        if (normalizedNewRole === "profesor") {
+        // 2. Si el rol asignado es PROFESOR o PRECEPTOR Y PROFESOR
+        if (normalizedNewRole === "profesor" || normalizedNewRole === "preceptor_profesor") {
           const teachers = await getProfesores();
           const alreadyExists = teachers.some(t => (t.email || "").toLowerCase() === targetUserEmail);
           if (!alreadyExists) {
@@ -1114,6 +1138,7 @@ export default function Dashboard() {
               materias: [],
               email: targetUser.email.toLowerCase().trim()
             });
+            getProfesores().then(setProfesores);
           }
           const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
           if (studDetails && studDetails.id) {
@@ -1121,8 +1146,8 @@ export default function Dashboard() {
           }
         }
 
-        // 3. Si el rol asignado es ADMIN, DIRECTIVO o PRECEPTOR
-        if (normalizedNewRole === "admin" || normalizedNewRole === "directivo" || normalizedNewRole === "preceptor") {
+        // 3. Si el rol asignado es ADMIN, DIRECTIVO, PRECEPTOR o PRECEPTOR Y PROFESOR
+        if (normalizedNewRole === "admin" || normalizedNewRole === "directivo" || normalizedNewRole === "preceptor" || normalizedNewRole === "preceptor_profesor") {
           const studDetails = alumnos.find(a => (a.email || "").toLowerCase() === targetUserEmail);
           if (studDetails && studDetails.id) {
             await deleteAlumno(studDetails.id);
@@ -1668,7 +1693,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {activeTab === "monitor-asistencia" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+          {activeTab === "monitor-asistencia" && (isSuperAdmin || isDirector || isPreceptor) && (
             <div className="animate-fade-in">
               <MonitorAsistenciaTab />
             </div>
@@ -1688,6 +1713,7 @@ export default function Dashboard() {
               canManageAusencias={canManageAusencias}
               currentAlumno={currentAlumno}
               currentProfesor={currentProfesor}
+              currentSchool={currentSchool}
               userProfile={userProfile}
               onNavigateToAusencias={(search) => { handleTabChange("ausencias"); setSearchQuery(search || ""); }}
               onNavigateToHorarios={(curso) => { handleTabChange("horarios"); setSelectedCourse(curso); }}
@@ -1726,7 +1752,7 @@ export default function Dashboard() {
             />
           )}
 
-          {activeTab === "profesores" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+          {activeTab === "profesores" && (isSuperAdmin || isDirector || isPreceptor) && (
             <ProfesoresTab
               profesores={profesores}
               usuarios={usuarios}
@@ -1787,7 +1813,7 @@ export default function Dashboard() {
             />
           )}
 
-          {activeTab === "alumnos" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo' || userProfile?.rol === 'preceptor') && (
+          {activeTab === "alumnos" && (isSuperAdmin || isDirector || isPreceptor) && (
             <AlumnosTab
               alumnos={alumnos}
               isAdmin={isAdmin}
@@ -1824,7 +1850,7 @@ export default function Dashboard() {
             />
           )}
 
-          {activeTab === "configuracion" && (userProfile?.rol === 'admin' || userProfile?.rol === 'directivo') && (
+          {activeTab === "configuracion" && (isSuperAdmin || isDirector) && (
             <ConfiguracionTab
               usuarios={usuarios}
               userProfile={userProfile}
@@ -1994,7 +2020,7 @@ export default function Dashboard() {
 
       {/* CONFIRM MODAL */}
       {confirmDialog.isOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-[var(--bg)] w-full max-w-sm rounded-2xl p-6 sm:p-7 border border-[var(--border)] shadow-xl text-center">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 transition-transform ${
               confirmDialog.variant === "success"

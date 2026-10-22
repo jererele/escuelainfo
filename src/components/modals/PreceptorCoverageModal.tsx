@@ -67,7 +67,7 @@ export default function PreceptorCoverageModal({
   const fechaTexto = isOneDay ? ausencia.inicio : `${ausencia.inicio} al ${ausencia.fin}`;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="card glass relative w-full max-w-lg rounded-2xl border border-[var(--azul-border)] bg-[var(--bg2)]/95 shadow-2xl p-6 sm:p-7 space-y-5 overflow-hidden">
         {/* Encabezado */}
         <div className="flex items-start justify-between gap-3">

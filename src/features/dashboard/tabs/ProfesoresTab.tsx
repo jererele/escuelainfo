@@ -15,9 +15,10 @@ import {
   Check, 
   Sparkles,
   ArrowRight,
-  UploadCloud
+  UploadCloud,
+  Mail
 } from "lucide-react";
-import { Profesor, UserProfile, Horario, getProfesores } from "@/lib/dataService";
+import { Profesor, UserProfile, Horario, getProfesores, fromDbRol } from "@/lib/dataService";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 const AssignTeacherSubjectsModal = dynamic(
@@ -63,7 +64,8 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
   onRefreshProfesores,
   showToast,
 }) => {
-  const isPreceptor = userRole === "preceptor";
+  const normalizedUserRole = fromDbRol(userRole);
+  const isPreceptor = normalizedUserRole === "preceptor" || normalizedUserRole === "preceptor_profesor";
   // canManageInfo: Solo administradores y directivos pueden editar datos personales (nombre, DNI, email), dar de alta o eliminar docentes. Preceptores NO.
   const effectiveCanManageInfo = canManageInfo !== undefined ? canManageInfo : (isAdmin && !isPreceptor);
   // canManageMaterias: Administradores, directivos y preceptores pueden asignar y modificar materias de docentes.
@@ -270,22 +272,35 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() =>
-                    handleOpenAssignModal({
-                      id: u.id,
-                      nombre: u.nombre,
-                      email: u.email,
-                      dni: u.dni || "",
-                      materias: [],
-                    })
-                  }
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] text-xs font-bold hover:brightness-105 transition-colors cursor-pointer"
-                  title={`Asignar materias a ${u.nombre}`}
-                >
-                  <Plus size={13} strokeWidth={2.5} />
-                  <span>Asignar</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {u.email && (
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(u.email)}&su=${encodeURIComponent(`Comunicación Institucional - Docente ${u.nombre}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg border border-[var(--border)] text-[var(--text2)] hover:text-[var(--verde)] hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] transition-all cursor-pointer"
+                      title={`Enviar Gmail a ${u.nombre}`}
+                    >
+                      <Mail size={13} />
+                    </a>
+                  )}
+                  <button
+                    onClick={() =>
+                      handleOpenAssignModal({
+                        id: u.id,
+                        nombre: u.nombre,
+                        email: u.email,
+                        dni: u.dni || "",
+                        materias: [],
+                      })
+                    }
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] text-xs font-bold hover:brightness-105 transition-colors cursor-pointer"
+                    title={`Asignar materias a ${u.nombre}`}
+                  >
+                    <Plus size={13} strokeWidth={2.5} />
+                    <span>Asignar</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -470,11 +485,25 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                   </div>
                 </div>
 
-                {/* PIE DE TARJETA: EMAIL Y ENLACE A AUSENCIAS */}
-                <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]/50 mt-2">
-                  <p className="text-xs text-[var(--text3)] truncate max-w-[150px] sm:max-w-[170px]" title={p.email}>
-                    {p.email}
-                  </p>
+                {/* PIE DE TARJETA: EMAIL, GMAIL Y ENLACE A AUSENCIAS */}
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]/50 mt-2 gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {p.email && (
+                      <a
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.email)}&su=${encodeURIComponent(`Comunicación Institucional - Docente ${p.nombre}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded-lg border border-[var(--border)] text-[var(--text2)] hover:text-[var(--verde)] hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] transition-all cursor-pointer shrink-0"
+                        title={`Enviar Gmail a ${p.nombre}`}
+                      >
+                        <Mail size={13} />
+                      </a>
+                    )}
+                    <p className="text-xs text-[var(--text3)] truncate max-w-[120px] sm:max-w-[150px]" title={p.email}>
+                      {p.email}
+                    </p>
+                  </div>
                   <span className="text-[10px] font-black uppercase text-[var(--verde)] bg-[var(--verde-bg)] px-2.5 py-1 rounded-xl border border-[var(--verde-border)] opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all shrink-0">
                     Licencias →
                   </span>

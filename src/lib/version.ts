@@ -4,14 +4,49 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.38.5";
-export const APP_BUILD_DATE = "08/10/2026 17:15 hs";
+export const APP_VERSION = "v2.41.0";
+export const APP_BUILD_DATE = "22/10/2026 14:15 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
-  "Unificación del Selector de Escuela en Cabecera Institucional (page.tsx, version.ts): Eliminación del selector de escuela duplicado dentro del formulario de inicio de sesión y registro, conservando exclusivamente el badge superior interactivo ('variant=badge') con indicador de estado, nombre completo de la institución, localidad, región educativa y botón directo de 'Cambiar escuela'."
+  "Blindaje de Jerarquía y Control de Acceso en Aprobación de Usuarios (dashboard/page.tsx, dataService.ts): Corrección de vulnerabilidad donde preceptores con acceso operativo (isAdmin) podían autorizar o auto-asignar roles de Administrador o Directivo. Se separó estrictamente la verificación de permisos en super-administradores ('admin'), directivos ('directivo') y preceptores ('preceptor'), impidiendo que roles no directivos alteren o promuevan rangos superiores.",
+  "Paridad Integral para el Rol Dual Preceptor y Profesor (dataService.ts, ProfesoresTab.tsx, CursosTab.tsx, PreceptoresTab.tsx, StudentAttendanceManager.tsx): 1) dataService: Inclusión de 'preceptor_profesor' en asignación y gestión de roles ('getAllowedAssignableRoles', 'canManageUserRole'), sincronización de correo docente y recepción de notificaciones multicanal (preceptor y profesor). 2) CursosTab y PreceptoresTab: Detección y normalización de cursos mediante 'parseUserCursos', incorporación de insignia 'Preceptor / Profesor' y asignación rápida protegida. 3) ProfesoresTab: Acceso a gestión docente para personal dual. 4) StudentAttendanceManager: Habilitación de toma de asistencia general, selección ágil de turnos y modo cobertura para personal dual.",
+  "Estandarización de Capas Z-Index en Modales y Diálogos Emergentes (z-[600] / z-[700]): Elevación uniforme de modales (NewAbsenceModal, ChubutSchoolSelector, NewTeacherReportModal, LicenciasDBModal, PreceptorCoverageModal, NewScheduleModal, NewCourseModal, NewStudentModal, NewUserModal, NewTeacherModal, SendNoticeModal, AssignStudentsModal, PreceptoresTab) a z-[600] y el diálogo de confirmación ('confirmDialog') a z-[700], eliminando solapamientos con la barra de navegación superior TopNavSidebar (z-[500]).",
+  "Aislamiento Multiescuela en Notificaciones y Alertas Institucionales (dataService.ts): Filtrado estricto por 'schoolId' en 'markNotificacionAsRead', 'markAllNotificacionesAsRead' y 'deleteNotificacion' para garantizar la partición de datos entre escuelas."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.41.0",
+    date: "22/10/2026 14:15 hs",
+    notes: [
+      "Blindaje de Jerarquía y Control de Acceso en Aprobación de Usuarios (dashboard/page.tsx, dataService.ts): Corrección de vulnerabilidad donde preceptores con acceso operativo (isAdmin) podían autorizar o auto-asignar roles de Administrador o Directivo.",
+      "Paridad Integral para el Rol Dual Preceptor y Profesor (dataService.ts, ProfesoresTab.tsx, CursosTab.tsx, PreceptoresTab.tsx, StudentAttendanceManager.tsx): Soporte completo para asignación, asistencia, cobertura, insignias y notificaciones combinadas.",
+      "Estandarización de Capas Z-Index en Modales y Diálogos Emergentes (z-[600] / z-[700]): Elevación sistemática de todos los modales para evitar solapamientos con la barra superior de navegación.",
+      "Aislamiento Multiescuela en Notificaciones y Alertas Institucionales (dataService.ts): Partición de datos en actualización y borrado de notificaciones por 'schoolId'."
+    ]
+  },
+  {
+    version: "v2.40.0",
+    date: "21/10/2026 17:45 hs",
+    notes: [
+      "Partición y Aislamiento Multiescuela en Base de Datos Appwrite (dataService.ts, /api/auth/register, page.tsx, dashboard/page.tsx, chubutSchools.ts): 1) Atributo 'schoolId' e índices en las 11 colecciones de Appwrite (usuarios, profesores, cursos, alumnos, horarios, ausencias, mesas_examen, asistencias_alumnos_jornada, asistencias_alumnos_materia, notificaciones, logs). 2) Migración de datos existentes resguardando la Escuela 713 ('esc-713-esquel'). 3) Aislamiento estricto de consultas, inserciones, actualizaciones y cachés por 'schoolId'. 4) Suscripciones en tiempo real con refresco reactivo ante cambio de institución activa. 5) Registro de usuarios y control de sesión sincronizados con la escuela institucional."
+    ]
+  },
+  {
+    version: "v2.39.0",
+    date: "14/10/2026 17:15 hs",
+    notes: [
+      "Doble Rol Preceptor y Profesor (dataService.ts, dashboard/page.tsx, UsuariosTab.tsx, PreceptoresTab.tsx, NewAbsenceModal.tsx): Soporte integral para agentes con rol combinado 'Preceptor y Profesor' (preceptor_profesor), permitiendo asignación de cursos de preceptoría y registro docente simultáneos, insignias distintivas duales y alternancia de cargo al registrar licencias.",
+      "Corrección Integral de Notificaciones en Dispositivos Móviles (NotificationsBell.tsx, globals.css): Posicionamiento adaptativo centrado en viewport con overlay semitransparente, visibilidad continua del botón de descarte táctil y contención de ancho para evitar desbordes en celulares.",
+      "Escuela Dinámica en Portada y Panel Institucional (GeneralTab.tsx, dashboard/page.tsx): El nombre, ciudad y región de la escuela seleccionada en el login se reflejan dinámicamente en el banner principal con selector rápido integrado, sin quedar trabado en Escuela 713.",
+      "Filtro de Cursos para Licencias Docentes (NewAbsenceModal.tsx): El selector de cursos afectados para profesores solo despliega las divisiones en las que el docente tiene horas/clases asignadas, eliminando cursos ajenos de la escuela.",
+      "Protección contra Cierre de Modales por Arrastre de Texto (TermsModal.tsx, VersionModal.tsx, NewAbsenceModal.tsx, ChangeUserRoleModal.tsx, PreceptoresTab.tsx): Detección precisa de 'mousedown' en backdrop para evitar que los diálogos se cierren si el mouse sale del recuadro mientras el usuario selecciona texto.",
+      "Redactor de Gmail Web Directo para Preceptores y Profesores (PreceptoresTab.tsx, ProfesoresTab.tsx): Apertura directa del redactor web de Gmail (mail.google.com) para preceptores y docentes, eliminando la invocación de Outlook local.",
+      "Guía Oficial Institucional Exclusiva en Footer (TopNavSidebar.tsx, Footer.tsx): Retiro del acceso duplicado en la barra superior para conservar la guía exclusivamente en el pie de página institucional.",
+      "Estandarización de Marca Multiescuela 'EscuelaInfo' en Banner de Inicio (GeneralTab.tsx): Reemplazo de la animación cinética 'GravityText' por el identificador tipográfico oficial estático 'EscuelaInfo', manteniendo la indicación dinámica de la escuela seleccionada en el subtítulo y selector.",
+      "Bloqueo y Aislamiento de Scroll en Modales (ModalScrollEnhancer.tsx, globals.css, UserProfileModal.tsx): Componente global que bloquea el scroll del fondo ('body-scroll-lock') al abrir modales y ventanas emergentes, interceptando giros de rueda del ratón fuera del recuadro para que la página de fondo permanezca completamente inmóvil."
+    ]
+  },
   {
     version: "v2.38.5",
     date: "08/10/2026 17:15 hs",

@@ -81,7 +81,7 @@ export const LicenciasDBModal: React.FC<LicenciasDBModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div 
         className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden text-[var(--text)] transition-all"
         onClick={(e) => e.stopPropagation()}

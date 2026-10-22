@@ -11,7 +11,7 @@ interface ApproveStudentRoleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (
-    targetRole: "alumno" | "profesor" | "preceptor",
+    targetRole: "alumno" | "profesor" | "preceptor" | "preceptor_profesor",
     selectedCurso?: string,
     preceptorCursos?: string[]
   ) => Promise<void> | void;
@@ -32,7 +32,7 @@ export default function ApproveStudentRoleModal({
   operatorRole = "",
   isAdmin = false,
 }: ApproveStudentRoleModalProps) {
-  const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor">("alumno");
+  const [selectedRole, setSelectedRole] = useState<"alumno" | "profesor" | "preceptor" | "preceptor_profesor">("alumno");
   const [selectedCurso, setSelectedCurso] = useState<string>("");
   const [selectedPreceptorCursos, setSelectedPreceptorCursos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +42,7 @@ export default function ApproveStudentRoleModal({
   const preceptorSectionRef = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const initializedUserRef = useRef<string | null>(null);
+  const isBackdropClickRef = useRef<boolean>(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function ApproveStudentRoleModal({
   // Jerarquía de roles que el operador tiene permitido otorgar
   const allowedRoles = useMemo<UserRole[]>(() => {
     if (isAdmin) {
-      return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+      return ["admin", "directivo", "preceptor", "profesor", "alumno", "preceptor_profesor"];
     }
     return getAllowedAssignableRoles(effectiveRole);
   }, [isAdmin, effectiveRole]);
@@ -82,6 +83,12 @@ export default function ApproveStudentRoleModal({
       icon: <BookOpen size={18} className="text-[var(--amarillo)]" />,
     },
     {
+      id: "preceptor_profesor" as const,
+      label: "Preceptor y Profesor",
+      description: "Doble cargo: asistencia de cursos asignados y dictado de materias.",
+      icon: <Users size={18} className="text-[var(--cyan)]" />,
+    },
+    {
       id: "preceptor" as const,
       label: "Preceptor",
       description: "Control de asistencia diaria y seguimiento de cursos.",
@@ -93,8 +100,8 @@ export default function ApproveStudentRoleModal({
   const availableRoles = useMemo(() => {
     const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
     return allRoles.filter((r) => {
-      // Un preceptor bajo ninguna circunstancia puede asignar el rol de preceptor
-      if (isOpPreceptor && r.id === "preceptor") return false;
+      // Un preceptor bajo ninguna circunstancia puede asignar el rol de preceptor o doble cargo
+      if (isOpPreceptor && (r.id === "preceptor" || r.id === "preceptor_profesor")) return false;
       return allowedRoles.includes(r.id as UserRole);
     });
   }, [allRoles, allowedRoles, isAdmin, effectiveRole]);
@@ -144,7 +151,7 @@ export default function ApproveStudentRoleModal({
 
   if (!isOpen || !user || !mounted || typeof document === "undefined" || !document.body) return null;
 
-  const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor") => {
+  const handleSelectRole = (roleId: "alumno" | "profesor" | "preceptor" | "preceptor_profesor") => {
     setSelectedRole(roleId);
     if (roleId === "alumno") {
       setTimeout(() => {
@@ -154,7 +161,7 @@ export default function ApproveStudentRoleModal({
         }
         courseSelectRef.current?.focus({ preventScroll: true });
       }, 60);
-    } else if (roleId === "preceptor") {
+    } else if (roleId === "preceptor" || roleId === "preceptor_profesor") {
       setTimeout(() => {
         if (preceptorSectionRef.current && modalBodyRef.current) {
           const topPos = preceptorSectionRef.current.offsetTop - modalBodyRef.current.offsetTop;
@@ -180,7 +187,7 @@ export default function ApproveStudentRoleModal({
       await onConfirm(
         selectedRole,
         selectedRole === "alumno" ? selectedCurso : undefined,
-        selectedRole === "preceptor" ? selectedPreceptorCursos : undefined
+        (selectedRole === "preceptor" || selectedRole === "preceptor_profesor") ? selectedPreceptorCursos : undefined
       );
       onClose();
     } finally {
@@ -191,8 +198,12 @@ export default function ApproveStudentRoleModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
+      onMouseDown={(e) => {
+        isBackdropClickRef.current = (e.target === e.currentTarget);
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (isBackdropClickRef.current && e.target === e.currentTarget) onClose();
+        isBackdropClickRef.current = false;
       }}
     >
       <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden my-0 sm:my-auto">
@@ -315,8 +326,8 @@ export default function ApproveStudentRoleModal({
             </div>
           )}
 
-          {/* Selector de Cursos Asignados para Preceptor */}
-          {selectedRole === "preceptor" && allowedRoles.includes("preceptor") && (
+          {/* Selector de Cursos Asignados para Preceptor o Doble Cargo */}
+          {(selectedRole === "preceptor" || selectedRole === "preceptor_profesor") && (allowedRoles.includes("preceptor") || allowedRoles.includes("preceptor_profesor")) && (
             <div
               ref={preceptorSectionRef}
               className="space-y-2.5 p-3.5 rounded-2xl bg-[var(--azul-bg)]/30 border border-[var(--azul-border)] animate-fade-in ring-1 ring-[var(--azul)]/30"

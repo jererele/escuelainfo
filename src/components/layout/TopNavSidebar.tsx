@@ -35,11 +35,6 @@ import { gamerEasterEgg } from "@/lib/gamerEasterEgg";
 import NotificationsBell from "@/components/layout/NotificationsBell";
 import { NotificacionSistema } from "@/lib/dataService";
 
-const InstitutionalGuideModal = dynamic(
-  () => import("@/components/modals/InstitutionalGuideModal"),
-  { ssr: false }
-);
-
 interface TopNavSidebarProps {
   user: any;
   userProfile: UserProfile | null;
@@ -75,15 +70,7 @@ export default function TopNavSidebar({
   const [isExiting, setIsExiting] = useState(false);
   const [theme, setTheme]         = useState<"light" | "dark">("light");
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
-  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
-
-  // Escuchar evento global para abrir guía desde footer u otras partes
-  useEffect(() => {
-    const handleOpenGuide = () => setIsGuideModalOpen(true);
-    window.addEventListener("escuelainfo:open-guide", handleOpenGuide);
-    return () => window.removeEventListener("escuelainfo:open-guide", handleOpenGuide);
-  }, []);
 
   // Restore theme on mount
   useEffect(() => {
@@ -193,7 +180,13 @@ export default function TopNavSidebar({
     ...(showSecretAdmin
       ? [{ id: "auditoria", label: "Auditoría", icon: <ShieldAlert size={18} />, roles: ["admin", "directivo"] }]
       : []),
-  ].filter((tab) => tab.roles.includes(normalizedRole ?? "alumno"));
+  ].filter((tab) => {
+    if (!normalizedRole) return tab.roles.includes("alumno");
+    if (normalizedRole === "preceptor_profesor") {
+      return tab.roles.includes("preceptor") || tab.roles.includes("profesor");
+    }
+    return tab.roles.includes(normalizedRole);
+  });
 
   const userName  = userProfile?.nombre || user?.displayName || "Usuario";
   const userInitial = userName.charAt(0).toUpperCase();
@@ -201,6 +194,7 @@ export default function TopNavSidebar({
     : normalizedRole === "directivo" ? "Directivo"
     : normalizedRole === "preceptor" ? "Preceptor"
     : normalizedRole === "profesor" ? "Profesor"
+    : normalizedRole === "preceptor_profesor" ? "Preceptor y Profesor"
     : normalizedRole === "alumno" ? "Alumno"
     : userProfile?.rol ?? "Invitado";
 
@@ -278,20 +272,10 @@ export default function TopNavSidebar({
             <NotificationsBell
               userEmail={userProfile?.email || user?.email}
               userRole={userProfile?.rol}
+              schoolId={userProfile?.schoolId}
               onOpenCoverageModal={onOpenCoverageModal}
             />
           )}
-
-          <button
-            onClick={() => setIsGuideModalOpen(true)}
-            title="Guía Oficial y Procedimientos Institucionales"
-            aria-label="Abrir guía de uso"
-            className="w-9 h-9 flex items-center justify-center rounded-xl
-              border border-[var(--border)] text-[var(--text2)]
-              hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] hover:text-[var(--verde)] transition-all cursor-pointer"
-          >
-            <BookOpen size={16} />
-          </button>
 
           <button
             onClick={toggleTheme}
@@ -431,11 +415,6 @@ export default function TopNavSidebar({
       {userProfile?.rol === 'admin' && (
         <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
       )}
-      <InstitutionalGuideModal
-        isOpen={isGuideModalOpen}
-        onClose={() => setIsGuideModalOpen(false)}
-        defaultRole={(normalizedRole as any) || "preceptor"}
-      />
     </div>
   );
 }

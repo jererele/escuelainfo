@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Users, Trash2, Plus, GraduationCap, UserCheck, Edit, Clock } from "lucide-react";
-import { Curso, Alumno, UserProfile } from "@/lib/dataService";
+import { Curso, Alumno, UserProfile, fromDbRol, parseUserCursos } from "@/lib/dataService";
 import { TiltCard } from "@/components/ui/rare";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { parseCourseNameComponents } from "@/lib/curriculum";
@@ -28,9 +28,12 @@ export const CursosTab: React.FC<CursosTabProps> = ({
   onDeleteCurso,
   onNavigateToPreceptores,
 }) => {
-  // Preceptores de la institución
+  // Preceptores de la institución (incluye preceptor exclusivo y doble rol preceptor_profesor)
   const preceptores: UserProfile[] = useMemo(() => {
-    return (usuarios || []).filter((u: UserProfile) => u.rol === "preceptor");
+    return (usuarios || []).filter((u: UserProfile) => {
+      const r = fromDbRol(u.rol);
+      return r === "preceptor" || r === "preceptor_profesor";
+    });
   }, [usuarios]);
   return (
     <div className="animate-fade-in space-y-8">
@@ -63,7 +66,7 @@ export const CursosTab: React.FC<CursosTabProps> = ({
             const alumnosCurso = alumnos.filter((a) => a.curso === c.nombre);
             const totalAlumnos = alumnosCurso.length;
             const previewAlumnos = alumnosCurso.slice(0, 4);
-            const assignedPreceptores = preceptores.filter((p: UserProfile) => (p.cursos || []).includes(c.nombre));
+            const assignedPreceptores = preceptores.filter((p: UserProfile) => parseUserCursos(p.cursos).includes(c.nombre));
 
             const parsedCourse = parseCourseNameComponents(c.nombre);
 
@@ -169,9 +172,16 @@ export const CursosTab: React.FC<CursosTabProps> = ({
                           Preceptoría:
                         </span>
                         {assignedPreceptores.length > 0 ? (
-                          <span className="font-black text-xs text-[var(--text)] block truncate" title={assignedPreceptores.map((p: UserProfile) => p.nombre).join(", ")}>
-                            {assignedPreceptores.map((p: UserProfile) => p.nombre.split(" ")[0]).join(", ")}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-black text-xs text-[var(--text)] truncate" title={assignedPreceptores.map((p: UserProfile) => p.nombre).join(", ")}>
+                              {assignedPreceptores.map((p: UserProfile) => p.nombre.split(" ")[0]).join(", ")}
+                            </span>
+                            {assignedPreceptores.some((p: UserProfile) => fromDbRol(p.rol) === 'preceptor_profesor') && (
+                              <span className="inline-flex items-center text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[var(--cyan-bg)] text-[var(--cyan)] border border-[var(--cyan-border)]" title="Cargo dual: Preceptor y Docente">
+                                Dual
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="font-bold text-[11px] text-[var(--amarillo)] block italic">
                             Sin preceptor asignado

@@ -32,7 +32,9 @@ const ROL_MAP: Record<string, string> = {
   "admin": "admin",
   "profesor": "profesor",
   "preceptor": "preceptor",
-  "directivo": "directivo"
+  "directivo": "directivo",
+  "pp_p": "preceptor_profesor",
+  "preceptor_profesor": "preceptor_profesor"
 };
 
 const fromDbRol = (r?: string | null): string => {
@@ -48,6 +50,7 @@ const toDbRol = (r: string): string => {
     case "directivo": return "d";
     case "preceptor": return "pp";
     case "profesor": return "p";
+    case "preceptor_profesor": case "profesor_preceptor": case "pp_p": return "pp_p";
     case "alumno": return "a";
     case "pendiente": return "pe";
     case "pendiente_admin": case "pe_ad": case "p_ad": return "pe_ad";
@@ -73,6 +76,7 @@ const canManageUserRole = (operatorRole?: string | null, targetRole?: string | n
       tgt !== "admin" &&
       tgt !== "directivo" &&
       tgt !== "preceptor" &&
+      tgt !== "preceptor_profesor" &&
       !tgt.includes("admin") &&
       !tgt.includes("directivo") &&
       !tgt.includes("preceptor")
@@ -85,10 +89,10 @@ const getAllowedAssignableRoles = (operatorRole?: string | null): string[] => {
   if (!operatorRole) return [];
   const clean = fromDbRol(operatorRole).trim().toLowerCase();
   if (clean === "admin") {
-    return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+    return ["admin", "directivo", "preceptor", "profesor", "alumno", "preceptor_profesor"];
   }
   if (clean === "directivo") {
-    return ["preceptor", "profesor", "alumno"];
+    return ["preceptor", "profesor", "alumno", "preceptor_profesor"];
   }
   if (clean === "preceptor") {
     return ["profesor", "alumno"];
@@ -294,7 +298,7 @@ export async function POST(request: Request) {
       rol: toDbRol(cleanNewRole)
     };
 
-    if (cleanNewRole === "preceptor") {
+    if (cleanNewRole === "preceptor" || cleanNewRole === "preceptor_profesor") {
       updateData.cursos = Array.isArray(preceptorCursos) ? JSON.stringify(preceptorCursos) : (preceptorCursos || "[]");
     } else {
       updateData.cursos = "[]";
@@ -302,17 +306,23 @@ export async function POST(request: Request) {
 
     await db.updateDocument(dbId, 'usuarios', targetDoc.$id, updateData);
 
+    const targetSchoolId = targetDoc.schoolId || "esc-713-esquel";
+
     // 5. Sincronización con colección 'alumnos'
     if (cleanTargetEmail) {
       try {
-        const alumnosList = await db.listDocuments(dbId, 'alumnos', [Query.equal('email', cleanTargetEmail)]);
+        const alumnosList = await db.listDocuments(dbId, 'alumnos', [
+          Query.equal('email', cleanTargetEmail),
+          Query.equal('schoolId', targetSchoolId)
+        ]);
         
         if (cleanNewRole === "alumno") {
           if (alumnosList.total > 0) {
             const alumnoDoc = alumnosList.documents[0];
             if (selectedCurso) {
               await db.updateDocument(dbId, 'alumnos', alumnoDoc.$id, {
-                curso: selectedCurso
+                curso: selectedCurso,
+                schoolId: targetSchoolId
               });
             }
           } else {
@@ -320,7 +330,8 @@ export async function POST(request: Request) {
               nombre: targetDoc.nombre || "Alumno",
               dni: "",
               curso: selectedCurso || "pendiente",
-              email: cleanTargetEmail
+              email: cleanTargetEmail,
+              schoolId: targetSchoolId
             });
           }
         } else {
@@ -337,15 +348,19 @@ export async function POST(request: Request) {
     // 6. Sincronización con colección 'profesores'
     if (cleanTargetEmail) {
       try {
-        const profsList = await db.listDocuments(dbId, 'profesores', [Query.equal('email', cleanTargetEmail)]);
+        const profsList = await db.listDocuments(dbId, 'profesores', [
+          Query.equal('email', cleanTargetEmail),
+          Query.equal('schoolId', targetSchoolId)
+        ]);
         
-        if (cleanNewRole === "profesor") {
+        if (cleanNewRole === "profesor" || cleanNewRole === "preceptor_profesor") {
           if (profsList.total === 0) {
             await db.createDocument(dbId, 'profesores', ID.unique(), {
               nombre: targetDoc.nombre || "Profesor",
               dni: "",
               materias: [],
-              email: cleanTargetEmail
+              email: cleanTargetEmail,
+              schoolId: targetSchoolId
             });
           }
         } else if (cleanNewRole === "alumno") {
@@ -366,6 +381,7 @@ export async function POST(request: Request) {
         directivo: "Directivo",
         preceptor: "Preceptor",
         profesor: "Profesor",
+        preceptor_profesor: "Preceptor y Profesor",
         alumno: "Alumno",
       };
       const oldLabel = roleLabels[targetCurrentRole] || targetCurrentRole;
@@ -375,6 +391,8 @@ export async function POST(request: Request) {
         ? ` (Curso: ${selectedCurso})`
         : cleanNewRole === "preceptor" && Array.isArray(preceptorCursos) && preceptorCursos.length > 0
         ? ` (Cursos: ${preceptorCursos.join(", ")})`
+        : cleanNewRole === "preceptor_profesor" && Array.isArray(preceptorCursos) && preceptorCursos.length > 0
+        ? ` (Cursos preceptoría: ${preceptorCursos.join(", ")})`
         : "";
 
       const isVerifiedAdmin = isPromotingToAdmin ? " [AUTORIZADO CON CÓDIGO OTP ADMINISTRADOR PRINCIPAL]" : "";
@@ -383,7 +401,8 @@ export async function POST(request: Request) {
         accion: isPromotingToAdmin ? 'PROMOTE_ADMIN' : 'C_ROL',
         detalles: `${cleanTargetEmail}: de ${oldLabel} a ${newLabel}${extraDetails}${isVerifiedAdmin}`,
         fecha: new Date().toISOString(),
-        ip: clientIp || "Desconocida"
+        ip: clientIp || "Desconocida",
+        schoolId: targetSchoolId
       });
     } catch (logErr: any) {
       console.warn("[change-role] Advertencia al registrar log:", logErr?.message);

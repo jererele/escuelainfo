@@ -271,12 +271,12 @@ export default function UserProfileModal({ isOpen, onClose, profile, onProfileUp
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overscroll-contain"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg)] w-full max-w-md rounded-t-2xl sm:rounded-2xl border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in overflow-hidden my-0 sm:my-auto max-h-[92vh] flex flex-col">
+      <div className="bg-[var(--bg)] w-full max-w-md rounded-t-2xl sm:rounded-2xl border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in overflow-hidden my-0 sm:my-auto max-h-[92vh] flex flex-col overscroll-contain">
         {/* Header */}
         <div className="p-6 border-b border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">

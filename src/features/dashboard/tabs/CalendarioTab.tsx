@@ -26,6 +26,11 @@ export const CalendarioTab: React.FC<CalendarioTabProps> = ({ user, userProfile,
 
   useEffect(() => {
     loadData();
+    const handleSchoolChange = () => {
+      loadData();
+    };
+    window.addEventListener("escuelainfo:school-changed", handleSchoolChange);
+    return () => window.removeEventListener("escuelainfo:school-changed", handleSchoolChange);
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {

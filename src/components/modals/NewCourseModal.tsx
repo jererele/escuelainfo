@@ -152,7 +152,7 @@ export default function NewCourseModal({ isOpen, onClose, onSuccess, initialCurs
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+    <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--bg)] w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[90dvh] overflow-y-auto custom-scrollbar mt-auto sm:mt-0">
         <div className="flex justify-between items-start mb-2">

@@ -70,6 +70,8 @@ export async function POST(request: Request) {
     const alumno = alumnoDocs.documents[0];
     const todayDate = new Date().toISOString().split('T')[0];
 
+    const studentSchoolId = alumno.schoolId || "esc-713-esquel";
+
     // 4. Registrar Asistencia (actualizando de Ausente a Presente si ya existía registro)
     if (mode === "jornada") {
       const existing = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
@@ -92,7 +94,8 @@ export async function POST(request: Request) {
         // Si estaba Ausente u otro estado, cambiar a Presente por QR
         await db.updateDocument(dbId, 'asistencias_alumnos_jornada', doc.$id, {
           estado: "P",
-          preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
+          preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50),
+          schoolId: studentSchoolId
         });
       } else {
         await db.createDocument(dbId, 'asistencias_alumnos_jornada', ID.unique(), {
@@ -100,7 +103,8 @@ export async function POST(request: Request) {
           alumnoNombre: alumno.nombre || sessionUser.name || "Alumno",
           fecha: todayDate,
           estado: "P",
-          preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
+          preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50),
+          schoolId: studentSchoolId
         });
       }
 
@@ -110,7 +114,8 @@ export async function POST(request: Request) {
           usuarioEmail: studentEmail,
           accion: 'C_AJ',
           detalles: `Presente por QR Jornada (${todayDate})`,
-          fecha: new Date().toISOString()
+          fecha: new Date().toISOString(),
+          schoolId: studentSchoolId
         });
       } catch {}
 
@@ -137,7 +142,8 @@ export async function POST(request: Request) {
         }
         await db.updateDocument(dbId, 'asistencias_alumnos_materia', doc.$id, {
           estado: "P",
-          profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
+          profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50),
+          schoolId: studentSchoolId
         });
       } else {
         await db.createDocument(dbId, 'asistencias_alumnos_materia', ID.unique(), {
@@ -147,7 +153,8 @@ export async function POST(request: Request) {
           materia: cleanMateria.slice(0, 100),
           curso: (alumno.curso || "Curso").slice(0, 50),
           estado: "P",
-          profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50)
+          profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50),
+          schoolId: studentSchoolId
         });
       }
 
@@ -156,7 +163,8 @@ export async function POST(request: Request) {
           usuarioEmail: studentEmail,
           accion: 'C_AM',
           detalles: `Presente por QR Materia: ${cleanMateria}`,
-          fecha: new Date().toISOString()
+          fecha: new Date().toISOString(),
+          schoolId: studentSchoolId
         });
       } catch {}
     } else {

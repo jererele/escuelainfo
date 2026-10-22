@@ -305,6 +305,7 @@ export default function TermsModal({
   const [saving, setSaving] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isBackdropClickRef = useRef(false);
 
   const isControlled = propIsOpen !== undefined;
   const showModal = isControlled ? Boolean(propIsOpen) : internalOpen;
@@ -426,8 +427,14 @@ export default function TermsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="terms-modal-title"
+      onMouseDown={(e) => {
+        isBackdropClickRef.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
+        if (isBackdropClickRef.current && e.target === e.currentTarget) {
+          handleClose();
+        }
+        isBackdropClickRef.current = false;
       }}
       className="fixed inset-0 flex items-center justify-center p-3 sm:p-6"
       style={{

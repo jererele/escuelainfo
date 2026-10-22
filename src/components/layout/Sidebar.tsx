@@ -115,8 +115,13 @@ export default function Sidebar({
     { id: "classroom", label: "Google Classroom", icon: <BookOpen size={20} />, roles: ["admin", "profesor", "alumno"], isExternal: true, url: "https://classroom.google.com" },
     { id: "ciclo-lectivo", label: "Ciclo Lectivo", icon: <RefreshCw size={20} />, roles: ["admin", "directivo"] },
     ...((normalizedRole === 'admin' || normalizedRole === 'directivo') ? [{ id: "configuracion", label: "Accesos", icon: <Settings size={20} />, roles: ["admin", "directivo"] }] : []),
-    ...(showSecretAdmin ? [{ id: "auditoria", label: "Auditoría", icon: <ShieldAlert size={20} />, roles: ["admin", "directivo"] }] : [])
-  ].filter(tab => tab.roles.includes(normalizedRole || "alumno"));
+  ].filter((tab) => {
+    if (!normalizedRole) return tab.roles.includes("alumno");
+    if (normalizedRole === "preceptor_profesor") {
+      return tab.roles.includes("preceptor") || tab.roles.includes("profesor");
+    }
+    return tab.roles.includes(normalizedRole);
+  });
 
   return (
     <>

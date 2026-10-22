@@ -38,9 +38,16 @@ export const MonitorAsistenciaTab = () => {
 
   useEffect(() => {
     fetchData();
+    const handleSchoolChange = () => {
+      fetchData();
+    };
+    window.addEventListener("escuelainfo:school-changed", handleSchoolChange);
     // Actualizar cada minuto
     const interval = setInterval(fetchData, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener("escuelainfo:school-changed", handleSchoolChange);
+      clearInterval(interval);
+    };
   }, []);
 
   const statsPorCurso = cursos.map(curso => {

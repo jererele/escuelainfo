@@ -17,7 +17,7 @@ import {
 } from "@/lib/dataService";
 import PhoneInputWithCountry from "@/components/shared/PhoneInputWithCountry";
 import ChubutSchoolSelector from "@/components/shared/ChubutSchoolSelector";
-import { getSchoolById, getSavedSchoolId, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
+import { getSchoolById, getSavedSchoolId, setSavedSchoolId, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
 
 function LoginContent() {
   const router = useRouter();
@@ -260,6 +260,10 @@ function LoginContent() {
         }
       }
 
+      if (profile.schoolId) {
+        setSavedSchoolId(profile.schoolId);
+      }
+
       if (!isAuthorizedRole(profile.rol)) {
         // Redirigir a /dashboard donde se renderiza la pantalla de verificación institucional
         router.replace("/dashboard");
@@ -478,6 +482,7 @@ function LoginContent() {
           telefono: telefono.trim(),
           password,
           escuela: currentSchool.nombreCompleto,
+          schoolId: currentSchool.id,
         }),
       });
 

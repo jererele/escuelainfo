@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Client, Databases, Users, Query } from 'node-appwrite';
+import { Client, Databases, Users, Query, ID } from 'node-appwrite';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
@@ -132,11 +132,13 @@ export async function POST(request: Request) {
 
     // 5. Registrar en logs de auditoría
     try {
-      await db.createDocument(dbId, 'logs', 'unique()', {
+      const operatorSchoolId = callerDocs.documents[0]?.schoolId || 'esc-713-esquel';
+      await db.createDocument(dbId, 'logs', ID.unique(), {
         usuarioEmail: callerEmail || 'admin',
         accion: 'RC_C', // Código compacto de 'Rechazó una solicitud de acceso'
         detalles: `Rechazó y eliminó solicitud de: ${cleanEmail || userId}`,
-        fecha: new Date().toISOString()
+        fecha: new Date().toISOString(),
+        schoolId: operatorSchoolId
       });
     } catch {}
 

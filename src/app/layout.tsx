@@ -6,6 +6,7 @@ import TermsModal from "@/components/modals/TermsModal";
 import Footer from "@/components/layout/Footer";
 import SileoToaster from "@/components/ui/SileoToaster";
 import DatePickerEnhancer from "@/components/ui/DatePickerEnhancer";
+import ModalScrollEnhancer from "@/components/ui/ModalScrollEnhancer";
 import NyanCatGamerOverlay from "@/components/easter-egg/NyanCatGamerOverlay";
 import NetworkStatusIndicator from "@/components/shared/NetworkStatusIndicator";
 
@@ -134,6 +135,7 @@ export default function RootLayout({
         <NyanCatGamerOverlay />
         <SileoToaster />
         <DatePickerEnhancer />
+        <ModalScrollEnhancer />
         <NetworkStatusIndicator />
 
         {/*

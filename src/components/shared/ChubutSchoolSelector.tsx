@@ -248,7 +248,7 @@ export default function ChubutSchoolSelector({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+          className="fixed inset-0 z-[600] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in"
           onClick={() => setIsOpen(false)}
         >
           <div

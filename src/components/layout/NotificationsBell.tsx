@@ -29,6 +29,7 @@ import { notify } from "@/lib/notify";
 interface NotificationsBellProps {
   userEmail?: string;
   userRole?: string;
+  schoolId?: string;
   onOpenCoverageModal?: (notif: NotificacionSistema) => void;
 }
 
@@ -60,6 +61,7 @@ const playChimeSound = () => {
 export default function NotificationsBell({
   userEmail,
   userRole,
+  schoolId,
   onOpenCoverageModal,
 }: NotificationsBellProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -91,10 +93,10 @@ export default function NotificationsBell({
         }
       }
       isInitialMountRef.current = false;
-    });
+    }, schoolId);
 
     return () => unsubscribe();
-  }, [userEmail, userRole]);
+  }, [userEmail, userRole, schoolId]);
 
   // Cerrar al hacer clic fuera
   useEffect(() => {
@@ -120,13 +122,13 @@ export default function NotificationsBell({
   }, [notifications, filterTab]);
 
   const handleMarkAllRead = async () => {
-    await markAllNotificacionesAsRead(userEmail, userRole);
+    await markAllNotificacionesAsRead(userEmail, userRole, schoolId);
     setNotifications((prev) => prev.map((n) => ({ ...n, leida: true })));
   };
 
   const handleClickItem = async (n: NotificacionSistema) => {
     if (!n.leida) {
-      await markNotificacionAsRead(n.id);
+      await markNotificacionAsRead(n.id, schoolId);
       setNotifications((prev) => prev.map((item) => (item.id === n.id ? { ...item, leida: true } : item)));
     }
     if (n.tipo === "licencia_preceptor_aprobada" && onOpenCoverageModal) {
@@ -137,7 +139,7 @@ export default function NotificationsBell({
 
   const handleDeleteItem = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    await deleteNotificacion(id);
+    await deleteNotificacion(id, schoolId);
     setNotifications((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -199,9 +201,18 @@ export default function NotificationsBell({
         )}
       </button>
 
+      {/* Backdrop en móviles para cerrar al tocar fuera */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-[140] sm:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Menú Flotante de Notificaciones */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-[var(--bg2)]/95 backdrop-blur-xl border border-[var(--border)] shadow-2xl z-[150] overflow-hidden animate-fade-in flex flex-col max-h-[82vh]">
+        <div className="fixed inset-x-3 top-[calc(3.5rem+env(safe-area-inset-top,0px)+8px)] max-w-sm mx-auto sm:max-w-none sm:inset-auto sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-2xl bg-[var(--bg2)]/95 backdrop-blur-xl border border-[var(--border)] shadow-2xl z-[150] overflow-hidden animate-fade-in flex flex-col max-h-[82vh]">
           {/* Header */}
           <div className="p-3.5 px-4 bg-[var(--bg3)]/40 border-b border-[var(--border)] flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
@@ -323,7 +334,7 @@ export default function NotificationsBell({
                       <button
                         type="button"
                         onClick={(e) => handleDeleteItem(e, n.id)}
-                        className="absolute top-3 right-3 text-[var(--text3)] hover:text-[var(--rojo)] p-1 rounded hover:bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        className="absolute top-3 right-3 text-[var(--text3)] hover:text-[var(--rojo)] p-1 rounded hover:bg-black/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
                         title="Descartar notificación"
                       >
                         <X size={12} />

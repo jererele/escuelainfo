@@ -52,7 +52,7 @@ interface ChangeUserRoleModalProps {
   isAdmin?: boolean;
 }
 
-export type AssignableRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
+export type AssignableRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno" | "preceptor_profesor";
 
 const ALL_ROLE_DEFINITIONS: Array<{
   id: AssignableRole;
@@ -83,6 +83,16 @@ const ALL_ROLE_DEFINITIONS: Array<{
     colorClass: "text-[var(--violeta)]",
     borderClass: "border-[var(--violeta-border)]",
     bgHoverClass: "hover:border-[var(--violeta)]/40 hover:bg-[var(--violeta-bg)]/30",
+  },
+  {
+    id: "preceptor_profesor",
+    name: "Preceptor y Profesor",
+    badgeLabel: "Doble Cargo",
+    shortDesc: "Ejerce ambos roles: asistencia de cursos asignados y dictado de materias.",
+    icon: <Users size={20} strokeWidth={2.5} className="text-[var(--cyan)]" />,
+    colorClass: "text-[var(--cyan)]",
+    borderClass: "border-[var(--cyan-border)]",
+    bgHoverClass: "hover:border-[var(--cyan)]/40 hover:bg-[var(--cyan-bg)]/30",
   },
   {
     id: "preceptor",
@@ -149,13 +159,14 @@ export default function ChangeUserRoleModal({
   const adminSectionRef = useRef<HTMLDivElement>(null);
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const initializedUserRef = useRef<string | null>(null);
+  const isBackdropClickRef = useRef<boolean>(false);
 
   const effectiveRole = isAdmin ? "admin" : fromDbRol(operatorRole);
 
   // Jerarquía de roles que el operador activo tiene permitido asignar
   const allowedRoles = useMemo<UserRole[]>(() => {
     if (isAdmin) {
-      return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+      return ["admin", "directivo", "preceptor", "profesor", "alumno", "preceptor_profesor"];
     }
     return getAllowedAssignableRoles(effectiveRole);
   }, [isAdmin, effectiveRole]);
@@ -164,8 +175,8 @@ export default function ChangeUserRoleModal({
   const visibleRoleDefinitions = useMemo(() => {
     const isOpPreceptor = !isAdmin && effectiveRole === "preceptor";
     return ALL_ROLE_DEFINITIONS.filter(r => {
-      // Un preceptor bajo ninguna circunstancia puede otorgar el rol de preceptor
-      if (isOpPreceptor && r.id === "preceptor") return false;
+      // Un preceptor bajo ninguna circunstancia puede otorgar el rol de preceptor ni doble cargo
+      if (isOpPreceptor && (r.id === "preceptor" || r.id === "preceptor_profesor")) return false;
       return allowedRoles.includes(r.id as UserRole);
     });
   }, [allowedRoles, isAdmin, effectiveRole]);
@@ -179,7 +190,7 @@ export default function ChangeUserRoleModal({
       return "Como Administrador tenés permisos para asignar cualquier rol institucional.";
     }
     if (op === "directivo") {
-      return "Como Directivo podés asignar los roles de Preceptor, Profesor o Alumno.";
+      return "Como Directivo podés asignar los roles de Preceptor, Profesor, Doble Cargo o Alumno.";
     }
     if (op === "preceptor") {
       return "Como Preceptor podés asignar los roles de Profesor o Alumno (no podés asignar Preceptores, Directivos ni Administradores).";
@@ -214,6 +225,7 @@ export default function ChangeUserRoleModal({
     const rawRole = fromDbRol(user?.rol || "").replace("pendiente_", "").toLowerCase();
     if (rawRole === "admin") initialRole = "admin";
     else if (rawRole === "directivo") initialRole = "directivo";
+    else if (rawRole === "preceptor_profesor" || rawRole === "pp_p" || rawRole === "profesor_preceptor") initialRole = "preceptor_profesor";
     else if (rawRole === "preceptor") initialRole = "preceptor";
     else if (rawRole === "profesor") initialRole = "profesor";
     else initialRole = "alumno";
@@ -384,8 +396,12 @@ export default function ChangeUserRoleModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
+      onMouseDown={(e) => {
+        isBackdropClickRef.current = (e.target === e.currentTarget);
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (isBackdropClickRef.current && e.target === e.currentTarget) onClose();
+        isBackdropClickRef.current = false;
       }}
     >
       <div className="bg-[var(--bg)] w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl border-t sm:border border-[var(--border)] shadow-2xl animate-zoom-in max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden my-0 sm:my-auto">
@@ -556,8 +572,8 @@ export default function ChangeUserRoleModal({
             </div>
           )}
 
-          {/* SELECCIÓN DE CURSOS ASIGNADOS PARA PRECEPTOR */}
-          {selectedRole === "preceptor" && allowedRoles.includes("preceptor") && (
+          {/* SELECCIÓN DE CURSOS ASIGNADOS PARA PRECEPTOR O DOBLE CARGO */}
+          {(selectedRole === "preceptor" || selectedRole === "preceptor_profesor") && (allowedRoles.includes("preceptor") || allowedRoles.includes("preceptor_profesor")) && (
             <div
               ref={preceptorSectionRef}
               className="p-3.5 sm:p-4 rounded-2xl bg-[var(--azul-bg)]/30 border border-[var(--azul-border)] space-y-3 animate-fade-in"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos, fromDbRol } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import { 
   UserCheck, 
@@ -110,18 +110,28 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     }
   }, [userProfile]);
 
+  const isPreceptorRole = useMemo(() => {
+    const r = fromDbRol(role);
+    return r === "preceptor" || r === "preceptor_profesor";
+  }, [role]);
+
+  const canManageGeneralAttendance = useMemo(() => {
+    const r = fromDbRol(role);
+    return r === "admin" || r === "directivo" || r === "preceptor" || r === "preceptor_profesor";
+  }, [role]);
+
   // Si el preceptor no tiene cursos propios asignados, activar por defecto el turno actual de la escuela
   useEffect(() => {
-    if (role === "preceptor" && preceptorCursos.length === 0) {
+    if (isPreceptorRole && preceptorCursos.length === 0) {
       setTurnoFiltro(liveShift);
     }
-  }, [role, preceptorCursos.length, liveShift]);
+  }, [isPreceptorRole, preceptorCursos.length, liveShift]);
 
   useEffect(() => {
-    if (role === "preceptor" && preceptorCursos.length > 0 && !selectedCurso) {
+    if (isPreceptorRole && preceptorCursos.length > 0 && !selectedCurso) {
       setSelectedCurso(preceptorCursos[0]);
     }
-  }, [role, preceptorCursos, selectedCurso]);
+  }, [isPreceptorRole, preceptorCursos, selectedCurso]);
 
   // Clasificación de cursos por turno
   const cursosManana = useMemo(() => {
@@ -154,11 +164,11 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
   // Modo Cobertura: Cuando el preceptor toma lista a un curso que no es de su asignación habitual
   const isCoverageMode = useMemo(() => {
-    return role === "preceptor" && 
+    return isPreceptorRole && 
            preceptorCursos.length > 0 && 
            Boolean(selectedCurso) && 
            !preceptorCursos.includes(selectedCurso);
-  }, [role, preceptorCursos, selectedCurso]);
+  }, [isPreceptorRole, preceptorCursos, selectedCurso]);
 
   const handleSelectTurno = (filtro: TurnoFiltro) => {
     setTurnoFiltro(filtro);
@@ -179,20 +189,26 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
   // Cargar datos condicionalmente según el rol (Privacidad estricta para alumnos)
   useEffect(() => {
-    if (role !== "alumno") {
-      getCursos().then(setCursos);
-      getAlumnos().then(setAlumnos);
-    } else if (userProfile?.email) {
-      // Privacidad absoluta: el alumno solo obtiene su propio registro y nunca el de los demás
-      getAlumnos().then(als => {
-        const al = als.find(a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase());
-        if (al) {
-          setAlumnoRecord(al);
-          setAlumnos([al]);
-          cargarHistorialAlumno(al.id || al.dni);
-        }
-      });
-    }
+    const loadManagerData = () => {
+      if (role !== "alumno") {
+        getCursos().then(setCursos);
+        getAlumnos().then(setAlumnos);
+      } else if (userProfile?.email) {
+        // Privacidad absoluta: el alumno solo obtiene su propio registro y nunca el de los demás
+        getAlumnos().then(als => {
+          const al = als.find(a => (a.email || "").toLowerCase() === userProfile.email.toLowerCase());
+          if (al) {
+            setAlumnoRecord(al);
+            setAlumnos([al]);
+            cargarHistorialAlumno(al.id || al.dni);
+          }
+        });
+      }
+    };
+
+    loadManagerData();
+    window.addEventListener("escuelainfo:school-changed", loadManagerData);
+    return () => window.removeEventListener("escuelainfo:school-changed", loadManagerData);
   }, [role, userProfile]);
 
   const cargarHistorialAlumno = async (id: string) => {
@@ -247,10 +263,10 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
   // Cargar automáticamente al cambiar el curso o la fecha
   useEffect(() => {
-    if (role === "admin" || role === "directivo" || role === "preceptor") {
+    if (canManageGeneralAttendance) {
       cargarPlanillaJornada();
     }
-  }, [cargarPlanillaJornada, role]);
+  }, [cargarPlanillaJornada, canManageGeneralAttendance]);
 
   // Guardar asistencia diaria (Preceptor/Admin)
   const handleSaveJornada = async () => {
@@ -324,7 +340,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
       )}
 
       {/* VISTA 1: PRECEPTOR / ADMIN (Control General de Jornada) */}
-      {(role === "admin" || role === "directivo" || role === "preceptor") && (
+      {canManageGeneralAttendance && (
         <div className="card glass rounded-2xl border border-[var(--border)] p-5 sm:p-6 shadow-xs space-y-6">
           {/* Header con Título, Turno Escolar Activo y Selectores */}
           <div className="flex flex-col gap-4 border-b border-[var(--border)] pb-5">
@@ -369,7 +385,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
               {/* Tabs de Filtro de Turnos / Mis Cursos */}
               <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl">
-                {role === "preceptor" && preceptorCursos.length > 0 && (
+                {isPreceptorRole && preceptorCursos.length > 0 && (
                   <button
                     type="button"
                     onClick={() => handleSelectTurno("mis_cursos")}
@@ -498,7 +514,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                     <>
                       <optgroup label="Cursos Turno Mañana">
                         {cursosManana.map(c => {
-                          const isCoverage = role === "preceptor" && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
+                          const isCoverage = isPreceptorRole && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
                           return (
                             <option key={c.id} value={c.nombre}>
                               {c.nombre} {isCoverage ? "• Cobertura" : ""}
@@ -511,7 +527,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                     <>
                       <optgroup label="Cursos Turno Tarde">
                         {cursosTarde.map(c => {
-                          const isCoverage = role === "preceptor" && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
+                          const isCoverage = isPreceptorRole && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
                           return (
                             <option key={c.id} value={c.nombre}>
                               {c.nombre} {isCoverage ? "• Cobertura" : ""}
@@ -551,7 +567,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
                   {visibleCursos.map((c) => {
                     const isSelected = selectedCurso === c.nombre;
-                    const isCoverage = role === "preceptor" && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
+                    const isCoverage = isPreceptorRole && preceptorCursos.length > 0 && !preceptorCursos.includes(c.nombre);
                     return (
                       <button
                         key={c.id}

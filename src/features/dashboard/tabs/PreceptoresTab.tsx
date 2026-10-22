@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { 
   UserCheck, 
@@ -21,7 +21,7 @@ import {
   ArrowRight,
   Filter
 } from "lucide-react";
-import { UserProfile, Curso, updateUserProfile, logAction } from "@/lib/dataService";
+import { UserProfile, Curso, updateUserProfile, logAction, fromDbRol, parseUserCursos } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -56,6 +56,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
   const [isCourseAssignModalOpen, setIsCourseAssignModalOpen] = useState(false);
   const [savingCoursePreceptors, setSavingCoursePreceptors] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const isBackdropClickRef = useRef<boolean>(false);
 
   useEffect(() => {
     setMounted(true);
@@ -74,7 +75,10 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
 
   // Obtener listado de preceptores
   const preceptores = useMemo(() => {
-    return usuarios.filter(u => u.rol === "preceptor");
+    return usuarios.filter(u => {
+      const norm = fromDbRol(u.rol);
+      return norm === "preceptor" || norm === "preceptor_profesor";
+    });
   }, [usuarios]);
 
   // Mapa de cursos y qué preceptores los tienen a cargo
@@ -83,7 +87,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
     cursos.forEach(c => map.set(c.nombre, []));
 
     preceptores.forEach(p => {
-      (p.cursos || []).forEach(cName => {
+      parseUserCursos(p.cursos).forEach(cName => {
         const list = map.get(cName) || [];
         list.push(p);
         map.set(cName, list);
@@ -125,21 +129,22 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
   const filteredPreceptores = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return preceptores.filter(p => {
+      const pCourses = parseUserCursos(p.cursos);
       const matchesSearch = 
         (p.nombre || "").toLowerCase().includes(q) ||
         (p.email || "").toLowerCase().includes(q) ||
-        (p.cursos || []).some(c => c.toLowerCase().includes(q));
+        pCourses.some(c => c.toLowerCase().includes(q));
 
       if (!matchesSearch) return false;
 
       // Filtro de cobertura
-      const hasCourses = p.cursos && p.cursos.length > 0;
+      const hasCourses = pCourses.length > 0;
       if (coverageFilter === "con_cursos" && !hasCourses) return false;
       if (coverageFilter === "sin_cursos" && hasCourses) return false;
 
       // Filtro por curso específico
       if (selectedCourseFilter !== "todos") {
-        if (!p.cursos || !p.cursos.includes(selectedCourseFilter)) return false;
+        if (!pCourses.includes(selectedCourseFilter)) return false;
       }
 
       return true;
@@ -149,7 +154,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
   // Apertura de modal para asignar/gestionar cursos
   const handleOpenAssignModal = (preceptor: UserProfile) => {
     setEditingPreceptor(preceptor);
-    setSelectedCursos(preceptor.cursos ? [...preceptor.cursos] : []);
+    setSelectedCursos(parseUserCursos(preceptor.cursos));
     setIsModalOpen(true);
   };
 
@@ -206,7 +211,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
   const handleOpenCoursePreceptorModal = (cursoNombre: string) => {
     setSelectedCourseForModal(cursoNombre);
     const assignedIds = preceptores
-      .filter(p => (p.cursos || []).includes(cursoNombre))
+      .filter(p => parseUserCursos(p.cursos).includes(cursoNombre))
       .map(p => p.id!)
       .filter(Boolean);
     setSelectedPreceptorsForCourse(assignedIds);
@@ -229,7 +234,7 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
     try {
       const updates = preceptores.map(async (p) => {
         if (!p.id) return;
-        const currentCursos = p.cursos ? [...p.cursos] : [];
+        const currentCursos = parseUserCursos(p.cursos);
         const isSelected = selectedPreceptorsForCourse.includes(p.id);
         const hasCourse = currentCursos.includes(selectedCourseForModal);
 
@@ -563,8 +568,9 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
           </div>
         ) : (
           filteredPreceptores.map((p) => {
-            const assignedCourses = p.cursos || [];
+            const assignedCourses = parseUserCursos(p.cursos);
             const hasCourses = assignedCourses.length > 0;
+            const isDualRole = fromDbRol(p.rol) === "preceptor_profesor";
 
             return (
               <div
@@ -575,8 +581,12 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
                   {/* Encabezado de la tarjeta: Avatar, Info y Badge */}
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <UserAvatar name={p.nombre} email={p.email} size={50} showRing={true} />
-                    <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-xl bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] shadow-xs shrink-0">
-                      Preceptor Oficial
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-xl border shadow-xs shrink-0 ${
+                      isDualRole 
+                        ? "bg-purple-500/10 text-purple-400 border-purple-500/30" 
+                        : "bg-[var(--verde-bg)] text-[var(--verde)] border-[var(--verde-border)]"
+                    }`}>
+                      {isDualRole ? "Preceptor / Profesor" : "Preceptor Oficial"}
                     </span>
                   </div>
 
@@ -643,9 +653,11 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
                     <span>Gestionar Cursos</span>
                   </button>
                   <a
-                    href={`mailto:${p.email}?subject=Comunicación Institucional - Preceptoría Escuela 713`}
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.email)}&su=${encodeURIComponent("Comunicación Institucional - Preceptoría")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-2.5 rounded-xl border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg3)] transition-all cursor-pointer active:scale-95 shadow-xs"
-                    title={`Enviar correo a ${p.nombre}`}
+                    title={`Enviar Gmail a ${p.nombre}`}
                   >
                     <Mail size={15} />
                   </a>
@@ -659,12 +671,16 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       {/* MODAL DE ASIGNACIÓN DE CURSOS AL PRECEPTOR */}
       {mounted && isModalOpen && editingPreceptor && createPortal(
         <div 
-          className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
+          className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
+          onMouseDown={(e) => {
+            isBackdropClickRef.current = (e.target === e.currentTarget);
+          }}
           onClick={(e) => {
-            if (e.target === e.currentTarget && !saving) {
+            if (isBackdropClickRef.current && e.target === e.currentTarget && !saving) {
               setIsModalOpen(false);
               setEditingPreceptor(null);
             }
+            isBackdropClickRef.current = false;
           }}
         >
           <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 border-t sm:border border-[var(--border)] shadow-xl max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">
@@ -831,12 +847,16 @@ export const PreceptoresTab: React.FC<PreceptoresTabProps> = ({
       {/* MODAL DE ASIGNACIÓN DE PRECEPTORES A UN CURSO SELECCIONADO */}
       {mounted && isCourseAssignModalOpen && selectedCourseForModal && createPortal(
         <div 
-          className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
+          className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm transition-all duration-300 animate-fade-in"
+          onMouseDown={(e) => {
+            isBackdropClickRef.current = (e.target === e.currentTarget);
+          }}
           onClick={(e) => {
-            if (e.target === e.currentTarget && !savingCoursePreceptors) {
+            if (isBackdropClickRef.current && e.target === e.currentTarget && !savingCoursePreceptors) {
               setIsCourseAssignModalOpen(false);
               setSelectedCourseForModal(null);
             }
+            isBackdropClickRef.current = false;
           }}
         >
           <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 border-t sm:border border-[var(--border)] shadow-xl max-h-[90dvh] flex flex-col justify-between overflow-hidden my-0 sm:my-auto">

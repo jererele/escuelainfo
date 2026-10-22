@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Sparkles, Calendar, Clock, CheckCircle2, History, ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NOTES, APP_VERSION_HISTORY } from "@/lib/version";
 
@@ -10,6 +10,7 @@ interface VersionModalProps {
 }
 
 export default function VersionModal({ isOpen, onClose }: VersionModalProps) {
+  const isBackdropClickRef = useRef(false);
   const [activeTab, setActiveTab] = useState<"current" | "history">("current");
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({
     [APP_VERSION_HISTORY[0]?.version || ""]: true,
@@ -36,8 +37,14 @@ export default function VersionModal({ isOpen, onClose }: VersionModalProps) {
   return (
     <div
       className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+      onMouseDown={(e) => {
+        isBackdropClickRef.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (isBackdropClickRef.current && e.target === e.currentTarget) {
+          onClose();
+        }
+        isBackdropClickRef.current = false;
       }}
     >
       <div className="bg-[var(--bg)] w-full max-w-xl rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col max-h-[85vh]">

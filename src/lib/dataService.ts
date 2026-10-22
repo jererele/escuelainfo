@@ -1,5 +1,6 @@
 import { databases, appwriteClient, APPWRITE_DB_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, storage, account } from "./appwrite";
 import { ID, Query } from "appwrite";
+import { getSavedSchoolId, DEFAULT_SCHOOL_ID } from "./chubutSchools";
 
 // ─── Logger solo en desarrollo ───────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
@@ -9,6 +10,15 @@ const devLog = (ctx: string, err?: unknown) => {
     const safeError = err instanceof Error ? err.message : "Internal Error Masked";
     console.error(`[EscuelaInfo/${ctx}]`, safeError);
   }
+};
+
+// ─── Identificador de Escuela Activa (Multi-Tenant) ─────────────────────────
+export const getActiveSchoolId = (overrideSchoolId?: string): string => {
+  if (overrideSchoolId && overrideSchoolId.trim()) return overrideSchoolId.trim();
+  if (typeof window !== "undefined") {
+    return getSavedSchoolId() || DEFAULT_SCHOOL_ID;
+  }
+  return DEFAULT_SCHOOL_ID;
 };
 
 // ─── Sanitización reforzada ──────────────────────────────────────────────────
@@ -41,10 +51,11 @@ const DEFAULT_LIMIT = 200;
 const CACHE_KEY_PREFIX = "escuelainfo_cache_";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos (evita lecturas excesivas en Appwrite)
 
-const getCachedData = <T>(key: string): T | null => {
+const getCachedData = <T>(key: string, schoolId?: string): T | null => {
   if (typeof window === "undefined") return null;
   try {
-    const cached = sessionStorage.getItem(CACHE_KEY_PREFIX + key);
+    const sId = getActiveSchoolId(schoolId);
+    const cached = sessionStorage.getItem(`${CACHE_KEY_PREFIX}${sId}_${key}`);
     if (!cached) return null;
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp < CACHE_DURATION) {
@@ -56,18 +67,21 @@ const getCachedData = <T>(key: string): T | null => {
   return null;
 };
 
-const setCachedData = (key: string, data: any) => {
+const setCachedData = (key: string, data: any, schoolId?: string) => {
   if (typeof window === "undefined") return;
   try {
+    const sId = getActiveSchoolId(schoolId);
     sessionStorage.setItem(
-      CACHE_KEY_PREFIX + key,
+      `${CACHE_KEY_PREFIX}${sId}_${key}`,
       JSON.stringify({ data, timestamp: Date.now() })
     );
   } catch {}
 };
 
-export const clearCache = (key: string) => {
+export const clearCache = (key: string, schoolId?: string) => {
   if (typeof window === "undefined") return;
+  const sId = getActiveSchoolId(schoolId);
+  sessionStorage.removeItem(`${CACHE_KEY_PREFIX}${sId}_${key}`);
   sessionStorage.removeItem(CACHE_KEY_PREFIX + key);
 };
 
@@ -114,7 +128,9 @@ const ROL_MAP: Record<string, string> = {
   "admin": "admin",
   "profesor": "profesor",
   "preceptor": "preceptor",
-  "directivo": "directivo"
+  "directivo": "directivo",
+  "pp_p": "preceptor_profesor",
+  "preceptor_profesor": "preceptor_profesor"
 };
 const ROL_REVERSE: Record<string, string> = Object.fromEntries(Object.entries(ROL_MAP).map(([k, v]) => [v, k]));
 
@@ -132,6 +148,7 @@ export const toDbRol = (r: string): string => {
     case "directivo": return "d";
     case "preceptor": return "pp";
     case "profesor": return "p";
+    case "preceptor_profesor": case "profesor_preceptor": case "pp_p": return "pp_p";
     case "alumno": return "a";
     case "pendiente": return "pe";
     case "pendiente_admin": case "pe_ad": case "p_ad": return "pe_ad";
@@ -161,15 +178,15 @@ export const isPendingRole = (rol?: string | null): boolean => {
 export const isAuthorizedRole = (rol?: string | null): boolean => {
   if (!rol) return false;
   const clean = fromDbRol(rol).trim().toLowerCase();
-  return !isPendingRole(clean) && ["admin", "directivo", "preceptor", "profesor", "alumno"].includes(clean);
+  return !isPendingRole(clean) && ["admin", "directivo", "preceptor", "profesor", "alumno", "preceptor_profesor"].includes(clean);
 };
 
-export type UserRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno";
+export type UserRole = "admin" | "directivo" | "preceptor" | "profesor" | "alumno" | "preceptor_profesor";
 
 /**
  * Retorna los roles que un operador puede asignar según su propia jerarquía:
- * - Admin: puede asignar todos ("admin", "directivo", "preceptor", "profesor", "alumno")
- * - Directivo: puede asignar "preceptor", "profesor", "alumno"
+ * - Admin: puede asignar todos ("admin", "directivo", "preceptor", "profesor", "alumno", "preceptor_profesor")
+ * - Directivo: puede asignar "preceptor", "profesor", "alumno", "preceptor_profesor"
  * - Preceptor: puede asignar "profesor", "alumno"
  * - Profesor, Alumno o sin rol: ninguno ([])
  */
@@ -177,12 +194,12 @@ export const getAllowedAssignableRoles = (operatorRole?: string | null): UserRol
   if (!operatorRole) return [];
   const clean = fromDbRol(operatorRole).trim().toLowerCase();
   if (clean === "admin") {
-    return ["admin", "directivo", "preceptor", "profesor", "alumno"];
+    return ["admin", "directivo", "preceptor", "profesor", "alumno", "preceptor_profesor"];
   }
   if (clean === "directivo") {
-    return ["preceptor", "profesor", "alumno"];
+    return ["preceptor", "profesor", "alumno", "preceptor_profesor"];
   }
-  if (clean === "preceptor") {
+  if (clean === "preceptor" || clean === "preceptor_profesor") {
     return ["profesor", "alumno"];
   }
   return [];
@@ -191,8 +208,8 @@ export const getAllowedAssignableRoles = (operatorRole?: string | null): UserRol
 /**
  * Determina si un operador tiene jerarquía para modificar el rol de un usuario objetivo:
  * - Admin: puede modificar a cualquiera (excepto auto-degradar su propia cuenta de admin).
- * - Directivo: puede modificar a usuarios con rol preceptor, profesor o alumno (NO a otros directivos ni admins).
- * - Preceptor: puede modificar a usuarios con rol profesor o alumno (NO a otros preceptores, directivos ni admins).
+ * - Directivo: puede modificar a usuarios con rol preceptor, profesor, preceptor_profesor o alumno (NO a otros directivos ni admins).
+ * - Preceptor o Preceptor y Profesor: puede modificar a usuarios con rol profesor o alumno (NO a otros preceptores, directivos ni admins).
  * - Otros: no pueden modificar ningún rol.
  */
 export const canManageUserRole = (operatorRole?: string | null, targetRole?: string | null): boolean => {
@@ -204,11 +221,12 @@ export const canManageUserRole = (operatorRole?: string | null, targetRole?: str
   if (op === "directivo") {
     return tgt !== "admin" && tgt !== "directivo" && !tgt.includes("admin") && !tgt.includes("directivo");
   }
-  if (op === "preceptor") {
+  if (op === "preceptor" || op === "preceptor_profesor") {
     return (
       tgt !== "admin" &&
       tgt !== "directivo" &&
       tgt !== "preceptor" &&
+      tgt !== "preceptor_profesor" &&
       !tgt.includes("admin") &&
       !tgt.includes("directivo") &&
       !tgt.includes("preceptor")
@@ -550,6 +568,7 @@ export interface Ausencia {
   certFileId?: string;
   estado: "pendiente" | "aprobada" | "rechazada";
   fechaReg: string;
+  schoolId?: string;
 }
 
 export interface UserProfile {
@@ -562,6 +581,7 @@ export interface UserProfile {
   direccion?: string;
   nombrePendiente?: string;
   cursos?: string[];
+  schoolId?: string;
 }
 
 export const parseUserCursos = (val: any): string[] => {
@@ -581,6 +601,7 @@ export const parseUserCursos = (val: any): string[] => {
 export interface Curso {
   id?: string;
   nombre: string;
+  schoolId?: string;
 }
 
 export interface Profesor {
@@ -589,6 +610,7 @@ export interface Profesor {
   dni: string;
   materias: string[];
   email: string;
+  schoolId?: string;
 }
 
 export interface Horario {
@@ -598,6 +620,7 @@ export interface Horario {
   materia: string;
   profesor: string;
   curso: string;
+  schoolId?: string;
 }
 
 export interface Alumno {
@@ -606,6 +629,7 @@ export interface Alumno {
   dni: string;
   curso: string;
   email: string;
+  schoolId?: string;
 }
 
 export interface AsistenciaJornada {
@@ -615,6 +639,7 @@ export interface AsistenciaJornada {
   fecha: string;
   estado: "P" | "A" | "M" | "T" | "R" | "J"; // P=Presente, A=Ausente, M=Media Falta, T=Tarde, R=Retiro, J=Justificado
   preceptorId: string;
+  schoolId?: string;
 }
 
 export interface AsistenciaMateria {
@@ -626,6 +651,7 @@ export interface AsistenciaMateria {
   curso: string;
   estado: "P" | "A" | "T"; // P=Presente, A=Ausente, T=Tarde
   profesorId: string;
+  schoolId?: string;
 }
 
 export interface MesaExamen {
@@ -642,16 +668,22 @@ export interface MesaExamen {
   vocal2Nombre?: string;
   alumnosInscriptos: string[]; // Nombres o DNI/IDs de inscriptos
   estado: "borrador" | "confirmada" | "evaluada";
+  schoolId?: string;
 }
 
 // ─── HORARIOS ────────────────────────────────────────────────────────────────
-export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
+export const getHorarios = async (forceRefresh = false, schoolId?: string): Promise<Horario[]> => {
+  const sId = getActiveSchoolId(schoolId);
   if (!forceRefresh) {
-    const cached = getCachedData<Horario[]>("horarios");
+    const cached = getCachedData<Horario[]>("horarios", sId);
     if (cached && !cached.some(h => h.hora === "Hora a confirmar")) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, queries: [Query.limit(500)] });
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_HORARIOS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.limit(500)]
+    });
     const data = response.documents.map(doc => {
       // Map numeric day values to display strings
       let dayName = doc.dia;
@@ -667,17 +699,19 @@ export const getHorarios = async (forceRefresh = false): Promise<Horario[]> => {
         hora: fromDbHora(doc.hora ?? (doc as any).modulo ?? (doc as any).horario),
         materia: doc.materia || "Materia",
         profesor: doc.profesor || "Docente",
-        curso: doc.curso || "Curso"
+        curso: doc.curso || "Curso",
+        schoolId: doc.schoolId || sId
       };
     });
-    setCachedData("horarios", data);
+    setCachedData("horarios", data, sId);
     return data;
   } catch (err) { devLog("getHorarios", err); return []; }
 };
 
-export const saveHorario = async (h: Horario) => {
+export const saveHorario = async (h: Horario, schoolId?: string) => {
   await requireAuth();
-  clearCache("horarios");
+  const sId = h.schoolId || getActiveSchoolId(schoolId);
+  clearCache("horarios", sId);
   
   // Map day name to digit string for saving space in database
   let dayCode = h.dia;
@@ -690,20 +724,26 @@ export const saveHorario = async (h: Horario) => {
   // Convertir texto de hora a código numérico de módulo antes de guardar
   const horaCode = toDbHora(h.hora);
 
-  const res = await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: ID.unique(), data: {
-            dia: dayCode,
-            hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
-            materia: sanitize(h.materia, 100),
-            profesor: sanitize(h.profesor, 200),
-            curso: sanitize(h.curso, 50)
-          } });
+  const res = await databases.createDocument({
+    databaseId: APPWRITE_DB_ID,
+    collectionId: APPWRITE_HORARIOS_COLLECTION_ID,
+    documentId: ID.unique(),
+    data: {
+      dia: dayCode,
+      hora: horaCode,   // Appwrite recibe: 1, 2, 3... hasta 16
+      materia: sanitize(h.materia, 100),
+      profesor: sanitize(h.profesor, 200),
+      curso: sanitize(h.curso, 50),
+      schoolId: sId
+    }
+  });
   notifyRealtimeUpdate("horarios");
   return res;
 };
 
-export const deleteHorario = async (id: string) => {
+export const deleteHorario = async (id: string, schoolId?: string) => {
   await requireAuth();
-  clearCache("horarios");
+  clearCache("horarios", schoolId);
   const res = await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_HORARIOS_COLLECTION_ID, documentId: id });
   notifyRealtimeUpdate("horarios");
   return res;
@@ -743,6 +783,7 @@ export const subscribeToHorarios = (callback: (data: Horario[]) => void) => {
   };
   if (typeof window !== "undefined") {
     window.addEventListener("escuelainfo:horarios-updated", handleLocalUpdate);
+    window.addEventListener("escuelainfo:school-changed", handleLocalUpdate);
   }
 
   // Canal broadcast entre múltiples pestañas del mismo navegador
@@ -780,6 +821,7 @@ export const subscribeToHorarios = (callback: (data: Horario[]) => void) => {
     unsubscribe();
     if (typeof window !== "undefined") {
       window.removeEventListener("escuelainfo:horarios-updated", handleLocalUpdate);
+      window.removeEventListener("escuelainfo:school-changed", handleLocalUpdate);
       window.removeEventListener("focus", handleFocus);
     }
     if (bc) {
@@ -789,131 +831,192 @@ export const subscribeToHorarios = (callback: (data: Horario[]) => void) => {
 };
 
 // ─── ALUMNOS ─────────────────────────────────────────────────────────────────
-export const getAlumnos = async (forceRefresh = false): Promise<Alumno[]> => {
+export const getAlumnos = async (forceRefresh = false, schoolId?: string): Promise<Alumno[]> => {
+  const sId = getActiveSchoolId(schoolId);
   if (!forceRefresh) {
-    const cached = getCachedData<Alumno[]>("alumnos");
+    const cached = getCachedData<Alumno[]>("alumnos", sId);
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
+    });
     const data = response.documents.map(doc => ({
-      id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email
+      id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email, schoolId: doc.schoolId || sId
     }));
-    setCachedData("alumnos", data);
+    setCachedData("alumnos", data, sId);
     return data;
   } catch (err) { devLog("getAlumnos", err); return []; }
 };
 
-export const saveAlumno = async (a: Alumno) => {
+export const saveAlumno = async (a: Alumno, schoolId?: string) => {
   await requireAuth();
-  clearCache("alumnos");
-  return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: ID.unique(), data: {
-            nombre: sanitize(a.nombre, 200),
-            dni: sanitize(a.dni, 20),
-            curso: sanitize(a.curso, 100),
-            email: sanitize(a.email, 200),
-          } });
+  const sId = a.schoolId || getActiveSchoolId(schoolId);
+  clearCache("alumnos", sId);
+  return await databases.createDocument({
+    databaseId: APPWRITE_DB_ID,
+    collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+    documentId: ID.unique(),
+    data: {
+      nombre: sanitize(a.nombre, 200),
+      dni: sanitize(a.dni, 20),
+      curso: sanitize(a.curso, 100),
+      email: sanitize(a.email, 200),
+      schoolId: sId,
+    }
+  });
 };
 
-export const deleteAlumno = async (id: string) => {
+export const deleteAlumno = async (id: string, schoolId?: string) => {
   await requireAuth();
-  clearCache("alumnos");
+  clearCache("alumnos", schoolId);
   return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: id });
 };
 
-export const updateAlumno = async (id: string, data: Partial<Alumno>) => {
+export const updateAlumno = async (id: string, data: Partial<Alumno>, schoolId?: string) => {
   await requireAuth();
-  clearCache("alumnos");
+  clearCache("alumnos", schoolId);
   const updateData = { ...data };
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.dni) updateData.dni = sanitize(updateData.dni, 20);
   if (updateData.curso) updateData.curso = sanitize(updateData.curso, 100);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
+  if (updateData.schoolId) updateData.schoolId = sanitize(updateData.schoolId, 100);
   return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: id, data: updateData });
 };
 
-export const checkAlumnoDNI = async (dni: string): Promise<boolean> => {
+export const checkAlumnoDNI = async (dni: string, schoolId?: string): Promise<boolean> => {
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("dni", sanitize(dni, 20))] });
+    const sId = getActiveSchoolId(schoolId);
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.equal("dni", sanitize(dni, 20))]
+    });
     return response.documents.length > 0;
   } catch { return false; }
 };
 
 // 🛡️ SECURITY AUDIT REF: Prevención de Descarga Masiva (Information Leakage)
 // Consulta únicamente el registro del alumno solicitado sin descargar todo el padrón escolar al navegador.
-export const getAlumnoByEmail = async (email: string): Promise<Alumno | null> => {
+export const getAlumnoByEmail = async (email: string, schoolId?: string): Promise<Alumno | null> => {
   if (!email || !email.trim()) return null;
   try {
+    const sId = getActiveSchoolId(schoolId);
     const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
+      queries: [Query.equal("email", sanitize(email, 200)), Query.equal("schoolId", sId), Query.limit(1)]
+    });
+    if (response.documents.length > 0) {
+      const doc = response.documents[0];
+      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email, schoolId: doc.schoolId || sId };
+    }
+    // Fallback sin filtrar escuela si aún no tenía schoolId asignado
+    const fallbackResponse = await databases.listDocuments({
       databaseId: APPWRITE_DB_ID,
       collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
       queries: [Query.equal("email", sanitize(email, 200)), Query.limit(1)]
     });
-    if (response.documents.length > 0) {
-      const doc = response.documents[0];
-      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email };
+    if (fallbackResponse.documents.length > 0) {
+      const doc = fallbackResponse.documents[0];
+      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, curso: doc.curso, email: doc.email, schoolId: doc.schoolId || DEFAULT_SCHOOL_ID };
     }
     return null;
   } catch { return null; }
 };
 
-export const checkProfesorDNI = async (dni: string): Promise<boolean> => {
+export const checkProfesorDNI = async (dni: string, schoolId?: string): Promise<boolean> => {
   if (!dni || !dni.trim()) return false;
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("dni", sanitize(dni, 20))] });
+    const sId = getActiveSchoolId(schoolId);
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_PROFS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.equal("dni", sanitize(dni, 20))]
+    });
     return response.documents.length > 0;
   } catch { return false; }
 };
 
 // 🛡️ SECURITY AUDIT REF: Prevención de Descarga Masiva (Information Leakage)
 // En lugar de obtener todos los profesores y filtrar en cliente, consultamos 1 solo registro.
-export const getProfesorByEmail = async (email: string): Promise<Profesor | null> => {
+export const getProfesorByEmail = async (email: string, schoolId?: string): Promise<Profesor | null> => {
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("email", sanitize(email, 200)), Query.limit(1)] });
+    const sId = getActiveSchoolId(schoolId);
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_PROFS_COLLECTION_ID,
+      queries: [Query.equal("email", sanitize(email, 200)), Query.equal("schoolId", sId), Query.limit(1)]
+    });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
-      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email };
+      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email, schoolId: doc.schoolId || sId };
+    }
+    // Fallback sin filtro estricto de escuela
+    const fallbackResponse = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_PROFS_COLLECTION_ID,
+      queries: [Query.equal("email", sanitize(email, 200)), Query.limit(1)]
+    });
+    if (fallbackResponse.documents.length > 0) {
+      const doc = fallbackResponse.documents[0];
+      return { id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email, schoolId: doc.schoolId || DEFAULT_SCHOOL_ID };
     }
     return null;
   } catch { return null; }
 };
 
 // ─── PROFESORES ──────────────────────────────────────────────────────────────
-export const getProfesores = async (forceRefresh = false): Promise<Profesor[]> => {
+export const getProfesores = async (forceRefresh = false, schoolId?: string): Promise<Profesor[]> => {
+  const sId = getActiveSchoolId(schoolId);
   if (!forceRefresh) {
-    const cached = getCachedData<Profesor[]>("profesores");
+    const cached = getCachedData<Profesor[]>("profesores", sId);
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_PROFS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
+    });
     const data = response.documents.map(doc => ({
-      id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email
+      id: doc.$id, nombre: doc.nombre, dni: doc.dni, materias: doc.materias, email: doc.email, schoolId: doc.schoolId || sId
     }));
-    setCachedData("profesores", data);
+    setCachedData("profesores", data, sId);
     return data;
   } catch (err) { devLog("getProfesores", err); return []; }
 };
 
-export const saveProfesor = async (p: Profesor) => {
+export const saveProfesor = async (p: Profesor, schoolId?: string) => {
   await requireAuth();
-  clearCache("profesores");
-  return await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: ID.unique(), data: {
-            nombre: sanitize(p.nombre, 200),
-            dni: sanitize(p.dni, 20),
-            materias: p.materias.map(m => sanitize(m, 100)),
-            email: sanitize(p.email, 200),
-          } });
+  const sId = p.schoolId || getActiveSchoolId(schoolId);
+  clearCache("profesores", sId);
+  return await databases.createDocument({
+    databaseId: APPWRITE_DB_ID,
+    collectionId: APPWRITE_PROFS_COLLECTION_ID,
+    documentId: ID.unique(),
+    data: {
+      nombre: sanitize(p.nombre, 200),
+      dni: sanitize(p.dni, 20),
+      materias: p.materias.map(m => sanitize(m, 100)),
+      email: sanitize(p.email, 200),
+      schoolId: sId,
+    }
+  });
 };
 
-export const deleteProfesor = async (id: string) => {
+export const deleteProfesor = async (id: string, schoolId?: string) => {
   await requireAuth();
-  clearCache("profesores");
+  clearCache("profesores", schoolId);
   return await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: id });
 };
 
-export const updateProfesor = async (id: string, data: Partial<Profesor>) => {
+export const updateProfesor = async (id: string, data: Partial<Profesor>, schoolId?: string) => {
   await requireAuth();
-  clearCache("profesores");
+  clearCache("profesores", schoolId);
   const updateData = { ...data };
   if (updateData.materias) {
     updateData.materias = updateData.materias.map(m => sanitize(m, 100));
@@ -921,33 +1024,46 @@ export const updateProfesor = async (id: string, data: Partial<Profesor>) => {
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.dni) updateData.dni = sanitize(updateData.dni, 20);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
+  if (updateData.schoolId) updateData.schoolId = sanitize(updateData.schoolId, 100);
   return await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, documentId: id, data: updateData });
 };
 
 // ─── AUDITORÍA ───────────────────────────────────────────────────────────────
-export const logAction = async (usuarioEmail: string, accion: string, detalles: string) => {
-  clearCache("logs");
+export const logAction = async (usuarioEmail: string, accion: string, detalles: string, schoolId?: string) => {
+  const sId = getActiveSchoolId(schoolId);
+  clearCache("logs", sId);
   try {
     // Comprimir acción a código compacto antes de guardar en Appwrite
     const accionCode = toDbAccion(accion);
-    await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_LOGS_COLLECTION_ID, documentId: ID.unique(), data: {
-                usuarioEmail: sanitize(usuarioEmail, 200),
-                accion: sanitize(accionCode, 6),
-                detalles: sanitize(detalles, 500),
-                fecha: new Date().toISOString()
-              } });
+    await databases.createDocument({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_LOGS_COLLECTION_ID,
+      documentId: ID.unique(),
+      data: {
+        usuarioEmail: sanitize(usuarioEmail, 200),
+        accion: sanitize(accionCode, 6),
+        detalles: sanitize(detalles, 500),
+        fecha: new Date().toISOString(),
+        schoolId: sId,
+      }
+    });
   } catch (err) { devLog("logAction", err); }
 };
 
-export const getLogs = async (forceRefresh = false) => {
+export const getLogs = async (forceRefresh = false, schoolId?: string) => {
+  const sId = getActiveSchoolId(schoolId);
   if (!forceRefresh) {
-    const cached = getCachedData<any[]>("logs");
+    const cached = getCachedData<any[]>("logs", sId);
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_LOGS_COLLECTION_ID, queries: [Query.orderDesc("fecha"), Query.limit(100)] });
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_LOGS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.orderDesc("fecha"), Query.limit(100)]
+    });
     const data = response.documents;
-    setCachedData("logs", data);
+    setCachedData("logs", data, sId);
     return data;
   } catch (err) { devLog("getLogs", err); return []; }
 };
@@ -962,57 +1078,68 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
         ...doc, 
         id: doc.$id, 
         rol: fromDbRol(doc.rol),
-        cursos: parseUserCursos(doc.cursos)
+        cursos: parseUserCursos(doc.cursos),
+        schoolId: doc.schoolId || DEFAULT_SCHOOL_ID
       } as unknown as UserProfile;
     }
     return null;
   } catch (err) { devLog("getUserProfile", err); return null; }
 };
 
-export const getUserProfileByEmail = async (email: string): Promise<UserProfile | null> => {
+export const getUserProfileByEmail = async (email: string, schoolId?: string): Promise<UserProfile | null> => {
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.equal("email", sanitize(email, 200))] });
+    const queries = [Query.equal("email", sanitize(email, 200))];
+    if (schoolId) queries.push(Query.equal("schoolId", schoolId));
+    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries });
     if (response.documents.length > 0) {
       const doc = response.documents[0];
       return { 
         ...doc, 
         id: doc.$id, 
         rol: fromDbRol(doc.rol),
-        cursos: parseUserCursos(doc.cursos)
+        cursos: parseUserCursos(doc.cursos),
+        schoolId: doc.schoolId || DEFAULT_SCHOOL_ID
       } as unknown as UserProfile;
     }
     return null;
   } catch { return null; }
 };
 
-export const getUsuarios = async (forceRefresh = false): Promise<UserProfile[]> => {
+export const getUsuarios = async (forceRefresh = false, schoolId?: string): Promise<UserProfile[]> => {
+  const sId = getActiveSchoolId(schoolId);
   if (!forceRefresh) {
-    const cached = getCachedData<UserProfile[]>("usuarios");
+    const cached = getCachedData<UserProfile[]>("usuarios", sId);
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_USERS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
+    });
     const data = response.documents.map(doc => ({
       id: doc.$id, 
       uid: doc.uid, 
       email: doc.email, 
       nombre: doc.nombre, 
       rol: fromDbRol(doc.rol),
-      cursos: parseUserCursos(doc.cursos)
+      cursos: parseUserCursos(doc.cursos),
+      schoolId: doc.schoolId || sId
     })) as unknown as UserProfile[];
-    setCachedData("usuarios", data);
+    setCachedData("usuarios", data, sId);
     return data;
   } catch (err) { devLog("getUsuarios", err); return []; }
 };
 
-export const updateUserProfile = async (id: string, data: Partial<UserProfile>) => {
+export const updateUserProfile = async (id: string, data: Partial<UserProfile>, schoolId?: string) => {
   await requireAuth();
-  clearCache("usuarios");
+  clearCache("usuarios", schoolId);
   const updateData: any = { ...data };
   if (updateData.rol) updateData.rol = toDbRol(updateData.rol);
   if (updateData.nombre) updateData.nombre = sanitize(updateData.nombre, 200);
   if (updateData.email) updateData.email = sanitize(updateData.email, 200);
   if (updateData.uid) updateData.uid = sanitize(updateData.uid, 50);
+  if (updateData.schoolId) updateData.schoolId = sanitize(updateData.schoolId, 100);
   if (updateData.nombrePendiente !== undefined) {
     updateData.nombrePendiente = updateData.nombrePendiente ? sanitize(updateData.nombrePendiente, 200) : "";
   }
@@ -1023,7 +1150,8 @@ export const updateUserProfile = async (id: string, data: Partial<UserProfile>) 
 };
 
 export const syncUserEmailChange = async (oldEmail: string, newEmail: string, rol: string) => {
-  if (rol === "profesor") {
+  const normRol = fromDbRol(rol);
+  if (normRol === "profesor" || normRol === "preceptor_profesor") {
     try {
       const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_PROFS_COLLECTION_ID, queries: [Query.equal("email", sanitize(oldEmail, 200))] });
       for (const doc of response.documents) {
@@ -1035,7 +1163,7 @@ export const syncUserEmailChange = async (oldEmail: string, newEmail: string, ro
     }
   }
 
-  if (rol === "alumno") {
+  if (normRol === "alumno") {
     try {
       const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("email", sanitize(oldEmail, 200))] });
       for (const doc of response.documents) {
@@ -1185,16 +1313,18 @@ export const changeUserRoleApi = async (
   }
 };
 
-export const createUserProfile = async (profile: UserProfile) => {
+export const createUserProfile = async (profile: UserProfile, schoolId?: string) => {
   await requireAuth();
-  clearCache("usuarios");
+  const sId = profile.schoolId || getActiveSchoolId(schoolId);
+  clearCache("usuarios", sId);
   try {
     const dataToSave: any = { 
       uid: sanitize(profile.uid, 50),
       nombre: sanitize(profile.nombre, 200),
       email: sanitize(profile.email, 200),
       rol: toDbRol(profile.rol),
-      cursos: Array.isArray(profile.cursos) ? JSON.stringify(profile.cursos) : "[]"
+      cursos: Array.isArray(profile.cursos) ? JSON.stringify(profile.cursos) : "[]",
+      schoolId: sId,
     };
     await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_USERS_COLLECTION_ID, documentId: ID.unique(), data: dataToSave });
   } catch (err) { devLog("createUserProfile", err); throw err; }
@@ -1214,7 +1344,6 @@ export const promoteUserToRole = async (
     throw new Error("SECURITY_BLOCK: Unauthenticated role manipulation attempt.");
   }
 
-  clearCache("usuarios");
   const cleanEmail = email.toLowerCase().trim();
 
   // Si se promueve a Administrador, es MANDATORIO validar con la API del servidor y el OTP del Administrador Principal
@@ -1223,27 +1352,31 @@ export const promoteUserToRole = async (
     if (!res.success) {
       throw new Error(res.error || "No se pudo verificar el código de autorización de Administrador.");
     }
+    clearCache("usuarios");
     return;
   }
 
   // 1. Check if user profile already exists
   const existingProfile = await getUserProfileByEmail(cleanEmail);
+  const targetSchoolId = existingProfile?.schoolId || getActiveSchoolId();
+  clearCache("usuarios", targetSchoolId);
   if (existingProfile?.id) {
-    await updateUserProfile(existingProfile.id, { rol });
+    await updateUserProfile(existingProfile.id, { rol }, targetSchoolId);
   } else {
     await createUserProfile({
       uid: "PENDING_" + ID.unique(),
       email: cleanEmail,
       nombre: "Pendiente",
-      rol
-    });
+      rol,
+      schoolId: targetSchoolId
+    }, targetSchoolId);
   }
 
   // 2. If promoted to a non-student role, remove from student list
   if (rol !== "alumno" && rol !== "pendiente_alumno") {
-    clearCache("alumnos");
+    clearCache("alumnos", targetSchoolId);
     try {
-      const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("email", cleanEmail)] });
+      const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, queries: [Query.equal("email", cleanEmail), Query.equal("schoolId", targetSchoolId)] });
       for (const doc of response.documents) {
         await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ALUMNOS_COLLECTION_ID, documentId: doc.$id });
       }
@@ -1271,9 +1404,10 @@ export const calculateAbsenceDays = (inicioStr: string, finStr?: string): number
   return Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
 
-export const getAusencias = async (bypassCache = false): Promise<Ausencia[]> => {
+export const getAusencias = async (bypassCache = false, schoolId?: string): Promise<Ausencia[]> => {
+  const sId = getActiveSchoolId(schoolId);
   if (!bypassCache) {
-    const cached = getCachedData<Ausencia[]>("ausencias_list");
+    const cached = getCachedData<Ausencia[]>("ausencias_list", sId);
     if (cached) return cached;
   }
   try {
@@ -1281,6 +1415,7 @@ export const getAusencias = async (bypassCache = false): Promise<Ausencia[]> => 
       databaseId: APPWRITE_DB_ID,
       collectionId: APPWRITE_COLLECTION_ID,
       queries: [
+        Query.equal("schoolId", sId),
         Query.orderDesc("inicio"),
         Query.limit(250)
       ]
@@ -1297,9 +1432,10 @@ export const getAusencias = async (bypassCache = false): Promise<Ausencia[]> => 
       cert: doc.cert,
       certFileId: doc.certFileId,
       estado: fromDbEstado(doc.estado),
-      fechaReg: doc.fechaReg
+      fechaReg: doc.fechaReg,
+      schoolId: doc.schoolId || sId,
     })) as Ausencia[];
-    setCachedData("ausencias_list", list);
+    setCachedData("ausencias_list", list, sId);
     return list;
   } catch (err) {
     devLog("getAusencias", err);
@@ -1307,26 +1443,33 @@ export const getAusencias = async (bypassCache = false): Promise<Ausencia[]> => 
   }
 };
 
-export const saveAusencia = async (ausencia: Ausencia) => {
+export const saveAusencia = async (ausencia: Ausencia, schoolId?: string) => {
   await requireAuth();
+  const sId = ausencia.schoolId || getActiveSchoolId(schoolId);
   try {
-    clearCache("ausencias_list");
-    const response = await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: ID.unique(), data: {
-                profId: String(ausencia.profId),
-                profNombre: sanitize(ausencia.profNombre, 200),
-                tipo: sanitize(ausencia.tipo, 80),
-                inicio: ausencia.inicio,
-                fin: ausencia.fin || ausencia.inicio,
-                materias: ausencia.materias.map(m => sanitize(m, 100)),
-                motivo: sanitize(ausencia.motivo, 500),
-                cert: ausencia.cert,
-                certFileId: ausencia.certFileId || "",
-                estado: toDbEstado(ausencia.estado),
-                fechaReg: new Date().toISOString()
-              } });
+    clearCache("ausencias_list", sId);
+    const response = await databases.createDocument({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_COLLECTION_ID,
+      documentId: ID.unique(),
+      data: {
+        profId: String(ausencia.profId),
+        profNombre: sanitize(ausencia.profNombre, 200),
+        tipo: sanitize(ausencia.tipo, 80),
+        inicio: ausencia.inicio,
+        fin: ausencia.fin || ausencia.inicio,
+        materias: ausencia.materias.map(m => sanitize(m, 100)),
+        motivo: sanitize(ausencia.motivo, 500),
+        cert: ausencia.cert,
+        certFileId: ausencia.certFileId || "",
+        estado: toDbEstado(ausencia.estado),
+        fechaReg: new Date().toISOString(),
+        schoolId: sId,
+      }
+    });
     notifyRealtimeUpdate("ausencias");
 
-    // Notificación en tiempo real para la comunidad educativa (Directivos, Preceptores, Alumnos)
+    // Notificación en tiempo real para la comunidad educativa de esta escuela
     saveNotificacion({
       tipo: "inasistencia_docente",
       titulo: `Aviso de Inasistencia: ${ausencia.profNombre}`,
@@ -1340,7 +1483,7 @@ export const saveAusencia = async (ausencia: Ausencia) => {
         fin: ausencia.fin || ausencia.inicio,
         materias: ausencia.materias,
       }
-    }).catch(() => {});
+    }, sId).catch(() => {});
 
     return response.$id;
   } catch (err) { devLog("saveAusencia", err); throw err; }
@@ -1352,10 +1495,12 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
 
   const fetchAll = async () => {
     try {
+      const sId = getActiveSchoolId();
       const response = await databases.listDocuments({
         databaseId: APPWRITE_DB_ID,
         collectionId: APPWRITE_COLLECTION_ID,
         queries: [
+          Query.equal("schoolId", sId),
           Query.orderDesc("inicio"),
           Query.limit(300)
         ]
@@ -1373,11 +1518,12 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
         cert: doc.cert,
         certFileId: doc.certFileId,
         estado: fromDbEstado(doc.estado),
-        fechaReg: doc.fechaReg
+        fechaReg: doc.fechaReg,
+        schoolId: doc.schoolId || sId,
       })) as Ausencia[];
 
       if (isSubscribed) {
-        setCachedData("ausencias_list", ausencias);
+        setCachedData("ausencias_list", ausencias, sId);
         callback(ausencias);
       }
     } catch (err) {
@@ -1398,12 +1544,13 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
     }
   );
 
-  // Escucha de eventos locales en la misma pestaña
+  // Escucha de eventos locales en la misma pestaña y cambio de escuela activa
   const handleLocalUpdate = () => {
     if (isSubscribed) fetchAll();
   };
   if (typeof window !== "undefined") {
     window.addEventListener("escuelainfo:ausencias-updated", handleLocalUpdate);
+    window.addEventListener("escuelainfo:school-changed", handleLocalUpdate);
   }
 
   // Canal broadcast entre múltiples pestañas del mismo navegador
@@ -1441,6 +1588,7 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
     unsubscribe();
     if (typeof window !== "undefined") {
       window.removeEventListener("escuelainfo:ausencias-updated", handleLocalUpdate);
+      window.removeEventListener("escuelainfo:school-changed", handleLocalUpdate);
       window.removeEventListener("focus", handleFocus);
     }
     if (bc) {
@@ -1456,7 +1604,16 @@ export const subscribeToMesasExamen = (callback: (data: MesaExamen[]) => void) =
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_MESAS_EXAMEN_COLLECTION_ID}.documents`,
     () => fetchAll()
   );
-  return () => unsubscribe();
+  const handleSchool = () => fetchAll();
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:school-changed", handleSchool);
+  }
+  return () => {
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:school-changed", handleSchool);
+    }
+  };
 };
 
 export const subscribeToUsuarios = (callback: (data: UserProfile[]) => void) => {
@@ -1466,7 +1623,16 @@ export const subscribeToUsuarios = (callback: (data: UserProfile[]) => void) => 
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_USERS_COLLECTION_ID}.documents`,
     () => fetchAll()
   );
-  return () => unsubscribe();
+  const handleSchool = () => fetchAll();
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:school-changed", handleSchool);
+  }
+  return () => {
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:school-changed", handleSchool);
+    }
+  };
 };
 
 export const subscribeToAlumnos = (callback: (data: Alumno[]) => void) => {
@@ -1476,7 +1642,16 @@ export const subscribeToAlumnos = (callback: (data: Alumno[]) => void) => {
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_ALUMNOS_COLLECTION_ID}.documents`,
     () => fetchAll()
   );
-  return () => unsubscribe();
+  const handleSchool = () => fetchAll();
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:school-changed", handleSchool);
+  }
+  return () => {
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:school-changed", handleSchool);
+    }
+  };
 };
 
 export const subscribeToProfesores = (callback: (data: Profesor[]) => void) => {
@@ -1486,7 +1661,16 @@ export const subscribeToProfesores = (callback: (data: Profesor[]) => void) => {
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_PROFS_COLLECTION_ID}.documents`,
     () => fetchAll()
   );
-  return () => unsubscribe();
+  const handleSchool = () => fetchAll();
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:school-changed", handleSchool);
+  }
+  return () => {
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:school-changed", handleSchool);
+    }
+  };
 };
 
 export const subscribeToCursos = (callback: (data: Curso[]) => void) => {
@@ -1496,10 +1680,19 @@ export const subscribeToCursos = (callback: (data: Curso[]) => void) => {
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_CURSOS_COLLECTION_ID}.documents`,
     () => fetchAll()
   );
-  return () => unsubscribe();
+  const handleSchool = () => fetchAll();
+  if (typeof window !== "undefined") {
+    window.addEventListener("escuelainfo:school-changed", handleSchool);
+  }
+  return () => {
+    unsubscribe();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("escuelainfo:school-changed", handleSchool);
+    }
+  };
 };
 
-export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "aprobada" | "rechazada") => {
+export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "aprobada" | "rechazada", schoolId?: string) => {
   // 🛡️ SECURITY AUDIT REF: Broken Access Control (Manipulación de Estado)
   try {
     const session = await account.get();
@@ -1509,13 +1702,13 @@ export const updateAusenciaStatus = async (id: string, estado: "pendiente" | "ap
   }
 
   try {
-    clearCache("ausencias_list");
+    clearCache("ausencias_list", schoolId);
     await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id, data: { estado: toDbEstado(estado) } });
     notifyRealtimeUpdate("ausencias");
   } catch (err) { devLog("updateAusenciaStatus", err); throw err; }
 };
 
-export const deleteAusencia = async (id: string) => {
+export const deleteAusencia = async (id: string, schoolId?: string) => {
   // 🛡️ SECURITY AUDIT REF: Broken Access Control (Borrados no autorizados)
   try {
     const session = await account.get();
@@ -1525,7 +1718,7 @@ export const deleteAusencia = async (id: string) => {
   }
 
   try {
-    clearCache("ausencias_list");
+    clearCache("ausencias_list", schoolId);
     const res = await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_COLLECTION_ID, documentId: id });
     notifyRealtimeUpdate("ausencias");
     return res;
@@ -1533,30 +1726,45 @@ export const deleteAusencia = async (id: string) => {
 };
 
 // ─── CURSOS ──────────────────────────────────────────────────────────────────
-export const getCursos = async (forceRefresh = false): Promise<Curso[]> => {
+export const getCursos = async (forceRefresh = false, schoolId?: string): Promise<Curso[]> => {
+  const sId = getActiveSchoolId(schoolId);
   if (!forceRefresh) {
-    const cached = getCachedData<Curso[]>("cursos");
+    const cached = getCachedData<Curso[]>("cursos", sId);
     if (cached) return cached;
   }
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, queries: [Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)] });
-    const data = response.documents.map(doc => ({ id: doc.$id, nombre: doc.nombre })) as Curso[];
-    setCachedData("cursos", data);
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_CURSOS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.orderAsc("nombre"), Query.limit(DEFAULT_LIMIT)]
+    });
+    const data = response.documents.map(doc => ({ id: doc.$id, nombre: doc.nombre, schoolId: doc.schoolId || sId })) as Curso[];
+    setCachedData("cursos", data, sId);
     return data;
   } catch (err) { devLog("getCursos", err); return []; }
 };
 
-export const saveCurso = async (curso: Omit<Curso, "id">) => {
+export const saveCurso = async (curso: Omit<Curso, "id"> & { schoolId?: string }, schoolId?: string) => {
   await requireAuth();
-  clearCache("cursos");
+  const sId = curso.schoolId || getActiveSchoolId(schoolId);
+  clearCache("cursos", sId);
   try {
-    await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, documentId: ID.unique(), data: { nombre: sanitize(curso.nombre, 100) } });
+    await databases.createDocument({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_CURSOS_COLLECTION_ID,
+      documentId: ID.unique(),
+      data: {
+        nombre: sanitize(curso.nombre, 100),
+        schoolId: sId,
+      }
+    });
   } catch (err) { devLog("saveCurso", err); throw err; }
 };
 
-export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterior?: string) => {
+export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterior?: string, schoolId?: string) => {
   await requireAuth();
-  clearCache("cursos");
+  const sId = getActiveSchoolId(schoolId);
+  clearCache("cursos", sId);
   const cleanNuevo = sanitize(nuevoNombre, 100);
   try {
     await databases.updateDocument({
@@ -1566,7 +1774,7 @@ export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterio
       data: { nombre: cleanNuevo }
     });
 
-    // Cascada: si cambió el nombre, sincronizar en alumnos, horarios y usuarios (preceptores)
+    // Cascada dentro de la misma escuela: si cambió el nombre, sincronizar en alumnos, horarios y usuarios (preceptores)
     if (nombreAnterior && nombreAnterior.trim() !== cleanNuevo) {
       const cleanAnterior = nombreAnterior.trim();
 
@@ -1575,9 +1783,9 @@ export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterio
         const als = await databases.listDocuments({
           databaseId: APPWRITE_DB_ID,
           collectionId: APPWRITE_ALUMNOS_COLLECTION_ID,
-          queries: [Query.equal("curso", cleanAnterior), Query.limit(DEFAULT_LIMIT)]
+          queries: [Query.equal("schoolId", sId), Query.equal("curso", cleanAnterior), Query.limit(DEFAULT_LIMIT)]
         });
-        clearCache("alumnos");
+        clearCache("alumnos", sId);
         for (const doc of als.documents) {
           await databases.updateDocument({
             databaseId: APPWRITE_DB_ID,
@@ -1595,9 +1803,9 @@ export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterio
         const hrs = await databases.listDocuments({
           databaseId: APPWRITE_DB_ID,
           collectionId: APPWRITE_HORARIOS_COLLECTION_ID,
-          queries: [Query.equal("curso", cleanAnterior), Query.limit(DEFAULT_LIMIT)]
+          queries: [Query.equal("schoolId", sId), Query.equal("curso", cleanAnterior), Query.limit(DEFAULT_LIMIT)]
         });
-        clearCache("horarios");
+        clearCache("horarios", sId);
         for (const doc of hrs.documents) {
           await databases.updateDocument({
             databaseId: APPWRITE_DB_ID,
@@ -1615,9 +1823,9 @@ export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterio
         const users = await databases.listDocuments({
           databaseId: APPWRITE_DB_ID,
           collectionId: APPWRITE_USERS_COLLECTION_ID,
-          queries: [Query.limit(200)]
+          queries: [Query.equal("schoolId", sId), Query.limit(200)]
         });
-        clearCache("usuarios");
+        clearCache("usuarios", sId);
         for (const doc of users.documents) {
           const userCursos = parseUserCursos(doc.cursos);
           if (userCursos.includes(cleanAnterior)) {
@@ -1640,17 +1848,22 @@ export const updateCurso = async (id: string, nuevoNombre: string, nombreAnterio
   }
 };
 
-export const deleteCurso = async (id: string) => {
+export const deleteCurso = async (id: string, schoolId?: string) => {
   await requireAuth();
-  clearCache("cursos");
+  clearCache("cursos", schoolId);
   try {
     await databases.deleteDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, documentId: id });
   } catch (err) { devLog("deleteCurso", err); throw err; }
 };
 
-export const checkCursoExists = async (nombre: string): Promise<boolean> => {
+export const checkCursoExists = async (nombre: string, schoolId?: string): Promise<boolean> => {
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_CURSOS_COLLECTION_ID, queries: [Query.equal("nombre", sanitize(nombre, 100))] });
+    const sId = getActiveSchoolId(schoolId);
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_CURSOS_COLLECTION_ID,
+      queries: [Query.equal("schoolId", sId), Query.equal("nombre", sanitize(nombre, 100))]
+    });
     return response.documents.length > 0;
   } catch { return false; }
 };
@@ -1732,48 +1945,45 @@ export const migrateToCompactFormat = async (): Promise<MigrationResult> => {
 };
 
 // ─── LOCALSTORAGE HELPERS PARA FALLBACK ──────────────────────────────────────
-const getLocalStorageData = <T>(key: string, defaultVal: T): T => {
+const getLocalStorageData = <T>(key: string, defaultVal: T, schoolId?: string): T => {
   if (typeof window === "undefined") return defaultVal;
   try {
-    const val = localStorage.getItem("escuelainfo_db_" + key);
-    return val ? JSON.parse(val) : defaultVal;
+    const sId = getActiveSchoolId(schoolId);
+    const val = localStorage.getItem(`escuelainfo_db_${sId}_${key}`);
+    if (val) return JSON.parse(val);
+    if (sId === DEFAULT_SCHOOL_ID) {
+      const legacyVal = localStorage.getItem("escuelainfo_db_" + key);
+      if (legacyVal) return JSON.parse(legacyVal);
+    }
+    return defaultVal;
   } catch {
     return defaultVal;
   }
 };
 
-const setLocalStorageData = (key: string, data: any) => {
+const setLocalStorageData = (key: string, data: any, schoolId?: string) => {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem("escuelainfo_db_" + key, JSON.stringify(data));
+    const sId = getActiveSchoolId(schoolId);
+    localStorage.setItem(`escuelainfo_db_${sId}_${key}`, JSON.stringify(data));
+    if (sId === DEFAULT_SCHOOL_ID) {
+      localStorage.setItem("escuelainfo_db_" + key, JSON.stringify(data));
+    }
   } catch {}
 };
 
 // ─── NUEVO: ASISTENCIAS JORNADA (PRECEPTOR) ──────────────────────────────────
-export const getAsistenciasJornada = async (fecha: string): Promise<AsistenciaJornada[]> => {
-  try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, queries: [Query.equal("fecha", fecha), Query.limit(DEFAULT_LIMIT)] });
-    return response.documents.map(doc => ({
-      id: doc.$id,
-      alumnoId: doc.alumnoId,
-      alumnoNombre: doc.alumnoNombre,
-      fecha: doc.fecha,
-      estado: doc.estado as any,
-      preceptorId: doc.preceptorId
-    }));
-  } catch (err: any) {
-    devLog("getAsistenciasJornada (LocalStorage fallback)", err);
-    const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
-    return local.filter(a => a.fecha === fecha);
-  }
-};
-
-export const getAllAsistenciasJornada = async (limit = 1000): Promise<AsistenciaJornada[]> => {
+export const getAsistenciasJornada = async (fecha: string, schoolId?: string): Promise<AsistenciaJornada[]> => {
+  const sId = getActiveSchoolId(schoolId);
   try {
     const response = await databases.listDocuments({
       databaseId: APPWRITE_DB_ID,
       collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
-      queries: [Query.limit(limit), Query.orderDesc("fecha")]
+      queries: [
+        Query.equal("schoolId", sId),
+        Query.equal("fecha", fecha),
+        Query.limit(DEFAULT_LIMIT)
+      ]
     });
     return response.documents.map(doc => ({
       id: doc.$id,
@@ -1781,32 +1991,70 @@ export const getAllAsistenciasJornada = async (limit = 1000): Promise<Asistencia
       alumnoNombre: doc.alumnoNombre,
       fecha: doc.fecha,
       estado: doc.estado as any,
-      preceptorId: doc.preceptorId
+      preceptorId: doc.preceptorId,
+      schoolId: doc.schoolId || sId,
     }));
   } catch (err: any) {
-    devLog("getAllAsistenciasJornada (LocalStorage fallback)", err);
-    return getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+    devLog("getAsistenciasJornada (LocalStorage fallback)", err);
+    const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", [], sId);
+    return local.filter(a => a.fecha === fecha);
   }
 };
 
-export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) => {
+export const getAllAsistenciasJornada = async (limit = 1000, schoolId?: string): Promise<AsistenciaJornada[]> => {
+  const sId = getActiveSchoolId(schoolId);
+  try {
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+      queries: [
+        Query.equal("schoolId", sId),
+        Query.limit(limit),
+        Query.orderDesc("fecha")
+      ]
+    });
+    return response.documents.map(doc => ({
+      id: doc.$id,
+      alumnoId: doc.alumnoId,
+      alumnoNombre: doc.alumnoNombre,
+      fecha: doc.fecha,
+      estado: doc.estado as any,
+      preceptorId: doc.preceptorId,
+      schoolId: doc.schoolId || sId,
+    }));
+  } catch (err: any) {
+    devLog("getAllAsistenciasJornada (LocalStorage fallback)", err);
+    return getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", [], sId);
+  }
+};
+
+export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[], schoolId?: string) => {
   await requireAuth();
+  const defaultSchool = getActiveSchoolId(schoolId);
   for (const a of asistencias) {
+    const sId = a.schoolId || defaultSchool;
     try {
       if (a.id && !a.id.startsWith("LOCAL_")) {
-        await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, documentId: a.id, data: {
-                        alumnoId: sanitize(a.alumnoId, 50),
-                        alumnoNombre: sanitize(a.alumnoNombre, 200),
-                        fecha: sanitize(a.fecha, 20),
-                        estado: a.estado,
-                        preceptorId: sanitize(a.preceptorId, 50)
-                      } });
+        await databases.updateDocument({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+          documentId: a.id,
+          data: {
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
+            estado: a.estado,
+            preceptorId: sanitize(a.preceptorId, 50),
+            schoolId: sId,
+          }
+        });
       } else {
         // Buscar si ya existe un registro para este alumno y fecha para actualizarlo
         const existingDocs = await databases.listDocuments({
           databaseId: APPWRITE_DB_ID,
           collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
           queries: [
+            Query.equal("schoolId", sId),
             Query.equal("alumnoId", sanitize(a.alumnoId, 50)),
             Query.equal("fecha", sanitize(a.fecha, 20)),
             Query.limit(1)
@@ -1821,7 +2069,8 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
             data: {
               alumnoNombre: sanitize(a.alumnoNombre, 200),
               estado: a.estado,
-              preceptorId: sanitize(a.preceptorId, 50)
+              preceptorId: sanitize(a.preceptorId, 50),
+              schoolId: sId,
             }
           });
           a.id = existingDocs.documents[0].$id;
@@ -1835,7 +2084,8 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
               alumnoNombre: sanitize(a.alumnoNombre, 200),
               fecha: sanitize(a.fecha, 20),
               estado: a.estado,
-              preceptorId: sanitize(a.preceptorId, 50)
+              preceptorId: sanitize(a.preceptorId, 50),
+              schoolId: sId,
             }
           });
           a.id = created.$id;
@@ -1843,24 +2093,35 @@ export const saveAsistenciasJornada = async (asistencias: AsistenciaJornada[]) =
       }
     } catch (err: any) {
       devLog("saveAsistenciaJornada/item (LocalStorage fallback)", err);
-      const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+      const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", [], sId);
       const existingIdx = local.findIndex(item => (a.id && item.id === a.id) || (item.alumnoId === a.alumnoId && item.fecha === a.fecha));
       if (existingIdx !== -1) {
-        local[existingIdx] = { ...local[existingIdx], ...a, id: local[existingIdx].id };
+        local[existingIdx] = { ...local[existingIdx], ...a, id: local[existingIdx].id, schoolId: sId };
       } else {
-        const newRecord = { ...a, id: a.id || ("LOCAL_" + Math.random().toString(36).substr(2, 9)) };
+        const newRecord = { ...a, id: a.id || ("LOCAL_" + Math.random().toString(36).substr(2, 9)), schoolId: sId };
         local.push(newRecord);
         a.id = newRecord.id;
       }
-      setLocalStorageData("asistencias_jornada", local);
+      setLocalStorageData("asistencias_jornada", local, sId);
     }
   }
 };
 
 // ─── NUEVO: ASISTENCIAS MATERIA (PROFESOR) ───────────────────────────────────
-export const getAsistenciasMateria = async (fecha: string, materia: string, curso: string): Promise<AsistenciaMateria[]> => {
+export const getAsistenciasMateria = async (fecha: string, materia: string, curso: string, schoolId?: string): Promise<AsistenciaMateria[]> => {
+  const sId = getActiveSchoolId(schoolId);
   try {
-    const response = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, queries: [Query.equal("fecha", fecha), Query.equal("materia", materia), Query.equal("curso", curso), Query.limit(DEFAULT_LIMIT)] });
+    const response = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+      queries: [
+        Query.equal("schoolId", sId),
+        Query.equal("fecha", fecha),
+        Query.equal("materia", materia),
+        Query.equal("curso", curso),
+        Query.limit(DEFAULT_LIMIT)
+      ]
+    });
     return response.documents.map(doc => ({
       id: doc.$id,
       alumnoId: doc.alumnoId,
@@ -1869,87 +2130,121 @@ export const getAsistenciasMateria = async (fecha: string, materia: string, curs
       materia: doc.materia,
       curso: doc.curso,
       estado: doc.estado as any,
-      profesorId: doc.profesorId
+      profesorId: doc.profesorId,
+      schoolId: doc.schoolId || sId,
     }));
   } catch (err: any) {
     devLog("getAsistenciasMateria (LocalStorage fallback)", err);
-    const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", []);
+    const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", [], sId);
     return local.filter(a => a.fecha === fecha && a.materia === materia && a.curso === curso);
   }
 };
 
-export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[]) => {
+export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[], schoolId?: string) => {
   await requireAuth();
+  const defaultSchool = getActiveSchoolId(schoolId);
   for (const a of asistencias) {
+    const sId = a.schoolId || defaultSchool;
     try {
       if (a.id && !a.id.startsWith("LOCAL_")) {
-        await databases.updateDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, documentId: a.id, data: {
-                        alumnoId: sanitize(a.alumnoId, 50),
-                        alumnoNombre: sanitize(a.alumnoNombre, 200),
-                        fecha: sanitize(a.fecha, 20),
-                        materia: sanitize(a.materia, 100),
-                        curso: sanitize(a.curso, 50),
-                        estado: a.estado,
-                        profesorId: sanitize(a.profesorId, 50)
-                      } });
+        await databases.updateDocument({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+          documentId: a.id,
+          data: {
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
+            materia: sanitize(a.materia, 100),
+            curso: sanitize(a.curso, 50),
+            estado: a.estado,
+            profesorId: sanitize(a.profesorId, 50),
+            schoolId: sId,
+          }
+        });
       } else {
-        await databases.createDocument({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, documentId: ID.unique(), data: {
-                        alumnoId: sanitize(a.alumnoId, 50),
-                        alumnoNombre: sanitize(a.alumnoNombre, 200),
-                        fecha: sanitize(a.fecha, 20),
-                        materia: sanitize(a.materia, 100),
-                        curso: sanitize(a.curso, 50),
-                        estado: a.estado,
-                        profesorId: sanitize(a.profesorId, 50)
-                      } });
+        await databases.createDocument({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+          documentId: ID.unique(),
+          data: {
+            alumnoId: sanitize(a.alumnoId, 50),
+            alumnoNombre: sanitize(a.alumnoNombre, 200),
+            fecha: sanitize(a.fecha, 20),
+            materia: sanitize(a.materia, 100),
+            curso: sanitize(a.curso, 50),
+            estado: a.estado,
+            profesorId: sanitize(a.profesorId, 50),
+            schoolId: sId,
+          }
+        });
       }
     } catch (err: any) {
       devLog("saveAsistenciasMateria/item (LocalStorage fallback)", err);
-      const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", []);
+      const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", [], sId);
       if (a.id) {
         const idx = local.findIndex(item => item.id === a.id);
         if (idx !== -1) {
-          local[idx] = a;
+          local[idx] = { ...a, schoolId: sId };
         } else {
-          local.push(a);
+          local.push({ ...a, schoolId: sId });
         }
       } else {
-        const newRecord = { ...a, id: "LOCAL_" + Math.random().toString(36).substr(2, 9) };
+        const newRecord = { ...a, id: "LOCAL_" + Math.random().toString(36).substr(2, 9), schoolId: sId };
         local.push(newRecord);
         a.id = newRecord.id;
       }
-      setLocalStorageData("asistencias_materia", local);
+      setLocalStorageData("asistencias_materia", local, sId);
     }
   }
 };
 
 // ─── NUEVO: GET ALUMNO HISTORIAL (VISTA ALUMNO) ──────────────────────────────
-export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ jornada: AsistenciaJornada[], materia: AsistenciaMateria[] }> => {
+export const getAlumnoHistorialAsistencia = async (alumnoId: string, schoolId?: string): Promise<{ jornada: AsistenciaJornada[], materia: AsistenciaMateria[] }> => {
+  const sId = getActiveSchoolId(schoolId);
   let jornada: AsistenciaJornada[] = [];
   let materia: AsistenciaMateria[] = [];
 
   try {
-    const resJornada = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID, queries: [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)] });
+    const resJornada = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+      queries: [
+        Query.equal("schoolId", sId),
+        Query.equal("alumnoId", alumnoId),
+        Query.limit(DEFAULT_LIMIT)
+      ]
+    });
     jornada = resJornada.documents.map(doc => ({
       id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
-      fecha: doc.fecha, estado: doc.estado as any, preceptorId: doc.preceptorId
+      fecha: doc.fecha, estado: doc.estado as any, preceptorId: doc.preceptorId,
+      schoolId: doc.schoolId || sId,
     }));
   } catch (err) {
     devLog("getAlumnoHistorialAsistencia/jornada (LocalStorage fallback)", err);
-    const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", []);
+    const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", [], sId);
     jornada = local.filter(a => a.alumnoId === alumnoId);
   }
 
   try {
-    const resMateria = await databases.listDocuments({ databaseId: APPWRITE_DB_ID, collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID, queries: [Query.equal("alumnoId", alumnoId), Query.limit(DEFAULT_LIMIT)] });
+    const resMateria = await databases.listDocuments({
+      databaseId: APPWRITE_DB_ID,
+      collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+      queries: [
+        Query.equal("schoolId", sId),
+        Query.equal("alumnoId", alumnoId),
+        Query.limit(DEFAULT_LIMIT)
+      ]
+    });
     materia = resMateria.documents.map(doc => ({
       id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
       fecha: doc.fecha, materia: doc.materia, curso: doc.curso,
-      estado: doc.estado as any, profesorId: doc.profesorId
+      estado: doc.estado as any, profesorId: doc.profesorId,
+      schoolId: doc.schoolId || sId,
     }));
   } catch (err) {
     devLog("getAlumnoHistorialAsistencia/materia (LocalStorage fallback)", err);
-    const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", []);
+    const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", [], sId);
     materia = local.filter(a => a.alumnoId === alumnoId);
   }
 
@@ -1957,13 +2252,14 @@ export const getAlumnoHistorialAsistencia = async (alumnoId: string): Promise<{ 
 };
 
 // ─── NUEVO: GESTIÓN DE MESAS DE EXAMEN ────────────────────────────────────────
-export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]> => {
+export const getMesasExamen = async (forceRefresh = false, schoolId?: string): Promise<MesaExamen[]> => {
+  const sId = getActiveSchoolId(schoolId);
   let appwriteItems: MesaExamen[] = [];
   try {
     const response = await databases.listDocuments({
       databaseId: APPWRITE_DB_ID,
       collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
-      queries: [Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)]
+      queries: [Query.equal("schoolId", sId), Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)]
     });
     appwriteItems = response.documents.map(doc => ({
       id: doc.$id,
@@ -1978,14 +2274,15 @@ export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]
       vocal2Id: doc.vocal2Id || undefined,
       vocal2Nombre: doc.vocal2Nombre || undefined,
       alumnosInscriptos: Array.isArray(doc.alumnosInscriptos) ? doc.alumnosInscriptos : [],
-      estado: (doc.estado as any) || "borrador"
+      estado: (doc.estado as any) || "borrador",
+      schoolId: doc.schoolId || sId,
     }));
   } catch (err: any) {
     devLog("getMesasExamen (LocalStorage fallback)", err);
   }
 
   // Merge with localStorage so that any locally saved mesas are ALWAYS visible and never lost
-  const localItems = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+  const localItems = getLocalStorageData<MesaExamen[]>("mesas_examen", [], sId);
   const combinedMap = new Map<string, MesaExamen>();
 
   // Add Appwrite items first
@@ -2010,9 +2307,10 @@ export const getMesasExamen = async (forceRefresh = false): Promise<MesaExamen[]
   return finalMesas;
 };
 
-export const saveMesaExamen = async (m: MesaExamen) => {
+export const saveMesaExamen = async (m: MesaExamen, schoolId?: string) => {
   await requireAuth();
-  const local = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+  const sId = m.schoolId || getActiveSchoolId(schoolId);
+  const local = getLocalStorageData<MesaExamen[]>("mesas_examen", [], sId);
   let assignedId = m.id;
 
   const payload = {
@@ -2027,7 +2325,8 @@ export const saveMesaExamen = async (m: MesaExamen) => {
     vocal2Id: sanitize(m.vocal2Id || "", 50),
     vocal2Nombre: sanitize(m.vocal2Nombre || "", 200),
     alumnosInscriptos: (m.alumnosInscriptos || []).map(a => sanitize(a, 100)),
-    estado: m.estado || "borrador"
+    estado: m.estado || "borrador",
+    schoolId: sId,
   };
 
   try {
@@ -2056,20 +2355,21 @@ export const saveMesaExamen = async (m: MesaExamen) => {
   }
 
   // Always update local storage so it's guaranteed to be available instantly
-  const savedItem: MesaExamen = { ...m, ...payload, id: assignedId };
+  const savedItem: MesaExamen = { ...m, ...payload, id: assignedId, schoolId: sId };
   const existingIdx = local.findIndex(item => item.id === assignedId || (m.id && item.id === m.id));
   if (existingIdx !== -1) {
     local[existingIdx] = savedItem;
   } else {
     local.unshift(savedItem);
   }
-  setLocalStorageData("mesas_examen", local);
+  setLocalStorageData("mesas_examen", local, sId);
 
   return { $id: assignedId, ...savedItem };
 };
 
-export const deleteMesaExamen = async (id: string) => {
+export const deleteMesaExamen = async (id: string, schoolId?: string) => {
   await requireAuth();
+  const sId = getActiveSchoolId(schoolId);
   try {
     if (!id.startsWith("LOCAL_")) {
       await databases.deleteDocument({
@@ -2081,9 +2381,9 @@ export const deleteMesaExamen = async (id: string) => {
   } catch (err: any) {
     devLog("deleteMesaExamen (LocalStorage fallback)", err);
   } finally {
-    const local = getLocalStorageData<MesaExamen[]>("mesas_examen", []);
+    const local = getLocalStorageData<MesaExamen[]>("mesas_examen", [], sId);
     const filtered = local.filter(m => m.id !== id);
-    setLocalStorageData("mesas_examen", filtered);
+    setLocalStorageData("mesas_examen", filtered, sId);
   }
 };
 
@@ -2147,22 +2447,26 @@ export interface SuspensionEdilicia {
   id: string;
   fecha: string; // YYYY-MM-DD
   motivo: string;
+  schoolId?: string;
 }
 
-export const getSuspensiones = async (): Promise<SuspensionEdilicia[]> => {
-  return getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
+export const getSuspensiones = async (schoolId?: string): Promise<SuspensionEdilicia[]> => {
+  const sId = getActiveSchoolId(schoolId);
+  return getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", [], sId);
 };
 
-export const saveSuspension = async (suspension: SuspensionEdilicia) => {
-  const current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
-  current.push(suspension);
-  setLocalStorageData("suspensiones_edilicias", current);
+export const saveSuspension = async (suspension: SuspensionEdilicia, schoolId?: string) => {
+  const sId = suspension.schoolId || getActiveSchoolId(schoolId);
+  const current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", [], sId);
+  current.push({ ...suspension, schoolId: sId });
+  setLocalStorageData("suspensiones_edilicias", current, sId);
 };
 
-export const deleteSuspension = async (id: string) => {
-  let current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", []);
+export const deleteSuspension = async (id: string, schoolId?: string) => {
+  const sId = getActiveSchoolId(schoolId);
+  let current = getLocalStorageData<SuspensionEdilicia[]>("suspensiones_edilicias", [], sId);
   current = current.filter(s => s.id !== id);
-  setLocalStorageData("suspensiones_edilicias", current);
+  setLocalStorageData("suspensiones_edilicias", current, sId);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2182,31 +2486,38 @@ export interface NotificacionSistema {
   tipo: NotificacionTipo;
   titulo: string;
   mensaje: string;
-  destinatarioRol?: "directivo" | "admin" | "preceptor" | "profesor" | "alumno" | "todos";
+  destinatarioRol?: "directivo" | "admin" | "preceptor" | "profesor" | "preceptor_profesor" | "alumno" | "todos";
   destinatarioEmail?: string;
   destinatarioId?: string;
   leida: boolean;
   fecha: string;
   metadata?: Record<string, any>;
+  schoolId?: string;
 }
 
 /**
  * Consulta síncrona en memoria/localStorage para carga instantánea de UI.
  */
-export const getCachedNotificaciones = (userEmail?: string, userRole?: string): NotificacionSistema[] => {
-  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+export const getCachedNotificaciones = (userEmail?: string, userRole?: string, schoolId?: string): NotificacionSistema[] => {
+  const sId = getActiveSchoolId(schoolId);
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", [], sId);
   const cleanEmail = (userEmail || "").trim().toLowerCase();
   const cleanRole = fromDbRol(userRole || "").trim().toLowerCase();
+  const isPreceptorUser = cleanRole === "preceptor" || cleanRole === "preceptor_profesor";
+  const isProfesorUser = cleanRole === "profesor" || cleanRole === "preceptor_profesor";
 
   return all.filter((n) => {
     if (n.destinatarioEmail && cleanEmail && n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
     if (!n.destinatarioRol || n.destinatarioRol === "todos") return true;
     if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) return true;
     if (n.destinatarioRol === "admin" && cleanRole === "admin") return true;
-    if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") {
+    if (n.destinatarioRol === "preceptor" && isPreceptorUser) {
       if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
     }
-    if (n.destinatarioRol === "profesor" && cleanRole === "profesor") {
+    if (n.destinatarioRol === "profesor" && isProfesorUser) {
+      if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+    }
+    if (n.destinatarioRol === "preceptor_profesor" && cleanRole === "preceptor_profesor") {
       if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
     }
     if (n.destinatarioRol === "alumno" && cleanRole === "alumno") {
@@ -2219,15 +2530,19 @@ export const getCachedNotificaciones = (userEmail?: string, userRole?: string): 
 /**
  * Obtiene las notificaciones activas desde Appwrite Databases con fallback a caché local.
  */
-export const getNotificaciones = async (userEmail?: string, userRole?: string): Promise<NotificacionSistema[]> => {
+export const getNotificaciones = async (userEmail?: string, userRole?: string, schoolId?: string): Promise<NotificacionSistema[]> => {
+  const sId = getActiveSchoolId(schoolId);
   const cleanEmail = (userEmail || "").trim().toLowerCase();
   const cleanRole = fromDbRol(userRole || "").trim().toLowerCase();
+  const isPreceptorUser = cleanRole === "preceptor" || cleanRole === "preceptor_profesor";
+  const isProfesorUser = cleanRole === "profesor" || cleanRole === "preceptor_profesor";
 
   try {
     const res = await databases.listDocuments({
       databaseId: APPWRITE_DB_ID,
       collectionId: APPWRITE_NOTIFS_COLLECTION_ID,
       queries: [
+        Query.equal("schoolId", sId),
         Query.orderDesc("fecha"),
         Query.limit(100)
       ]
@@ -2244,6 +2559,7 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string): 
       leida: !!doc.leida,
       fecha: doc.fecha,
       metadata: doc.metadata ? (typeof doc.metadata === "string" ? JSON.parse(doc.metadata) : doc.metadata) : undefined,
+      schoolId: doc.schoolId || sId,
     }));
 
     const filtered = notifs.filter((n) => {
@@ -2259,10 +2575,13 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string): 
       if (n.destinatarioRol === "admin" && cleanRole === "admin") {
         return true;
       }
-      if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") {
+      if (n.destinatarioRol === "preceptor" && isPreceptorUser) {
         if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
       }
-      if (n.destinatarioRol === "profesor" && cleanRole === "profesor") {
+      if (n.destinatarioRol === "profesor" && isProfesorUser) {
+        if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
+      }
+      if (n.destinatarioRol === "preceptor_profesor" && cleanRole === "preceptor_profesor") {
         if (!n.destinatarioEmail || n.destinatarioEmail.trim().toLowerCase() === cleanEmail) return true;
       }
       if (n.destinatarioRol === "alumno" && cleanRole === "alumno") {
@@ -2271,11 +2590,11 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string): 
       return false;
     }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-    setLocalStorageData("notificaciones_sistema", filtered);
+    setLocalStorageData("notificaciones_sistema", filtered, sId);
     return filtered;
   } catch (err) {
     devLog("getNotificaciones", err);
-    return getCachedNotificaciones(userEmail, userRole);
+    return getCachedNotificaciones(userEmail, userRole, sId);
   }
 };
 
@@ -2283,13 +2602,16 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string): 
  * Guarda una nueva notificación en la base de datos de Appwrite y la difunde en tiempo real.
  */
 export const saveNotificacion = async (
-  notif: Omit<NotificacionSistema, "id" | "fecha" | "leida">
+  notif: Omit<NotificacionSistema, "id" | "fecha" | "leida">,
+  schoolId?: string
 ): Promise<NotificacionSistema> => {
+  const sId = (notif as any).schoolId || getActiveSchoolId(schoolId);
   const newNotif: NotificacionSistema = {
     ...notif,
     id: "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
     leida: false,
     fecha: new Date().toISOString(),
+    schoolId: sId,
   };
 
   try {
@@ -2307,6 +2629,7 @@ export const saveNotificacion = async (
         leida: false,
         fecha: newNotif.fecha,
         metadata: notif.metadata ? JSON.stringify(notif.metadata) : "",
+        schoolId: sId,
       }
     });
     newNotif.id = doc.$id;
@@ -2315,9 +2638,9 @@ export const saveNotificacion = async (
   }
 
   // Actualizar backup en caché local
-  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", [], sId);
   all.unshift(newNotif);
-  setLocalStorageData("notificaciones_sistema", all);
+  setLocalStorageData("notificaciones_sistema", all, sId);
 
   if (typeof window !== "undefined") {
     try {
@@ -2337,20 +2660,21 @@ export const saveNotificacion = async (
 export const subscribeToNotificaciones = (
   userEmail: string | undefined,
   userRole: string | undefined,
-  callback: (data: NotificacionSistema[], newArrival?: NotificacionSistema) => void
+  callback: (data: NotificacionSistema[], newArrival?: NotificacionSistema) => void,
+  schoolId?: string
 ) => {
   let isSubscribed = true;
   let retryTimeout: NodeJS.Timeout | null = null;
 
   // Entrega inmediata desde caché para visualización instantánea sin latencia
-  const initialCache = getCachedNotificaciones(userEmail, userRole);
+  const initialCache = getCachedNotificaciones(userEmail, userRole, schoolId);
   if (initialCache.length > 0) {
     callback(initialCache);
   }
 
   const fetchNotifs = async (newArrival?: NotificacionSistema) => {
     try {
-      const data = await getNotificaciones(userEmail, userRole);
+      const data = await getNotificaciones(userEmail, userRole, schoolId);
       if (isSubscribed) {
         callback(data, newArrival);
       }
@@ -2379,22 +2703,27 @@ export const subscribeToNotificaciones = (
           leida: !!doc.leida,
           fecha: doc.fecha,
           metadata: doc.metadata ? (typeof doc.metadata === "string" ? JSON.parse(doc.metadata) : doc.metadata) : undefined,
+          schoolId: doc.schoolId || getActiveSchoolId(schoolId),
         };
       }
       if (retryTimeout) clearTimeout(retryTimeout);
       retryTimeout = setTimeout(() => {
         if (isSubscribed) fetchNotifs(incoming);
-      }, 80);
+      }, 250);
     }
   );
 
-  // Evento local en la misma pestaña
+  // Evento local en la misma pestaña y cambio de escuela activa
   const handleLocal = (e: Event) => {
     const customEvent = e as CustomEvent<NotificacionSistema>;
     if (isSubscribed) fetchNotifs(customEvent.detail);
   };
+  const handleSchoolChange = () => {
+    if (isSubscribed) fetchNotifs();
+  };
   if (typeof window !== "undefined") {
     window.addEventListener("escuelainfo:notificaciones-updated", handleLocal);
+    window.addEventListener("escuelainfo:school-changed", handleSchoolChange);
   }
 
   // BroadcastChannel entre pestañas abiertas
@@ -2433,6 +2762,7 @@ export const subscribeToNotificaciones = (
     unsubscribeAppwrite();
     if (typeof window !== "undefined") {
       window.removeEventListener("escuelainfo:notificaciones-updated", handleLocal);
+      window.removeEventListener("escuelainfo:school-changed", handleSchoolChange);
       window.removeEventListener("focus", handleFocus);
     }
     if (bc) {
@@ -2444,7 +2774,8 @@ export const subscribeToNotificaciones = (
 /**
  * Marca una notificación individual como leída en Appwrite y en local.
  */
-export const markNotificacionAsRead = async (id: string) => {
+export const markNotificacionAsRead = async (id: string, schoolId?: string) => {
+  const sId = getActiveSchoolId(schoolId);
   try {
     if (!id.startsWith("notif_")) {
       await databases.updateDocument({
@@ -2458,15 +2789,15 @@ export const markNotificacionAsRead = async (id: string) => {
     devLog("markNotificacionAsRead", err);
   }
 
-  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", [], sId);
   const updated = all.map(n => n.id === id ? { ...n, leida: true } : n);
-  setLocalStorageData("notificaciones_sistema", updated);
+  setLocalStorageData("notificaciones_sistema", updated, sId);
 
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
       const bc = new BroadcastChannel("escuelainfo-realtime");
-      bc.postMessage({ type: "notificaciones", timestamp: Date.now() });
+      bc.postMessage({ type: "notificaciones", timestamp: Date.now(), schoolId: sId });
       bc.close();
     } catch {}
   }
@@ -2475,9 +2806,10 @@ export const markNotificacionAsRead = async (id: string) => {
 /**
  * Marca todas las notificaciones del usuario como leídas.
  */
-export const markAllNotificacionesAsRead = async (userEmail?: string, userRole?: string) => {
+export const markAllNotificacionesAsRead = async (userEmail?: string, userRole?: string, schoolId?: string) => {
+  const sId = getActiveSchoolId(schoolId);
   try {
-    const current = await getNotificaciones(userEmail, userRole);
+    const current = await getNotificaciones(userEmail, userRole, sId);
     const unread = current.filter(n => !n.leida);
 
     Promise.all(
@@ -2495,7 +2827,7 @@ export const markAllNotificacionesAsRead = async (userEmail?: string, userRole?:
     ).catch(() => {});
   } catch {}
 
-  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", [], sId);
   const cleanEmail = (userEmail || "").trim().toLowerCase();
   const cleanRole = fromDbRol(userRole || "").trim().toLowerCase();
 
@@ -2505,20 +2837,21 @@ export const markAllNotificacionesAsRead = async (userEmail?: string, userRole?:
     if (!n.destinatarioRol || n.destinatarioRol === "todos") belongs = true;
     if (n.destinatarioRol === "directivo" && (cleanRole === "directivo" || cleanRole === "admin")) belongs = true;
     if (n.destinatarioRol === "admin" && cleanRole === "admin") belongs = true;
-    if (n.destinatarioRol === "preceptor" && cleanRole === "preceptor") belongs = true;
-    if (n.destinatarioRol === "profesor" && cleanRole === "profesor") belongs = true;
+    if (n.destinatarioRol === "preceptor" && (cleanRole === "preceptor" || cleanRole === "preceptor_profesor")) belongs = true;
+    if (n.destinatarioRol === "profesor" && (cleanRole === "profesor" || cleanRole === "preceptor_profesor")) belongs = true;
+    if (n.destinatarioRol === "preceptor_profesor" && cleanRole === "preceptor_profesor") belongs = true;
     if (n.destinatarioRol === "alumno" && cleanRole === "alumno") belongs = true;
     if (belongs) return { ...n, leida: true };
     return n;
   });
 
-  setLocalStorageData("notificaciones_sistema", updated);
+  setLocalStorageData("notificaciones_sistema", updated, sId);
 
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
       const bc = new BroadcastChannel("escuelainfo-realtime");
-      bc.postMessage({ type: "notificaciones", timestamp: Date.now() });
+      bc.postMessage({ type: "notificaciones", timestamp: Date.now(), schoolId: sId });
       bc.close();
     } catch {}
   }
@@ -2527,7 +2860,8 @@ export const markAllNotificacionesAsRead = async (userEmail?: string, userRole?:
 /**
  * Elimina una notificación del sistema.
  */
-export const deleteNotificacion = async (id: string) => {
+export const deleteNotificacion = async (id: string, schoolId?: string) => {
+  const sId = getActiveSchoolId(schoolId);
   try {
     if (!id.startsWith("notif_")) {
       await databases.deleteDocument({
@@ -2540,15 +2874,15 @@ export const deleteNotificacion = async (id: string) => {
     devLog("deleteNotificacion", err);
   }
 
-  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", []);
+  const all = getLocalStorageData<NotificacionSistema[]>("notificaciones_sistema", [], sId);
   const updated = all.filter(n => n.id !== id);
-  setLocalStorageData("notificaciones_sistema", updated);
+  setLocalStorageData("notificaciones_sistema", updated, sId);
 
   if (typeof window !== "undefined") {
     try {
       window.dispatchEvent(new CustomEvent("escuelainfo:notificaciones-updated"));
       const bc = new BroadcastChannel("escuelainfo-realtime");
-      bc.postMessage({ type: "notificaciones", timestamp: Date.now() });
+      bc.postMessage({ type: "notificaciones", timestamp: Date.now(), schoolId: sId });
       bc.close();
     } catch {}
   }

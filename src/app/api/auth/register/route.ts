@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Client, Users, Databases, ID, Query } from 'node-appwrite';
 import { verifyOtpToken, verifyOtp, markTokenUsed, clearOtp } from '@/lib/otpStore';
 import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rateLimit';
+import { DEFAULT_SCHOOL_ID } from '@/lib/chubutSchools';
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +17,12 @@ export async function POST(request: Request) {
       telefono,
       password,
       escuela,
+      schoolId,
     } = await request.json();
+
+    const targetSchoolId = (schoolId && typeof schoolId === 'string' && schoolId.trim())
+      ? schoolId.trim()
+      : DEFAULT_SCHOOL_ID;
 
     // 1. Validaciones básicas de campos
     if (!email || !code || !password || !nombres || !apellidos || !dni) {
@@ -156,8 +162,15 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    // 5. Verificar si corresponde a un Docente pre-registrado
-    const teacherDocs = await databases.listDocuments(dbId, 'profesores', [Query.equal('email', cleanEmail)]);
+    // 5. Verificar si corresponde a un Docente pre-registrado en la escuela indicada
+    let teacherDocs = await databases.listDocuments(dbId, 'profesores', [
+      Query.equal('email', cleanEmail),
+      Query.equal('schoolId', targetSchoolId),
+    ]);
+    if (teacherDocs.total === 0) {
+      // Fallback por si fue registrado previamente antes de la partición
+      teacherDocs = await databases.listDocuments(dbId, 'profesores', [Query.equal('email', cleanEmail)]);
+    }
     const isTeacher = teacherDocs.total > 0;
 
     if (isTeacher) {
@@ -169,6 +182,7 @@ export async function POST(request: Request) {
           uid: targetUserId,
           nombre: fullName,
           rol: 'p', // Formato compacto institucional
+          schoolId: targetSchoolId,
         });
       } else {
         await databases.createDocument(dbId, 'usuarios', ID.unique(), {
@@ -177,6 +191,7 @@ export async function POST(request: Request) {
           nombre: fullName,
           rol: 'p',
           cursos: '[]',
+          schoolId: targetSchoolId,
         });
       }
 
@@ -185,6 +200,7 @@ export async function POST(request: Request) {
         await databases.updateDocument(dbId, 'profesores', preTeacher.$id, {
           nombre: fullName,
           dni: cleanDni,
+          schoolId: targetSchoolId,
         });
       }
 
@@ -196,6 +212,7 @@ export async function POST(request: Request) {
           detalles: `Registro de docente completado en ${escuela || 'institución'} con verificación de correo. UID: ${targetUserId}`,
           fecha: new Date().toISOString(),
           ip: clientIp,
+          schoolId: targetSchoolId,
         });
       } catch {}
 
@@ -213,11 +230,14 @@ export async function POST(request: Request) {
     }
 
     // 6. Flujo estándar de Alumnos / Usuarios pendientes
-    // Validar que el DNI no pertenezca a otro alumno
-    const dniCheck = await databases.listDocuments(dbId, 'alumnos', [Query.equal('dni', cleanDni)]);
+    // Validar que el DNI no pertenezca a otro alumno en esta misma escuela
+    const dniCheck = await databases.listDocuments(dbId, 'alumnos', [
+      Query.equal('dni', cleanDni),
+      Query.equal('schoolId', targetSchoolId),
+    ]);
     if (dniCheck.total > 0 && dniCheck.documents[0].email && dniCheck.documents[0].email !== cleanEmail) {
       return NextResponse.json(
-        { error: 'Ya existe un alumno registrado con ese número de DNI en la institución.' },
+        { error: 'Ya existe un alumno registrado con ese número de DNI en la institución seleccionada.' },
         { status: 400 }
       );
     }
@@ -227,6 +247,7 @@ export async function POST(request: Request) {
       await databases.updateDocument(dbId, 'usuarios', profileList.documents[0].$id, {
         uid: targetUserId,
         nombre: fullName,
+        schoolId: targetSchoolId,
       });
     } else {
       await databases.createDocument(dbId, 'usuarios', ID.unique(), {
@@ -235,6 +256,7 @@ export async function POST(request: Request) {
         nombre: fullName,
         rol: 'pe', // Formato compacto para pendiente
         cursos: '[]',
+        schoolId: targetSchoolId,
       });
     }
 
@@ -243,6 +265,7 @@ export async function POST(request: Request) {
       await databases.updateDocument(dbId, 'alumnos', dniCheck.documents[0].$id, {
         nombre: fullName,
         email: cleanEmail,
+        schoolId: targetSchoolId,
       });
     } else {
       await databases.createDocument(dbId, 'alumnos', ID.unique(), {
@@ -250,6 +273,7 @@ export async function POST(request: Request) {
         dni: cleanDni,
         curso: 'pendiente',
         email: cleanEmail,
+        schoolId: targetSchoolId,
       });
     }
 
@@ -261,9 +285,10 @@ export async function POST(request: Request) {
         detalles: `Nuevo usuario registrado en ${escuela || 'institución'} pendiente de aprobación. DNI: ${cleanDni}, UID: ${targetUserId}`,
         fecha: new Date().toISOString(),
         ip: clientIp,
+        schoolId: targetSchoolId,
       });
 
-      // Notificación en tiempo real para el equipo de directivos y preceptores
+      // Notificación en tiempo real para el equipo de directivos y preceptores de la escuela
       await databases.createDocument(dbId, 'notificaciones', ID.unique(), {
         tipo: 'nuevo_usuario_pendiente',
         titulo: 'Nueva Solicitud de Acceso',
@@ -273,7 +298,8 @@ export async function POST(request: Request) {
         destinatarioId: '',
         leida: false,
         fecha: new Date().toISOString(),
-        metadata: JSON.stringify({ email: cleanEmail, nombre: fullName, dni: cleanDni, escuela: escuela || '' }),
+        metadata: JSON.stringify({ email: cleanEmail, nombre: fullName, dni: cleanDni, escuela: escuela || '', schoolId: targetSchoolId }),
+        schoolId: targetSchoolId,
       });
     } catch {}
 

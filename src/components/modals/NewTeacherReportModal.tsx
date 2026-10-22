@@ -168,7 +168,7 @@ export default function NewTeacherReportModal({ isOpen, onClose, onSuccess, curr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in no-print"
+      className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in no-print"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="glass w-full max-w-lg rounded-2xl border border-[var(--border)] overflow-hidden shadow-2xl animate-zoom-in">

@@ -31,7 +31,7 @@ interface UsuariosTabProps {
   userProfile: UserProfile | null;
   onApproveStudent: (
     user: UserProfile,
-    targetRole?: "alumno" | "profesor" | "preceptor",
+    targetRole?: "alumno" | "profesor" | "preceptor" | "preceptor_profesor",
     selectedCurso?: string,
     preceptorCursos?: string[]
   ) => Promise<void> | void;
@@ -136,6 +136,8 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
         (u.rol || "").toLowerCase().includes(q);
 
       if (roleFilter === "todos") return matchesSearch;
+      if (roleFilter === "profesor") return matchesSearch && (uNorm === "profesor" || uNorm === "preceptor_profesor");
+      if (roleFilter === "preceptor") return matchesSearch && (uNorm === "preceptor" || uNorm === "preceptor_profesor");
       return matchesSearch && uNorm === roleFilter;
     });
   }, [activeUsers, searchQuery, roleFilter]);
@@ -155,6 +157,14 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-[var(--violeta-bg)] text-[var(--violeta)] border border-[var(--violeta-border)]">
             <UserCog size={11} strokeWidth={2.5} />
             <span>Directivo</span>
+          </span>
+        );
+      case "preceptor_profesor":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-[var(--cyan-bg)] text-[var(--cyan)] border border-[var(--cyan-border)] shadow-xs">
+            <UserCheck size={11} strokeWidth={2.5} />
+            <GraduationCap size={11} strokeWidth={2.5} />
+            <span>Preceptor y Profesor</span>
           </span>
         );
       case "profesor":
@@ -275,6 +285,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
             <option value="alumno">Alumnos</option>
             <option value="profesor">Profesores</option>
             <option value="preceptor">Preceptores</option>
+            <option value="preceptor_profesor">Preceptor y Profesor (Doble Cargo)</option>
             {activeSubTab === "activos" && <option value="directivo">Directivos</option>}
             {activeSubTab === "activos" && isOperatorAdmin && <option value="admin">Administradores</option>}
           </select>

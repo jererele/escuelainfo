@@ -667,7 +667,19 @@ label {
     @apply font-sans;
     overflow-x: hidden;
     max-width: 100vw;
+    scrollbar-gutter: stable;
   }
+
+  html.modal-open,
+  body.modal-open {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+  }
+}
+
+/* Contención de scroll en modales y overlays */
+.fixed.inset-0 {
+  overscroll-behavior: contain;
 }
 
 /* ─── MOBILE-FIRST: Safe area inset (iPhone notch / Dynamic Island) ────────── */
@@ -962,4 +974,11 @@ html.argb-gamer-mode .title-font {
     filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.45));
     transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.3, 1.25), filter 0.16s ease;
   }
+}
+
+/* Sileo Toast Mobile Width Constraint */
+[data-sileo-toaster],
+[data-sileo-toast] {
+  max-width: calc(100vw - 24px) !important;
+  word-break: break-word;
 }
