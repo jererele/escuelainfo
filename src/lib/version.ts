@@ -4,10 +4,11 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.41.1";
-export const APP_BUILD_DATE = "22/10/2026 14:30 hs";
+export const APP_VERSION = "v2.41.2";
+export const APP_BUILD_DATE = "22/10/2026 15:25 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
+  "Corrección de Desplazamiento y Cierre Involuntario en Menú Desplegable de Cursos (CustomSelect.tsx): Se subsanó la incidencia donde al utilizar la rueda del ratón o arrastrar la barra de scroll dentro del menú de cursos ('Filtrar por curso'), el desplegable se cerraba instantáneamente. Se ajustó el listener global de scroll para aislar los eventos originados dentro del contenedor del menú, incorporando contención de sobre-desplazamiento ('overscroll-contain') y reposicionamiento dinámico ante scroll exterior.",
   "Corrección Integral de Visibilidad en Formulario de Registro y Entrada de Teléfono (page.tsx, PhoneInputWithCountry.tsx): 1) Erradicación del recorte superior por centrado flex: Uso de 'my-auto' y contención natural para evitar que el logo y cabecera institucional se corten fuera del viewport. 2) Supresión del contenedor de scroll interno restrictivo: Eliminación de 'max-h-[60vh] overflow-y-auto' para permitir que el botón de envío y los términos se visualicen de forma completa y continua. 3) Fila exclusiva y redimensionamiento de Teléfono (PhoneInputWithCountry): Se independizó el campo a fila completa con paddings compactos (rounded-xl, py-2.5), asegurando más de 250px para el número telefónico sin truncamiento de dígitos. 4) Depuración de encabezado: Supresión de la caja redundante de escuela dentro del formulario y reordenamiento del logo y título.",
   "Blindaje de Jerarquía y Control de Acceso en Aprobación de Usuarios (dashboard/page.tsx, dataService.ts): Corrección de vulnerabilidad donde preceptores con acceso operativo (isAdmin) podían autorizar o auto-asignar roles de Administrador o Directivo. Se separó estrictamente la verificación de permisos en super-administradores ('admin'), directivos ('directivo') y preceptores ('preceptor'), impidiendo que roles no directivos alteren o promuevan rangos superiores.",
   "Paridad Integral para el Rol Dual Preceptor y Profesor (dataService.ts, ProfesoresTab.tsx, CursosTab.tsx, PreceptoresTab.tsx, StudentAttendanceManager.tsx): Soporte completo para asignación, asistencia, cobertura, insignias y notificaciones combinadas.",
@@ -16,6 +17,13 @@ export const APP_RELEASE_NOTES: string[] = [
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.41.2",
+    date: "22/10/2026 15:25 hs",
+    notes: [
+      "Corrección de Desplazamiento y Cierre Involuntario en Menú Desplegable de Cursos (CustomSelect.tsx): Aislamiento del listener de scroll para evitar el cierre del desplegable al usar la rueda del ratón o arrastrar la barra de desplazamiento."
+    ]
+  },
   {
     version: "v2.41.1",
     date: "22/10/2026 14:30 hs",

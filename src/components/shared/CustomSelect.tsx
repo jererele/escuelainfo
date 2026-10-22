@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 interface Option {
@@ -41,43 +41,70 @@ export default function CustomSelect({
 
   const selectedOption = options.find((opt) => opt.value === value);
 
+  const updateMenuPosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        minWidth: rect.width,
+        maxWidth: '90vw',
+        zIndex: 9999
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const isOutsideButton = buttonRef.current && !buttonRef.current.contains(event.target as Node);
-      const isOutsideMenu = menuRef.current && !menuRef.current.contains(event.target as Node);
+      const target = event.target as Node | null;
+      if (!target) return;
+      const isOutsideButton = buttonRef.current && !buttonRef.current.contains(target);
+      const isOutsideMenu = menuRef.current && !menuRef.current.contains(target);
       
       if (isOutsideButton && isOutsideMenu) {
         setIsOpen(false);
       }
     };
     
-    const handleScroll = () => {
-      if (isOpen) setIsOpen(false);
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      // Si el desplazamiento ocurre dentro del propio menú desplegable, NO cerrarlo
+      if (menuRef.current && target && (menuRef.current === target || menuRef.current.contains(target))) {
+        return;
+      }
+
+      // Si el scroll proviene de la ventana externa:
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+          setIsOpen(false);
+        } else {
+          updateMenuPosition();
+        }
+      } else {
+        setIsOpen(false);
+      }
     };
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       window.addEventListener("scroll", handleScroll, true); // true to catch all scroll events
+      window.addEventListener("resize", updateMenuPosition);
     }
     
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", updateMenuPosition);
     };
-  }, [isOpen]);
+  }, [isOpen, updateMenuPosition]);
 
   useLayoutEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setMenuStyle({
-        position: 'fixed',
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-        zIndex: 9999
-      });
+    if (isOpen) {
+      updateMenuPosition();
     }
-  }, [isOpen]);
+  }, [isOpen, updateMenuPosition]);
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
@@ -102,9 +129,9 @@ export default function CustomSelect({
         <div 
           ref={menuRef}
           style={menuStyle}
-          className={`glass border border-[var(--border2)] rounded-xl shadow-2xl overflow-hidden animate-zoom-in origin-top ${menuClassName}`}
+          className={`glass border border-[var(--border2)] rounded-xl shadow-2xl overflow-hidden animate-zoom-in origin-top bg-[var(--bg2)]/95 backdrop-blur-xl ${menuClassName}`}
         >
-          <div className="max-h-60 overflow-y-auto p-1">
+          <div className="max-h-60 overflow-y-auto overscroll-contain p-1 custom-scrollbar">
             {options.map((opt) => (
               <button
                 key={opt.value}
@@ -113,7 +140,7 @@ export default function CustomSelect({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-colors hover:bg-[var(--bg3)] hover:text-black ${opt.value === value ? "bg-[var(--bg4)]" : ""} ${opt.colorClass || 'text-[var(--text)]'}`}
+                className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-colors hover:bg-[var(--bg3)] hover:text-[var(--text)] ${opt.value === value ? "bg-[var(--bg4)] text-[var(--verde)]" : "text-[var(--text)]"} ${opt.colorClass || ''}`}
               >
                 {opt.label}
               </button>
