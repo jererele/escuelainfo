@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, logAction, parseUserCursos, fromDbRol } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, consolidateAbsences, logAction, parseUserCursos, fromDbRol } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import { 
   UserCheck, 
@@ -21,7 +21,9 @@ import {
   ArrowRightLeft,
   ShieldCheck,
   Users,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Zap
 } from "lucide-react";
 import AttendanceTableResponsive from "@/components/shared/AttendanceTableResponsive";
 import { SkeletonAttendanceTable } from "@/components/shared/SkeletonLoaders";
@@ -91,7 +93,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
         const al = await getAlumnoByEmail(userProfile.email);
         if (al) {
           setAlumnoRecord(al);
-          await cargarHistorialAlumno(al.id || al.dni);
+          await cargarHistorialAlumno(al.id || al.dni, al.dni);
         }
       } catch (err) {
         console.error("Error al refrescar datos del alumno:", err);
@@ -200,7 +202,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
           if (al) {
             setAlumnoRecord(al);
             setAlumnos([al]);
-            cargarHistorialAlumno(al.id || al.dni);
+            cargarHistorialAlumno(al.id || al.dni, al.dni);
           }
         });
       }
@@ -211,10 +213,10 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     return () => window.removeEventListener("escuelainfo:school-changed", loadManagerData);
   }, [role, userProfile]);
 
-  const cargarHistorialAlumno = async (id: string) => {
+  const cargarHistorialAlumno = async (id: string, secondaryId?: string) => {
     setLoading(true);
     try {
-      const hist = await getAlumnoHistorialAsistencia(id);
+      const hist = await getAlumnoHistorialAsistencia(id, undefined, secondaryId);
       setHistorialJornada(hist.jornada);
     } catch (err) {
       setErrorMsg("No se pudo cargar tu historial de asistencia.");
@@ -304,6 +306,62 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
       setSuccessMsg(isCoverageMode ? `Planilla de ${selectedCurso} guardada y cobertura asentada en el registro de auditoría.` : "Planilla de asistencia general guardada correctamente.");
     } catch {
       setErrorMsg("Ocurrió un error al guardar la asistencia.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Establecer todos Ausentes y persistir en la base de datos de Appwrite inmediatamente
+  const handleSetAllAbsentAndSave = async () => {
+    const cursoAlumnos = alumnos.filter(a => a.curso === selectedCurso);
+    if (cursoAlumnos.length === 0) return;
+    
+    setLoading(true);
+    try {
+      const updated: Record<string, "P" | "A" | "M" | "T" | "R"> = {};
+      const listToSave: AsistenciaJornada[] = cursoAlumnos.map(a => {
+        const alId = a.id || a.dni;
+        updated[alId] = "A";
+        return {
+          id: existingRecords[alId] || undefined,
+          alumnoId: alId,
+          alumnoNombre: a.nombre,
+          fecha,
+          estado: "A",
+          preceptorId: userProfile?.uid || userProfile?.email || "admin"
+        };
+      });
+      setAsistenciasJornada(prev => ({ ...prev, ...updated }));
+
+      await notify.promise(saveAsistenciasJornada(listToSave), {
+        loading: `Asentando ${selectedCurso} con todos en Ausente...`,
+        success: `¡${selectedCurso} guardado en base de datos con todos en Ausente! Quienes escaneen el QR pasarán a Presente.`,
+        error: "Ocurrió un error al guardar en la base de datos."
+      });
+      await cargarPlanillaJornada();
+    } catch {
+      notify.error("Ocurrió un error al guardar las inasistencias.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Consolidar inasistencias acumuladas de días transcurridos
+  const handleConsolidateCourseAbsences = async () => {
+    if (!selectedCurso) return;
+    setLoading(true);
+    try {
+      await notify.promise(
+        consolidateAbsences({ targetCurso: selectedCurso }),
+        {
+          loading: `Consolidando inasistencias de ${selectedCurso}...`,
+          success: (data) => data.message || "¡Inasistencias consolidadas y computadas con éxito!",
+          error: "Error al consolidar inasistencias."
+        }
+      );
+      await cargarPlanillaJornada();
+    } catch (err: any) {
+      console.error("Error al consolidar inasistencias:", err);
     } finally {
       setLoading(false);
     }
@@ -640,21 +698,28 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto flex-wrap justify-end">
-                  {/* Botón para restablecer todos a Ausentes (Modalidad QR) */}
+                  {/* Botón para poner a todos en Ausente y GUARDARLO directamente en la base de datos */}
                   <button
                     type="button"
-                    onClick={() => {
-                      const updated: Record<string, "P" | "A" | "M" | "T" | "R"> = {};
-                      alumnos.filter(a => a.curso === selectedCurso).forEach(a => {
-                        updated[a.id || a.dni] = "A";
-                      });
-                      setAsistenciasJornada(prev => ({ ...prev, ...updated }));
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/25 transition-all cursor-pointer shadow-xs active:scale-95"
-                    title="Pone a todos los alumnos del curso en Ausente para que deban escanear el QR"
+                    onClick={handleSetAllAbsentAndSave}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/25 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                    title="Asienta a todos los alumnos del curso como Ausentes en la base de datos hasta que escaneen el código QR"
                   >
                     <X size={14} strokeWidth={2.5} />
-                    <span>Todos Ausentes (QR)</span>
+                    <span>Todos Ausentes (Guardar QR)</span>
+                  </button>
+
+                  {/* Botón para consolidar inasistencias pendientes en días pasados */}
+                  <button
+                    type="button"
+                    onClick={handleConsolidateCourseAbsences}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-black border border-amber-500/25 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                    title="Cierra y asienta las faltas de todos los alumnos que no registraron presente en días transcurridos"
+                  >
+                    <Zap size={14} className="text-amber-500" />
+                    <span>Consolidar Faltas</span>
                   </button>
 
                   <button

@@ -13,9 +13,12 @@ import {
   FileText,
   Clock,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  RefreshCw
 } from "lucide-react";
-import { Alumno, Curso, AsistenciaJornada, getAllAsistenciasJornada } from "@/lib/dataService";
+import { Alumno, Curso, AsistenciaJornada, getAllAsistenciasJornada, consolidateAbsences } from "@/lib/dataService";
+import { notify } from "@/lib/notify";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { printParentAbsenceCitation } from "@/lib/officialPrintService";
 
@@ -45,31 +48,50 @@ export const EarlyWarningDropoutWidget: React.FC<EarlyWarningDropoutWidgetProps>
 }) => {
   const [allAsistencias, setAllAsistencias] = useState<AsistenciaJornada[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isConsolidating, setIsConsolidating] = useState(false);
   const [selectedCurso, setSelectedCurso] = useState<string>("todos");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedRiskFilter, setSelectedRiskFilter] = useState<"todos" | "riesgo" | "preventivo" | "critico" | "libre">("riesgo");
 
+  const fetchAttendance = async () => {
+    try {
+      const records = await getAllAsistenciasJornada(2000);
+      setAllAsistencias(records);
+    } catch (err) {
+      console.error("Error al obtener asistencias para SATDE:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let isMounted = true;
-    getAllAsistenciasJornada()
-      .then((records) => {
-        if (isMounted) {
-          setAllAsistencias(records);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) setLoading(false);
-      });
-    return () => {
-      isMounted = false;
-    };
+    fetchAttendance();
   }, []);
+
+  const handleConsolidateAll = async () => {
+    setIsConsolidating(true);
+    try {
+      await notify.promise(
+        consolidateAbsences({ targetCurso: selectedCurso !== "todos" ? selectedCurso : undefined }),
+        {
+          loading: "Consolidando inasistencias y cerrando ausentes en la base de datos...",
+          success: (res) => res.message || "¡Inasistencias consolidadas y computadas con éxito!",
+          error: "Error al consolidar inasistencias."
+        }
+      );
+      await fetchAttendance();
+    } catch (err: any) {
+      console.error("Error en consolidación:", err);
+    } finally {
+      setIsConsolidating(false);
+    }
+  };
 
   // Calcular inasistencias y nivel de riesgo por alumno
   const statsPorAlumno = useMemo<StudentAbsenceStats[]>(() => {
     // Indexar asistencias por alumnoId / dni
     const recordsByStudent = new Map<string, AsistenciaJornada[]>();
+    const recordedDates = new Set<string>();
 
     allAsistencias.forEach((asist) => {
       const idKey = asist.alumnoId;
@@ -77,15 +99,18 @@ export const EarlyWarningDropoutWidget: React.FC<EarlyWarningDropoutWidgetProps>
         recordsByStudent.set(idKey, []);
       }
       recordsByStudent.get(idKey)!.push(asist);
+      if (asist.fecha) recordedDates.add(asist.fecha.trim());
     });
 
     return alumnos
-      .filter((a) => a.curso && a.curso !== "pendiente")
+      .filter((a) => a.curso && a.curso.toLowerCase() !== "pendiente" && !a.curso.toLowerCase().includes("egresado"))
       .map((alumno) => {
         const studentRecords = [
           ...(recordsByStudent.get(alumno.id || "") || []),
           ...(alumno.dni ? recordsByStudent.get(alumno.dni) || [] : []),
         ];
+
+        const recordedDatesForStudent = new Set(studentRecords.map(r => r.fecha));
 
         let totalA = 0;
         let totalM = 0;
@@ -97,6 +122,15 @@ export const EarlyWarningDropoutWidget: React.FC<EarlyWarningDropoutWidgetProps>
           else if (r.estado === "M") totalM++;
           else if (r.estado === "T") totalT++;
           else if (r.estado === "J") totalJ++;
+        });
+
+        // En la modalidad "Todos ausentes a no ser que sean validados como presentes":
+        // Si en la institución se registraron asistencias en fechas escolares y el alumno no validó presente:
+        // Se computa como inasistencia acumulada (A)
+        recordedDates.forEach(d => {
+          if (!recordedDatesForStudent.has(d)) {
+            totalA++;
+          }
         });
 
         // Fórmula reglamentaria Chubut:
@@ -201,9 +235,22 @@ export const EarlyWarningDropoutWidget: React.FC<EarlyWarningDropoutWidgetProps>
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold bg-[var(--bg3)] border border-[var(--border)] px-4 py-2 rounded-2xl">
-          <TrendingUp size={16} className="text-[var(--verde)]" />
-          <span>{countEnRiesgoTotal} estudiantes en seguimiento prioritario</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleConsolidateAll}
+            disabled={isConsolidating}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-black bg-[var(--verde)] text-black hover:bg-emerald-400 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+            title="Consolida y asienta como Ausentes en la base de datos a los alumnos sin presente registrado en días de clase"
+          >
+            {isConsolidating ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
+            <span>{isConsolidating ? "Consolidando..." : "Consolidar Faltas en Base de Datos"}</span>
+          </button>
+
+          <div className="flex items-center gap-2 text-xs font-bold bg-[var(--bg3)] border border-[var(--border)] px-4 py-2 rounded-2xl">
+            <TrendingUp size={16} className="text-[var(--verde)]" />
+            <span>{countEnRiesgoTotal} estudiantes en seguimiento prioritario</span>
+          </div>
         </div>
       </div>
 

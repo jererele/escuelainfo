@@ -2199,30 +2199,58 @@ export const saveAsistenciasMateria = async (asistencias: AsistenciaMateria[], s
 };
 
 // ─── NUEVO: GET ALUMNO HISTORIAL (VISTA ALUMNO) ──────────────────────────────
-export const getAlumnoHistorialAsistencia = async (alumnoId: string, schoolId?: string): Promise<{ jornada: AsistenciaJornada[], materia: AsistenciaMateria[] }> => {
+export const getAlumnoHistorialAsistencia = async (
+  alumnoId: string, 
+  schoolId?: string, 
+  secondaryId?: string
+): Promise<{ jornada: AsistenciaJornada[], materia: AsistenciaMateria[] }> => {
   const sId = getActiveSchoolId(schoolId);
   let jornada: AsistenciaJornada[] = [];
   let materia: AsistenciaMateria[] = [];
 
   try {
+    const queries = [
+      Query.equal("schoolId", sId),
+      Query.equal("alumnoId", alumnoId),
+      Query.limit(DEFAULT_LIMIT)
+    ];
     const resJornada = await databases.listDocuments({
       databaseId: APPWRITE_DB_ID,
       collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
-      queries: [
-        Query.equal("schoolId", sId),
-        Query.equal("alumnoId", alumnoId),
-        Query.limit(DEFAULT_LIMIT)
-      ]
+      queries
     });
     jornada = resJornada.documents.map(doc => ({
       id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
       fecha: doc.fecha, estado: doc.estado as any, preceptorId: doc.preceptorId,
       schoolId: doc.schoolId || sId,
     }));
+
+    if (secondaryId && secondaryId !== alumnoId) {
+      try {
+        const resSec = await databases.listDocuments({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ASISTENCIAS_JORNADA_COLLECTION_ID,
+          queries: [
+            Query.equal("schoolId", sId),
+            Query.equal("alumnoId", secondaryId),
+            Query.limit(DEFAULT_LIMIT)
+          ]
+        });
+        resSec.documents.forEach(doc => {
+          if (!jornada.some(j => j.id === doc.$id || j.fecha === doc.fecha)) {
+            jornada.push({
+              id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
+              fecha: doc.fecha, estado: doc.estado as any, preceptorId: doc.preceptorId,
+              schoolId: doc.schoolId || sId,
+            });
+          }
+        });
+      } catch {}
+    }
   } catch (err) {
     devLog("getAlumnoHistorialAsistencia/jornada (LocalStorage fallback)", err);
     const local = getLocalStorageData<AsistenciaJornada[]>("asistencias_jornada", [], sId);
-    jornada = local.filter(a => a.alumnoId === alumnoId);
+    jornada = local.filter(a => a.alumnoId === alumnoId || (secondaryId && a.alumnoId === secondaryId));
   }
 
   try {
@@ -2241,13 +2269,72 @@ export const getAlumnoHistorialAsistencia = async (alumnoId: string, schoolId?: 
       estado: doc.estado as any, profesorId: doc.profesorId,
       schoolId: doc.schoolId || sId,
     }));
+
+    if (secondaryId && secondaryId !== alumnoId) {
+      try {
+        const resSec = await databases.listDocuments({
+          databaseId: APPWRITE_DB_ID,
+          collectionId: APPWRITE_ASISTENCIAS_MATERIA_COLLECTION_ID,
+          queries: [
+            Query.equal("schoolId", sId),
+            Query.equal("alumnoId", secondaryId),
+            Query.limit(DEFAULT_LIMIT)
+          ]
+        });
+        resSec.documents.forEach(doc => {
+          if (!materia.some(m => m.id === doc.$id || (m.fecha === doc.fecha && m.materia === doc.materia))) {
+            materia.push({
+              id: doc.$id, alumnoId: doc.alumnoId, alumnoNombre: doc.alumnoNombre,
+              fecha: doc.fecha, materia: doc.materia, curso: doc.curso,
+              estado: doc.estado as any, profesorId: doc.profesorId,
+              schoolId: doc.schoolId || sId,
+            });
+          }
+        });
+      } catch {}
+    }
   } catch (err) {
     devLog("getAlumnoHistorialAsistencia/materia (LocalStorage fallback)", err);
     const local = getLocalStorageData<AsistenciaMateria[]>("asistencias_materia", [], sId);
-    materia = local.filter(a => a.alumnoId === alumnoId);
+    materia = local.filter(a => a.alumnoId === alumnoId || (secondaryId && a.alumnoId === secondaryId));
   }
 
   return { jornada, materia };
+};
+
+/**
+ * ⚡ Consolidación Automática de Inasistencias en la Base de Datos
+ * Asienta oficialmente a todos los alumnos que no validaron su presente en días escolares
+ */
+export const consolidateAbsences = async (params?: { targetDate?: string; targetCurso?: string; schoolId?: string }) => {
+  try {
+    const sId = getActiveSchoolId(params?.schoolId);
+    let jwt = "";
+    try {
+      const jwtRes = await account.createJWT();
+      jwt = jwtRes.jwt;
+    } catch {}
+
+    const res = await fetch("/api/attendance/consolidate-absences", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(jwt ? { "Authorization": `Bearer ${jwt}` } : {})
+      },
+      body: JSON.stringify({
+        targetDate: params?.targetDate,
+        targetCurso: params?.targetCurso,
+        schoolId: sId
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Error al consolidar inasistencias");
+    return data;
+  } catch (err: any) {
+    devLog("consolidateAbsences", err);
+    throw err;
+  }
 };
 
 // ─── NUEVO: GESTIÓN DE MESAS DE EXAMEN ────────────────────────────────────────

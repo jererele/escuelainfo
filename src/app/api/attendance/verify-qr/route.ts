@@ -61,28 +61,99 @@ export async function POST(request: Request) {
     const adminClient = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
     const db = new Databases(adminClient);
 
-    // 3. Obtener el legajo del alumno
+    // 3. Obtener el legajo del alumno (búsqueda resiliente con vinculación automática)
+    let alumno: any = null;
     const alumnoDocs = await db.listDocuments(dbId, 'alumnos', [Query.equal('email', studentEmail), Query.limit(1)]);
-    if (alumnoDocs.total === 0 || !alumnoDocs.documents[0]) {
+    
+    if (alumnoDocs.total > 0 && alumnoDocs.documents[0]) {
+      alumno = alumnoDocs.documents[0];
+    } else {
+      // Fallback 1: Búsqueda insensible a mayúsculas/minúsculas en el padrón
+      const allAlumnos = await db.listDocuments(dbId, 'alumnos', [Query.limit(200)]);
+      alumno = allAlumnos.documents.find(
+        (a: any) => a.email && a.email.toLowerCase().trim() === studentEmail
+      );
+
+      // Fallback 2: Buscar en la colección de usuarios por UID o email y vincular
+      if (!alumno) {
+        let userDoc: any = null;
+        try {
+          const userDocs = await db.listDocuments(dbId, 'usuarios', [
+            Query.equal('email', studentEmail),
+            Query.limit(1)
+          ]);
+          if (userDocs.total > 0) userDoc = userDocs.documents[0];
+        } catch {}
+
+        if (!userDoc && sessionUser.$id) {
+          try {
+            const userDocs = await db.listDocuments(dbId, 'usuarios', [
+              Query.equal('uid', sessionUser.$id),
+              Query.limit(1)
+            ]);
+            if (userDocs.total > 0) userDoc = userDocs.documents[0];
+          } catch {}
+        }
+
+        if (userDoc) {
+          // Intentar coincidir por DNI o por nombre en alumnos
+          const matchByDni = userDoc.dni ? allAlumnos.documents.find((a: any) => a.dni && a.dni === userDoc.dni) : null;
+          const matchByName = allAlumnos.documents.find((a: any) => a.nombre && a.nombre.toLowerCase().trim() === (userDoc.nombre || sessionUser.name || '').toLowerCase().trim());
+          const matchedAlumno = matchByDni || matchByName;
+
+          if (matchedAlumno) {
+            alumno = matchedAlumno;
+            // Actualizar su correo en alumnos para futuras consultas inmediatas
+            try {
+              await db.updateDocument(dbId, 'alumnos', matchedAlumno.$id, {
+                email: studentEmail
+              });
+            } catch {}
+          } else {
+            // Auto-provisionar legajo del alumno con base en su usuario verificado
+            try {
+              alumno = await db.createDocument(dbId, 'alumnos', ID.unique(), {
+                nombre: userDoc.nombre || sessionUser.name || "Alumno",
+                dni: userDoc.dni || "",
+                curso: userDoc.curso || "6to ETP - Doble Turno",
+                email: studentEmail,
+                schoolId: userDoc.schoolId || "esc-713-esquel"
+              });
+            } catch {}
+          }
+        }
+      }
+    }
+
+    if (!alumno) {
       return NextResponse.json({ error: "No se encontró tu legajo de alumno registrado en la institución." }, { status: 404 });
     }
 
-    const alumno = alumnoDocs.documents[0];
     const todayDate = new Date().toISOString().split('T')[0];
-
     const studentSchoolId = alumno.schoolId || "esc-713-esquel";
 
     // 4. Registrar Asistencia (actualizando de Ausente a Presente si ya existía registro)
     if (mode === "jornada") {
-      const existing = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
+      let existingDoc: any = null;
+      const existingById = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
         Query.equal('alumnoId', alumno.$id),
         Query.equal('fecha', todayDate),
         Query.limit(1)
       ]);
 
-      if (existing.total > 0 && existing.documents[0]) {
-        const doc = existing.documents[0];
-        if (doc.estado === "P") {
+      if (existingById.total > 0) {
+        existingDoc = existingById.documents[0];
+      } else if (alumno.dni) {
+        const existingByDni = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
+          Query.equal('alumnoId', alumno.dni),
+          Query.equal('fecha', todayDate),
+          Query.limit(1)
+        ]);
+        if (existingByDni.total > 0) existingDoc = existingByDni.documents[0];
+      }
+
+      if (existingDoc) {
+        if (existingDoc.estado === "P") {
           return NextResponse.json({
             success: true,
             alreadyRecorded: true,
@@ -92,7 +163,7 @@ export async function POST(request: Request) {
           });
         }
         // Si estaba Ausente u otro estado, cambiar a Presente por QR
-        await db.updateDocument(dbId, 'asistencias_alumnos_jornada', doc.$id, {
+        await db.updateDocument(dbId, 'asistencias_alumnos_jornada', existingDoc.$id, {
           estado: "P",
           preceptorId: String(issuerId || "QR_SISTEMA").slice(0, 50),
           schoolId: studentSchoolId
@@ -121,16 +192,28 @@ export async function POST(request: Request) {
 
     } else if (mode === "materia") {
       const cleanMateria = String(materia || "Materia");
-      const existing = await db.listDocuments(dbId, 'asistencias_alumnos_materia', [
+      let existingDoc: any = null;
+      const existingById = await db.listDocuments(dbId, 'asistencias_alumnos_materia', [
         Query.equal('alumnoId', alumno.$id),
         Query.equal('fecha', todayDate),
         Query.equal('materia', cleanMateria),
         Query.limit(1)
       ]);
 
-      if (existing.total > 0 && existing.documents[0]) {
-        const doc = existing.documents[0];
-        if (doc.estado === "P") {
+      if (existingById.total > 0) {
+        existingDoc = existingById.documents[0];
+      } else if (alumno.dni) {
+        const existingByDni = await db.listDocuments(dbId, 'asistencias_alumnos_materia', [
+          Query.equal('alumnoId', alumno.dni),
+          Query.equal('fecha', todayDate),
+          Query.equal('materia', cleanMateria),
+          Query.limit(1)
+        ]);
+        if (existingByDni.total > 0) existingDoc = existingByDni.documents[0];
+      }
+
+      if (existingDoc) {
+        if (existingDoc.estado === "P") {
           return NextResponse.json({
             success: true,
             alreadyRecorded: true,
@@ -140,7 +223,7 @@ export async function POST(request: Request) {
             message: `Tu presente para ${cleanMateria} ya se encontraba registrado.`
           });
         }
-        await db.updateDocument(dbId, 'asistencias_alumnos_materia', doc.$id, {
+        await db.updateDocument(dbId, 'asistencias_alumnos_materia', existingDoc.$id, {
           estado: "P",
           profesorId: String(issuerId || "QR_SISTEMA").slice(0, 50),
           schoolId: studentSchoolId
