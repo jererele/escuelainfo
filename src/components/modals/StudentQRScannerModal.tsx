@@ -259,23 +259,41 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
       }
 
       const cameraConfig = targetCameraId 
-        ? { deviceId: { exact: targetCameraId } }
-        : { facingMode: { ideal: "environment" } };
+        ? targetCameraId 
+        : { facingMode: "environment" };
 
-      await html5Qr.start(
-        cameraConfig,
-        {
-          fps: 15,
-          qrbox: { width: 240, height: 240 },
-          aspectRatio: 1.0,
-        },
-        (decodedText) => {
-          handleDecodedText(decodedText);
-        },
-        () => {
-          // Fallo frame a frame (normal cuando no hay QR en el visor, no loguear)
+      const qrConfig = {
+        fps: 15,
+        qrbox: { width: 240, height: 240 },
+        aspectRatio: 1.0,
+      };
+
+      try {
+        await html5Qr.start(
+          cameraConfig,
+          qrConfig,
+          (decodedText) => {
+            handleDecodedText(decodedText);
+          },
+          () => {
+            // Fallo frame a frame (normal cuando no hay QR en el visor, no loguear)
+          }
+        );
+      } catch (startErr) {
+        if (targetCameraId) {
+          console.warn("[QR Scanner] Falló cámara con ID específico, reintentando con 'environment':", startErr);
+          await html5Qr.start(
+            { facingMode: "environment" },
+            qrConfig,
+            (decodedText) => {
+              handleDecodedText(decodedText);
+            },
+            () => {}
+          );
+        } else {
+          throw startErr;
         }
-      );
+      }
 
       // 3. Forzar zoom óptico/estándar a 1.0 si el navegador lo soporta
       try {

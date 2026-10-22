@@ -181,19 +181,35 @@ export default function ExamQRScannerModal({
         }
 
         const cameraConfig = targetCameraId 
-          ? { deviceId: { exact: targetCameraId } }
-          : { facingMode: { ideal: "environment" } };
+          ? targetCameraId 
+          : { facingMode: "environment" };
 
-        await html5Qr.start(
-          cameraConfig,
-          {
-            fps: 15,
-            qrbox: { width: 240, height: 240 },
-            aspectRatio: 1.0,
-          },
-          (decoded) => handleDecodedText(decoded),
-          () => {}
-        );
+        const qrConfig = {
+          fps: 15,
+          qrbox: { width: 240, height: 240 },
+          aspectRatio: 1.0,
+        };
+
+        try {
+          await html5Qr.start(
+            cameraConfig,
+            qrConfig,
+            (decoded) => handleDecodedText(decoded),
+            () => {}
+          );
+        } catch (startErr) {
+          if (targetCameraId) {
+            console.warn("[Exam QR Scanner] Falló cámara con ID específico, reintentando con 'environment':", startErr);
+            await html5Qr.start(
+              { facingMode: "environment" },
+              qrConfig,
+              (decoded) => handleDecodedText(decoded),
+              () => {}
+            );
+          } else {
+            throw startErr;
+          }
+        }
 
         // 3. Forzar zoom a 1.0 si es soportado
         try {

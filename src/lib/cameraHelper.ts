@@ -15,69 +15,82 @@ export function getBestMainRearCameraId(devices: CameraDevice[]): string | null 
 
   const frontRegex = /front|frontal|delantera|selfie|user|facing\s*front/i;
   const backRegex = /back|rear|trasera|environment|exterior|facing\s*back/i;
-  const auxRegex = /ultra|wide-angle|super wide|gran angular|0\.5|0\.6|0,5|0,6|tele|macro|depth|tof|aux/i;
-  const mainRegex = /main|principal|primary|standard|1x|1\.0x|normal/i;
+  
+  // Descartar lentes auxiliares: 0.5x, 0.6x, ultra gran angular, teleobjetivo, macro, profundidad
+  // y cámaras Android con índice 2 en adelante (en Android Camera2 HAL: 0=Main 1.0x, 1=Front, 2=Ultra-Wide, 3=Macro/Tele)
+  const auxRegex = /ultra|ultrawide|super\s*wide|ultra\s*gran\s*angular|0\.[56]|0,[56]|tele|telephoto|teleobjetivo|macro|depth|profundidad|tof|bokeh|virtual|aux|\bcamera[0-9]?\s*[2-9]\b|\b[2-9],\s*facing/i;
+  
+  // Patrones que identifican positivamente a la cámara trasera principal 1.0x
+  const androidCameraZeroRegex = /\bcamera[0-9]?\s*0\b|\b0,\s*facing\s*back\b/i;
+  const explicitMainRegex = /\bmain\b|\bprincipal\b|\bprimary\b|\bstandard\b|\b1x\b|\b1\.0x\b|\bnormal\b/i;
+  const appleStandardBackRegex = /^(?:back camera|c[aá]mara trasera)(?:\s*\([0-9]+\))?$/i;
 
   // 1. Filtrar cámaras que NO sean frontales
   const nonFrontDevices = devices.filter(d => !frontRegex.test(d.label));
-
   if (nonFrontDevices.length === 0) {
     return devices[0].id;
   }
 
-  // 2. Si alguna cámara trasera indica explícitamente ser "main", "principal" o "1x"
-  const explicitMain = nonFrontDevices.find(d => 
-    mainRegex.test(d.label) && !auxRegex.test(d.label)
-  );
-  if (explicitMain) return explicitMain.id;
+  // 2. Si hay una cámara Android Camera 0 (la cámara trasera 1.0x oficial del sistema):
+  const cameraZero = nonFrontDevices.find(d => androidCameraZeroRegex.test(d.label) && !auxRegex.test(d.label));
+  if (cameraZero) {
+    return cameraZero.id;
+  }
 
-  // 3. Buscar cámaras traseras que NO sean ultra-wide (0.5x, 0.6x), telephoto, ni macro
-  const standardBack = nonFrontDevices.filter(d => 
-    backRegex.test(d.label) && !auxRegex.test(d.label)
-  );
+  // 3. Si alguna indica explícitamente ser "main", "principal", "1x" o "1.0x":
+  const explicitMain = nonFrontDevices.find(d => explicitMainRegex.test(d.label) && !auxRegex.test(d.label));
+  if (explicitMain) {
+    return explicitMain.id;
+  }
 
+  // 4. Si es iOS con "Back Camera" exacto (o "Cámara trasera"):
+  const appleBack = nonFrontDevices.find(d => appleStandardBackRegex.test(d.label.trim()) && !auxRegex.test(d.label));
+  if (appleBack) {
+    return appleBack.id;
+  }
+
+  // 5. Cámaras traseras que NO sean auxiliares (sin ultra, sin 0.5x/0.6x, sin tele, sin macro):
+  const standardBack = nonFrontDevices.filter(d => backRegex.test(d.label) && !auxRegex.test(d.label));
   if (standardBack.length > 0) {
-    // Si alguna contiene 'wide' (sin 'ultra'), esa suele ser la lente gran angular estándar 1.0x
+    // Si alguna contiene 'wide' estándar de Apple (ej: 'Back Wide Angle Camera') sin 'ultra':
     const wideStandard = standardBack.find(d => /wide/i.test(d.label) && !/ultra/i.test(d.label));
     if (wideStandard) return wideStandard.id;
 
-    // Si hay una con índice o nombre distinto a 'camera2 0' (que en Samsung/Motorola suele ser la 0.6x):
-    if (standardBack.length > 1) {
-      const nonZero = standardBack.find(d => !/camera[0-9]?\s*0\b/i.test(d.label));
-      if (nonZero) return nonZero.id;
-    }
-
+    // Tomar la primera cámara trasera estándar (la principal)
     return standardBack[0].id;
   }
 
-  // 4. Si las etiquetas no mencionan 'back' explícitamente pero no son frontales:
+  // 6. Si ninguna etiqueta tiene 'back', pero no son auxiliares ni frontales:
   const withoutAux = nonFrontDevices.filter(d => !auxRegex.test(d.label));
   if (withoutAux.length > 0) {
     return withoutAux[0].id;
   }
 
+  // Fallback seguro final:
   return nonFrontDevices[0].id;
 }
 
 /**
  * Obtiene la lista optimizada de cámaras para alternar (Trasera Principal + Frontal).
- * Evita pasear al usuario por 5 sensores auxiliares (macro, 0.6x, profundidad).
+ * Filtra absolutamente sensores auxiliares (macro, 0.6x ultra gran angular, profundidad)
+ * para que el usuario nunca quede atrapado en lentes gran angular al cambiar de cámara.
  */
 export function getOptimizedCameraList(devices: CameraDevice[]): CameraDevice[] {
   if (!devices || devices.length <= 1) return devices;
 
   const frontRegex = /front|frontal|delantera|selfie|user|facing\s*front/i;
-  const mainRearId = getBestMainRearCameraId(devices);
+  const auxRegex = /ultra|ultrawide|super\s*wide|ultra\s*gran\s*angular|0\.[56]|0,[56]|tele|telephoto|teleobjetivo|macro|depth|profundidad|tof|bokeh|virtual|aux|\bcamera[0-9]?\s*[2-9]\b|\b[2-9],\s*facing/i;
 
+  const mainRearId = getBestMainRearCameraId(devices);
   const mainRear = devices.find(d => d.id === mainRearId) || devices[0];
-  const front = devices.find(d => frontRegex.test(d.label));
+
+  // Buscar cámara frontal principal (descartando sensores auxiliares o de profundidad como TrueDepth si hay una frontal normal)
+  const frontCameras = devices.filter(d => frontRegex.test(d.label));
+  const bestFront = frontCameras.find(d => !auxRegex.test(d.label)) || frontCameras[0];
 
   const result: CameraDevice[] = [mainRear];
-  if (front && front.id !== mainRear.id) {
-    result.push(front);
-  } else {
-    const other = devices.find(d => d.id !== mainRear.id);
-    if (other) result.push(other);
+  if (bestFront && bestFront.id !== mainRear.id) {
+    result.push(bestFront);
   }
 
   return result;
@@ -97,7 +110,7 @@ export async function getCamerasWithLabels(): Promise<CameraDevice[]> {
     if (!hasLabels && typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } }
+          video: { facingMode: "environment" }
         });
         stream.getTracks().forEach(track => track.stop());
         devices = await Html5Qrcode.getCameras();
@@ -111,3 +124,4 @@ export async function getCamerasWithLabels(): Promise<CameraDevice[]> {
     return [];
   }
 }
+
