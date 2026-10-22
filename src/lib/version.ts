@@ -4,17 +4,25 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.41.0";
-export const APP_BUILD_DATE = "22/10/2026 14:15 hs";
+export const APP_VERSION = "v2.41.1";
+export const APP_BUILD_DATE = "22/10/2026 14:30 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
+  "Corrección Integral de Visibilidad en Formulario de Registro y Entrada de Teléfono (page.tsx, PhoneInputWithCountry.tsx): 1) Erradicación del recorte superior por centrado flex: Uso de 'my-auto' y contención natural para evitar que el logo y cabecera institucional se corten fuera del viewport. 2) Supresión del contenedor de scroll interno restrictivo: Eliminación de 'max-h-[60vh] overflow-y-auto' para permitir que el botón de envío y los términos se visualicen de forma completa y continua. 3) Fila exclusiva y redimensionamiento de Teléfono (PhoneInputWithCountry): Se independizó el campo a fila completa con paddings compactos (rounded-xl, py-2.5), asegurando más de 250px para el número telefónico sin truncamiento de dígitos. 4) Depuración de encabezado: Supresión de la caja redundante de escuela dentro del formulario y reordenamiento del logo y título.",
   "Blindaje de Jerarquía y Control de Acceso en Aprobación de Usuarios (dashboard/page.tsx, dataService.ts): Corrección de vulnerabilidad donde preceptores con acceso operativo (isAdmin) podían autorizar o auto-asignar roles de Administrador o Directivo. Se separó estrictamente la verificación de permisos en super-administradores ('admin'), directivos ('directivo') y preceptores ('preceptor'), impidiendo que roles no directivos alteren o promuevan rangos superiores.",
-  "Paridad Integral para el Rol Dual Preceptor y Profesor (dataService.ts, ProfesoresTab.tsx, CursosTab.tsx, PreceptoresTab.tsx, StudentAttendanceManager.tsx): 1) dataService: Inclusión de 'preceptor_profesor' en asignación y gestión de roles ('getAllowedAssignableRoles', 'canManageUserRole'), sincronización de correo docente y recepción de notificaciones multicanal (preceptor y profesor). 2) CursosTab y PreceptoresTab: Detección y normalización de cursos mediante 'parseUserCursos', incorporación de insignia 'Preceptor / Profesor' y asignación rápida protegida. 3) ProfesoresTab: Acceso a gestión docente para personal dual. 4) StudentAttendanceManager: Habilitación de toma de asistencia general, selección ágil de turnos y modo cobertura para personal dual.",
-  "Estandarización de Capas Z-Index en Modales y Diálogos Emergentes (z-[600] / z-[700]): Elevación uniforme de modales (NewAbsenceModal, ChubutSchoolSelector, NewTeacherReportModal, LicenciasDBModal, PreceptorCoverageModal, NewScheduleModal, NewCourseModal, NewStudentModal, NewUserModal, NewTeacherModal, SendNoticeModal, AssignStudentsModal, PreceptoresTab) a z-[600] y el diálogo de confirmación ('confirmDialog') a z-[700], eliminando solapamientos con la barra de navegación superior TopNavSidebar (z-[500]).",
+  "Paridad Integral para el Rol Dual Preceptor y Profesor (dataService.ts, ProfesoresTab.tsx, CursosTab.tsx, PreceptoresTab.tsx, StudentAttendanceManager.tsx): Soporte completo para asignación, asistencia, cobertura, insignias y notificaciones combinadas.",
+  "Estandarización de Capas Z-Index en Modales y Diálogos Emergentes (z-[600] / z-[700]): Elevación uniforme de modales a z-[600] y el diálogo de confirmación a z-[700], eliminando solapamientos con la barra superior de navegación.",
   "Aislamiento Multiescuela en Notificaciones y Alertas Institucionales (dataService.ts): Filtrado estricto por 'schoolId' en 'markNotificacionAsRead', 'markAllNotificacionesAsRead' y 'deleteNotificacion' para garantizar la partición de datos entre escuelas."
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.41.1",
+    date: "22/10/2026 14:30 hs",
+    notes: [
+      "Corrección Integral de Visibilidad en Formulario de Registro y Entrada de Teléfono (page.tsx, PhoneInputWithCountry.tsx): Solución de cortes en cabecera y pie del formulario, eliminación de scroll anidado restrictivo, fila completa y padding compacto para teléfono sin truncamiento de dígitos."
+    ]
+  },
   {
     version: "v2.41.0",
     date: "22/10/2026 14:15 hs",

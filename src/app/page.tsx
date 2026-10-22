@@ -518,8 +518,8 @@ function LoginContent() {
 
 
   return (
-    <div className="flex-1 flex items-center justify-center relative px-4 bg-transparent py-10">
-      <div className="login-box w-full max-w-[440px] p-6 sm:p-9 rounded-2xl relative z-10 border border-[var(--border)] bg-[var(--bg2)] shadow-xl sm:shadow-2xl overflow-hidden">
+    <div className="flex-1 flex flex-col justify-center items-center relative px-4 bg-transparent py-6 sm:py-10 min-h-0">
+      <div className="login-box w-full max-w-[450px] p-5 sm:p-8 rounded-2xl relative z-10 border border-[var(--border)] bg-[var(--bg2)] shadow-xl sm:shadow-2xl my-auto">
         {checkingSession && (
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-[var(--verde)]/20 overflow-hidden pointer-events-none" aria-hidden="true">
             <div className="h-full bg-[var(--verde)] w-1/3 animate-pulse" />
@@ -543,22 +543,22 @@ function LoginContent() {
         ) : (
           <>
             {/* Header */}
-            <div className="text-center mb-7 flex flex-col items-center">
-              <div className="flex items-center justify-center mb-3 shrink-0">
-                <EscuelaInfoLogo size={56} />
+            <div className="text-center mb-5 flex flex-col items-center">
+              <div className="flex items-center justify-center mb-2 shrink-0">
+                <EscuelaInfoLogo size={46} />
               </div>
-              <div className="mb-3">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight mb-0.5 title-font leading-none">
+                Escuela<span className="text-[var(--verde)]">Info</span>
+              </div>
+              <div className="text-[11px] text-[var(--text2)] font-semibold tracking-wider uppercase mb-3">
+                Portal de Horarios y Asistencias
+              </div>
+              <div className="w-full flex justify-center">
                 <ChubutSchoolSelector
                   selectedSchoolId={selectedSchoolId}
                   onSelect={(school) => setSelectedSchoolId(school.id)}
                   variant="badge"
                 />
-              </div>
-              <div className="text-3xl font-black tracking-tight mb-1 title-font leading-none">
-                Escuela<span className="text-[var(--verde)]">Info</span>
-              </div>
-              <div className="text-xs text-[var(--text2)] font-semibold tracking-wider uppercase">
-                Portal de Horarios y Asistencias
               </div>
             </div>
 
@@ -788,28 +788,14 @@ function LoginContent() {
               </form>
             ) : registerStep === 1 ? (
               /* REGISTRO — Paso 1: Datos Personales */
-              <form onSubmit={handleSendRegisterCode} className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
-
-                {/* Escuela asignada desde el selector superior */}
-                <div className="p-2.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] flex items-center justify-between gap-2 text-xs">
-                  <div className="min-w-0 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[var(--verde)] shrink-0 animate-pulse" />
-                    <div className="min-w-0 truncate">
-                      <span className="text-[10px] text-[var(--text3)] uppercase font-bold block">Escuela de Destino</span>
-                      <span className="font-bold text-[var(--text)] text-xs truncate block">{currentSchool.nombreCompleto}</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold text-[var(--text3)] bg-[var(--bg)] px-2 py-0.5 rounded border border-[var(--border)] shrink-0">
-                    {currentSchool.ciudad}
-                  </span>
-                </div>
+              <form onSubmit={handleSendRegisterCode} className="space-y-3.5">
 
                 {/* Nombres y Apellidos con Avatar */}
                 <div className="flex items-center gap-3">
                   <div className="shrink-0" title="Tu avatar institucional se actualiza en vivo al escribir">
                     <UserAvatar
                       name={`${nombres} ${apellidos}`.trim() || "Nuevo Usuario"}
-                      size={54}
+                      size={52}
                       animate="always"
                       showRing={true}
                       className="ring-1 ring-[var(--verde)]/40 rounded-full"
@@ -839,21 +825,20 @@ function LoginContent() {
                     value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-[var(--text3)] block">DNI</label>
-                    <input required type="text" inputMode="numeric" maxLength={8} placeholder="12345678"
-                      className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
-                      value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-[var(--text3)] block">Teléfono</label>
-                    <PhoneInputWithCountry
-                      required
-                      value={telefono}
-                      onChange={setTelefono}
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-[var(--text3)] block">DNI (Sin puntos)</label>
+                  <input required type="text" inputMode="numeric" maxLength={8} placeholder="12345678"
+                    className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 outline-none font-medium text-[var(--text)] focus:border-[var(--verde)] text-sm transition-colors"
+                    value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))} />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-[var(--text3)] block">Teléfono Móvil (WhatsApp)</label>
+                  <PhoneInputWithCountry
+                    required
+                    value={telefono}
+                    onChange={setTelefono}
+                  />
                 </div>
 
                 <div className="space-y-1">

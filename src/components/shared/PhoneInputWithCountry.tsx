@@ -233,7 +233,7 @@ export default function PhoneInputWithCountry({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       <div
-        className={`relative flex items-center w-full bg-[var(--bg3)] border transition-all rounded-2xl overflow-hidden shadow-sm ${
+        className={`relative flex items-center w-full bg-[var(--bg3)] border transition-all rounded-xl overflow-hidden shadow-sm ${
           isFocused
             ? "border-[var(--verde)] ring-2 ring-[var(--verde)]/15 shadow-[0_0_15px_rgba(var(--verde-rgb),0.1)]"
             : "border-[var(--border)] hover:border-[var(--verde-border)]"
@@ -249,17 +249,17 @@ export default function PhoneInputWithCountry({
             }
           }}
           title={`Código de área actual: ${selectedCountry.name} (${selectedCountry.code}). Clic para cambiar país.`}
-          className="flex items-center gap-1.5 px-3.5 py-4 bg-[var(--bg2)]/60 hover:bg-[var(--bg2)] border-r border-[var(--border)] transition-colors cursor-pointer shrink-0 select-none"
+          className="flex items-center gap-1.5 px-2.5 py-2.5 bg-[var(--bg2)]/60 hover:bg-[var(--bg2)] border-r border-[var(--border)] transition-colors cursor-pointer shrink-0 select-none"
         >
-          <span className="text-lg leading-none" role="img" aria-label={selectedCountry.name}>
+          <span className="text-base leading-none shrink-0" role="img" aria-label={selectedCountry.name}>
             {selectedCountry.flag}
           </span>
-          <span className="text-xs font-black text-[var(--text)] tracking-tight">
+          <span className="text-xs font-bold text-[var(--text)] tracking-tight shrink-0">
             {selectedCountry.code}
           </span>
           <ChevronDown
-            size={13}
-            className={`text-[var(--text3)] transition-transform duration-200 ${
+            size={12}
+            className={`text-[var(--text3)] transition-transform duration-200 shrink-0 ${
               isOpen ? "rotate-180 text-[var(--verde)]" : ""
             }`}
           />
@@ -284,14 +284,14 @@ export default function PhoneInputWithCountry({
             onChange={handleDigitsChange}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="w-full min-w-0 bg-transparent px-3 py-3.5 sm:px-3.5 sm:py-4 outline-none font-bold text-[var(--text)] text-base sm:text-sm tracking-wide placeholder:text-[var(--text3)]/50"
+            className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none font-medium text-[var(--text)] text-sm tracking-wide placeholder:text-[var(--text3)]/50"
           />
 
           {/* Indicador de dígitos / Estado */}
-          <div className="pr-2.5 sm:pr-3.5 pl-1 flex items-center shrink-0">
+          <div className="pr-2.5 pl-1 flex items-center shrink-0">
             {hasDigits && (
               <div
-                className={`text-[9px] sm:text-[10px] font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border transition-colors select-none ${
+                className={`text-[9px] sm:text-[10px] font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border transition-colors select-none ${
                   isComplete
                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                     : "bg-amber-500/10 text-amber-400 border-amber-500/25"
