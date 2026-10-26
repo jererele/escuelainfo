@@ -129,6 +129,14 @@ const ROL_MAP: Record<string, string> = {
   "profesor": "profesor",
   "preceptor": "preceptor",
   "directivo": "directivo",
+  "director": "directivo",
+  "directora": "directivo",
+  "directivo/a": "directivo",
+  "equipo_directivo": "directivo",
+  "vicedirector": "directivo",
+  "vicedirectora": "directivo",
+  "rector": "directivo",
+  "rectora": "directivo",
   "pp_p": "preceptor_profesor",
   "preceptor_profesor": "preceptor_profesor"
 };
@@ -145,7 +153,7 @@ export const toDbRol = (r: string): string => {
   const clean = (r || "").trim().toLowerCase();
   switch (clean) {
     case "admin": return "ad";
-    case "directivo": return "d";
+    case "directivo": case "director": case "directora": case "directivo/a": case "rector": case "rectora": case "vicedirector": case "vicedirectora": case "equipo_directivo": return "d";
     case "preceptor": return "pp";
     case "profesor": return "p";
     case "preceptor_profesor": case "profesor_preceptor": case "pp_p": return "pp_p";

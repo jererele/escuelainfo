@@ -4,10 +4,11 @@ export interface VersionItem {
   notes: string[];
 }
 
-export const APP_VERSION = "v2.42.1";
-export const APP_BUILD_DATE = "22/10/2026 17:40 hs";
+export const APP_VERSION = "v2.42.2";
+export const APP_BUILD_DATE = "26/10/2026 16:50 hs";
 
 export const APP_RELEASE_NOTES: string[] = [
+  "Fijación Forzada de Calidad Full HD/HD, Enfoque Continuo y Lente Principal 1.0x en Escáner QR de Asistencia (cameraHelper.ts, StudentQRScannerModal.tsx, ExamQRScannerModal.tsx): Se erradicó de raíz la apertura involuntaria de lentes ultra gran angular (0.5x / 0.6x) o cámaras virtuales/frontales al escanear códigos QR. 1) Restricciones de Calidad y Píxeles (1080p/720p): Configuración estricta de 'videoConstraints' exigiendo 1080p ideal (min: 720p) con 20-30 fps, forzando al motor WebRTC a descartar sensores secundarios o lentes auxiliares de baja resolución (0.5x/macro) y negociar exclusivamente con el sensor principal de alta nitidez. 2) Filtrado Estricto de Cámaras Virtuales y Auxiliares: Bloqueo de lentes virtuales en iOS (Triple/Dual Camera que inician por defecto en 0.5x) y descarte de sensores 'ultra', '0.5', '0.6', 'tele' y 'macro'. 3) Forzado en Caliente de Autoenfoque y Zoom 1.0x (applyOptimalTrackConstraints): Aplicación directa sobre el MediaStreamTrack de enfoque continuo y zoom 1.0x estándar. 4) Degradación Resiliente: Soporte de fallback fluido en 720p para compatibilidad universal en dispositivos móviles.",
   "Aviso Oficial de Paro y Medidas de Fuerza Gremiales con Adhesión Docente Condicionada (NewStrikeNoticeModal.tsx, AusenciasTab.tsx, NewTeacherReportModal.tsx, dataService.ts): Implementación del protocolo oficial de medidas de fuerza. 1) Emisión y Gestión Directiva/Preceptoría (NewStrikeNoticeModal.tsx, AusenciasTab.tsx): Los administradores, directivos y preceptores cuentan con la potestad institucional exclusiva de convocar y emitir avisos oficiales de paro (ATECh, CTERA, SADOP, etc.) con selección de gremio, fechas de vigencia, motivo y difusión general por notificaciones en tiempo real. 2) Condicionamiento Estricto de Adhesión Docente: El botón 'Adherirse al Paro' para profesores se encuentra inhabilitado por defecto ('Sin Paro Convocado') con candado y aviso orientativo, y se activa automáticamente solo ante la vigencia de un aviso oficial de paro emitido para la institución en la fecha actual, computando de forma inmediata la adhesión como 'Paro Docente' y liberando las horas de clase. 3) Banner Institucional y Monitoreo en Tiempo Real: Visualización destacada de la medida gremial activa con detalle del gremio, motivo, fechas, autoridad emisora y conteo de docentes adheridos hoy, junto con la facultad de directivos y preceptores de levantar o dar por concluida la medida de fuerza en cualquier momento.",
   "Confinamiento Estricto de Escuelas Asignadas y Gestión de Reasignación Institucional por Administradores (/api/admin/change-school, ChubutSchoolSelector.tsx, UsuariosTab.tsx, ChangeSchoolModal.tsx, dashboard/page.tsx, dataService.ts): Se resolvió la vulnerabilidad donde cualquier usuario podía alternar libremente de escuela en el selector provincial y consultar datos de otras instituciones. 1) Confinamiento Estricto para Roles No-Admin (GeneralTab.tsx, ChubutSchoolSelector.tsx, dashboard/page.tsx): El selector provincial ahora opera en modo de solo lectura ('isReadOnly') para alumnos, profesores y preceptores, exhibiendo la escuela designada fija sin permitir alternancia ni acceso a escuelas ajenas. Cualquier intento de manipulación local o evento forzado es revertido de inmediato a la escuela autorizada del perfil. 2) Módulo y Modal de Asignación Escolar por Administrador (ChangeSchoolModal.tsx, UsuariosTab.tsx): Nueva columna 'Escuela Designada' y acción 'Asignar Escuela' en el directorio de usuarios, habilitando a los administradores a reasignar la escuela provincial de cualquier usuario desde el catálogo oficial de Chubut. 3) Endpoint Administrativo Autenticado (/api/admin/change-school): Validación estricta mediante JWT de rango de administrador, actualización sincronizada en colecciones 'usuarios', 'alumnos' y 'profesores', y trazabilidad en logs de auditoría institucional.",
   "Redirección Directa a Redactor de Gmail en Enlace de Soporte Institucional (Footer.tsx, InstitutionalGuideModal.tsx, privacidad/page.tsx): Se actualizó el botón oficial de correo ('skbcraft.info@gmail.com') en el pie de página institucional, guía de uso y sección de privacidad para redirigir directamente a la interfaz web de redacción de Gmail ('https://mail.google.com/mail/?view=cm&fs=1&to=skbcraft.info@gmail.com') en una nueva pestaña segura ('_blank' con 'noopener noreferrer'), evitando que el navegador dependa de clientes locales de correo (mailto) y precargando automáticamente el destinatario.",
@@ -25,6 +26,13 @@ export const APP_RELEASE_NOTES: string[] = [
 ];
 
 export const APP_VERSION_HISTORY: VersionItem[] = [
+  {
+    version: "v2.42.2",
+    date: "26/10/2026 16:50 hs",
+    notes: [
+      "Fijación Forzada de Calidad Full HD/HD, Enfoque Continuo y Lente Principal 1.0x en Escáner QR de Asistencia (cameraHelper.ts, StudentQRScannerModal.tsx, ExamQRScannerModal.tsx): Configuración estricta de 'videoConstraints' con resolución 1080p/720p para descartar sensores secundarios/ultra gran angular (0.5x/0.6x), bloqueo de lentes virtuales en iOS (Triple/Dual Camera) y forzado de autoenfoque y zoom 1.0x en el MediaStreamTrack."
+    ]
+  },
   {
     version: "v2.42.1",
     date: "22/10/2026 17:40 hs",
