@@ -85,6 +85,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
   );
   const effectiveOperatorRole = isOperatorAdmin ? "admin" : normalizedOperatorRole;
   const canOperatorManageRoles = isOperatorAdmin || ["admin", "directivo", "preceptor"].includes(effectiveOperatorRole);
+  const canOperatorManageSchools = isOperatorAdmin || effectiveOperatorRole === "directivo";
 
   useEffect(() => {
     if (!isOperatorAdmin && roleFilter === "admin") {
@@ -582,7 +583,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                               {userSchool.numero ? `N° ${userSchool.numero} · ${userSchool.ciudad}` : userSchool.nombre}
                             </span>
                           </div>
-                          {isOperatorAdmin && (
+                          {canOperatorManageSchools && (
                             <button
                               type="button"
                               onClick={() => {
@@ -644,7 +645,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                           <span>Rol</span>
                         </button>
                       )}
-                      {isOperatorAdmin && (
+                      {canOperatorManageSchools && (
                         <button
                           type="button"
                           onClick={() => {
@@ -808,7 +809,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                                   <span>Rol</span>
                                 </button>
                               )}
-                              {isOperatorAdmin && (
+                              {canOperatorManageSchools && (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -822,7 +823,7 @@ export const UsuariosTab: React.FC<UsuariosTabProps> = ({
                                   <span>Escuela</span>
                                 </button>
                               )}
-                              {!canModifyThisUser && !isOperatorAdmin && (
+                              {!canModifyThisUser && !canOperatorManageSchools && (
                                 <span className="text-[11px] font-mono text-[var(--text3)]" title="Jerarquía protegida">—</span>
                               )}
                             </td>

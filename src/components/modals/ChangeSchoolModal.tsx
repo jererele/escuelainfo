@@ -29,7 +29,14 @@ interface ChangeSchoolModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (targetSchoolId: string) => Promise<void> | void;
-  user: UserProfile | null;
+  user: {
+    id?: string;
+    uid?: string;
+    nombre: string;
+    email?: string;
+    rol?: string;
+    schoolId?: string;
+  } | null;
   currentSchoolId?: string;
 }
 
@@ -140,7 +147,7 @@ export default function ChangeSchoolModal({
               <h3 className="text-base sm:text-lg font-black text-[var(--text)] tracking-tight flex items-center gap-2">
                 <span>Asignar Escuela Institucional</span>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] font-black">
-                  Admin
+                  Admin / Directivo
                 </span>
               </h3>
               <p className="text-xs text-[var(--text3)]">

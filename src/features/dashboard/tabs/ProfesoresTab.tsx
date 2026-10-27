@@ -16,9 +16,11 @@ import {
   Sparkles,
   ArrowRight,
   UploadCloud,
-  Mail
+  Mail,
+  Building2
 } from "lucide-react";
-import { Profesor, UserProfile, Horario, getProfesores, fromDbRol } from "@/lib/dataService";
+import { Profesor, UserProfile, Horario, getProfesores, fromDbRol, changeUserSchoolApi } from "@/lib/dataService";
+import { getSchoolById, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 const AssignTeacherSubjectsModal = dynamic(
@@ -28,6 +30,11 @@ const AssignTeacherSubjectsModal = dynamic(
 
 const BulkDataImportModal = dynamic(
   () => import("@/components/modals/BulkDataImportModal"),
+  { ssr: false }
+);
+
+const ChangeSchoolModal = dynamic(
+  () => import("@/components/modals/ChangeSchoolModal"),
   { ssr: false }
 );
 
@@ -46,6 +53,7 @@ interface ProfesoresTabProps {
   onNavigateToAusencias: (profNombre: string) => void;
   onRefreshProfesores?: () => void;
   showToast?: (message: string, type?: "success" | "error") => void;
+  onChangeTeacherSchool?: (profesor: Profesor, targetSchoolId: string) => Promise<void> | void;
 }
 
 export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
@@ -63,6 +71,7 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
   onNavigateToAusencias,
   onRefreshProfesores,
   showToast,
+  onChangeTeacherSchool,
 }) => {
   const normalizedUserRole = fromDbRol(userRole);
   const isPreceptor = normalizedUserRole === "preceptor" || normalizedUserRole === "preceptor_profesor";
@@ -70,6 +79,8 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
   const effectiveCanManageInfo = canManageInfo !== undefined ? canManageInfo : (isAdmin && !isPreceptor);
   // canManageMaterias: Administradores, directivos y preceptores pueden asignar y modificar materias de docentes.
   const effectiveCanManageMaterias = canManageMaterias !== undefined ? canManageMaterias : (isAdmin || isPreceptor || canManage);
+  // canManageSchools: Administradores y directivos pueden ver y asignar escuelas a profesores
+  const canManageSchools = isAdmin || normalizedUserRole === "admin" || normalizedUserRole === "directivo";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTeacherForMaterias, setSelectedTeacherForMaterias] = useState<{
@@ -81,6 +92,74 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
   } | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [schoolChangingTeacher, setSchoolChangingTeacher] = useState<{
+    id?: string;
+    nombre: string;
+    email?: string;
+    schoolId?: string;
+    rol?: string;
+  } | null>(null);
+  const [isChangeSchoolModalOpen, setIsChangeSchoolModalOpen] = useState(false);
+
+  const handleOpenChangeSchool = (p: Profesor | { id?: string; nombre: string; email?: string; schoolId?: string }) => {
+    const userMatch = usuarios.find(
+      (u) =>
+        (p.email && u.email && u.email.toLowerCase().trim() === p.email.toLowerCase().trim()) ||
+        (p.id && u.id && u.id === p.id)
+    );
+    setSchoolChangingTeacher({
+      id: userMatch?.id || p.id,
+      nombre: p.nombre,
+      email: p.email,
+      schoolId: p.schoolId || userMatch?.schoolId || DEFAULT_SCHOOL_ID,
+      rol: userMatch?.rol || "profesor",
+    });
+    setIsChangeSchoolModalOpen(true);
+  };
+
+  const handleConfirmTeacherSchool = async (targetSchoolId: string) => {
+    if (!schoolChangingTeacher) return;
+    try {
+      if (onChangeTeacherSchool) {
+        await onChangeTeacherSchool(
+          {
+            id: schoolChangingTeacher.id,
+            nombre: schoolChangingTeacher.nombre,
+            email: schoolChangingTeacher.email || "",
+            dni: "",
+            materias: [],
+            schoolId: targetSchoolId,
+          },
+          targetSchoolId
+        );
+      } else {
+        const res = await changeUserSchoolApi(
+          schoolChangingTeacher.id || "",
+          targetSchoolId,
+          schoolChangingTeacher.email
+        );
+        if (res.success) {
+          if (showToast) {
+            showToast(
+              res.schoolNombre
+                ? `Escuela de ${schoolChangingTeacher.nombre} actualizada a ${res.schoolNombre}`
+                : "Escuela reasignada exitosamente.",
+              "success"
+            );
+          }
+          if (onRefreshProfesores) onRefreshProfesores();
+        } else {
+          if (showToast) {
+            showToast(res.error || "No se pudo cambiar la escuela asignada.", "error");
+          }
+        }
+      }
+    } catch (err: any) {
+      if (showToast) {
+        showToast(err?.message || "Error al asignar escuela", "error");
+      }
+    }
+  };
 
   const existingDnis = useMemo(() => {
     return new Set(profesores.map((p) => p.dni).filter(Boolean));
@@ -270,9 +349,32 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                     <p className="text-[11px] text-[var(--text3)] truncate">
                       {u.email}
                     </p>
+                    {(() => {
+                      const userMatch = usuarios.find(
+                        (usr) => (u.email && usr.email && usr.email.toLowerCase().trim() === u.email.toLowerCase().trim()) || (u.id && usr.id && usr.id === u.id)
+                      );
+                      const sId = userMatch?.schoolId || DEFAULT_SCHOOL_ID;
+                      const sch = getSchoolById(sId);
+                      return (
+                        <span className="text-[10px] font-semibold text-[var(--verde)] flex items-center gap-1 mt-0.5" title={sch.nombreCompleto}>
+                          <Building2 size={10} className="shrink-0" />
+                          <span className="truncate max-w-[130px]">{sch.numero ? `N° ${sch.numero} · ${sch.ciudad}` : sch.nombre}</span>
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {canManageSchools && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenChangeSchool({ id: u.id, nombre: u.nombre, email: u.email })}
+                      className="p-1.5 rounded-lg border border-[var(--border)] text-[var(--text2)] hover:text-[var(--verde)] hover:bg-[var(--verde-bg)] hover:border-[var(--verde-border)] transition-all cursor-pointer"
+                      title={`Asignar o cambiar escuela de ${u.nombre}`}
+                    >
+                      <Building2 size={13} />
+                    </button>
+                  )}
                   {u.email && (
                     <a
                       href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(u.email)}&su=${encodeURIComponent(`Comunicación Institucional - Docente ${u.nombre}`)}`}
@@ -407,9 +509,48 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
                   </div>
 
                   {/* NOMBRE */}
-                  <h3 className="text-lg sm:text-xl font-bold mb-3 text-[var(--text)] group-hover:text-[var(--verde)] transition-colors line-clamp-1">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2.5 text-[var(--text)] group-hover:text-[var(--verde)] transition-colors line-clamp-1">
                     {p.nombre}
                   </h3>
+
+                  {/* ESCUELA ASIGNADA */}
+                  {(() => {
+                    const userMatch = usuarios.find(
+                      (u) =>
+                        (p.email && u.email && u.email.toLowerCase().trim() === p.email.toLowerCase().trim()) ||
+                        (p.id && u.id && u.id === p.id)
+                    );
+                    const teacherSchoolId = p.schoolId || userMatch?.schoolId || DEFAULT_SCHOOL_ID;
+                    const teacherSchool = getSchoolById(teacherSchoolId);
+
+                    return (
+                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[var(--bg3)] border border-[var(--border)] mb-3 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Building2 size={14} className="text-[var(--verde)] shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] uppercase font-bold text-[var(--text3)] block leading-tight">Escuela Asignada</span>
+                            <span className="font-bold text-[var(--text)] truncate block text-xs" title={teacherSchool.nombreCompleto}>
+                              {teacherSchool.numero ? `N° ${teacherSchool.numero} · ${teacherSchool.ciudad}` : teacherSchool.nombre}
+                            </span>
+                          </div>
+                        </div>
+                        {canManageSchools && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenChangeSchool(p);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--verde-bg)] text-[var(--verde)] border border-[var(--verde-border)] hover:bg-[var(--verde)] hover:text-black transition-all text-[11px] font-bold cursor-pointer shrink-0 shadow-xs active:scale-95"
+                            title={`Asignar o cambiar escuela de ${p.nombre}`}
+                          >
+                            <Building2 size={12} strokeWidth={2.2} />
+                            <span>Asignar</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* SECCIÓN DE MATERIAS CON BOTÓN PARA ASIGNAR/MODIFICAR */}
                   <div className="mb-4">
@@ -540,6 +681,19 @@ export const ProfesoresTab: React.FC<ProfesoresTabProps> = ({
           onSuccess={() => {
             if (onRefreshProfesores) onRefreshProfesores();
           }}
+        />
+      )}
+
+      {/* MODAL DE ASIGNACIÓN DE ESCUELA */}
+      {isChangeSchoolModalOpen && schoolChangingTeacher && (
+        <ChangeSchoolModal
+          isOpen={isChangeSchoolModalOpen}
+          onClose={() => {
+            setIsChangeSchoolModalOpen(false);
+            setSchoolChangingTeacher(null);
+          }}
+          onConfirm={handleConfirmTeacherSchool}
+          user={schoolChangingTeacher}
         />
       )}
     </div>

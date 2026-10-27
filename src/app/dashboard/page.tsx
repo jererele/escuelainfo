@@ -1233,9 +1233,45 @@ export default function Dashboard() {
       } else {
         showToast(res.error || "No se pudo cambiar la escuela asignada.", "error");
       }
+      } catch (err: any) {
+        console.error("Error al asignar escuela:", err);
+        showToast(err?.message || "Error al asignar escuela institucional", "error");
+      }
+    };
+
+  // ASIGNACIÓN Y REASIGNACIÓN DE ESCUELA A PROFESOR (Administradores y Directivos)
+  const handleChangeTeacherSchool = async (targetProfesor: Profesor, targetSchoolId: string) => {
+    try {
+      const targetUserId = targetProfesor.id || "";
+      const targetUserEmail = (targetProfesor.email || "").toLowerCase().trim();
+      const res = await changeUserSchoolApi(targetUserId, targetSchoolId, targetUserEmail);
+      if (res.success) {
+        showToast(
+          res.schoolNombre
+            ? `Escuela de ${targetProfesor.nombre} actualizada a ${res.schoolNombre}`
+            : "Escuela reasignada exitosamente.",
+          "success"
+        );
+        // Actualizar localmente optimista profesores
+        setProfesores(prev => prev.map(p => {
+          const matches = (targetUserId && p.id === targetUserId) ||
+            (targetUserEmail && (p.email || "").toLowerCase().trim() === targetUserEmail);
+          return matches ? { ...p, schoolId: targetSchoolId } : p;
+        }));
+        // Actualizar localmente optimista usuarios si existe
+        setUsuarios(prev => prev.map(u => {
+          const matches = (targetUserId && (u.id === targetUserId || u.uid === targetUserId)) ||
+            (targetUserEmail && (u.email || "").toLowerCase().trim() === targetUserEmail);
+          return matches ? { ...u, schoolId: targetSchoolId } : u;
+        }));
+        getProfesores(true).then(setProfesores).catch(() => {});
+        getUsuarios(true).then(setUsuarios).catch(() => {});
+      } else {
+        showToast(res.error || "No se pudo cambiar la escuela asignada.", "error");
+      }
     } catch (err: any) {
-      console.error("Error al asignar escuela:", err);
-      showToast(err?.message || "Error al asignar escuela institucional", "error");
+      console.error("Error al asignar escuela a profesor:", err);
+      showToast(err?.message || "Error al asignar escuela", "error");
     }
   };
 
@@ -1829,6 +1865,7 @@ export default function Dashboard() {
               }}
               onNavigateToAusencias={(search: string) => { setActiveTab("ausencias"); setSearchQuery(search); }}
               onRefreshProfesores={() => getProfesores().then(setProfesores)}
+              onChangeTeacherSchool={handleChangeTeacherSchool}
               showToast={showToast}
             />
           )}

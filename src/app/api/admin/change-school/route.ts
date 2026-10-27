@@ -97,11 +97,11 @@ export async function POST(request: Request) {
     }
 
     const operatorRole = fromDbRol(callerDoc.rol);
-    if (operatorRole !== "admin") {
-      return NextResponse.json({ error: "Solo los Administradores del sistema tienen autorización para asignar o cambiar la escuela designada de un usuario." }, { status: 403 });
+    if (operatorRole !== "admin" && operatorRole !== "directivo") {
+      return NextResponse.json({ error: "Acceso denegado: solo los Administradores y Directivos tienen autorización institucional para asignar o cambiar la escuela designada." }, { status: 403 });
     }
 
-    // 2. Localizar documento del usuario objetivo
+    // 2. Localizar documento del usuario/docente objetivo en 'usuarios', 'profesores' o 'alumnos'
     let targetDoc: any = null;
     if (targetUserId) {
       try {
@@ -126,46 +126,95 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    if (!targetDoc) {
-      return NextResponse.json({ error: "No se encontró el registro del usuario objetivo para reasignar escuela." }, { status: 404 });
-    }
-
-    const prevSchoolId = targetDoc.schoolId || DEFAULT_SCHOOL_ID;
-
-    // 3. Actualizar la escuela en 'usuarios'
-    await db.updateDocument(dbId, 'usuarios', targetDoc.$id, {
-      schoolId: cleanSchoolId
-    });
-
-    // 4. Sincronizar en 'alumnos' si existe
-    if (cleanTargetEmail) {
+    // Búsqueda en la colección 'profesores' si no se encontró en 'usuarios' o para sincronización
+    let profDoc: any = null;
+    if (targetUserId) {
       try {
-        const alumnosList = await db.listDocuments(dbId, 'alumnos', [
-          Query.equal('email', cleanTargetEmail)
-        ]);
-        for (const al of alumnosList.documents) {
-          await db.updateDocument(dbId, 'alumnos', al.$id, {
-            schoolId: cleanSchoolId
-          });
+        profDoc = await db.getDocument(dbId, 'profesores', targetUserId);
+      } catch {}
+    }
+    if (!profDoc && cleanTargetEmail) {
+      try {
+        const pList = await db.listDocuments(dbId, 'profesores', [Query.equal('email', cleanTargetEmail)]);
+        if (pList.documents.length > 0) {
+          profDoc = pList.documents[0];
         }
-      } catch (err: any) {
-        console.warn("[change-school] Advertencia al sincronizar alumnos:", err?.message);
-      }
+      } catch {}
     }
 
-    // 5. Sincronizar en 'profesores' si existe
+    // Búsqueda en la colección 'alumnos'
+    let alumDoc: any = null;
+    if (targetUserId) {
+      try {
+        alumDoc = await db.getDocument(dbId, 'alumnos', targetUserId);
+      } catch {}
+    }
+    if (!alumDoc && cleanTargetEmail) {
+      try {
+        const aList = await db.listDocuments(dbId, 'alumnos', [Query.equal('email', cleanTargetEmail)]);
+        if (aList.documents.length > 0) {
+          alumDoc = aList.documents[0];
+        }
+      } catch {}
+    }
+
+    if (!targetDoc && !profDoc && !alumDoc) {
+      return NextResponse.json({ error: "No se encontró el registro del usuario o docente objetivo para reasignar escuela." }, { status: 404 });
+    }
+
+    const prevSchoolId = targetDoc?.schoolId || profDoc?.schoolId || alumDoc?.schoolId || DEFAULT_SCHOOL_ID;
+    const targetDisplayName = targetDoc?.nombre || profDoc?.nombre || alumDoc?.nombre || cleanTargetEmail || "Docente";
+
+    // 3. Actualizar la escuela en 'usuarios' si existe
+    if (targetDoc) {
+      await db.updateDocument(dbId, 'usuarios', targetDoc.$id, {
+        schoolId: cleanSchoolId
+      });
+    }
+
+    // 4. Actualizar la escuela en 'profesores' si existe
+    if (profDoc) {
+      await db.updateDocument(dbId, 'profesores', profDoc.$id, {
+        schoolId: cleanSchoolId
+      });
+    }
     if (cleanTargetEmail) {
       try {
         const profsList = await db.listDocuments(dbId, 'profesores', [
           Query.equal('email', cleanTargetEmail)
         ]);
         for (const pr of profsList.documents) {
-          await db.updateDocument(dbId, 'profesores', pr.$id, {
-            schoolId: cleanSchoolId
-          });
+          if (!profDoc || pr.$id !== profDoc.$id) {
+            await db.updateDocument(dbId, 'profesores', pr.$id, {
+              schoolId: cleanSchoolId
+            });
+          }
         }
       } catch (err: any) {
         console.warn("[change-school] Advertencia al sincronizar profesores:", err?.message);
+      }
+    }
+
+    // 5. Actualizar la escuela en 'alumnos' si existe
+    if (alumDoc) {
+      await db.updateDocument(dbId, 'alumnos', alumDoc.$id, {
+        schoolId: cleanSchoolId
+      });
+    }
+    if (cleanTargetEmail) {
+      try {
+        const alumnosList = await db.listDocuments(dbId, 'alumnos', [
+          Query.equal('email', cleanTargetEmail)
+        ]);
+        for (const al of alumnosList.documents) {
+          if (!alumDoc || al.$id !== alumDoc.$id) {
+            await db.updateDocument(dbId, 'alumnos', al.$id, {
+              schoolId: cleanSchoolId
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn("[change-school] Advertencia al sincronizar alumnos:", err?.message);
       }
     }
 
@@ -174,7 +223,7 @@ export async function POST(request: Request) {
       await db.createDocument(dbId, 'logs', ID.unique(), {
         usuario: cleanCallerEmail,
         accion: 'REASIGNACION_ESCUELA_USUARIO',
-        detalles: `Usuario: ${cleanTargetEmail || targetDoc.nombre} (${targetDoc.$id}). De: ${prevSchoolId} -> A: ${schoolData.nombreCompleto} (${cleanSchoolId})`,
+        detalles: `Reasignación por ${operatorRole.toUpperCase()} (${cleanCallerEmail}) a ${targetDisplayName} (${cleanTargetEmail || targetUserId}). De: ${prevSchoolId} -> A: ${schoolData.nombreCompleto} (${cleanSchoolId})`,
         fechaReg: new Date().toISOString(),
         schoolId: cleanSchoolId
       });
