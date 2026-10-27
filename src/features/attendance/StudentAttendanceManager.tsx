@@ -119,7 +119,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
   const canManageGeneralAttendance = useMemo(() => {
     const r = fromDbRol(role);
-    return r === "admin" || r === "directivo" || r === "preceptor" || r === "preceptor_profesor";
+    return r === "admin" || r === "directivo" || r === "preceptor" || r === "preceptor_profesor" || r === "profesor";
   }, [role]);
 
   // Si el preceptor no tiene cursos propios asignados, activar por defecto el turno actual de la escuela
