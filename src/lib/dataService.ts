@@ -1656,20 +1656,84 @@ export const subscribeToAusencias = (callback: (data: Ausencia[]) => void) => {
 };
 
 export const subscribeToMesasExamen = (callback: (data: MesaExamen[]) => void) => {
-  const fetchAll = () => getMesasExamen(true).then(callback);
+  let isSubscribed = true;
+  let retryTimeout: NodeJS.Timeout | null = null;
+
+  const fetchAll = async () => {
+    try {
+      const data = await getMesasExamen(true);
+      if (isSubscribed) {
+        callback(data);
+      }
+    } catch (err) {
+      devLog("subscribeToMesasExamen/fetch", err);
+    }
+  };
+
   fetchAll();
+
+  // Suscripción Realtime WebSocket con Appwrite
   const unsubscribe = appwriteClient.subscribe(
     `databases.${APPWRITE_DB_ID}.collections.${APPWRITE_MESAS_EXAMEN_COLLECTION_ID}.documents`,
-    () => fetchAll()
+    () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = setTimeout(() => {
+        if (isSubscribed) fetchAll();
+      }, 150);
+    }
   );
-  const handleSchool = () => fetchAll();
+
+  // Escucha de eventos locales en la misma pestaña y cambio de escuela activa
+  const handleLocalUpdate = () => {
+    if (isSubscribed) fetchAll();
+  };
+
   if (typeof window !== "undefined") {
-    window.addEventListener("escuelainfo:school-changed", handleSchool);
+    window.addEventListener("escuelainfo:mesas-updated", handleLocalUpdate);
+    window.addEventListener("escuelainfo:school-changed", handleLocalUpdate);
   }
+
+  // Canal broadcast entre múltiples pestañas del mismo navegador
+  let bc: BroadcastChannel | null = null;
+  if (typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") {
+    try {
+      bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "mesas" && isSubscribed) {
+          fetchAll();
+        }
+      };
+    } catch {}
+  }
+
+  // Polling de seguridad de respaldo (cada 15s) y sincronización al reenfocar
+  const interval = setInterval(() => {
+    if (isSubscribed) fetchAll();
+  }, 15000);
+
+  const handleFocus = () => {
+    if (isSubscribed) fetchAll();
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isSubscribed) fetchAll();
+    });
+  }
+
   return () => {
+    isSubscribed = false;
+    if (retryTimeout) clearTimeout(retryTimeout);
+    clearInterval(interval);
     unsubscribe();
     if (typeof window !== "undefined") {
-      window.removeEventListener("escuelainfo:school-changed", handleSchool);
+      window.removeEventListener("escuelainfo:mesas-updated", handleLocalUpdate);
+      window.removeEventListener("escuelainfo:school-changed", handleLocalUpdate);
+      window.removeEventListener("focus", handleFocus);
+    }
+    if (bc) {
+      try { bc.close(); } catch {}
     }
   };
 };
@@ -2406,22 +2470,36 @@ export const getMesasExamen = async (forceRefresh = false, schoolId?: string): P
       collectionId: APPWRITE_MESAS_EXAMEN_COLLECTION_ID,
       queries: [Query.equal("schoolId", sId), Query.orderAsc("fecha"), Query.limit(DEFAULT_LIMIT)]
     });
-    appwriteItems = response.documents.map(doc => ({
-      id: doc.$id,
-      fecha: doc.fecha || "",
-      hora: doc.hora || "",
-      materia: doc.materia || "",
-      aula: doc.aula || "",
-      presidenteId: doc.presidenteId || "",
-      presidenteNombre: doc.presidenteNombre || "Presidente",
-      vocal1Id: doc.vocal1Id || undefined,
-      vocal1Nombre: doc.vocal1Nombre || undefined,
-      vocal2Id: doc.vocal2Id || undefined,
-      vocal2Nombre: doc.vocal2Nombre || undefined,
-      alumnosInscriptos: Array.isArray(doc.alumnosInscriptos) ? doc.alumnosInscriptos : [],
-      estado: (doc.estado as any) || "borrador",
-      schoolId: doc.schoolId || sId,
-    }));
+    appwriteItems = response.documents.map(doc => {
+      let parsedAlumnos: string[] = [];
+      if (Array.isArray(doc.alumnosInscriptos)) {
+        parsedAlumnos = doc.alumnosInscriptos;
+      } else if (typeof doc.alumnosInscriptos === "string" && doc.alumnosInscriptos.trim()) {
+        try {
+          const parsed = JSON.parse(doc.alumnosInscriptos);
+          parsedAlumnos = Array.isArray(parsed) ? parsed : [doc.alumnosInscriptos];
+        } catch {
+          parsedAlumnos = doc.alumnosInscriptos.split(",").map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+
+      return {
+        id: doc.$id,
+        fecha: doc.fecha || "",
+        hora: doc.hora || "",
+        materia: doc.materia || "",
+        aula: doc.aula || "",
+        presidenteId: doc.presidenteId || "",
+        presidenteNombre: doc.presidenteNombre || "Presidente",
+        vocal1Id: doc.vocal1Id || undefined,
+        vocal1Nombre: doc.vocal1Nombre || undefined,
+        vocal2Id: doc.vocal2Id || undefined,
+        vocal2Nombre: doc.vocal2Nombre || undefined,
+        alumnosInscriptos: parsedAlumnos,
+        estado: (doc.estado as any) || "borrador",
+        schoolId: doc.schoolId || sId,
+      };
+    });
   } catch (err: any) {
     devLog("getMesasExamen (LocalStorage fallback)", err);
   }
@@ -2436,11 +2514,28 @@ export const getMesasExamen = async (forceRefresh = false, schoolId?: string): P
   });
 
   // Add local items (offline or local fallback) if not already present from Appwrite
+  const pendingSyncLocals: MesaExamen[] = [];
   localItems.forEach(item => {
     if (item.id && !combinedMap.has(item.id)) {
       combinedMap.set(item.id, item);
+      if (item.id.startsWith("LOCAL_")) {
+        pendingSyncLocals.push(item);
+      }
     }
   });
+
+  // Auto-sync de fondo: Si existían mesas guardadas como LOCAL_ que fallaron antes, subirlas a Appwrite
+  if (typeof window !== "undefined" && pendingSyncLocals.length > 0) {
+    setTimeout(async () => {
+      for (const localMesa of pendingSyncLocals) {
+        try {
+          await saveMesaExamen(localMesa, sId);
+        } catch (e) {
+          devLog("Auto-sync local mesa to Appwrite failed", e);
+        }
+      }
+    }, 200);
+  }
 
   const finalMesas = Array.from(combinedMap.values());
   finalMesas.sort((a, b) => {
@@ -2458,19 +2553,23 @@ export const saveMesaExamen = async (m: MesaExamen, schoolId?: string) => {
   const local = getLocalStorageData<MesaExamen[]>("mesas_examen", [], sId);
   let assignedId = m.id;
 
+  const sanitizedAlumnos = (m.alumnosInscriptos || []).map(a => sanitize(a, 100));
+  // En el esquema de Appwrite, alumnosInscriptos es un string (máx 2000 chars)
+  const alumnosStr = JSON.stringify(sanitizedAlumnos).slice(0, 2000);
+
   const payload = {
     fecha: sanitize(m.fecha, 20),
     hora: sanitize(m.hora, 10),
-    materia: sanitize(m.materia, 100),
-    aula: sanitize(m.aula, 50),
+    materia: sanitize(m.materia, 150),
+    aula: sanitize(m.aula, 80),
     presidenteId: sanitize(m.presidenteId, 50),
-    presidenteNombre: sanitize(m.presidenteNombre, 200),
+    presidenteNombre: sanitize(m.presidenteNombre, 120),
     vocal1Id: sanitize(m.vocal1Id || "", 50),
-    vocal1Nombre: sanitize(m.vocal1Nombre || "", 200),
+    vocal1Nombre: sanitize(m.vocal1Nombre || "", 120),
     vocal2Id: sanitize(m.vocal2Id || "", 50),
-    vocal2Nombre: sanitize(m.vocal2Nombre || "", 200),
-    alumnosInscriptos: (m.alumnosInscriptos || []).map(a => sanitize(a, 100)),
-    estado: m.estado || "borrador",
+    vocal2Nombre: sanitize(m.vocal2Nombre || "", 120),
+    alumnosInscriptos: alumnosStr,
+    estado: (m.estado || "borrador") as MesaExamen["estado"],
     schoolId: sId,
   };
 
@@ -2497,10 +2596,14 @@ export const saveMesaExamen = async (m: MesaExamen, schoolId?: string) => {
     if (!assignedId) {
       assignedId = "LOCAL_" + Math.random().toString(36).substr(2, 9);
     }
+    // Re-lanzar error si no se pudo conectar o fue error de permisos para que la UI lo informe
+    if (err?.code && err.code >= 400 && err.code < 500 && !m.id?.startsWith("LOCAL_")) {
+      throw err;
+    }
   }
 
-  // Always update local storage so it's guaranteed to be available instantly
-  const savedItem: MesaExamen = { ...m, ...payload, id: assignedId, schoolId: sId };
+  // Actualizar almacenamiento local para disponibilidad inmediata
+  const savedItem: MesaExamen = { ...m, ...payload, alumnosInscriptos: sanitizedAlumnos, id: assignedId, schoolId: sId };
   const existingIdx = local.findIndex(item => item.id === assignedId || (m.id && item.id === m.id));
   if (existingIdx !== -1) {
     local[existingIdx] = savedItem;
@@ -2508,6 +2611,16 @@ export const saveMesaExamen = async (m: MesaExamen, schoolId?: string) => {
     local.unshift(savedItem);
   }
   setLocalStorageData("mesas_examen", local, sId);
+
+  // Notificar a otras pestañas y listeners locales
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("escuelainfo:mesas-updated"));
+    try {
+      const bc = new BroadcastChannel("escuelainfo-realtime");
+      bc.postMessage({ type: "mesas" });
+      bc.close();
+    } catch {}
+  }
 
   return { $id: assignedId, ...savedItem };
 };
@@ -2529,6 +2642,15 @@ export const deleteMesaExamen = async (id: string, schoolId?: string) => {
     const local = getLocalStorageData<MesaExamen[]>("mesas_examen", [], sId);
     const filtered = local.filter(m => m.id !== id);
     setLocalStorageData("mesas_examen", filtered, sId);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("escuelainfo:mesas-updated"));
+      try {
+        const bc = new BroadcastChannel("escuelainfo-realtime");
+        bc.postMessage({ type: "mesas" });
+        bc.close();
+      } catch {}
+    }
   }
 };
 

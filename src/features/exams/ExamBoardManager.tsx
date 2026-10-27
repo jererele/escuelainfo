@@ -653,7 +653,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
       notify.success(editingMesa ? "Mesa de examen actualizada." : "Mesa de examen creada con éxito.");
 
       getMesasExamen(true).then((fresh) => {
-        if (fresh && fresh.length > 0) {
+        if (Array.isArray(fresh)) {
           setMesas(fresh);
         }
       });
@@ -879,6 +879,15 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
             </select>
 
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => refreshData()}
+                disabled={loading}
+                className="p-2.5 rounded-xl border border-[var(--border)] hover:bg-[var(--bg3)] hover:border-[var(--verde)] text-[var(--text2)] hover:text-[var(--text)] transition-colors active:scale-95 cursor-pointer disabled:opacity-50 no-print"
+                title="Sincronizar mesas de examen en tiempo real"
+              >
+                <RefreshCw size={15} className={loading ? "animate-spin text-[var(--verde)]" : "text-[var(--text2)]"} />
+              </button>
               {canManage && (
                 <button
                   onClick={openCreateModal}
@@ -1089,7 +1098,7 @@ export default function ExamBoardManager({ user, userProfile }: Props) {
                             }
                           >
                             <ClipboardCheck size={14} />
-                            <span>{m.estado === "evaluada" ? "Evaluada ✓" : "Evaluar Mesa"}</span>
+                            <span>{m.estado === "evaluada" ? "Evaluada" : "Evaluar Mesa"}</span>
                           </button>
 
                           {/* Botón de Editar Mesa y Planilla */}
