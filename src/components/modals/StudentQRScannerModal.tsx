@@ -23,7 +23,14 @@ import {
   logAction 
 } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
-import { getCamerasWithLabels, getBestMainRearCameraId, getOptimizedCameraList } from "@/lib/cameraHelper";
+import { 
+  getCamerasWithLabels, 
+  getBestMainRearCameraId, 
+  getOptimizedCameraList,
+  getHighQualityVideoConstraints,
+  getFallbackVideoConstraints,
+  applyOptimalTrackConstraints 
+} from "@/lib/cameraHelper";
 
 interface Props {
   isOpen: boolean;
@@ -262,16 +269,19 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
         ? targetCameraId 
         : { facingMode: "environment" };
 
-      const qrConfig = {
-        fps: 15,
-        qrbox: { width: 240, height: 240 },
+      // Exigir resolución Full HD / HD (1080p ideal, 720p min) para descartar sensores auxiliares de 0.5x
+      // y garantizar detección ultra nítida e instantánea del código QR
+      const qrConfigHighQuality = {
+        fps: 20,
+        qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
+        videoConstraints: getHighQualityVideoConstraints(targetCameraId),
       };
 
       try {
         await html5Qr.start(
           cameraConfig,
-          qrConfig,
+          qrConfigHighQuality,
           (decodedText) => {
             handleDecodedText(decodedText);
           },
@@ -280,27 +290,44 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
           }
         );
       } catch (startErr) {
-        if (targetCameraId) {
-          console.warn("[QR Scanner] Falló cámara con ID específico, reintentando con 'environment':", startErr);
+        console.warn("[QR Scanner] Falló inicio con calidad máxima, intentando degradación 720p:", startErr);
+        try {
+          const qrConfigFallback = {
+            fps: 15,
+            qrbox: { width: 240, height: 240 },
+            aspectRatio: 1.0,
+            videoConstraints: getFallbackVideoConstraints(targetCameraId),
+          };
           await html5Qr.start(
-            { facingMode: "environment" },
-            qrConfig,
+            targetCameraId || { facingMode: "environment" },
+            qrConfigFallback,
             (decodedText) => {
               handleDecodedText(decodedText);
             },
             () => {}
           );
-        } else {
-          throw startErr;
+        } catch (fallbackErr) {
+          console.warn("[QR Scanner] Reintentando modo seguro con 'environment':", fallbackErr);
+          await html5Qr.start(
+            { facingMode: "environment" },
+            {
+              fps: 15,
+              qrbox: { width: 240, height: 240 },
+              aspectRatio: 1.0,
+            },
+            (decodedText) => {
+              handleDecodedText(decodedText);
+            },
+            () => {}
+          );
         }
       }
 
-      // 3. Forzar zoom óptico/estándar a 1.0 si el navegador lo soporta
-      try {
-        await html5Qr.applyVideoConstraints({
-          advanced: [{ zoom: 1.0 } as any]
-        });
-      } catch {}
+      // 3. Forzar autoenfoque continuo y zoom a 1.0x en caliente directamente en la pista del hardware
+      await applyOptimalTrackConstraints(containerId);
+      setTimeout(() => {
+        applyOptimalTrackConstraints(containerId);
+      }, 350);
 
       setScannerStatus("scanning");
     } catch (err: any) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, consolidateAbsences, logAction, parseUserCursos, fromDbRol } from "@/lib/dataService";
+import { UserProfile, Alumno, Curso, AsistenciaJornada, getCursos, getAlumnos, getAlumnoByEmail, getAsistenciasJornada, saveAsistenciasJornada, getAlumnoHistorialAsistencia, consolidateAbsences, logAction, parseUserCursos, fromDbRol, getHorarios, getProfesorByEmail, Horario } from "@/lib/dataService";
 import { notify } from "@/lib/notify";
 import { 
   UserCheck, 
@@ -119,7 +119,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
 
   const canManageGeneralAttendance = useMemo(() => {
     const r = fromDbRol(role);
-    return r === "admin" || r === "directivo" || r === "preceptor" || r === "preceptor_profesor";
+    return r === "admin" || r === "directivo" || r === "preceptor" || r === "preceptor_profesor" || r === "profesor";
   }, [role]);
 
   // Si el preceptor no tiene cursos propios asignados, activar por defecto el turno actual de la escuela
@@ -150,8 +150,46 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     });
   }, [cursos]);
 
+  // Profesor (solo docente): únicamente cursos asignados en su horario para el día seleccionado
+  const isTeacherOnly = useMemo(() => fromDbRol(role) === "profesor", [role]);
+  const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [teacherName, setTeacherName] = useState<string>("");
+
+  useEffect(() => {
+    if (!isTeacherOnly) return;
+    let active = true;
+    getHorarios().then(h => { if (active) setHorarios(h); });
+    if (userProfile?.email) {
+      getProfesorByEmail(userProfile.email)
+        .then(p => { if (active) setTeacherName(p?.nombre || userProfile?.nombre || ""); })
+        .catch(() => { if (active) setTeacherName(userProfile?.nombre || ""); });
+    } else {
+      setTeacherName(userProfile?.nombre || "");
+    }
+    return () => { active = false; };
+  }, [isTeacherOnly, userProfile?.email, userProfile?.nombre]);
+
+  const teacherCursosHoy = useMemo<string[]>(() => {
+    if (!isTeacherOnly) return [];
+    const norm = (s?: string | null) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+    const [y, m, d] = fecha.split("-").map(Number);
+    const dias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+    const diaSel = dias[new Date(y, (m || 1) - 1, d || 1).getDay()];
+    const nombre = norm(teacherName);
+    if (!nombre) return [];
+    return Array.from(new Set(
+      horarios
+        .filter(h => norm(h.profesor) === nombre && norm(h.dia) === diaSel)
+        .map(h => norm(h.curso))
+    ));
+  }, [isTeacherOnly, horarios, teacherName, fecha]);
+
   // Cursos visibles según el filtro de turno seleccionado
   const visibleCursos = useMemo(() => {
+    if (isTeacherOnly) {
+      const norm = (s?: string | null) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      return cursos.filter(c => teacherCursosHoy.includes(norm(c.nombre)));
+    }
     if (turnoFiltro === "mis_cursos" && preceptorCursos.length > 0) {
       return cursos.filter(c => preceptorCursos.includes(c.nombre));
     }
@@ -162,7 +200,17 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
       return cursosTarde;
     }
     return cursos;
-  }, [cursos, turnoFiltro, preceptorCursos, cursosManana, cursosTarde]);
+  }, [cursos, turnoFiltro, preceptorCursos, cursosManana, cursosTarde, isTeacherOnly, teacherCursosHoy]);
+
+  // Ajustar el curso seleccionado del profesor a los permitidos ese día
+  useEffect(() => {
+    if (!isTeacherOnly) return;
+    if (visibleCursos.length === 0) {
+      if (selectedCurso) setSelectedCurso("");
+    } else if (!visibleCursos.some(c => c.nombre === selectedCurso)) {
+      setSelectedCurso(visibleCursos[0].nombre);
+    }
+  }, [isTeacherOnly, visibleCursos, selectedCurso]);
 
   // Modo Cobertura: Cuando el preceptor toma lista a un curso que no es de su asignación habitual
   const isCoverageMode = useMemo(() => {
@@ -442,7 +490,7 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
             {/* Fila de Controles: Filtros de Turno, Selector de Fecha y Dropdown de Curso */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
               {/* Tabs de Filtro de Turnos / Mis Cursos */}
-              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl">
+              <div className={`${isTeacherOnly ? "hidden" : "flex"} flex-wrap items-center gap-1.5 p-1 bg-[var(--bg3)] border border-[var(--border)] rounded-2xl`}>
                 {isPreceptorRole && preceptorCursos.length > 0 && (
                   <button
                     type="button"
@@ -553,7 +601,11 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
                   onChange={(e) => setSelectedCurso(e.target.value)}
                 >
                   <option value="">— Seleccionar Curso —</option>
-                  {turnoFiltro === "mis_cursos" && preceptorCursos.length > 0 ? (
+                  {isTeacherOnly ? (
+                    <optgroup label="Mis Cursos de Hoy">
+                      {visibleCursos.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                    </optgroup>
+                  ) : turnoFiltro === "mis_cursos" && preceptorCursos.length > 0 ? (
                     <>
                       <optgroup label="Mis Cursos Asignados">
                         {cursos

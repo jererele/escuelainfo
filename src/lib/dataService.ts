@@ -129,6 +129,14 @@ const ROL_MAP: Record<string, string> = {
   "profesor": "profesor",
   "preceptor": "preceptor",
   "directivo": "directivo",
+  "director": "directivo",
+  "directora": "directivo",
+  "directivo/a": "directivo",
+  "equipo_directivo": "directivo",
+  "vicedirector": "directivo",
+  "vicedirectora": "directivo",
+  "rector": "directivo",
+  "rectora": "directivo",
   "pp_p": "preceptor_profesor",
   "preceptor_profesor": "preceptor_profesor"
 };
@@ -145,7 +153,7 @@ export const toDbRol = (r: string): string => {
   const clean = (r || "").trim().toLowerCase();
   switch (clean) {
     case "admin": return "ad";
-    case "directivo": return "d";
+    case "directivo": case "director": case "directora": case "directivo/a": case "rector": case "rectora": case "vicedirector": case "vicedirectora": case "equipo_directivo": return "d";
     case "preceptor": return "pp";
     case "profesor": return "p";
     case "preceptor_profesor": case "profesor_preceptor": case "pp_p": return "pp_p";
@@ -2644,7 +2652,16 @@ export const getCachedNotificaciones = (userEmail?: string, userRole?: string, s
   const isPreceptorUser = cleanRole === "preceptor" || cleanRole === "preceptor_profesor";
   const isProfesorUser = cleanRole === "profesor" || cleanRole === "preceptor_profesor";
 
+  const isPrivilegedUser = cleanRole === "admin" || cleanRole === "directivo";
+
   return all.filter((n) => {
+    // Admin y Directivo pueden ver todas las notificaciones de la institución
+    if (isPrivilegedUser) return true;
+    // Resto de usuarios: solo notificaciones propias o avisos institucionales generales
+    if (n.destinatarioEmail) {
+      return Boolean(cleanEmail) && n.destinatarioEmail.trim().toLowerCase() === cleanEmail;
+    }
+    if (n.tipo !== "aviso_general" && n.tipo !== "aviso_paro") return false;
     // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
     // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
     if (cleanRole === "alumno") {
@@ -2718,7 +2735,15 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string, s
       schoolId: doc.schoolId || sId,
     }));
 
+    const isPrivilegedUser = cleanRole === "admin" || cleanRole === "directivo";
     const filtered = notifs.filter((n) => {
+      // Admin y Directivo pueden ver todas las notificaciones de la institución
+      if (isPrivilegedUser) return true;
+      // Resto de usuarios: solo notificaciones propias o avisos institucionales generales
+      if (n.destinatarioEmail) {
+        return Boolean(cleanEmail) && n.destinatarioEmail.trim().toLowerCase() === cleanEmail;
+      }
+      if (n.tipo !== "aviso_general" && n.tipo !== "aviso_paro") return false;
       // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
       // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
       if (cleanRole === "alumno") {

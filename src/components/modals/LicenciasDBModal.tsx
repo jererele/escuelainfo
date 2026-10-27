@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Search,
@@ -78,9 +79,9 @@ export const LicenciasDBModal: React.FC<LicenciasDBModalProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div 
         className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden text-[var(--text)] transition-all"
@@ -478,7 +479,8 @@ export const LicenciasDBModal: React.FC<LicenciasDBModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
