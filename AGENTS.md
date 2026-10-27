@@ -22,6 +22,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Backend:** Appwrite (Database, Storage, Auth y WebSockets para tiempo real).
 - **Control de Versión:** Actualizar `src/lib/version.ts` al introducir features o fixes relevantes.
 
-## 🛡 Reglas de Arquitectura
+## 🛡 Reglas de Arquitectura y Rendimiento
 - **Preservar Lógica Existente:** Nunca eliminar endpoints, props o estados existentes a menos que el usuario lo solicite expresamente.
 - **Mobile First & Performance:** Las vistas deben ser responsivas, sin parpadeos de carga (CLS = 0) y respetando las optimizaciones de Core Web Vitals.
+- **Cero Emojis en UI:** Prohibido usar emojis Unicode (⚠️, ❌, 💡, 🎓, etc.) en componentes o botones. Utilizar **siempre `lucide-react`**.
+- **Modales con `next/dynamic`:** Importar componentes modales pesados mediante lazy loading (`next/dynamic` con `ssr: false`) para mantener liviano el bundle inicial.
+
+## 🤝 Colaboración en Ramas y Git (Multi-Dev)
+1. **Ramas Dedicadas:** Nunca commitear directamente sobre `main`. Trabajar en ramas aisladas (`dev/<nombre>` o `feature/<modulo>`).
+2. **Sincronización Diaria:** Mantener la rama actualizada contra la base con `git pull origin main --rebase` para prevenir conflictos complejos de integración.
+3. **Manejo de Versiones (`src/lib/version.ts`):** Al integrar ramas paralelas, el número de versión (`APP_VERSION`) debe incrementarse hacia el valor mayor y las notas (`APP_RELEASE_NOTES` / `APP_VERSION_HISTORY`) deben consolidarse incluyendo los cambios de ambos.
+4. **Sincronización de Backend (Appwrite):** Si una tarea introduce nuevas colecciones, atributos o índices en Appwrite, incluir un script ejecutable en `/scripts` o documentar los pasos para que el compañero pueda actualizar su entorno sin romper la app.
+5. **Variables de Entorno:** Nunca commitear `.env.local` ni credenciales privadas. Toda nueva variable debe reflejarse en `.env.example`.

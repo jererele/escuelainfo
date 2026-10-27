@@ -111,14 +111,18 @@ src/
 
 ## 5. Colecciones en Appwrite (`escuelainfo_db`)
 
-- **`usuarios`**: Almacena el perfil del usuario, correo, nombre, `rol` (`admin`, `directivo`, `preceptor`, `profesor`, `alumno`), estado de aprobación, teléfono, y en el caso de preceptores, los cursos asignados.
+Todas las colecciones cuentan con partición multiescuela (`schoolId` e índices dedicados):
+
+- **`usuarios`**: Perfil de usuario, correo, nombre, `rol` (`admin`, `directivo`, `preceptor`, `profesor`, `alumno`, `preceptor_profesor`), estado de aprobación, teléfono, escuela designada y cursos asignados.
 - **`cursos`**: Año, división, turno (`Mañana`, `Tarde`, `Vespertino`, `Doble Turno`) y especialidad.
 - **`profesores`**: Nombre, apellido, DNI, teléfono, email y listado de materias/cursos a cargo.
 - **`horarios`**: Relación de días de la semana, módulos horarios, materia, curso y profesor.
 - **`alumnos`**: Datos del estudiante, DNI, curso asignado, datos de contacto del tutor y token QR.
+- **`ausencias`**: Licencias estatutarias, partes diarios de inasistencias docentes/no docentes y adhesiones a paros.
 - **`asistencias_alumnos_jornada`**: Registro de entrada/salida institucional por día y alumno.
 - **`asistencias_alumnos_materia`**: Registro de presencia por módulo/hora de clase.
 - **`mesas_examen`**: Turnos de examen, materia, curso, presidente y vocales de mesa, fecha y horario.
+- **`notificaciones`**: Mensajes y alertas del sistema en tiempo real vía WebSockets.
 - **`logs`**: Historial de auditoría de acciones administrativas y operativas.
 
 ---
@@ -139,3 +143,37 @@ src/
 4. **Seguridad y Navegación:**
    - Prevenir bucles de redirección entre `/` y `/dashboard` cuando una cuenta no tiene rol o fue dada de baja.
    - Borrar sesiones en Appwrite y `sessionStorage` inmediatamente ante errores de autorización.
+
+---
+
+## 7. Variables de Entorno Requeridas (`.env.local`)
+
+Para levantar el entorno local, ambos desarrolladores deben disponer de las siguientes claves configuradas:
+
+| Variable | Propósito |
+| :--- | :--- |
+| `NEXT_PUBLIC_APPWRITE_ENDPOINT` | URL del endpoint de Appwrite Cloud (`https://cloud.appwrite.io/v1`) |
+| `NEXT_PUBLIC_APPWRITE_PROJECT_ID` | ID del proyecto en Appwrite |
+| `NEXT_PUBLIC_APPWRITE_DATABASE_ID` | ID de la base de datos (`escuelainfodb`) |
+| `NEXT_PUBLIC_APPWRITE_COLLECTION_ID` | ID de colección por defecto (`ausencias`) |
+| `NEXT_PUBLIC_APPWRITE_BUCKET_ID` | ID del bucket de Storage para certificados/archivos |
+| `APPWRITE_API_KEY` | Clave API secreta de Appwrite (usada en endpoints `/api/`) |
+| `SMTP_USER` / `SMTP_PASS` | Credenciales del relay SMTP para despacho de correos |
+| `OTP_SECRET` | Clave secreta HMAC para firma de códigos OTP de seguridad |
+| `MASTER_ADMIN_EMAIL` | Casilla autorizada para recibir códigos OTP de elevación a Admin |
+
+---
+
+## 8. Flujo Colaborativo y Manejo de Ramas
+
+1. **Aislamiento de Ramas:** Cada colaborador trabaja en su propia rama (`dev/<nombre>` o `feature/<modulo>`), sin commitear directo sobre `main`.
+2. **Sincronización Previa:** Antes de empezar una nueva funcionalidad o abrir un Pull Request:
+   ```bash
+   git pull origin main --rebase
+   ```
+3. **Resolución de Conflictos en Versión:** Si ambos modifican `src/lib/version.ts`, se toma la versión numérica mayor y se combinan las notas de ambos en `APP_RELEASE_NOTES`.
+4. **Validación Pre-Merge Obligatoria:** Siempre verificar que la compilación pase sin errores:
+   ```bash
+   npm run build
+   ```
+
