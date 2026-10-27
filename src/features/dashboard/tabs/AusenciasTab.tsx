@@ -17,6 +17,7 @@ interface AusenciasTabProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onOpenAbsenceModal: () => void;
+  onOpenAbsenceModalWithLicencia?: (licencia: LicenciaItem) => void;
   onOpenTeacherReportModal: (tipo: string) => void;
   onChangeStatus: (id: string, status: "pendiente" | "aprobada" | "rechazada") => void;
   onDeleteAbsence: (id: string) => void;
@@ -43,6 +44,7 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
   searchQuery,
   setSearchQuery,
   onOpenAbsenceModal,
+  onOpenAbsenceModalWithLicencia,
   onOpenTeacherReportModal,
   onChangeStatus,
   onDeleteAbsence,
@@ -911,9 +913,13 @@ export const AusenciasTab: React.FC<AusenciasTabProps> = ({
         }}
         initialArticulo={selectedDbArticulo}
         initialTipoPersonal={isPreceptor ? "docente" : (isTeacher ? "docente" : "todos")}
-        onSelectLicencia={() => {
+        onSelectLicencia={(lic) => {
           setIsDbModalOpen(false);
-          onOpenAbsenceModal();
+          if (onOpenAbsenceModalWithLicencia) {
+            onOpenAbsenceModalWithLicencia(lic);
+          } else {
+            onOpenAbsenceModal();
+          }
         }}
       />
 

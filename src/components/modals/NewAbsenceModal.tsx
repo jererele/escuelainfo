@@ -78,6 +78,7 @@ interface NewAbsenceModalProps {
   cursos?: Curso[];
   horarios?: Horario[];
   usuarios?: UserProfile[];
+  initialLicencia?: LicenciaItem | null;
 }
 
 // ——— Catálogo estatutario enriquecido de licencias por Rol (Chubut Ley VIII N° 20 / Dto. 508/2026 / Res. 517/90) ———
@@ -520,7 +521,8 @@ export default function NewAbsenceModal({
   userProfile,
   cursos,
   horarios,
-  usuarios
+  usuarios,
+  initialLicencia
 }: NewAbsenceModalProps) {
   const [loading, setLoading] = useState(false);
   const [profesores, setProfesores] = useState<Profesor[]>([]);
@@ -1063,6 +1065,14 @@ export default function NewAbsenceModal({
     }
     setIsDbModalOpen(false);
   }, [handleSelectArticulo]);
+
+  // Autocompletar motivo cuando se abre el modal con una licencia elegida desde DB Licencias (SAE)
+  useEffect(() => {
+    if (isOpen && initialLicencia) {
+      handleSelectFromDb(initialLicencia);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialLicencia]);
 
   const handleProfChange = useCallback((id: string) => {
     setSelectedProfId(id);

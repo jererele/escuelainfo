@@ -16,6 +16,7 @@ import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 import { notify } from "@/lib/notify";
 import { sendApprovalEmail, sendAbsenceNoticeEmail, getAffectedCoursesFromAusencia, sendPreceptorCoverageEmail } from "@/lib/emailService";
 import { ChubutSchool, getSchoolById, getSavedSchoolId, setSavedSchoolId, DEFAULT_SCHOOL_ID } from "@/lib/chubutSchools";
+import type { LicenciaItem } from "@/lib/licenciasDB";
 import {
   GeneralTab,
   UsuariosTab,
@@ -152,6 +153,7 @@ export default function Dashboard() {
   const [showSecretAdmin, setShowSecretAdmin] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [preselectedLicencia, setPreselectedLicencia] = useState<LicenciaItem | null>(null);
   const [isTeacherReportModalOpen, setIsTeacherReportModalOpen] = useState(false);
   const [editingProfesor, setEditingProfesor] = useState<Profesor | null>(null);
   const [reportModalInitialTipo, setReportModalInitialTipo] = useState("Paro Docente");
@@ -1780,7 +1782,8 @@ export default function Dashboard() {
               canManageAusencias={canManageAusencias}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
-              onOpenAbsenceModal={() => setIsModalOpen(true)}
+              onOpenAbsenceModal={() => { setPreselectedLicencia(null); setIsModalOpen(true); }}
+              onOpenAbsenceModalWithLicencia={(lic) => { setPreselectedLicencia(lic); setIsModalOpen(true); }}
               onOpenTeacherReportModal={(tipo) => {
                 setReportModalInitialTipo(tipo);
                 setIsTeacherReportModalOpen(true);
@@ -1962,7 +1965,8 @@ export default function Dashboard() {
 
       <NewAbsenceModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => { setIsModalOpen(false); setPreselectedLicencia(null); }} 
+        initialLicencia={preselectedLicencia}
         onSuccess={() => {
           notifyRealtimeUpdate("ausencias");
         }}
