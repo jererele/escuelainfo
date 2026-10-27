@@ -2652,7 +2652,16 @@ export const getCachedNotificaciones = (userEmail?: string, userRole?: string, s
   const isPreceptorUser = cleanRole === "preceptor" || cleanRole === "preceptor_profesor";
   const isProfesorUser = cleanRole === "profesor" || cleanRole === "preceptor_profesor";
 
+  const isPrivilegedUser = cleanRole === "admin" || cleanRole === "directivo";
+
   return all.filter((n) => {
+    // Admin y Directivo pueden ver todas las notificaciones de la institución
+    if (isPrivilegedUser) return true;
+    // Resto de usuarios: solo notificaciones propias o avisos institucionales generales
+    if (n.destinatarioEmail) {
+      return Boolean(cleanEmail) && n.destinatarioEmail.trim().toLowerCase() === cleanEmail;
+    }
+    if (n.tipo !== "aviso_general" && n.tipo !== "aviso_paro") return false;
     // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
     // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
     if (cleanRole === "alumno") {
@@ -2725,7 +2734,15 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string, s
       schoolId: doc.schoolId || sId,
     }));
 
+    const isPrivilegedUser = cleanRole === "admin" || cleanRole === "directivo";
     const filtered = notifs.filter((n) => {
+      // Admin y Directivo pueden ver todas las notificaciones de la institución
+      if (isPrivilegedUser) return true;
+      // Resto de usuarios: solo notificaciones propias o avisos institucionales generales
+      if (n.destinatarioEmail) {
+        return Boolean(cleanEmail) && n.destinatarioEmail.trim().toLowerCase() === cleanEmail;
+      }
+      if (n.tipo !== "aviso_general" && n.tipo !== "aviso_paro") return false;
       // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
       // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
       if (cleanRole === "alumno") {
