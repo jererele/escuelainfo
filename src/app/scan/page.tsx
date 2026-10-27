@@ -188,6 +188,13 @@ function ScanContent() {
               estado: "P",
               profesorId: p || "QR_SISTEMA"
             }]);
+            await saveAsistenciasJornada([{
+              alumnoId: studentRecord.id,
+              alumnoNombre: studentRecord.nombre,
+              fecha: todayDate,
+              estado: "P",
+              preceptorId: p || "QR_DOCENTE"
+            }]);
             await logAction(userProfile.email, "C_AM", `Asistencia por QR (Materia: ${s})`);
           } else {
             throw new Error("Formato de asistencia desconocido.");

@@ -212,6 +212,49 @@ export async function POST(request: Request) {
         if (existingByDni.total > 0) existingDoc = existingByDni.documents[0];
       }
 
+      // Sincronización obligatoria con asistencias_alumnos_jornada:
+      // Al validar presencia con el docente en clase, el alumno está presente en la institución,
+      // por lo que debe quedar VALIDADO ("P") en la planilla de asistencia y en el monitor diario.
+      try {
+        let existingJornada: any = null;
+        const jById = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
+          Query.equal('alumnoId', alumno.$id),
+          Query.equal('fecha', todayDate),
+          Query.limit(1)
+        ]);
+        if (jById.total > 0) {
+          existingJornada = jById.documents[0];
+        } else if (alumno.dni) {
+          const jByDni = await db.listDocuments(dbId, 'asistencias_alumnos_jornada', [
+            Query.equal('alumnoId', alumno.dni),
+            Query.equal('fecha', todayDate),
+            Query.limit(1)
+          ]);
+          if (jByDni.total > 0) existingJornada = jByDni.documents[0];
+        }
+
+        if (existingJornada) {
+          if (existingJornada.estado !== "P") {
+            await db.updateDocument(dbId, 'asistencias_alumnos_jornada', existingJornada.$id, {
+              estado: "P",
+              preceptorId: String(issuerId || "QR_DOCENTE").slice(0, 50),
+              schoolId: studentSchoolId
+            });
+          }
+        } else {
+          await db.createDocument(dbId, 'asistencias_alumnos_jornada', ID.unique(), {
+            alumnoId: alumno.$id,
+            alumnoNombre: alumno.nombre || sessionUser.name || "Alumno",
+            fecha: todayDate,
+            estado: "P",
+            preceptorId: String(issuerId || "QR_DOCENTE").slice(0, 50),
+            schoolId: studentSchoolId
+          });
+        }
+      } catch (errJornada) {
+        console.warn("[verify-qr] No se pudo sincronizar presencia en jornada:", errJornada);
+      }
+
       if (existingDoc) {
         if (existingDoc.estado === "P") {
           return NextResponse.json({

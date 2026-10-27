@@ -311,11 +311,22 @@ export default function StudentAttendanceManager({ user, userProfile }: Props) {
     }
   }, [selectedCurso, fecha, alumnos]);
 
-  // Cargar automáticamente al cambiar el curso o la fecha
+  // Cargar automáticamente al cambiar el curso o la fecha, o ante eventos de actualización de asistencia
   useEffect(() => {
     if (canManageGeneralAttendance) {
       cargarPlanillaJornada();
     }
+    const handleUpdate = () => {
+      if (canManageGeneralAttendance) {
+        cargarPlanillaJornada();
+      }
+    };
+    window.addEventListener("escuelainfo:attendance-updated", handleUpdate);
+    window.addEventListener("focus", handleUpdate);
+    return () => {
+      window.removeEventListener("escuelainfo:attendance-updated", handleUpdate);
+      window.removeEventListener("focus", handleUpdate);
+    };
   }, [cargarPlanillaJornada, canManageGeneralAttendance]);
 
   // Guardar asistencia diaria (Preceptor/Admin)

@@ -35,9 +35,17 @@ export async function POST(request: Request) {
     if (apiKey) {
       const adminClient = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
       const db = new Databases(adminClient);
-      const userDocs = await db.listDocuments(dbId, 'usuarios', [Query.equal('email', sessionUser.email.toLowerCase().trim())]);
-      if (userDocs.total > 0 && userDocs.documents[0]) {
-        const rol = (userDocs.documents[0].rol || '').toLowerCase();
+      const cleanEmail = sessionUser.email.toLowerCase().trim();
+      const userDocs = await db.listDocuments(dbId, 'usuarios', [Query.equal('email', cleanEmail)]);
+      let userDoc = userDocs.total > 0 ? userDocs.documents[0] : null;
+      if (!userDoc && sessionUser.$id) {
+        try {
+          const byUid = await db.listDocuments(dbId, 'usuarios', [Query.equal('uid', sessionUser.$id)]);
+          if (byUid.total > 0) userDoc = byUid.documents[0];
+        } catch {}
+      }
+      if (userDoc) {
+        const rol = (userDoc.rol || '').toLowerCase();
         const allowed = ['admin', 'directivo', 'preceptor', 'profesor', 'preceptor_profesor', 'ad', 'd', 'pp', 'p', 'pp_p'];
         if (!allowed.includes(rol)) {
           return NextResponse.json({ error: "Solo docentes, preceptores y directivos pueden emitir códigos QR de asistencia." }, { status: 403 });

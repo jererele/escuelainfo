@@ -203,6 +203,15 @@ export default function StudentQRScannerModal({ isOpen, onClose, userProfile, on
               profesorId: p || "QR_SISTEMA",
             },
           ]);
+          await saveAsistenciasJornada([
+            {
+              alumnoId: studentRecord.id,
+              alumnoNombre: studentRecord.nombre,
+              fecha: todayDate,
+              estado: "P",
+              preceptorId: p || "QR_DOCENTE",
+            },
+          ]);
           await logAction(userProfile.email, "C_AM", `Presente por Lector QR Integrado (${s})`);
           resultType = `Materia: ${s}`;
           resultDetail = `Curso: ${studentRecord.curso} · Fecha: ${todayDate}`;

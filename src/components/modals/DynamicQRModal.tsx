@@ -10,7 +10,8 @@ import {
   getAlumnos, 
   Alumno, 
   saveAsistenciasJornada, 
-  saveAsistenciasMateria 
+  saveAsistenciasMateria,
+  fromDbRol 
 } from "@/lib/dataService";
 import { account } from "@/lib/appwrite";
 import { PLAN_DE_ESTUDIOS } from "@/lib/curriculum";
@@ -50,8 +51,8 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
   }, [userProfile, profesores]);
 
   useEffect(() => {
-    if (userProfile?.rol === "profesor") {
-      setMode("materia");
+    const normRol = fromDbRol(userProfile?.rol);
+    if (normRol === "profesor") {
       if (currentProfesor?.materias?.length && !selectedMateria) {
         setSelectedMateria(currentProfesor.materias[0]);
       }
@@ -155,6 +156,13 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
           estado: "P",
           profesorId: pId
         }]);
+        await saveAsistenciasJornada([{
+          alumnoId: alumno.id,
+          alumnoNombre: alumno.nombre,
+          fecha: todayDate,
+          estado: "P",
+          preceptorId: pId
+        }]);
       }
       
       setMarkedPresent(prev => {
@@ -180,13 +188,19 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("escuelainfo:attendance-updated"));
+    }
+    onClose();
+  };
+
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const qrUrl = origin ? `${origin}/scan?token=${token}` : "";
-  const canSelectJornada = userProfile?.rol === "admin" || userProfile?.rol === "directivo" || userProfile?.rol === "preceptor";
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className="bg-[var(--bg)] w-full max-w-sm rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-zoom-in flex flex-col max-h-[90vh]">
         
         {/* Header */}
@@ -200,7 +214,7 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
               <p className="text-[10px] font-bold text-[var(--text3)] uppercase tracking-wider mt-0.5">Control de Presentes</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all">
+          <button onClick={handleClose} className="p-2 rounded-xl hover:bg-[var(--bg3)] text-[var(--text2)] transition-all cursor-pointer">
             <X size={18} />
           </button>
         </div>
@@ -228,13 +242,12 @@ export default function DynamicQRModal({ isOpen, onClose, userProfile }: Props) 
             <div className="space-y-2">
               <label className="text-[10px] uppercase font-black tracking-wider text-[var(--text3)] ml-1">Tipo de Asistencia</label>
               <select
-                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 outline-none font-bold text-[var(--text)] text-sm focus:border-[var(--verde)] transition-colors appearance-none"
+                className="w-full bg-[var(--bg3)] border border-[var(--border)] rounded-2xl p-3 outline-none font-bold text-[var(--text)] text-sm focus:border-[var(--verde)] transition-colors appearance-none cursor-pointer"
                 value={mode}
                 onChange={(e) => setMode(e.target.value as any)}
-                disabled={!canSelectJornada && userProfile?.rol === "profesor"}
               >
-                {canSelectJornada && <option value="jornada">Jornada General</option>}
-                {(userProfile?.rol === "profesor" || canSelectJornada) && <option value="materia">Por Materia</option>}
+                <option value="jornada">Jornada General (Escuela)</option>
+                <option value="materia">Por Materia (Clase)</option>
               </select>
             </div>
 
