@@ -2648,11 +2648,12 @@ export const getCachedNotificaciones = (userEmail?: string, userRole?: string, s
     // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
     // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
     if (cleanRole === "alumno") {
+      const tipoNotif = n.tipo as NotificacionTipo;
       if (
-        n.tipo === "inasistencia_docente" ||
-        n.tipo === "licencia_preceptor_aprobada" ||
-        n.tipo === "cobertura_asignada" ||
-        n.tipo === "nuevo_usuario_pendiente"
+        tipoNotif === "inasistencia_docente" ||
+        tipoNotif === "licencia_preceptor_aprobada" ||
+        tipoNotif === "cobertura_asignada" ||
+        tipoNotif === "nuevo_usuario_pendiente"
       ) {
         return false;
       }
@@ -2721,11 +2722,12 @@ export const getNotificaciones = async (userEmail?: string, userRole?: string, s
       // 🛡️ REGLA DE PRIVACIDAD ESTRICTA (Ley 25.326 de Protección de Datos Personales):
       // Los alumnos nunca deben recibir alertas de licencias, inasistencias docentes o gestión de personal
       if (cleanRole === "alumno") {
+        const tipoNotif = n.tipo as NotificacionTipo;
         if (
-          n.tipo === "inasistencia_docente" ||
-          n.tipo === "licencia_preceptor_aprobada" ||
-          n.tipo === "cobertura_asignada" ||
-          n.tipo === "nuevo_usuario_pendiente"
+          tipoNotif === "inasistencia_docente" ||
+          tipoNotif === "licencia_preceptor_aprobada" ||
+          tipoNotif === "cobertura_asignada" ||
+          tipoNotif === "nuevo_usuario_pendiente"
         ) {
           return false;
         }
